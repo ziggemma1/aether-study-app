@@ -22,7 +22,10 @@ async function startServer() {
   // Middleware
   app.use(express.json());
   app.use(cookieParser());
-  app.use(cors());
+  app.use(cors({
+    origin: true, // Reflect request origin
+    credentials: true
+  }));
 
   // MongoDB Connection
   const MONGODB_URI = process.env.MONGODB_URI;
