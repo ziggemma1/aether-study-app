@@ -1,5 +1,4 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
@@ -31,17 +30,21 @@ async function startServer() {
   const MONGODB_URI = process.env.MONGODB_URI;
   if (MONGODB_URI) {
     if (MONGODB_URI.includes('<') || MONGODB_URI.includes('>')) {
-      console.error("CRITICAL: Your MONGODB_URI contains '<' or '>'. Please remove these brackets and only include the actual password in the Settings menu.");
+      console.error("CRITICAL: Your MONGODB_URI contains '<' or '>'.");
     } else {
-      mongoose.connect(MONGODB_URI)
-        .then(() => console.log("✅ Connected to MongoDB"))
-        .catch((err) => {
-          console.error("❌ MongoDB connection error:", err.message);
-          console.error("Tip: Check if your IP is allowlisted in MongoDB Atlas and if your password is correct.");
+      try {
+        // Use a shorter timeout for serverless to avoid function timeout
+        await mongoose.connect(MONGODB_URI, {
+          serverSelectionTimeoutMS: 5000,
+          connectTimeoutMS: 10000,
         });
+        console.log("✅ Connected to MongoDB");
+      } catch (err: any) {
+        console.error("❌ MongoDB connection error:", err.message);
+      }
     }
   } else {
-    console.warn("⚠️ MONGODB_URI not found. Please add it to the Settings menu to enable database features.");
+    console.warn("⚠️ MONGODB_URI not found.");
   }
 
   // API Routes
@@ -62,12 +65,17 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else if (process.env.NODE_ENV === "production") {
+    try {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } catch (e) {
+      console.warn("Vite failed to load in dev mode:", e);
+    }
+  } else if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {

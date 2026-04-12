@@ -36,7 +36,12 @@ export const register = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('Registration error:', error);
+    res.status(500).json({ 
+      message: 'Registration failed', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
@@ -78,7 +83,12 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      message: 'Login failed', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
