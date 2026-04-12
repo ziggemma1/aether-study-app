@@ -4,7 +4,7 @@ import { Upload, Youtube, BookOpen, Mic, X, CheckCircle2, Loader2, Camera, Image
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { extractTextFromImage } from '../services/OCRService';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
 
 export default function UploadMaterial() {
@@ -22,11 +22,6 @@ export default function UploadMaterial() {
   const [content, setContent] = React.useState('');
 
   const handleUpload = async (materialTitle: string, materialType: string, materialContent?: string) => {
-    if (!isSupabaseConfigured) {
-      alert('Supabase is not connected. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables in the Settings menu.');
-      return;
-    }
-
     if (!user) {
       alert('Please log in to upload materials.');
       return;
@@ -41,27 +36,19 @@ export default function UploadMaterial() {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const { error } = await supabase
-        .from('study_materials')
-        .insert([
-          {
-            user_id: user.id,
-            title: materialTitle || 'Untitled Material',
-            type: materialType,
-            content: materialContent || '',
-            status: 'completed'
-          }
-        ]);
+      await api.post('/materials', {
+        title: materialTitle || 'Untitled Material',
+        type: materialType,
+        content: materialContent || '',
+      });
 
       clearInterval(interval);
-      if (error) throw error;
-
       setUploadProgress(100);
       setIsUploading(false);
       setIsSuccess(true);
     } catch (err: any) {
       console.error(err);
-      alert('Failed to save material: ' + err.message);
+      alert('Failed to save material: ' + (err.response?.data?.message || err.message));
       setIsUploading(false);
     }
   };

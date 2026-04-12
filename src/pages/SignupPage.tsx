@@ -3,10 +3,12 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User as UserIcon, ArrowRight, Github, Chrome, ArrowLeft, Loader2 } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import api from '../services/api';
+import { useAppContext } from '../context/AppContext';
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const { setUser } = useAppContext();
   const [fullName, setFullName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -26,102 +28,27 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!isSupabaseConfigured) {
-      setError(
-        <div className="flex flex-col gap-2">
-          <span>Supabase is not connected.</span>
-          <Link to="/settings?tab=connection" className="text-primary hover:underline font-bold flex items-center gap-1">
-            Go to Connection Settings <ArrowRight size={14} />
-          </Link>
-        </div>
-      );
-      return;
-    }
-
     setLoading(true);
     setError(null);
-    console.log('Attempting signup for:', email);
 
     try {
-      // Add a timeout to the signup process
-      const signupPromise = supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          }
-        }
+      const response = await api.post('/auth/register', { 
+        name: fullName, 
+        email, 
+        password 
       });
-
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Signup timed out. Please check your connection or Supabase status.')), 20000)
-      );
-
-      console.log('Waiting for Supabase response...');
-      const result = await Promise.race([signupPromise, timeoutPromise]) as any;
-      console.log('Supabase response received:', result);
-
-      if (result.error) throw result.error;
-      const authData = result.data;
-
-      if (authData.user) {
-        console.log('User created, inserting profile...');
-        // 2. Create profile record
-        const insertPromise = supabase
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              name: fullName,
-              avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${authData.user.id}`,
-              plan: 'free',
-              streak: 0
-            }
-          ]);
-
-        const insertTimeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Profile creation timed out.')), 10000)
-        );
-
-        const insertResult = await Promise.race([insertPromise, insertTimeoutPromise]) as any;
-        console.log('Profile insertion result:', insertResult);
-
-        if (insertResult.error) throw insertResult.error;
-      }
-
-      console.log('Signup successful, navigating to dashboard...');
+      setUser(response.data.user);
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Signup error:', err);
-      if (err.message === 'Failed to fetch') {
-        setError('Connection failed. Please check your Supabase URL and Anon Key in the Settings menu.');
-      } else {
-        setError(err.message || 'Failed to create account');
-      }
+      setError(err.response?.data?.message || 'Failed to sign up');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSocialSignup = async (provider: 'google' | 'github') => {
-    if (!isSupabaseConfigured) {
-      setError('Supabase is not connected. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.');
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: window.location.origin + '/dashboard',
-        },
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || `Failed to sign up with ${provider}`);
-    }
+    setError('Social login is currently unavailable with the custom backend.');
   };
 
   React.useEffect(() => {

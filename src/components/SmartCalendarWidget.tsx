@@ -12,7 +12,7 @@ import {
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { supabase } from '../lib/supabase';
+import api from '../services/api';
 import { StudySession } from '../types';
 
 interface SmartCalendarWidgetProps {
@@ -35,12 +35,7 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
     ));
 
     try {
-      const { error } = await supabase
-        .from('study_sessions')
-        .update({ completed: newCompleted })
-        .eq('id', id);
-      
-      if (error) throw error;
+      await api.put(`/sessions/${id}`, { completed: newCompleted });
     } catch (err) {
       console.error('Error updating session:', err);
       // Revert on error
@@ -55,29 +50,11 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
     setIsRegenerating(true);
     
     try {
-      // In a real app, this would call an Edge Function or AI service
-      // For now, we'll just simulate it by shuffling or adding a new session
+      // In a real app, this would call an AI service
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const { data, error } = await supabase
-        .from('study_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_time', { ascending: true });
-
-      if (error) throw error;
-      if (data) {
-        setStudySessions(data.map((s: any) => ({
-          id: s.id,
-          userId: s.user_id,
-          title: s.title,
-          startTime: s.start_time,
-          durationMinutes: s.duration_minutes,
-          type: s.type,
-          priority: s.priority,
-          completed: s.completed
-        })));
-      }
+      const { data } = await api.get('/sessions');
+      setStudySessions(data);
     } catch (err) {
       console.error('Error regenerating schedule:', err);
     } finally {
@@ -125,16 +102,16 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
           <h3 className="text-sm font-bold text-text-main">Today's Focus Goal</h3>
         </div>
         <p className="text-xs text-text-muted leading-relaxed">
-          {studySessions.some(e => e.priority === 'high' && !e.completed) 
+          {Array.isArray(studySessions) && studySessions.some(e => e.priority === 'high' && !e.completed) 
             ? `Focus on completing your ${studySessions.find(e => e.priority === 'high' && !e.completed)?.title} session today.`
-            : studySessions.length > 0 ? "Great job! You've completed your high-priority tasks for today." : "No study sessions scheduled for today."}
+            : (Array.isArray(studySessions) && studySessions.length > 0) ? "Great job! You've completed your high-priority tasks for today." : "No study sessions scheduled for today."}
         </p>
       </div>
 
       {/* Timeline/Events */}
       <div className="space-y-4 flex-grow relative z-10 overflow-y-auto no-scrollbar">
         <AnimatePresence mode="popLayout">
-          {studySessions.map((event, idx) => (
+          {Array.isArray(studySessions) && studySessions.map((event, idx) => (
             <motion.div 
               key={event.id}
               layout
@@ -190,7 +167,7 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
               <ChevronRight size={16} className="text-text-muted opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0" />
             </motion.div>
           ))}
-          {studySessions.length === 0 && !isRegenerating && (
+          {(!Array.isArray(studySessions) || studySessions.length === 0) && !isRegenerating && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <CalendarIcon size={48} className="text-text-muted opacity-20 mb-4" />
               <p className="text-sm text-text-muted">No sessions scheduled.</p>

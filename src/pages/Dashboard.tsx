@@ -29,14 +29,19 @@ export default function Dashboard() {
   const { user, theme, materials, allProfiles } = useAppContext();
   const isLight = theme === 'light';
 
-  const recentMaterials = [...materials]
-    .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())
-    .slice(0, 3);
+  const recentMaterials = Array.isArray(materials) 
+    ? [...materials]
+        .sort((a, b) => new Date(b.uploadDate || 0).getTime() - new Date(a.uploadDate || 0).getTime())
+        .slice(0, 3)
+    : [];
 
-  const topLearners = allProfiles.slice(0, 6).map(p => ({
-    name: p.name || 'User',
-    avatar: p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`
-  }));
+  const topLearners = Array.isArray(allProfiles) 
+    ? allProfiles.slice(0, 6).map((p, i) => ({
+        id: p._id || p.id || `learner-${i}`,
+        name: p.name || 'User',
+        avatar: p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p._id || p.id || i}`
+      }))
+    : [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20 sm:pb-12">
@@ -99,9 +104,9 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {recentMaterials.map((material) => (
+              {recentMaterials.map((material, idx) => (
                 <Link 
-                  key={material.id} 
+                  key={material.id || `material-${idx}`} 
                   to={`/library/${material.id}`}
                   className="glass-card p-4 flex items-center gap-4 hover:border-primary/50 transition-all group"
                 >

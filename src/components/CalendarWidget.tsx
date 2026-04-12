@@ -49,6 +49,8 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
 
   const dayData = useMemo(() => {
     const data: Record<string, DayData> = {};
+    if (!Array.isArray(studySessions)) return data;
+    
     studySessions.forEach(session => {
       const dateKey = format(new Date(session.startTime), 'yyyy-MM-dd');
       if (!data[dateKey]) {
@@ -192,9 +194,9 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
         </div>
 
         <div className="grid grid-cols-7 gap-px bg-transparent rounded-xl sm:rounded-2xl overflow-hidden border border-border/20 relative">
-          {calendarDays.map((day, idx) => {
-            const dateKey = format(day, 'yyyy-MM-dd');
-            const data = dayData[dateKey];
+            {calendarDays.map((day, idx) => {
+              const dateKey = format(day, 'yyyy-MM-dd');
+              const data = dayData[dateKey];
             const isSelected = selectedDate && isSameDay(day, selectedDate);
             const isCurrentMonth = isSameMonth(day, monthStart);
             

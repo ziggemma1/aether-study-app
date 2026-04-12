@@ -3,10 +3,12 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Github, Chrome, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import api from '../services/api';
+import { useAppContext } from '../context/AppContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { setUser } = useAppContext();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -25,52 +27,23 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!isSupabaseConfigured) {
-      setError('The application is currently undergoing maintenance. Please try again later.');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
+      const response = await api.post('/auth/login', { email, password });
+      setUser(response.data.user);
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      if (err.message.includes('timed out') || err.message === 'Failed to fetch') {
-        setError('Connection failed. Please check your internet connection and try again.');
-      } else {
-        setError(err.message || 'Failed to log in');
-      }
+      setError(err.response?.data?.message || 'Failed to log in');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSocialLogin = async (provider: 'google' | 'github') => {
-    if (!isSupabaseConfigured) {
-      setError('Supabase is not connected. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.');
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: window.location.origin + '/dashboard',
-        },
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || `Failed to log in with ${provider}`);
-    }
+    setError('Social login is currently unavailable with the custom backend.');
   };
 
   React.useEffect(() => {

@@ -12,7 +12,7 @@ export default function MessagesList({ className }: MessagesListProps) {
 
   // Derive contacts from messages
   const contacts = React.useMemo(() => {
-    if (!user) return [];
+    if (!user || !Array.isArray(messages)) return [];
     const contactMap = new Map();
     
     messages.forEach(m => {
