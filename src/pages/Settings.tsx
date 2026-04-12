@@ -18,33 +18,24 @@ import {
   ShieldCheck,
   CreditCard,
   LogOut,
-  Loader2,
-  Database,
-  RefreshCw,
-  ExternalLink
+  Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { supabase, isSupabaseConfigured, testConnection, getPublicConfig } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function Settings() {
   const { user, setUser, theme, toggleTheme, signOut } = useAppContext();
   const location = useLocation();
-  const [activeTab, setActiveTab] = React.useState<'account' | 'social' | 'security' | 'billing' | 'connection'>('account');
+  const [activeTab, setActiveTab] = React.useState<'account' | 'social' | 'security' | 'billing'>('account');
 
   React.useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
-    if (tab && ['account', 'social', 'security', 'billing', 'connection'].includes(tab)) {
+    if (tab && ['account', 'social', 'security', 'billing'].includes(tab)) {
       setActiveTab(tab as any);
     }
   }, [location]);
   const [isSaving, setIsSaving] = React.useState(false);
-  const [isTesting, setIsTesting] = React.useState(false);
-  const [testResult, setTestResult] = React.useState<{ success: boolean; message: string } | null>(null);
-  const [supabaseConfig, setSupabaseConfig] = React.useState({
-    url: localStorage.getItem('SUPABASE_URL_OVERRIDE') || import.meta.env.VITE_SUPABASE_URL || '',
-    key: localStorage.getItem('SUPABASE_ANON_KEY_OVERRIDE') || import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-  });
   const [formData, setFormData] = React.useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -56,7 +47,6 @@ export default function Settings() {
     { id: 'account', label: 'Account', icon: User },
     { id: 'social', label: 'Social Profile', icon: Globe },
     { id: 'security', label: 'Security', icon: Lock },
-    { id: 'connection', label: 'Connection', icon: Database },
     { id: 'billing', label: 'Billing', icon: CreditCard },
   ];
 
@@ -97,48 +87,6 @@ export default function Settings() {
     }
   };
 
-  const handleSaveSupabase = () => {
-    if (!supabaseConfig.url || !supabaseConfig.key) {
-      alert('Please enter both URL and Anon Key');
-      return;
-    }
-    
-    if (!supabaseConfig.url.startsWith('https://')) {
-      alert('Supabase URL must start with https://');
-      return;
-    }
-
-    localStorage.setItem('SUPABASE_URL_OVERRIDE', supabaseConfig.url);
-    localStorage.setItem('SUPABASE_ANON_KEY_OVERRIDE', supabaseConfig.key);
-    
-    alert('Supabase configuration saved locally! The app will now reload to apply changes.');
-    window.location.reload();
-  };
-
-  const handleResetSupabase = () => {
-    localStorage.removeItem('SUPABASE_URL_OVERRIDE');
-    localStorage.removeItem('SUPABASE_ANON_KEY_OVERRIDE');
-    alert('Local overrides removed. The app will now reload to use environment variables.');
-    window.location.reload();
-  };
-
-  const handleTestConnection = async () => {
-    setIsTesting(true);
-    setTestResult(null);
-    try {
-      const result = await testConnection();
-      if (result.success) {
-        setTestResult({ success: true, message: 'Connection successful! Your credentials are valid.' });
-      } else {
-        setTestResult({ success: false, message: result.error || 'Connection failed. Please check your URL and Key.' });
-      }
-    } catch (err: any) {
-      setTestResult({ success: false, message: err.message || 'An unexpected error occurred.' });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
   return (
     <div className="p-3 sm:p-8 lg:p-12 max-w-5xl mx-auto space-y-6 sm:space-y-10 animate-in fade-in duration-500 pb-24">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
@@ -167,30 +115,6 @@ export default function Settings() {
           ))}
         </div>
       </header>
-
-      {!isSupabaseConfigured && activeTab !== 'connection' && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-between gap-4"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center text-red-500">
-              <Database size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-text-main">Supabase Not Connected</p>
-              <p className="text-[10px] text-text-muted">Your data won't be saved until you connect your backend.</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => setActiveTab('connection')}
-            className="px-4 py-2 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg shadow-red-500/20 whitespace-nowrap"
-          >
-            Connect Now
-          </button>
-        </motion.div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10">
         {/* Left Sidebar - Quick Stats & Profile Change */}
@@ -361,134 +285,6 @@ export default function Settings() {
                       </div>
                     ))}
                   </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'connection' && (
-              <div className="space-y-4 sm:space-y-6">
-                <div className="glass-card p-6 sm:p-8">
-                  <h3 className="text-sm sm:text-xl font-bold mb-6 sm:mb-8 text-text-main flex items-center gap-2 sm:gap-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg sm:rounded-xl flex items-center justify-center text-primary">
-                      <Database size={16} className="sm:hidden" />
-                      <Database size={20} className="hidden sm:block" />
-                    </div>
-                    Supabase Connection
-                  </h3>
-                  
-                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl mb-8">
-                    <p className="text-[10px] sm:text-xs text-primary leading-relaxed">
-                      If your environment variables are not working, you can manually enter your Supabase credentials here. 
-                      These will be saved in your browser's local storage and will override any environment variables.
-                    </p>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest flex items-center justify-between">
-                        Supabase Project URL
-                        <a href="https://supabase.com/dashboard/project/_/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1">
-                          Find it here <ExternalLink size={10} />
-                        </a>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="https://your-project.supabase.co"
-                        value={supabaseConfig.url}
-                        onChange={(e) => setSupabaseConfig({ ...supabaseConfig, url: e.target.value })}
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
-                      />
-                    </div>
-                    
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest flex items-center justify-between">
-                        Supabase Anon Key
-                        <span className="text-[8px] text-text-muted">Public API Key</span>
-                      </label>
-                      <input
-                        type="password"
-                        placeholder="eyJhbGciOiJIUzI1..."
-                        value={supabaseConfig.key}
-                        onChange={(e) => setSupabaseConfig({ ...supabaseConfig, key: e.target.value })}
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-8 pt-8 border-t border-border/40 flex flex-col sm:flex-row gap-4 justify-between">
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <button 
-                        onClick={handleSaveSupabase}
-                        disabled={isSaving || isTesting}
-                        className="btn-primary py-3 px-8 text-[10px] sm:text-sm flex items-center justify-center gap-2"
-                      >
-                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <><CheckCircle2 size={16} /> Save & Connect</>}
-                      </button>
-                      <button 
-                        onClick={handleTestConnection}
-                        disabled={isSaving || isTesting}
-                        className="btn-outline py-3 px-8 text-[10px] sm:text-sm flex items-center justify-center gap-2"
-                      >
-                        {isTesting ? <Loader2 size={16} className="animate-spin" /> : 'Test Connection'}
-                      </button>
-                    </div>
-                    <button 
-                      onClick={handleResetSupabase}
-                      className="flex items-center justify-center gap-2 px-6 py-3 text-[10px] sm:text-xs font-bold text-text-muted hover:text-red-500 transition-colors"
-                    >
-                      <RefreshCw size={14} /> Reset to Defaults
-                    </button>
-                  </div>
-
-                  {testResult && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={cn(
-                        "mt-4 p-4 rounded-xl border text-[10px] sm:text-xs font-medium",
-                        testResult.success 
-                          ? "bg-green-500/10 border-green-500/20 text-green-500" 
-                          : "bg-red-500/10 border-red-500/20 text-red-500"
-                      )}
-                    >
-                      {testResult.message}
-                    </motion.div>
-                  )}
-                </div>
-
-                <div className="glass-card p-6 sm:p-8 border-dashed border-2 border-border/30">
-                  <h4 className="text-xs font-bold text-text-main mb-4">Connection Status</h4>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-3 h-3 rounded-full animate-pulse",
-                        isSupabaseConfigured ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
-                      )} />
-                      <span className="text-sm font-medium text-text-main">
-                        {isSupabaseConfigured ? 'Supabase is configured' : 'Supabase is not connected'}
-                      </span>
-                    </div>
-                    
-                    <div className="p-3 bg-surface-alt/50 rounded-lg border border-border/40 space-y-2">
-                      <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Current Config (Masked)</p>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-[8px] text-text-muted">URL</p>
-                          <p className="text-[10px] font-mono text-text-main truncate">{getPublicConfig().url}</p>
-                        </div>
-                        <div>
-                          <p className="text-[8px] text-text-muted">Anon Key</p>
-                          <p className="text-[10px] font-mono text-text-main truncate">{getPublicConfig().keyPreview}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {!isSupabaseConfigured && (
-                    <p className="mt-4 text-xs text-text-muted leading-relaxed">
-                      The app is currently using a dummy client to prevent errors. Please provide your Supabase URL and Anon Key to enable real-time features and data persistence.
-                    </p>
-                  )}
                 </div>
               </div>
             )}

@@ -166,7 +166,7 @@ export function TimeSpentCard({ totalHours = 0, trend = 0, weeklyData = weeklyTi
       </div>
 
       <div className="h-12 sm:h-20 w-full mt-auto">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart data={weeklyData}>
             <Bar dataKey="hours" radius={[2, 2, 0, 0]}>
               {weeklyData.map((entry, index) => {
@@ -319,7 +319,7 @@ export function EnrollmentChart() {
       </div>
 
       <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <ComposedChart data={enrollmentData}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.1} />
             <XAxis 

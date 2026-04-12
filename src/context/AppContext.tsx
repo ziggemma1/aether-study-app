@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, Material, SavedPlan, Message, StudySession, Achievement, QuizResult } from '../types';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, withTimeout } from '../lib/supabase';
 
 interface AppContextType {
   user: User | null;
@@ -74,20 +74,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.log('Auth event:', event, 'Session:', session?.user?.id);
       try {
         if (session?.user) {
-          // Helper for timeout
-          const withTimeout = (promise: Promise<any>, timeoutMs: number, errorMsg: string) => {
-            return Promise.race([
-              promise,
-              new Promise((_, reject) => setTimeout(() => reject(new Error(errorMsg)), timeoutMs))
-            ]);
-          };
-
-          // Fetch profile with 10s timeout
+          // Fetch profile with 30s timeout
           console.log('Fetching profile for:', session.user.id);
           try {
             const { data: profile, error: profileError } = await withTimeout(
               supabase.from('profiles').select('*').eq('id', session.user.id).single(),
-              10000,
+              30000,
               'Profile fetch timed out'
             ) as any;
             
@@ -151,11 +143,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             });
           }
 
-          // Fetch Materials with 10s timeout
+          // Fetch Materials with 30s timeout
           try {
             const { data: materialsData, error: materialsError } = await withTimeout(
               supabase.from('study_materials').select('*').eq('user_id', session.user.id),
-              10000,
+              30000,
               'Materials fetch timed out'
             ) as any;
             
@@ -183,7 +175,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           try {
             const { data: messagesData } = await withTimeout(
               supabase.from('messages').select('*, sender:profiles(name, avatar_url)').or(`sender_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).order('created_at', { ascending: false }),
-              10000,
+              30000,
               'Messages fetch timed out'
             ) as any;
             if (messagesData) {
@@ -204,7 +196,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           try {
             const { data: sessionsData } = await withTimeout(
               supabase.from('study_sessions').select('*').eq('user_id', session.user.id).order('start_time', { ascending: true }),
-              10000,
+              30000,
               'Sessions fetch timed out'
             ) as any;
             if (sessionsData) {
@@ -258,7 +250,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           try {
             const { data: achievementsData } = await withTimeout(
               supabase.from('achievements').select('*, user_achievements!inner(*)').eq('user_achievements.user_id', session.user.id),
-              10000,
+              30000,
               'Achievements fetch timed out'
             ) as any;
             if (achievementsData) {
@@ -280,7 +272,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           try {
             const { data: resultsData } = await withTimeout(
               supabase.from('quiz_results').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }),
-              10000,
+              30000,
               'Quiz results fetch timed out'
             ) as any;
             if (resultsData) {
@@ -323,7 +315,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           try {
             const { data: profilesData } = await withTimeout(
               supabase.from('profiles').select('*').order('total_study_time_hours', { ascending: false }).limit(10),
-              10000,
+              30000,
               'Profiles fetch timed out'
             ) as any;
             if (profilesData) {

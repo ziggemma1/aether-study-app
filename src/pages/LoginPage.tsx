@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Github, Chrome, ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Github, Chrome, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
-import { supabase, isSupabaseConfigured, clearSupabaseOverrides } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -23,126 +23,29 @@ export default function LoginPage() {
   const centeredX = useTransform(cursorX, (val) => val - 96);
   const centeredY = useTransform(cursorY, (val) => val - 96);
 
-  const [diagnosticResult, setDiagnosticResult] = React.useState<string | null>(null);
-  const [isDiagnosing, setIsDiagnosing] = React.useState(false);
-
-  const runDiagnostic = async () => {
-    setIsDiagnosing(true);
-    setDiagnosticResult(null);
-    try {
-      const start = Date.now();
-      
-      // Test 1: Auth Service
-      const { error: authError } = await supabase.auth.getSession();
-      const authDuration = Date.now() - start;
-      
-      if (authError) {
-        setDiagnosticResult(`❌ Auth API Error: ${authError.message}`);
-        return;
-      }
-
-      // Test 2: Database Service (Simple query)
-      const dbStart = Date.now();
-      const { error: dbError } = await supabase.from('profiles').select('count', { count: 'exact', head: true }).limit(1);
-      const dbDuration = Date.now() - dbStart;
-
-      if (dbError) {
-        setDiagnosticResult(`✅ Auth OK (${authDuration}ms) | ❌ DB Error: ${dbError.message}. Your database might still be locked.`);
-      } else {
-        setDiagnosticResult(`✅ All Systems OK. Auth: ${authDuration}ms, DB: ${dbDuration}ms. Connection is healthy.`);
-      }
-    } catch (err: any) {
-      setDiagnosticResult(`❌ Network Error: ${err.message}. Your browser cannot reach Supabase.`);
-    } finally {
-      setIsDiagnosing(false);
-    }
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isSupabaseConfigured) {
-      setError(
-        <div className="flex flex-col gap-2">
-          <span>Supabase is not connected.</span>
-          <Link to="/settings?tab=connection" className="text-primary hover:underline font-bold flex items-center gap-1">
-            Go to Connection Settings <ArrowRight size={14} />
-          </Link>
-        </div>
-      );
+      setError('The application is currently undergoing maintenance. Please try again later.');
       return;
     }
 
     setLoading(true);
     setError(null);
-    console.log('Attempting login for:', email);
 
     try {
-      // Add a timeout to the login process
-      const loginPromise = supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Login timed out. Your database might be locked by a previous SQL query.')), 60000)
-      );
-
-      console.log('Waiting for Supabase response...');
-      const result = await Promise.race([loginPromise, timeoutPromise]) as any;
-      console.log('Supabase response received:', result);
-
-      if (result.error) throw result.error;
-      
-      console.log('Login successful, navigating to dashboard...');
+      if (error) throw error;
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
       if (err.message.includes('timed out') || err.message === 'Failed to fetch') {
-        setError(
-          <div className="flex flex-col gap-3">
-            <span className="text-red-500 font-medium">
-              {err.message.includes('timed out') ? 'Login timed out.' : 'Connection failed.'} 
-              The Supabase server is not responding.
-            </span>
-            <div className="flex flex-col gap-2">
-              <button 
-                onClick={runDiagnostic}
-                disabled={isDiagnosing}
-                className="text-primary hover:underline font-bold flex items-center gap-1 text-left disabled:opacity-50"
-              >
-                {isDiagnosing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} 
-                Run Connection Diagnostic
-              </button>
-              {diagnosticResult && (
-                <div className="p-2 bg-surface-alt rounded text-[10px] font-mono border border-border/50">
-                  {diagnosticResult}
-                </div>
-              )}
-              <button 
-                onClick={() => clearSupabaseOverrides()}
-                className="text-primary hover:underline font-bold flex items-center gap-1 text-left"
-              >
-                <RefreshCw size={14} /> Reset Connection to Defaults
-              </button>
-              <button 
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  window.location.reload();
-                }}
-                className="text-primary hover:underline font-bold flex items-center gap-1 text-left"
-              >
-                <Lock size={14} /> Force Sign Out (Clear Session)
-              </button>
-              <Link to="/settings?tab=connection" className="text-primary hover:underline font-bold flex items-center gap-1">
-                <ArrowRight size={14} /> Manually Check Settings
-              </Link>
-            </div>
-            <p className="text-[10px] text-text-muted mt-1">
-              Tip: If you just ran a heavy SQL query, your database might be temporarily busy.
-            </p>
-          </div>
-        );
+        setError('Connection failed. Please check your internet connection and try again.');
       } else {
         setError(err.message || 'Failed to log in');
       }
@@ -239,7 +142,10 @@ export default function LoginPage() {
         <div className="glass-card p-8 bg-slate-950/40 backdrop-blur-2xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
           {error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
-              {error}
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} />
+                <span>{error}</span>
+              </div>
             </div>
           )}
 

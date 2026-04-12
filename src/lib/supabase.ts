@@ -1,22 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Check for localStorage overrides first (useful for manual setup or debugging)
-const storedUrl = typeof window !== 'undefined' ? localStorage.getItem('SUPABASE_URL_OVERRIDE') : null;
-const storedKey = typeof window !== 'undefined' ? localStorage.getItem('SUPABASE_ANON_KEY_OVERRIDE') : null;
-
-const supabaseUrl = storedUrl || import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = storedKey || import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (typeof window !== 'undefined') {
-  console.log('Supabase URL:', supabaseUrl?.substring(0, 20) + '...');
-  console.log('Using Overrides:', !!(storedUrl || storedKey));
-}
+const rawUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseUrl = rawUrl?.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const isSupabaseConfigured = Boolean(
   supabaseUrl && 
   supabaseAnonKey && 
   supabaseUrl !== 'https://placeholder.supabase.co' &&
-  supabaseUrl.startsWith('https://')
+  supabaseUrl.startsWith('https://') &&
+  supabaseUrl.includes('.supabase.co')
 );
 
 // Create a dummy client if not configured to prevent background network requests
@@ -59,44 +52,26 @@ export const supabase = isSupabaseConfigured
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+      },
+      global: {
+        headers: { 'x-application-name': 'aether-study' },
+      },
+      db: {
+        schema: 'public',
       }
     })
   : dummyClient;
 
-export const testConnection = async () => {
-  if (!isSupabaseConfigured) return { success: false, error: 'Supabase is not configured.' };
-  
-  try {
-    console.log('Testing API connection to:', supabaseUrl);
-    // Testing the auth service is the most direct way to check the API connection
-    const fetchPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('API Connection timed out. The Supabase server is not responding.')), 10000)
-    );
-
-    const result = await Promise.race([fetchPromise, timeoutPromise]) as any;
-    console.log('API Connection test result:', result);
-    
-    if (result.error) throw result.error;
-    return { success: true };
-  } catch (err: any) {
-    console.error('Supabase API connection test failed:', err);
-    return { success: false, error: err.message };
-  }
-};
-
-export const getPublicConfig = () => ({
-  url: supabaseUrl ? `${supabaseUrl.substring(0, 12)}...` : 'Not set',
-  hasKey: !!supabaseAnonKey,
-  keyPreview: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 8)}...` : 'Not set'
-});
-
-export const clearSupabaseOverrides = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('SUPABASE_URL_OVERRIDE');
-    localStorage.removeItem('SUPABASE_ANON_KEY_OVERRIDE');
-    window.location.reload();
-  }
+/**
+ * Helper to add a timeout to any promise
+ */
+export const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, errorMsg: string): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error(errorMsg)), timeoutMs)
+    )
+  ]);
 };
 
 export { isSupabaseConfigured };
