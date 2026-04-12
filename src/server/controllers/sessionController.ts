@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { StudySession } from '../models/StudySession';
+import { StudySession } from '../models/StudySession.js';
 
 export const getSessions = async (req: Request, res: Response) => {
   try {

@@ -1,6 +1,6 @@
 import express from 'express';
-import { getMaterials, createMaterial, deleteMaterial } from '../controllers/materialController';
-import { protect } from '../middleware/authMiddleware';
+import { getMaterials, createMaterial, deleteMaterial } from '../controllers/materialController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 

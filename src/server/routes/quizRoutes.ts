@@ -1,6 +1,6 @@
 import express from 'express';
-import { getResults, createResult } from '../controllers/quizController';
-import { protect } from '../middleware/authMiddleware';
+import { getResults, createResult } from '../controllers/quizController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 

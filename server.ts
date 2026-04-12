@@ -4,13 +4,13 @@ import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import authRoutes from "./src/server/routes/authRoutes";
-import materialRoutes from "./src/server/routes/materialRoutes";
-import sessionRoutes from "./src/server/routes/sessionRoutes";
-import quizRoutes from "./src/server/routes/quizRoutes";
-import messageRoutes from "./src/server/routes/messageRoutes";
-import userRoutes from "./src/server/routes/userRoutes";
-import { checkDbConnection } from "./src/server/middleware/dbMiddleware";
+import authRoutes from "./src/server/routes/authRoutes.js";
+import materialRoutes from "./src/server/routes/materialRoutes.js";
+import sessionRoutes from "./src/server/routes/sessionRoutes.js";
+import quizRoutes from "./src/server/routes/quizRoutes.js";
+import messageRoutes from "./src/server/routes/messageRoutes.js";
+import userRoutes from "./src/server/routes/userRoutes.js";
+import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
 
 dotenv.config();
 
