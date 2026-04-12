@@ -41,7 +41,9 @@ export default function SignupPage() {
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Signup error:', err);
-      setError(err.response?.data?.message || 'Failed to sign up');
+      const status = err.response?.status;
+      const message = err.response?.data?.message || err.message || 'Failed to sign up';
+      setError(status ? `Error ${status}: ${message}` : message);
     } finally {
       setLoading(false);
     }

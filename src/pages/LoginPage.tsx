@@ -36,7 +36,9 @@ export default function LoginPage() {
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Failed to log in');
+      const status = err.response?.status;
+      const message = err.response?.data?.message || err.message || 'Failed to log in';
+      setError(status ? `Error ${status}: ${message}` : message);
     } finally {
       setLoading(false);
     }

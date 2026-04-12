@@ -46,7 +46,11 @@ async function startServer() {
 
   // API Routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
+    res.json({ 
+      status: "ok", 
+      dbConnected: mongoose.connection.readyState === 1,
+      hasUri: !!process.env.MONGODB_URI 
+    });
   });
 
   app.use("/api/auth", checkDbConnection, authRoutes);
@@ -80,9 +84,4 @@ async function startServer() {
   return app;
 }
 
-const appPromise = startServer();
-
-export default async (req: any, res: any) => {
-  const app = await appPromise;
-  app(req, res);
-};
+export const appPromise = startServer();
