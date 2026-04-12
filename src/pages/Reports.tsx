@@ -46,20 +46,52 @@ const performanceData = [
   { name: 'Incorrect', value: 160, color: '#EF4444', lightColor: '#DC2626' },
 ];
 
-// Mock data for subject breakdown
-const subjectData = [
-  { subject: 'Mathematics', score: 92, fullMark: 100 },
-  { subject: 'Physics', score: 85, fullMark: 100 },
-  { subject: 'Chemistry', score: 78, fullMark: 100 },
-  { subject: 'Biology', score: 88, fullMark: 100 },
-  { subject: 'English', score: 95, fullMark: 100 },
-];
 
 import { useAppContext } from '../context/AppContext';
 
 export default function Reports() {
-  const { theme } = useAppContext();
+  const { theme, quizResults, user, studySessions, materials } = useAppContext();
   const isLight = theme === 'light';
+
+  // Subject breakdown (derived from materials and quiz results)
+  const subjectData = materials.map(m => {
+    const materialQuizzes = quizResults.filter(r => r.quizId === m.id);
+    const avgScore = materialQuizzes.length > 0
+      ? Math.round(materialQuizzes.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions), 0) / materialQuizzes.length * 100)
+      : 0;
+    return {
+      subject: m.title,
+      score: avgScore,
+      fullMark: 100
+    };
+  }).slice(0, 5);
+
+  const timeTrend = user?.timeTrend || 12;
+  const quizTrend = user?.quizTrend || 4.2;
+
+  // Calculate real stats
+  const totalStudyTime = user?.totalStudyTime || 0;
+  const avgScore = quizResults.length > 0 
+    ? Math.round(quizResults.reduce((acc, curr) => acc + curr.score, 0) / quizResults.length) 
+    : 0;
+  const totalPoints = quizResults.reduce((acc, curr) => acc + (curr.score * 10), 0);
+  
+  // Accuracy breakdown
+  const totalCorrect = quizResults.reduce((acc, curr) => acc + curr.score, 0);
+  const totalQuestions = quizResults.reduce((acc, curr) => acc + curr.totalQuestions, 0);
+  const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+
+  const performanceData = [
+    { name: 'Correct', value: totalCorrect, color: '#10B981', lightColor: '#059669' },
+    { name: 'Incorrect', value: totalQuestions - totalCorrect, color: '#EF4444', lightColor: '#DC2626' },
+  ];
+
+  // Growth data (last 7 quizzes)
+  const growthData = quizResults.slice(0, 7).reverse().map(r => ({
+    month: new Date(r.date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+    score: r.score,
+    avg: 75 // Platform average mock
+  }));
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -86,35 +118,35 @@ export default function Reports() {
         <StatCard 
           icon={Clock} 
           label="Time on Platform" 
-          value="124h 30m" 
-          trend="+12% from last month" 
-          trendUp={true}
+          value={`${totalStudyTime}h`} 
+          trend={`${timeTrend > 0 ? '+' : ''}${timeTrend}% from last week`} 
+          trendUp={timeTrend >= 0}
           color={isLight ? "text-blue-600" : "text-blue-400"}
           bg={isLight ? "bg-blue-100" : "bg-blue-400/10"}
         />
         <StatCard 
           icon={TrendingUp} 
           label="Overall Growth" 
-          value="24.5%" 
-          trend="+4.2% this week" 
-          trendUp={true}
+          value={`${accuracy}%`} 
+          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% this week`} 
+          trendUp={quizTrend >= 0}
           color={isLight ? "text-emerald-600" : "text-emerald-400"}
           bg={isLight ? "bg-emerald-100" : "bg-emerald-400/10"}
         />
         <StatCard 
           icon={Target} 
           label="Average Score" 
-          value="88.4" 
-          trend="-1.2% from yesterday" 
-          trendUp={false}
+          value={avgScore.toString()} 
+          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% from last quiz`} 
+          trendUp={quizTrend >= 0}
           color={isLight ? "text-orange-600" : "text-orange-400"}
           bg={isLight ? "bg-orange-100" : "bg-orange-400/10"}
         />
         <StatCard 
           icon={Award} 
           label="Total Points" 
-          value="12,840" 
-          trend="+850 today" 
+          value={totalPoints.toLocaleString()} 
+          trend={`+${totalCorrect * 10} total`} 
           trendUp={true}
           color={isLight ? "text-purple-600" : "text-purple-400"}
           bg={isLight ? "bg-purple-100" : "bg-purple-400/10"}
@@ -143,58 +175,65 @@ export default function Reports() {
           </div>
           
           <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={growthData}>
-                <defs>
-                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#E2E8F0" : "#1E293B"} vertical={false} />
-                <XAxis 
-                  dataKey="month" 
-                  stroke={isLight ? "#64748B" : "#94A3B8"} 
-                  fontSize={12} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  dy={10}
-                />
-                <YAxis 
-                  stroke={isLight ? "#64748B" : "#94A3B8"} 
-                  fontSize={12} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(value) => `${value}%`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: isLight ? '#FFFFFF' : '#0F172A', 
-                    borderColor: isLight ? '#E2E8F0' : '#1E293B', 
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    color: isLight ? '#0F172A' : '#fff'
-                  }}
-                  itemStyle={{ color: isLight ? '#0F172A' : '#fff' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="score" 
-                  stroke="#8B5CF6" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorScore)" 
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="avg" 
-                  stroke={isLight ? "#94A3B8" : "#475569"} 
-                  strokeWidth={2} 
-                  strokeDasharray="5 5"
-                  dot={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {growthData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={growthData}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#E2E8F0" : "#1E293B"} vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke={isLight ? "#64748B" : "#94A3B8"} 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    dy={10}
+                  />
+                  <YAxis 
+                    stroke={isLight ? "#64748B" : "#94A3B8"} 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickFormatter={(value) => `${value}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: isLight ? '#FFFFFF' : '#0F172A', 
+                      borderColor: isLight ? '#E2E8F0' : '#1E293B', 
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      color: isLight ? '#0F172A' : '#fff'
+                    }}
+                    itemStyle={{ color: isLight ? '#0F172A' : '#fff' }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="#8B5CF6" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorScore)" 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="avg" 
+                    stroke={isLight ? "#94A3B8" : "#475569"} 
+                    strokeWidth={2} 
+                    strokeDasharray="5 5"
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-text-muted">
+                <TrendingUp size={48} className="mb-4 opacity-20" />
+                <p>Complete more quizzes to see your growth chart.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -207,7 +246,7 @@ export default function Reports() {
           
           <div className="flex-grow flex items-center justify-center relative">
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-bold text-text-main">84%</span>
+              <span className="text-3xl font-bold text-text-main">{accuracy}%</span>
               <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Accuracy</span>
             </div>
             <ResponsiveContainer width="100%" height={250}>

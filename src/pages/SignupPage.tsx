@@ -1,10 +1,18 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Github, Chrome, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, User as UserIcon, ArrowRight, Github, Chrome, ArrowLeft, Loader2 } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function SignupPage() {
+  const navigate = useNavigate();
+  const [fullName, setFullName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<React.ReactNode | null>(null);
+
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -16,8 +24,107 @@ export default function SignupPage() {
   const centeredX = useTransform(cursorX, (val) => val - 96);
   const centeredY = useTransform(cursorY, (val) => val - 96);
 
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!isSupabaseConfigured) {
+      setError(
+        <div className="flex flex-col gap-2">
+          <span>Supabase is not connected.</span>
+          <Link to="/settings?tab=connection" className="text-primary hover:underline font-bold flex items-center gap-1">
+            Go to Connection Settings <ArrowRight size={14} />
+          </Link>
+        </div>
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    console.log('Attempting signup for:', email);
+
+    try {
+      // Add a timeout to the signup process
+      const signupPromise = supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          }
+        }
+      });
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Signup timed out. Please check your connection or Supabase status.')), 20000)
+      );
+
+      console.log('Waiting for Supabase response...');
+      const result = await Promise.race([signupPromise, timeoutPromise]) as any;
+      console.log('Supabase response received:', result);
+
+      if (result.error) throw result.error;
+      const authData = result.data;
+
+      if (authData.user) {
+        console.log('User created, inserting profile...');
+        // 2. Create profile record
+        const insertPromise = supabase
+          .from('profiles')
+          .insert([
+            {
+              id: authData.user.id,
+              name: fullName,
+              avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${authData.user.id}`,
+              plan: 'free',
+              streak: 0
+            }
+          ]);
+
+        const insertTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Profile creation timed out.')), 10000)
+        );
+
+        const insertResult = await Promise.race([insertPromise, insertTimeoutPromise]) as any;
+        console.log('Profile insertion result:', insertResult);
+
+        if (insertResult.error) throw insertResult.error;
+      }
+
+      console.log('Signup successful, navigating to dashboard...');
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      if (err.message === 'Failed to fetch') {
+        setError('Connection failed. Please check your Supabase URL and Anon Key in the Settings menu.');
+      } else {
+        setError(err.message || 'Failed to create account');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialSignup = async (provider: 'google' | 'github') => {
+    if (!isSupabaseConfigured) {
+      setError('Supabase is not connected. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin + '/dashboard',
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || `Failed to sign up with ${provider}`);
+    }
+  };
+
   React.useEffect(() => {
-    console.log("SignupPage Loaded - Version 3");
     const handleMouseMove = (e: MouseEvent) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
@@ -84,14 +191,23 @@ export default function SignupPage() {
         </div>
 
         <div className="glass-card p-8 bg-slate-950/40 backdrop-blur-2xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
+              {error}
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={handleSignup}>
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
-                <User size={16} /> Full Name
+                <UserIcon size={16} /> Full Name
               </label>
               <input
                 type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 placeholder="John Doe"
+                required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
@@ -101,7 +217,10 @@ export default function SignupPage() {
               </label>
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
+                required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
@@ -111,14 +230,31 @@ export default function SignupPage() {
               </label>
               <input
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
-            <div className="pt-4">
-              <Link to="/dashboard" className="w-full btn-primary flex items-center justify-center gap-2">
-                Create Account <ArrowRight size={18} />
-              </Link>
+            <div className="pt-4 space-y-4">
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <>Create Account <ArrowRight size={18} /></>}
+              </button>
+              
+              {loading && (
+                <button 
+                  type="button"
+                  onClick={() => setLoading(false)}
+                  className="w-full py-2 text-xs font-bold text-slate-500 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           </form>
 
@@ -129,10 +265,16 @@ export default function SignupPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors">
+            <button 
+              onClick={() => handleSocialSignup('google')}
+              className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors"
+            >
               <Chrome size={20} /> <span className="text-sm font-bold">Google</span>
             </button>
-            <button className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors">
+            <button 
+              onClick={() => handleSocialSignup('github')}
+              className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors"
+            >
               <Github size={20} /> <span className="text-sm font-bold">GitHub</span>
             </button>
           </div>

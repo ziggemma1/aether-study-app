@@ -40,7 +40,7 @@ export default function BottomNav() {
               "transition-colors",
               isActive(item.path) ? "text-primary" : "text-text-muted"
             )} />
-            <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
+            <span className="text-[11px] font-bold uppercase tracking-tighter">{item.label}</span>
           </Link>
         ))}
       </nav>

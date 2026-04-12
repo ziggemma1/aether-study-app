@@ -26,15 +26,24 @@ import {
 } from '../components/OverviewWidgets';
 
 export default function Dashboard() {
-  const { user, theme } = useAppContext();
+  const { user, theme, materials, allProfiles } = useAppContext();
   const isLight = theme === 'light';
+
+  const recentMaterials = [...materials]
+    .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime())
+    .slice(0, 3);
+
+  const topLearners = allProfiles.slice(0, 6).map(p => ({
+    name: p.name || 'User',
+    avatar: p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`
+  }));
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20 sm:pb-12">
       {/* Welcome Header */}
       <div className="space-y-1">
         <h1 className="text-xl sm:text-2xl font-bold text-text-main tracking-tight">
-          Welcome back, <span className="text-primary">{user?.name?.split(' ')[0] || "Robert"}</span>!
+          Welcome back, <span className="text-primary">{user?.name?.split(' ')[0] || "Student"}</span>!
         </h1>
         <p className="text-text-muted text-[10px] sm:text-sm max-w-2xl leading-relaxed">
           It's a great day to stay productive. Manage your tasks and explore your tools today.
@@ -52,18 +61,62 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <Link to="/reports" className="block">
-            <TimeSpentCard />
+            <TimeSpentCard 
+              totalHours={user?.totalStudyTime} 
+              trend={user?.timeTrend}
+              weeklyData={user?.weeklyTimeData?.length ? user.weeklyTimeData : undefined} 
+            />
           </Link>
           <Link to="/reports" className="block">
-            <QuizScoreCard />
+            <QuizScoreCard 
+              score={user?.avgQuizScore} 
+              trend={user?.quizTrend}
+              highest={user?.highestQuizScore}
+              lowest={user?.lowestQuizScore}
+            />
           </Link>
           <Link to="/reports" className="block">
-            <StreakCard />
+            <StreakCard 
+              currentStreak={user?.streak} 
+              longestStreak={user?.longestStreak} 
+            />
           </Link>
           <Link to="/reports" className="block">
-            <RankingCard />
+            <RankingCard 
+              rank={user?.globalRank} 
+              topLearnersData={topLearners.length > 0 ? topLearners : undefined}
+            />
           </Link>
         </div>
+
+        {/* Recent Materials Section */}
+        {recentMaterials.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">Recent Materials</h2>
+              <Link to="/library" className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
+                View All <ArrowRight size={10} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {recentMaterials.map((material) => (
+                <Link 
+                  key={material.id} 
+                  to={`/library/${material.id}`}
+                  className="glass-card p-4 flex items-center gap-4 hover:border-primary/50 transition-all group"
+                >
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                    <BookOpen size={18} />
+                  </div>
+                  <div className="flex-grow min-w-0">
+                    <h3 className="text-xs font-bold text-text-main truncate">{material.title}</h3>
+                    <p className="text-[10px] text-text-muted">{material.uploadDate}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Calendar & Smart Feature in 2:1 Ratio */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">

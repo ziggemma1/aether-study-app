@@ -68,7 +68,7 @@ const stripeStyle = {
 
 // --- Sub-components ---
 
-export function QuizScoreCard() {
+export function QuizScoreCard({ score = 82, trend = -10, highest = 92.5, lowest = 64.2 }: { score?: number, trend?: number, highest?: number, lowest?: number }) {
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
@@ -80,10 +80,15 @@ export function QuizScoreCard() {
       </div>
       
       <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">82%</span>
-        <span className="flex items-center text-[7px] sm:text-[9px] font-medium text-red-500 bg-red-500/10 px-1 sm:px-1.5 py-0.5 rounded-md">
-          -10% <ChevronDown size={6} className="sm:ml-0.5" />
-        </span>
+        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">{score}%</span>
+        {trend !== 0 && (
+          <span className={cn(
+            "flex items-center text-[7px] sm:text-[9px] font-medium px-1 sm:px-1.5 py-0.5 rounded-md",
+            trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+          )}>
+            {trend > 0 ? '+' : ''}{trend}% {trend > 0 ? <TrendingUp size={6} className="sm:ml-0.5" /> : <ChevronDown size={6} className="sm:ml-0.5" />}
+          </span>
+        )}
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
@@ -92,12 +97,12 @@ export function QuizScoreCard() {
         <div className="space-y-1">
           <div className="flex justify-between text-[8px] sm:text-[10px] font-medium text-text-muted">
             <span>Highest</span>
-            <span className="text-text-main">92.5%</span>
+            <span className="text-text-main">{highest}%</span>
           </div>
           <div className="h-2 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: "92.5%" }}
+              animate={{ width: `${highest}%` }}
               className="h-full bg-primary rounded-md" 
               style={stripeStyle}
             />
@@ -106,12 +111,12 @@ export function QuizScoreCard() {
         <div className="space-y-1">
           <div className="flex justify-between text-[8px] sm:text-[10px] font-medium text-text-muted">
             <span>Lowest</span>
-            <span className="text-text-main">64.2%</span>
+            <span className="text-text-main">{lowest}%</span>
           </div>
           <div className="h-2 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: "64.25%" }}
+              animate={{ width: `${lowest}%` }}
               className="h-full bg-orange-500 rounded-md" 
               style={stripeStyle}
             />
@@ -122,7 +127,11 @@ export function QuizScoreCard() {
   );
 }
 
-export function TimeSpentCard() {
+export function TimeSpentCard({ totalHours = 0, trend = 0, weeklyData = weeklyTimeData }: { totalHours?: number, trend?: number, weeklyData?: { day: string, hours: number }[] }) {
+  const displayTime = totalHours < 1 && totalHours > 0 
+    ? `${Math.round(totalHours * 60)}m` 
+    : totalHours === 0 ? "1m" : `${totalHours}h`;
+
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
@@ -134,32 +143,44 @@ export function TimeSpentCard() {
       </div>
 
       <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">12h</span>
-        <span className="flex items-center text-[7px] sm:text-[9px] font-medium text-red-500 bg-red-500/10 px-1 sm:px-1.5 py-0.5 rounded-md">
-          -12% <ChevronDown size={6} className="sm:ml-0.5" />
-        </span>
+        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">{displayTime}</span>
+        {trend !== 0 && (
+          <span className={cn(
+            "flex items-center text-[7px] sm:text-[9px] font-medium px-1 sm:px-1.5 py-0.5 rounded-md",
+            trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+          )}>
+            {trend > 0 ? '+' : ''}{trend}% {trend > 0 ? <TrendingUp size={6} className="sm:ml-0.5" /> : <ChevronDown size={6} className="sm:ml-0.5" />}
+          </span>
+        )}
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
 
       <div className="flex justify-between text-[8px] sm:text-[10px] font-medium text-text-muted mb-1 sm:mb-2">
         <span>This Week</span>
-        <span className="text-text-main">9.5H</span>
+        <span className="text-text-main">
+          {weeklyData.reduce((acc, curr) => acc + curr.hours, 0) < 1 
+            ? `${Math.round(weeklyData.reduce((acc, curr) => acc + curr.hours, 0) * 60)}M`
+            : `${weeklyData.reduce((acc, curr) => acc + curr.hours, 0).toFixed(1)}H`}
+        </span>
       </div>
 
       <div className="h-12 sm:h-20 w-full mt-auto">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={weeklyTimeData}>
+          <BarChart data={weeklyData}>
             <Bar dataKey="hours" radius={[2, 2, 0, 0]}>
-              {weeklyTimeData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={index === 3 ? 'var(--primary)' : 'var(--border)'} 
-                  fillOpacity={index === 3 ? 1 : 0.2}
-                  style={index === 3 ? stripeStyle : {}}
-                  className="transition-all duration-300"
-                />
-              ))}
+              {weeklyData.map((entry, index) => {
+                const isToday = new Date().getDay() === (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(entry.day));
+                return (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={isToday ? 'var(--primary)' : 'var(--border)'} 
+                    fillOpacity={isToday ? 1 : 0.2}
+                    style={isToday ? stripeStyle : {}}
+                    className="transition-all duration-300"
+                  />
+                );
+              })}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -168,12 +189,11 @@ export function TimeSpentCard() {
   );
 }
 
-export function StreakCard() {
-  const days = [
-    { label: '01', active: true }, { label: '02', active: true }, { label: '03', active: true }, { label: '04', active: true }, { label: '05', active: true },
-    { label: '06', active: false }, { label: '07', active: false }, { label: '08', active: false }, { label: '09', active: false }, { label: '10', active: false },
-    { label: '11', active: false }, { label: '12', active: false }, { label: '13', active: false }, { label: '14', active: false }, { label: '15', active: false },
-  ];
+export function StreakCard({ currentStreak = 5, longestStreak = 15 }: { currentStreak?: number, longestStreak?: number }) {
+  const days = Array.from({ length: 15 }, (_, i) => ({
+    label: (i + 1).toString().padStart(2, '0'),
+    active: i < currentStreak
+  }));
 
   return (
     <motion.div 
@@ -186,14 +206,14 @@ export function StreakCard() {
       </div>
 
       <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">5 Days</span>
+        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">{currentStreak} Days</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
 
       <div className="flex justify-between text-[8px] sm:text-[10px] font-medium text-text-muted mb-2 sm:mb-4">
         <span>Longest</span>
-        <span className="text-text-main">15d</span>
+        <span className="text-text-main">{longestStreak}d</span>
       </div>
 
       <div className="overflow-y-auto no-scrollbar pr-1 -mr-1 flex-grow">
@@ -216,7 +236,7 @@ export function StreakCard() {
   );
 }
 
-export function RankingCard() {
+export function RankingCard({ rank = 15, total = 23000, topLearnersData = topLearners }: { rank?: number, total?: number, topLearnersData?: { name: string, avatar: string }[] }) {
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
@@ -228,8 +248,8 @@ export function RankingCard() {
       </div>
 
       <div className="flex items-baseline gap-1 mb-1 sm:mb-2">
-        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">#15</span>
-        <span className="text-[8px] sm:text-[10px] text-text-muted">of 23K</span>
+        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">#{rank}</span>
+        <span className="text-[8px] sm:text-[10px] text-text-muted">of {total > 1000 ? `${(total/1000).toFixed(0)}K` : total}</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
@@ -238,7 +258,7 @@ export function RankingCard() {
 
       <div className="overflow-y-auto no-scrollbar pr-1 -mr-1 flex-grow">
         <div className="space-y-1.5 sm:space-y-2.5">
-          {topLearners.map((learner, i) => (
+          {topLearnersData.map((learner, i) => (
             <div key={i} className="flex items-center gap-1.5 sm:gap-2.5">
               <div className="relative">
                 <img src={learner.avatar} alt={learner.name} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-border/20" />

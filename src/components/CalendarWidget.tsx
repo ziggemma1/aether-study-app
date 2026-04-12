@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useAppContext } from '../context/AppContext';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -41,15 +42,29 @@ interface CalendarWidgetProps {
 }
 
 export default function CalendarWidget({ className }: CalendarWidgetProps) {
+  const { studySessions } = useAppContext();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [dayData, setDayData] = useState<Record<string, DayData>>({
-    // Mock some data
-    [format(new Date(), 'yyyy-MM-dd')]: { status: 'attended', time: '10:00 AM' },
-    [format(subMonths(new Date(), 0), 'yyyy-MM-12')]: { status: 'missed', time: '02:00 PM' },
-    [format(subMonths(new Date(), 0), 'yyyy-MM-13')]: { status: 'missed', time: '02:00 PM' },
-  });
+
+  const dayData = useMemo(() => {
+    const data: Record<string, DayData> = {};
+    studySessions.forEach(session => {
+      const dateKey = format(new Date(session.startTime), 'yyyy-MM-dd');
+      if (!data[dateKey]) {
+        data[dateKey] = { status: 'none' };
+      }
+      
+      if (session.completed) {
+        data[dateKey].status = 'attended';
+        data[dateKey].time = format(new Date(session.startTime), 'hh:mm a');
+      } else if (new Date(session.startTime) < new Date() && data[dateKey].status !== 'attended') {
+        data[dateKey].status = 'missed';
+        data[dateKey].time = format(new Date(session.startTime), 'hh:mm a');
+      }
+    });
+    return data;
+  }, [studySessions]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -66,22 +81,6 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
 
   const handleDateClick = (day: Date) => {
     setSelectedDate(day);
-  };
-
-  const updateDayStatus = (date: Date, status: DayStatus) => {
-    const dateKey = format(date, 'yyyy-MM-dd');
-    setDayData(prev => ({
-      ...prev,
-      [dateKey]: { ...prev[dateKey], status }
-    }));
-  };
-
-  const updateDayTime = (date: Date, time: string) => {
-    const dateKey = format(date, 'yyyy-MM-dd');
-    setDayData(prev => ({
-      ...prev,
-      [dateKey]: { ...prev[dateKey], time }
-    }));
   };
 
   const months = [
@@ -250,7 +249,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
         </div>
       </div>
 
-      {/* Day Editor Modal/Panel */}
+      {/* Day Details Panel (Read-only) */}
       <AnimatePresence>
         {selectedDate && (
           <motion.div 
@@ -268,82 +267,43 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
                 onClick={() => setSelectedDate(null)}
                 className="p-1.5 sm:p-2 hover:bg-surface-alt rounded-full transition-colors text-text-muted"
               >
-                <X size={16} className="sm:hidden" />
-                <X size={18} className="hidden sm:block" />
+                <X size={18} />
               </button>
             </div>
 
-            <div className="space-y-4 sm:space-y-6 flex-grow">
-              <div className="space-y-2 sm:space-y-3">
-                <label className="text-[9px] sm:text-[10px] font-bold text-text-muted uppercase tracking-wider">Status</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button 
-                    onClick={() => updateDayStatus(selectedDate, 'attended')}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl sm:rounded-2xl border transition-all",
-                      dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'attended'
-                        ? "bg-green-500/10 border-green-500/40 text-green-600"
-                        : "bg-surface-alt/50 border-border/50 text-text-muted hover:border-green-500/30"
-                    )}
-                  >
-                    <CheckCircle2 size={16} className="sm:hidden" />
-                    <CheckCircle2 size={18} className="hidden sm:block" />
-                    <span className="text-[9px] sm:text-[10px] font-bold">Attended</span>
-                  </button>
-                  <button 
-                    onClick={() => updateDayStatus(selectedDate, 'missed')}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl sm:rounded-2xl border transition-all",
-                      dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'missed'
-                        ? "bg-red-500/10 border-red-500/40 text-red-600"
-                        : "bg-surface-alt/50 border-border/50 text-text-muted hover:border-red-500/30"
-                    )}
-                  >
-                    <AlertCircle size={16} className="sm:hidden" />
-                    <AlertCircle size={18} className="hidden sm:block" />
-                    <span className="text-[9px] sm:text-[10px] font-bold">Missed</span>
-                  </button>
-                  <button 
-                    onClick={() => updateDayStatus(selectedDate, 'none')}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl sm:rounded-2xl border transition-all",
-                      !dayData[format(selectedDate, 'yyyy-MM-dd')]?.status || dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'none'
-                        ? "bg-surface-alt/50 border-primary/40 text-primary"
-                        : "bg-surface-alt/50 border-border/50 text-text-muted hover:border-primary/30"
-                    )}
-                  >
-                    <X size={16} className="sm:hidden" />
-                    <X size={18} className="hidden sm:block" />
-                    <span className="text-[9px] sm:text-[10px] font-bold">Clear</span>
-                  </button>
+            <div className="space-y-6 flex-grow">
+              <div className="p-4 rounded-2xl bg-surface-alt/30 border border-border/50">
+                <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">Status</p>
+                <div className="flex items-center gap-3">
+                  {dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'attended' ? (
+                    <div className="flex items-center gap-2 text-green-500 font-bold text-sm">
+                      <CheckCircle2 size={18} /> Attended
+                    </div>
+                  ) : dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'missed' ? (
+                    <div className="flex items-center gap-2 text-red-500 font-bold text-sm">
+                      <AlertCircle size={18} /> Missed
+                    </div>
+                  ) : (
+                    <div className="text-text-muted text-sm font-medium italic">No session recorded</div>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-2 sm:space-y-3">
-                <label className="text-[9px] sm:text-[10px] font-bold text-text-muted uppercase tracking-wider">Set Time</label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={14} />
-                  <input 
-                    type="time" 
-                    value={dayData[format(selectedDate, 'yyyy-MM-dd')]?.time || ''}
-                    onChange={(e) => updateDayTime(selectedDate, e.target.value)}
-                    className="w-full bg-surface-alt/30 border border-border rounded-lg sm:rounded-xl py-2 sm:py-2.5 pl-9 sm:pl-10 pr-4 text-xs sm:text-sm text-text-main focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  />
+              {dayData[format(selectedDate, 'yyyy-MM-dd')]?.time && (
+                <div className="p-4 rounded-2xl bg-surface-alt/30 border border-border/50">
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">Time</p>
+                  <div className="flex items-center gap-2 text-text-main font-bold text-sm">
+                    <Clock size={18} /> {dayData[format(selectedDate, 'yyyy-MM-dd')]?.time}
+                  </div>
                 </div>
-              </div>
-
-              <div className="p-3 sm:p-4 bg-primary/5 rounded-xl sm:rounded-2xl border border-primary/10">
-                <p className="text-[9px] sm:text-[10px] text-primary font-bold leading-tight">
-                  Tip: Consecutive missed days will be linked with a red connection to highlight gaps.
-                </p>
-              </div>
+              )}
             </div>
 
             <button 
               onClick={() => setSelectedDate(null)}
-              className="w-full btn-primary py-2.5 sm:py-3 text-xs sm:text-sm mt-4"
+              className="w-full btn-primary py-3 text-sm mt-4"
             >
-              Save Changes
+              Close
             </button>
           </motion.div>
         )}

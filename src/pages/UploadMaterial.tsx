@@ -4,9 +4,12 @@ import { Upload, Youtube, BookOpen, Mic, X, CheckCircle2, Loader2, Camera, Image
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { extractTextFromImage } from '../services/OCRService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAppContext } from '../context/AppContext';
 
 export default function UploadMaterial() {
   const navigate = useNavigate();
+  const { user } = useAppContext();
   const [activeTab, setActiveTab] = React.useState<'file' | 'youtube' | 'article' | 'voice' | 'ocr'>('file');
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState(0);
@@ -14,19 +17,53 @@ export default function UploadMaterial() {
   const [ocrText, setOcrText] = React.useState('');
   const [isOcrProcessing, setIsOcrProcessing] = React.useState(false);
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
+  const [title, setTitle] = React.useState('');
+  const [url, setUrl] = React.useState('');
+  const [content, setContent] = React.useState('');
 
-  const handleUpload = () => {
+  const handleUpload = async (materialTitle: string, materialType: string, materialContent?: string) => {
+    if (!isSupabaseConfigured) {
+      alert('Supabase is not connected. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables in the Settings menu.');
+      return;
+    }
+
+    if (!user) {
+      alert('Please log in to upload materials.');
+      return;
+    }
+
     setIsUploading(true);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setIsUploading(false);
-        setIsSuccess(true);
-      }
-    }, 300);
+    setUploadProgress(20);
+
+    try {
+      // Simulate progress
+      const interval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
+      const { error } = await supabase
+        .from('study_materials')
+        .insert([
+          {
+            user_id: user.id,
+            title: materialTitle || 'Untitled Material',
+            type: materialType,
+            content: materialContent || '',
+            status: 'completed'
+          }
+        ]);
+
+      clearInterval(interval);
+      if (error) throw error;
+
+      setUploadProgress(100);
+      setIsUploading(false);
+      setIsSuccess(true);
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to save material: ' + err.message);
+      setIsUploading(false);
+    }
   };
 
   const handleOcrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,7 +109,10 @@ export default function UploadMaterial() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => {
+              setActiveTab(tab.id as any);
+              setIsSuccess(false);
+            }}
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap border border-border shadow-sm",
               activeTab === tab.id
@@ -178,7 +218,7 @@ export default function UploadMaterial() {
                             className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none resize-none"
                           />
                         </div>
-                        <button onClick={handleUpload} className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm">Process Text</button>
+                        <button onClick={() => handleUpload('Scanned Notes', 'image', ocrText)} className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm">Process Text</button>
                       </div>
                     ) : null}
                   </div>
@@ -187,12 +227,24 @@ export default function UploadMaterial() {
             )}
 
             {activeTab === 'file' && (
-              <div className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50">
-                <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4" />
-                <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">Upload PDF</h3>
-                <p className="text-[10px] sm:text-sm text-text-muted">Max file size: 20MB</p>
-                <input type="file" className="hidden" />
-                <button onClick={handleUpload} className="mt-6 sm:mt-8 btn-primary py-2 sm:py-3 text-xs sm:text-sm">Select File</button>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-[10px] sm:text-sm font-bold text-text-main">Material Title</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Biology Chapter 1"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none"
+                  />
+                </div>
+                <div className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50">
+                  <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4" />
+                  <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">Upload PDF</h3>
+                  <p className="text-[10px] sm:text-sm text-text-muted">Max file size: 20MB</p>
+                  <input type="file" className="hidden" />
+                  <button onClick={() => handleUpload(title, 'pdf')} className="mt-6 sm:mt-8 btn-primary py-2 sm:py-3 text-xs sm:text-sm">Select File</button>
+                </div>
               </div>
             )}
 
@@ -202,11 +254,13 @@ export default function UploadMaterial() {
                   <label className="block text-[10px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">YouTube URL</label>
                   <input
                     type="text"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://youtube.com/..."
                     className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none placeholder:text-text-muted"
                   />
                 </div>
-                <button onClick={handleUpload} className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm">Process Video</button>
+                <button onClick={() => handleUpload('YouTube Video', 'video')} className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm">Process Video</button>
               </div>
             )}
 
@@ -216,11 +270,13 @@ export default function UploadMaterial() {
                   <label className="block text-[10px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">Article Content</label>
                   <textarea
                     rows={5}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
                     placeholder="Paste article content..."
                     className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none resize-none placeholder:text-text-muted"
                   />
                 </div>
-                <button onClick={handleUpload} className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm">Summarize</button>
+                <button onClick={() => handleUpload('Article Summary', 'note', content)} className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm">Summarize</button>
               </div>
             )}
 
@@ -232,7 +288,7 @@ export default function UploadMaterial() {
                 </div>
                 <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">Record Session</h3>
                 <p className="text-[10px] sm:text-sm text-text-muted mb-6 sm:mb-8">Record your lecture or discussion.</p>
-                <button onClick={handleUpload} className="btn-primary py-2 sm:py-3 text-xs sm:text-sm">Start Recording</button>
+                <button onClick={() => handleUpload('Voice Note', 'note')} className="btn-primary py-2 sm:py-3 text-xs sm:text-sm">Start Recording</button>
               </div>
             )}
           </motion.div>

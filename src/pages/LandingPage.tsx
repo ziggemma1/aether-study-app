@@ -100,7 +100,7 @@ export default function LandingPage() {
           >
             <motion.div 
               layout
-              animate={isScrolled ? { scale: 0.9 } : { scale: 1 }}
+              animate={isScrolled ? { scale: 0.95 } : { scale: 1 }}
               className="flex items-center gap-2 shrink-0"
             >
               <motion.div 
@@ -123,11 +123,11 @@ export default function LandingPage() {
               <a href="#pricing" className="text-slate-400 font-medium text-sm hover:text-primary transition-colors">Pricing</a>
             </motion.div>
 
-            <motion.div layout className="flex items-center gap-2 sm:gap-4 shrink-0">
-              <Link to="/login" className="text-slate-400 font-semibold text-[10px] sm:text-sm hover:text-primary transition-colors whitespace-nowrap">Sign In</Link>
+            <motion.div layout className="flex items-center gap-3 sm:gap-4 shrink-0">
+              <Link to="/login" className="text-slate-400 font-semibold text-xs sm:text-sm hover:text-primary transition-colors whitespace-nowrap">Sign In</Link>
               <Link to="/signup" className={cn(
-                "btn-primary !py-1.5 !px-3 sm:!py-2.5 sm:!px-5 transition-all duration-300 whitespace-nowrap",
-                isScrolled ? "text-[10px]" : "text-xs sm:text-sm"
+                "btn-primary !py-2 !px-4 sm:!py-2.5 sm:!px-5 transition-all duration-300 whitespace-nowrap",
+                isScrolled ? "text-xs" : "text-xs sm:text-sm"
               )}>
                 Get Started
               </Link>

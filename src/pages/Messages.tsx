@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   UserPlus, 
@@ -12,33 +12,137 @@ import {
   Paperclip,
   CheckCheck,
   UserCheck,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-
-const contacts = [
-  { id: 1, name: 'Dr. Adebayo (Math)', status: 'Online', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Adebayo', lastMsg: 'The assignment is due tomorrow.', time: '10:30 AM', unread: 2 },
-  { id: 2, name: 'Mrs. Smith (English)', status: 'Online', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Smith', lastMsg: 'Great job on your essay!', time: 'Yesterday', unread: 0 },
-  { id: 3, name: 'Budi (Study Group)', status: '8 minutes ago', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Budi', lastMsg: 'Anyone up for a quick review?', time: '2:15 PM', unread: 5 },
-  { id: 4, name: 'Aether AI Tutor', status: 'Online', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aether', lastMsg: 'How can I help you today?', time: 'Just now', unread: 0 },
-];
+import { useAppContext } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 
 const suggestedFriends = [
-  { id: 101, name: 'Sarah Jenkins', school: 'Lagos State University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
-  { id: 102, name: 'David Okafor', school: 'University of Ibadan', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David' },
-  { id: 103, name: 'Chinelo Obi', school: 'Covenant University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chinelo' },
-  { id: 104, name: 'Tunde Bakare', school: 'Obafemi Awolowo University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde' },
+  { id: '101', name: 'Sarah Jenkins', school: 'Lagos State University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
+  { id: '102', name: 'David Okafor', school: 'University of Ibadan', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David' },
+  { id: '103', name: 'Chinelo Obi', school: 'Covenant University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chinelo' },
+  { id: '104', name: 'Tunde Bakare', school: 'Obafemi Awolowo University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde' },
 ];
 
 export default function Messages() {
+  const { messages, user, setMessages } = useAppContext();
   const [activeTab, setActiveTab] = useState<'chats' | 'friends'>('chats');
-  const [selectedContact, setSelectedContact] = useState(contacts[0]);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [showChatMobile, setShowChatMobile] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [allProfiles, setAllProfiles] = useState<any[]>([]);
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState(false);
 
-  const handleContactSelect = (contact: typeof contacts[0]) => {
-    setSelectedContact(contact);
-    setShowChatMobile(true);
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      setIsLoadingProfiles(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .limit(20);
+        if (error) throw error;
+        if (data) setAllProfiles(data);
+      } catch (err) {
+        console.error('Error fetching profiles:', err);
+      } finally {
+        setIsLoadingProfiles(false);
+      }
+    };
+    fetchProfiles();
+  }, []);
+
+  // Derive contacts from messages
+  const contacts = React.useMemo(() => {
+    if (!user) return [];
+    const contactMap = new Map();
+    
+    messages.forEach(m => {
+      const otherId = m.senderId === user.id ? m.receiverId : m.senderId;
+      if (!contactMap.has(otherId)) {
+        contactMap.set(otherId, {
+          id: otherId,
+          name: m.senderName || 'User',
+          avatar: m.senderAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherId}`,
+          lastMsg: m.content,
+          time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          unread: m.receiverId === user.id && !m.isRead ? 1 : 0,
+          status: 'Online' // Mock status for now
+        });
+      } else {
+        const contact = contactMap.get(otherId);
+        if (m.receiverId === user.id && !m.isRead) {
+          contact.unread += 1;
+        }
+      }
+    });
+    
+    // If no messages, show all profiles as potential contacts
+    if (contactMap.size === 0 && allProfiles.length > 0) {
+      allProfiles.filter(p => p.id !== user.id).forEach(p => {
+        contactMap.set(p.id, {
+          id: p.id,
+          name: p.name || 'User',
+          avatar: p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
+          lastMsg: 'Start a conversation',
+          time: '',
+          unread: 0,
+          status: 'Offline'
+        });
+      });
+    }
+    
+    return Array.from(contactMap.values());
+  }, [messages, user, allProfiles]);
+
+  const selectedContact = contacts.find(c => c.id === selectedContactId) || contacts[0];
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !user || !selectedContact) return;
+
+    setIsSending(true);
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: user.id,
+          receiver_id: selectedContact.id,
+          content: newMessage.trim()
+        })
+        .select('*, sender:profiles(name, avatar_url)')
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedMsg = {
+          id: data.id,
+          senderId: data.sender_id,
+          receiverId: data.receiver_id,
+          content: data.content,
+          isRead: data.is_read,
+          createdAt: data.created_at,
+          senderName: data.sender?.name,
+          senderAvatar: data.sender?.avatar_url
+        };
+        setMessages([formattedMsg, ...messages]);
+        setNewMessage('');
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+    } finally {
+      setIsSending(false);
+    }
   };
+
+  const filteredMessages = messages.filter(m => 
+    (m.senderId === user?.id && m.receiverId === selectedContact?.id) ||
+    (m.senderId === selectedContact?.id && m.receiverId === user?.id)
+  ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   return (
     <div className="h-[calc(100vh-140px)] sm:h-[calc(100vh-120px)] flex gap-4 sm:gap-6 animate-in fade-in duration-500">
@@ -93,38 +197,53 @@ export default function Messages() {
           </div>
 
           <div className="flex-grow overflow-y-auto no-scrollbar space-y-3 sm:space-y-4">
-            {activeTab === 'chats' ? (
-              contacts.map((contact) => (
-                <div 
-                  key={contact.id} 
-                  onClick={() => handleContactSelect(contact)}
-                  className={cn(
-                    "flex items-center gap-3 sm:gap-4 p-2 sm:p-3 rounded-xl sm:rounded-2xl cursor-pointer transition-all group",
-                    selectedContact.id === contact.id ? "bg-primary/10 border border-primary/20" : "hover:bg-surface-alt/50 border border-transparent"
-                  )}
-                >
-                  <div className="relative shrink-0">
-                    <img src={contact.avatar} alt={contact.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-border" />
-                    {contact.status === 'Online' && (
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-background" />
+            {isLoadingProfiles ? (
+              <div className="flex flex-col items-center justify-center h-40 text-text-muted">
+                <Loader2 size={24} className="animate-spin mb-2" />
+                <p className="text-xs">Loading contacts...</p>
+              </div>
+            ) : activeTab === 'chats' ? (
+              contacts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 text-text-muted text-center p-4">
+                  <MessageSquare size={32} className="mb-2 opacity-20" />
+                  <p className="text-xs">No contacts found. Try searching for friends!</p>
+                </div>
+              ) : (
+                contacts.map((contact) => (
+                  <div 
+                    key={contact.id} 
+                    onClick={() => {
+                      setSelectedContactId(contact.id);
+                      setShowChatMobile(true);
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 sm:gap-4 p-2 sm:p-3 rounded-xl sm:rounded-2xl cursor-pointer transition-all group",
+                      selectedContact?.id === contact.id ? "bg-primary/10 border border-primary/20" : "hover:bg-surface-alt/50 border border-transparent"
                     )}
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <p className="text-xs sm:text-sm font-bold text-text-main truncate">{contact.name}</p>
-                      <span className="text-[8px] sm:text-[10px] text-text-muted">{contact.time}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] sm:text-xs text-text-muted truncate">{contact.lastMsg}</p>
-                      {contact.unread > 0 && (
-                        <span className="bg-primary text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] text-center">
-                          {contact.unread}
-                        </span>
+                  >
+                    <div className="relative shrink-0">
+                      <img src={contact.avatar} alt={contact.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-border" />
+                      {contact.status === 'Online' && (
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-background" />
                       )}
                     </div>
+                    <div className="flex-grow min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p className="text-xs sm:text-sm font-bold text-text-main truncate">{contact.name}</p>
+                        <span className="text-[8px] sm:text-[10px] text-text-muted">{contact.time}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] sm:text-xs text-text-muted truncate">{contact.lastMsg}</p>
+                        {contact.unread > 0 && (
+                          <span className="bg-primary text-white text-[8px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] text-center">
+                            {contact.unread}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))
+              )
             ) : (
               <div className="space-y-4 sm:space-y-6">
                 <p className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest px-2">Suggested Friends</p>
@@ -155,103 +274,145 @@ export default function Messages() {
         !showChatMobile ? "hidden sm:flex" : "flex"
       )}>
         {activeTab === 'chats' ? (
-          <>
-            {/* Chat Header */}
-            <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between bg-surface-alt/5 backdrop-blur-md">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <button 
-                  onClick={() => setShowChatMobile(false)}
-                  className="p-1.5 hover:bg-surface rounded-lg text-text-muted sm:hidden"
-                >
-                  <ArrowLeft size={18} />
-                </button>
-                <div className="relative">
-                  <img src={selectedContact.avatar} alt={selectedContact.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-border" />
-                  {selectedContact.status === 'Online' && (
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-background" />
-                  )}
-                </div>
-                <div>
-                  <h2 className="text-sm sm:text-lg font-bold text-text-main truncate max-w-[120px] sm:max-w-none">{selectedContact.name}</h2>
-                  <p className="text-[10px] sm:text-xs text-green-500 font-medium flex items-center gap-1 sm:gap-1.5">
-                    <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-green-500 rounded-full" />
-                    {selectedContact.status}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-3">
-                <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg sm:rounded-xl text-text-muted transition-colors border border-border">
-                  <Phone size={16} className="sm:hidden" />
-                  <Phone size={20} className="hidden sm:block" />
-                </button>
-                <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg sm:rounded-xl text-text-muted transition-colors border border-border">
-                  <Video size={16} className="sm:hidden" />
-                  <Video size={20} className="hidden sm:block" />
-                </button>
-                <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg sm:rounded-xl text-text-muted transition-colors border border-border">
-                  <MoreHorizontal size={16} className="sm:hidden" />
-                  <MoreHorizontal size={20} className="hidden sm:block" />
-                </button>
-              </div>
-            </div>
-
-            {/* Messages Area */}
-            <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 no-scrollbar">
-              <div className="flex justify-center">
-                <span className="text-[8px] sm:text-[10px] font-bold text-text-muted bg-surface-alt/50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-border uppercase tracking-widest">Today</span>
-              </div>
-
-              {/* Received Message */}
-              <div className="flex gap-2 sm:gap-4 max-w-[90%] sm:max-w-[80%]">
-                <img src={selectedContact.avatar} alt={selectedContact.name} className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-border self-end" />
-                <div className="space-y-1">
-                  <div className="bg-surface-alt/80 p-3 sm:p-4 rounded-xl sm:rounded-2xl rounded-bl-none border border-border">
-                    <p className="text-xs sm:text-sm text-text-main leading-relaxed">{selectedContact.lastMsg}</p>
+          selectedContact ? (
+            <>
+              {/* Chat Header */}
+              <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between bg-surface-alt/5 backdrop-blur-md">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <button 
+                    onClick={() => setShowChatMobile(false)}
+                    className="p-1.5 hover:bg-surface rounded-lg text-text-muted sm:hidden"
+                  >
+                    <ArrowLeft size={18} />
+                  </button>
+                  <div className="relative">
+                    <img src={selectedContact.avatar} alt={selectedContact.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-border" />
+                    {selectedContact.status === 'Online' && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-background" />
+                    )}
                   </div>
-                  <p className="text-[8px] sm:text-[10px] text-text-muted ml-1">10:30 AM</p>
-                </div>
-              </div>
-
-              {/* Sent Message */}
-              <div className="flex gap-2 sm:gap-4 max-w-[90%] sm:max-w-[80%] ml-auto flex-row-reverse">
-                <div className="space-y-1">
-                  <div className="bg-primary p-3 sm:p-4 rounded-xl sm:rounded-2xl rounded-br-none shadow-lg shadow-primary/20">
-                    <p className="text-xs sm:text-sm text-white leading-relaxed">Thanks! I'll check it out right now. Is there anything specific I should focus on?</p>
-                  </div>
-                  <div className="flex items-center justify-end gap-1 mr-1">
-                    <p className="text-[8px] sm:text-[10px] text-text-muted">10:32 AM</p>
-                    <CheckCheck size={10} className="text-primary sm:hidden" />
-                    <CheckCheck size={12} className="text-primary hidden sm:block" />
+                  <div>
+                    <h2 className="text-sm sm:text-lg font-bold text-text-main truncate max-w-[120px] sm:max-w-none">{selectedContact.name}</h2>
+                    <p className="text-[10px] sm:text-xs text-green-500 font-medium flex items-center gap-1 sm:gap-1.5">
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-green-500 rounded-full" />
+                      {selectedContact.status}
+                    </p>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Input Area */}
-            <div className="p-4 sm:p-6 border-t border-border bg-surface-alt/5 backdrop-blur-md">
-              <div className="flex items-center gap-2 sm:gap-4">
-                <button className="p-1.5 sm:p-2.5 text-text-muted hover:text-text-main transition-colors">
-                  <Paperclip size={18} className="sm:hidden" />
-                  <Paperclip size={20} className="hidden sm:block" />
-                </button>
-                <div className="flex-grow relative">
-                  <input 
-                    type="text" 
-                    placeholder="Message..." 
-                    className="w-full bg-surface-alt/50 border border-border rounded-xl sm:rounded-2xl py-2.5 sm:py-3 pl-4 pr-10 sm:pr-12 text-xs sm:text-sm outline-none focus:border-primary/50 transition-all text-text-main placeholder:text-text-muted"
-                  />
-                  <button className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-primary transition-colors">
-                    <Smile size={18} className="sm:hidden" />
-                    <Smile size={20} className="hidden sm:block" />
+                <div className="flex items-center gap-1.5 sm:gap-3">
+                  <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg sm:rounded-xl text-text-muted transition-colors border border-border">
+                    <Phone size={16} className="sm:hidden" />
+                    <Phone size={20} className="hidden sm:block" />
+                  </button>
+                  <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg sm:rounded-xl text-text-muted transition-colors border border-border">
+                    <Video size={16} className="sm:hidden" />
+                    <Video size={20} className="hidden sm:block" />
+                  </button>
+                  <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg sm:rounded-xl text-text-muted transition-colors border border-border">
+                    <MoreHorizontal size={16} className="sm:hidden" />
+                    <MoreHorizontal size={20} className="hidden sm:block" />
                   </button>
                 </div>
-                <button className="w-10 h-10 sm:w-12 sm:h-12 bg-primary hover:bg-primary/90 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 transition-all transform hover:scale-105 active:scale-95">
-                  <Send size={18} className="sm:hidden" />
-                  <Send size={20} className="hidden sm:block" />
-                </button>
               </div>
+
+              {/* Messages Area */}
+              <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 no-scrollbar">
+                {filteredMessages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-text-muted">
+                    <MessageSquare size={48} className="mb-4 opacity-20" />
+                    <p className="text-sm">No messages yet. Start the conversation!</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-center">
+                      <span className="text-[8px] sm:text-[10px] font-bold text-text-muted bg-surface-alt/50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-border uppercase tracking-widest">Chat History</span>
+                    </div>
+
+                    {filteredMessages.map((msg) => (
+                      <div 
+                        key={msg.id}
+                        className={cn(
+                          "flex gap-2 sm:gap-4 max-w-[90%] sm:max-w-[80%]",
+                          msg.senderId === user?.id ? "ml-auto flex-row-reverse" : ""
+                        )}
+                      >
+                        <img 
+                          src={msg.senderId === user?.id ? (user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`) : (selectedContact?.avatar)} 
+                          alt="Avatar" 
+                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-border self-end" 
+                        />
+                        <div className="space-y-1">
+                          <div className={cn(
+                            "p-3 sm:p-4 rounded-xl sm:rounded-2xl border leading-relaxed",
+                            msg.senderId === user?.id 
+                              ? "bg-primary border-primary text-white rounded-br-none shadow-lg shadow-primary/20" 
+                              : "bg-surface-alt/80 border-border rounded-bl-none text-text-main"
+                          )}>
+                            <p className="text-xs sm:text-sm">{msg.content}</p>
+                          </div>
+                          <div className={cn(
+                            "flex items-center gap-1 px-1",
+                            msg.senderId === user?.id ? "justify-end" : "justify-start"
+                          )}>
+                            <p className="text-[8px] sm:text-[10px] text-text-muted">
+                              {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            {msg.senderId === user?.id && (
+                              <CheckCheck size={10} className={cn("sm:hidden", msg.isRead ? "text-primary" : "text-text-muted")} />
+                            )}
+                            {msg.senderId === user?.id && (
+                              <CheckCheck size={12} className={cn("hidden sm:block", msg.isRead ? "text-primary" : "text-text-muted")} />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {/* Input Area */}
+              <div className="p-4 sm:p-6 border-t border-border bg-surface-alt/5 backdrop-blur-md">
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 sm:gap-4">
+                  <button type="button" className="p-1.5 sm:p-2.5 text-text-muted hover:text-text-main transition-colors">
+                    <Paperclip size={18} className="sm:hidden" />
+                    <Paperclip size={20} className="hidden sm:block" />
+                  </button>
+                  <div className="flex-grow relative">
+                    <input 
+                      type="text" 
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Message..." 
+                      className="w-full bg-surface-alt/50 border border-border rounded-xl sm:rounded-2xl py-2.5 sm:py-3 pl-4 pr-10 sm:pr-12 text-xs sm:text-sm outline-none focus:border-primary/50 transition-all text-text-main placeholder:text-text-muted"
+                    />
+                    <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-primary transition-colors">
+                      <Smile size={18} className="sm:hidden" />
+                      <Smile size={20} className="hidden sm:block" />
+                    </button>
+                  </div>
+                  <button 
+                    type="submit"
+                    disabled={isSending || !newMessage.trim()}
+                    className="w-10 h-10 sm:w-12 sm:h-12 bg-primary hover:bg-primary/90 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100"
+                  >
+                    {isSending ? <Loader2 size={18} className="animate-spin" /> : (
+                      <>
+                        <Send size={18} className="sm:hidden" />
+                        <Send size={20} className="hidden sm:block" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div className="flex-grow flex flex-col items-center justify-center p-6 text-center">
+              <MessageSquare size={48} className="mb-4 text-text-muted opacity-20" />
+              <h2 className="text-lg font-bold text-text-main mb-2">Select a Conversation</h2>
+              <p className="text-xs text-text-muted max-w-xs">Choose a contact from the sidebar to start chatting.</p>
             </div>
-          </>
+          )
         ) : (
           <div className="flex-grow flex flex-col items-center p-6 sm:p-12 text-center overflow-y-auto no-scrollbar">
             <div className="w-16 h-16 sm:w-24 sm:h-24 bg-primary/10 rounded-[30px] sm:rounded-[40px] flex items-center justify-center text-primary mb-6 sm:mb-8 animate-bounce shrink-0">

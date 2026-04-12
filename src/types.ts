@@ -7,6 +7,17 @@ export interface User {
   curriculum: string;
   language: string;
   plan: 'free' | 'pro';
+  avgQuizScore?: number;
+  highestQuizScore?: number;
+  lowestQuizScore?: number;
+  quizTrend?: number;
+  totalStudyTime?: number;
+  timeTrend?: number;
+  globalRank?: number;
+  rankTrend?: number;
+  streakTrend?: number;
+  longestStreak?: number;
+  weeklyTimeData?: { day: string; hours: number }[];
 }
 
 export interface Material {
@@ -77,4 +88,38 @@ export interface QuizResult {
   totalQuestions: number;
   answers: number[]; // Index of selected option
   date: string;
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  senderName?: string;
+  senderAvatar?: string;
+}
+
+export interface StudySession {
+  id: string;
+  userId: string;
+  title: string;
+  startTime: string;
+  durationMinutes: number;
+  type: 'study' | 'break' | 'review';
+  priority: 'high' | 'medium' | 'low';
+  completed: boolean;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  category: 'usage' | 'social' | 'academic';
+  target: number;
+  currentProgress: number;
+  isUnlocked: boolean;
+  unlockedAt?: string;
 }

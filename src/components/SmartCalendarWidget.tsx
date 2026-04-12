@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   Clock, 
@@ -11,49 +11,78 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-
-interface SmartEvent {
-  id: number;
-  title: string;
-  time: string;
-  duration: string;
-  type: 'study' | 'break' | 'review';
-  priority: 'high' | 'medium' | 'low';
-  completed: boolean;
-}
-
-const initialEvents: SmartEvent[] = [
-  { id: 1, title: 'Deep Work: Calculus III', time: '09:00 AM', duration: '90 min', type: 'study', priority: 'high', completed: true },
-  { id: 2, title: 'Quick Review: Physics Notes', time: '11:00 AM', duration: '30 min', type: 'review', priority: 'medium', completed: false },
-  { id: 3, title: 'Mindfulness Break', time: '11:30 AM', duration: '15 min', type: 'break', priority: 'low', completed: false },
-  { id: 4, title: 'AI Quiz: Organic Chemistry', time: '02:00 PM', duration: '45 min', type: 'study', priority: 'high', completed: false },
-  { id: 5, title: 'Lab Prep: Biology', time: '03:00 PM', duration: '60 min', type: 'study', priority: 'medium', completed: false },
-  { id: 6, title: 'Evening Review', time: '05:00 PM', duration: '30 min', type: 'review', priority: 'low', completed: false },
-  { id: 7, title: 'Project Brainstorm', time: '06:00 PM', duration: '45 min', type: 'study', priority: 'medium', completed: false },
-];
+import { useAppContext } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
+import { StudySession } from '../types';
 
 interface SmartCalendarWidgetProps {
   className?: string;
 }
 
 export default function SmartCalendarWidget({ className }: SmartCalendarWidgetProps) {
-  const [events, setEvents] = useState<SmartEvent[]>(initialEvents);
+  const { studySessions, setStudySessions, user } = useAppContext();
   const [isRegenerating, setIsRegenerating] = useState(false);
 
-  const toggleEvent = (id: number) => {
-    setEvents(prev => prev.map(event => 
-      event.id === id ? { ...event, completed: !event.completed } : event
+  const toggleEvent = async (id: string) => {
+    const session = studySessions.find(s => s.id === id);
+    if (!session) return;
+
+    const newCompleted = !session.completed;
+    
+    // Optimistic update
+    setStudySessions(prev => prev.map(s => 
+      s.id === id ? { ...s, completed: newCompleted } : s
     ));
+
+    try {
+      const { error } = await supabase
+        .from('study_sessions')
+        .update({ completed: newCompleted })
+        .eq('id', id);
+      
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error updating session:', err);
+      // Revert on error
+      setStudySessions(prev => prev.map(s => 
+        s.id === id ? { ...s, completed: !newCompleted } : s
+      ));
+    }
   };
 
-  const regenerateSchedule = () => {
+  const regenerateSchedule = async () => {
+    if (!user) return;
     setIsRegenerating(true);
-    // Simulate AI thinking
-    setTimeout(() => {
-      const shuffled = [...events].sort(() => Math.random() - 0.5);
-      setEvents(shuffled.map(e => ({ ...e, completed: false })));
+    
+    try {
+      // In a real app, this would call an Edge Function or AI service
+      // For now, we'll just simulate it by shuffling or adding a new session
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const { data, error } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('start_time', { ascending: true });
+
+      if (error) throw error;
+      if (data) {
+        setStudySessions(data.map((s: any) => ({
+          id: s.id,
+          userId: s.user_id,
+          title: s.title,
+          startTime: s.start_time,
+          durationMinutes: s.duration_minutes,
+          type: s.type,
+          priority: s.priority,
+          completed: s.completed
+        })));
+      }
+    } catch (err) {
+      console.error('Error regenerating schedule:', err);
+    } finally {
       setIsRegenerating(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -96,16 +125,16 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
           <h3 className="text-sm font-bold text-text-main">Today's Focus Goal</h3>
         </div>
         <p className="text-xs text-text-muted leading-relaxed">
-          {events.some(e => e.priority === 'high' && !e.completed) 
-            ? `Focus on completing your ${events.find(e => e.priority === 'high' && !e.completed)?.title} session today.`
-            : "Great job! You've completed your high-priority tasks for today."}
+          {studySessions.some(e => e.priority === 'high' && !e.completed) 
+            ? `Focus on completing your ${studySessions.find(e => e.priority === 'high' && !e.completed)?.title} session today.`
+            : studySessions.length > 0 ? "Great job! You've completed your high-priority tasks for today." : "No study sessions scheduled for today."}
         </p>
       </div>
 
       {/* Timeline/Events */}
       <div className="space-y-4 flex-grow relative z-10 overflow-y-auto no-scrollbar">
         <AnimatePresence mode="popLayout">
-          {events.map((event, idx) => (
+          {studySessions.map((event, idx) => (
             <motion.div 
               key={event.id}
               layout
@@ -137,11 +166,13 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
                     "text-sm font-bold text-text-main truncate transition-all",
                     event.completed && "line-through text-text-muted"
                   )}>{event.title}</h4>
-                  <span className="text-[10px] font-medium text-text-muted">{event.time}</span>
+                  <span className="text-[10px] font-medium text-text-muted">
+                    {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] text-text-muted flex items-center gap-1">
-                    <Clock size={10} /> {event.duration}
+                    <Clock size={10} /> {event.durationMinutes} min
                   </span>
                   {!event.completed && (
                     <span className={cn(
@@ -159,17 +190,26 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
               <ChevronRight size={16} className="text-text-muted opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0" />
             </motion.div>
           ))}
+          {studySessions.length === 0 && !isRegenerating && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <CalendarIcon size={48} className="text-text-muted opacity-20 mb-4" />
+              <p className="text-sm text-text-muted">No sessions scheduled.</p>
+              <button 
+                onClick={regenerateSchedule}
+                className="mt-4 text-xs text-primary font-bold hover:underline"
+              >
+                Generate a smart schedule
+              </button>
+            </div>
+          )}
         </AnimatePresence>
       </div>
 
       {/* Bottom Action */}
-      <button 
-        onClick={() => alert("Full timeline view coming soon!")}
-        className="mt-8 w-full py-3 bg-surface-alt/40 hover:bg-surface-alt border border-border/30 rounded-xl text-xs font-bold text-text-muted hover:text-text-main transition-all flex items-center justify-center gap-2"
-      >
+      <div className="mt-8 w-full py-3 bg-surface-alt/40 border border-border/30 rounded-xl text-xs font-bold text-text-muted flex items-center justify-center gap-2">
         <CalendarIcon size={14} />
-        View Full Timeline
-      </button>
+        Smart Schedule Active
+      </div>
     </div>
   );
 }
