@@ -1,45 +1,45 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+// The platform provides GEMINI_API_KEY in the environment
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-export async function summarizeMaterial(content: string) {
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Summarize the following study material in a clear, structured way with key takeaways and main concepts. Use Markdown for formatting.\n\nContent: ${content}`,
-    });
-    return response.text;
-  } catch (error) {
-    console.error("Summarization error:", error);
-    return "Failed to generate summary. Please try again.";
-  }
+export interface StudyMaterialAnalysis {
+  summary: string;
+  keyTopics: string[];
+  realLifeApplications: string[];
+  suggestedQuizQuestions: {
+    question: string;
+    options: string[];
+    correctAnswer: number;
+    explanation: string;
+  }[];
 }
 
-export async function generateQuiz(content: string) {
+export const analyzeStudyMaterial = async (content: string): Promise<StudyMaterialAnalysis> => {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Generate 5 multiple-choice questions based on the following content. Return the result as a JSON array of objects with fields: text, options (array of 4 strings), correctAnswer (index 0-3), and explanation. \n\nContent: ${content}`,
-      config: {
+    const model = (ai as any).getGenerativeModel({
+      model: "gemini-2.0-flash",
+      generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              text: { type: Type.STRING },
-              options: { type: Type.ARRAY, items: { type: Type.STRING } },
-              correctAnswer: { type: Type.INTEGER },
-              explanation: { type: Type.STRING },
-            },
-            required: ["text", "options", "correctAnswer", "explanation"],
-          },
-        },
-      },
+      }
     });
-    return JSON.parse(response.text || '[]');
-  } catch (error) {
-    console.error("Quiz generation error:", error);
-    return [];
+
+    const prompt = `Analyze the following study material and provide a detailed summary, key topics, real-life applications, and 5 multiple-choice quiz questions.
+      
+      Material Content:
+      ${content}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    if (!text) {
+      throw new Error('Gemini returned an empty response.');
+    }
+
+    return JSON.parse(text);
+  } catch (error: any) {
+    console.error('Gemini Analysis Error:', error);
+    throw error;
   }
-}
+};

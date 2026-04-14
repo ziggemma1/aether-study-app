@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion } from 'framer-motion';
-import { BookOpen, FileText, Calendar, Sparkles, GraduationCap, ArrowLeft, Download, Share2, Volume2, Loader2 } from 'lucide-react';
+import { BookOpen, FileText, Calendar, Sparkles, GraduationCap, ArrowLeft, Download, Share2, Volume2, Loader2, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateSpeech, playAudio } from '../services/ttsService';
+import { StudyTimer } from '../components/StudyTimer';
 
 export default function MaterialDetail() {
   const { id } = useParams();
@@ -101,7 +102,7 @@ export default function MaterialDetail() {
           <section className="glass-card p-8">
             <h2 className="text-xl font-bold mb-6 text-text-main">Key Topics</h2>
             <div className="flex flex-wrap gap-3">
-              {material.keyTopics.map((topic, idx) => (
+              {material.keyTopics?.map((topic, idx) => (
                 <span
                   key={idx}
                   className="px-4 py-2 bg-primary/5 text-primary rounded-xl text-sm font-medium border border-primary/10"
@@ -111,6 +112,24 @@ export default function MaterialDetail() {
               ))}
             </div>
           </section>
+
+          {/* Real Life Applications */}
+          {material.realLifeApplications && material.realLifeApplications.length > 0 && (
+            <section className="glass-card p-8">
+              <div className="flex items-center gap-2 mb-6">
+                <Lightbulb className="text-yellow-500" size={24} />
+                <h2 className="text-xl font-bold text-text-main">Real Life Applications</h2>
+              </div>
+              <ul className="space-y-4">
+                {material.realLifeApplications.map((app, idx) => (
+                  <li key={idx} className="flex gap-3 text-text-main">
+                    <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                    <p className="text-sm leading-relaxed">{app}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -151,6 +170,8 @@ export default function MaterialDetail() {
           </div>
         </div>
       </div>
+      
+      <StudyTimer materialId={material.id} title={material.title} />
     </div>
   );
 }

@@ -4,12 +4,13 @@ import { Upload, Youtube, BookOpen, Mic, X, CheckCircle2, Loader2, Camera, Image
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { extractTextFromImage } from '../services/OCRService';
+import { analyzeStudyMaterial } from '../services/geminiService';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
 
 export default function UploadMaterial() {
   const navigate = useNavigate();
-  const { user } = useAppContext();
+  const { user, materials, setMaterials } = useAppContext();
   const [activeTab, setActiveTab] = React.useState<'file' | 'youtube' | 'article' | 'voice' | 'ocr'>('file');
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState(0);
@@ -20,6 +21,8 @@ export default function UploadMaterial() {
   const [title, setTitle] = React.useState('');
   const [url, setUrl] = React.useState('');
   const [content, setContent] = React.useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const ocrInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleUpload = async (materialTitle: string, materialType: string, materialContent?: string) => {
     if (!user) {
@@ -28,26 +31,67 @@ export default function UploadMaterial() {
     }
 
     setIsUploading(true);
-    setUploadProgress(20);
+    setUploadProgress(10);
+    console.log('Starting upload:', { materialTitle, materialType, hasContent: !!materialContent });
 
     try {
-      // Simulate progress
-      const interval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
+      let finalContent = materialContent || '';
+      
+      if (materialType === 'youtube' && url) {
+        finalContent = `YouTube Video URL: ${url}`;
+      }
+      
+      if (materialType === 'audio' && !finalContent) {
+        finalContent = 'Voice recording session started.';
+      }
 
-      await api.post('/materials', {
+      setUploadProgress(30);
+      console.log('Analyzing material with AI...');
+      
+      // AI Analysis with fallback
+      let analysis = {
+        summary: 'No summary available.',
+        keyTopics: [],
+        realLifeApplications: [],
+        suggestedQuizQuestions: []
+      };
+
+      try {
+        analysis = await analyzeStudyMaterial(finalContent || materialTitle);
+        console.log('AI Analysis successful');
+      } catch (aiErr: any) {
+        console.warn('AI Analysis failed, using fallback:', aiErr);
+        analysis.summary = finalContent ? finalContent.substring(0, 200) + '...' : `Study material for ${materialTitle}`;
+      }
+      
+      setUploadProgress(70);
+      console.log('Saving material to database...');
+
+      const response = await api.post('/materials', {
         title: materialTitle || 'Untitled Material',
         type: materialType,
-        content: materialContent || '',
+        content: finalContent,
+        summary: analysis.summary,
+        keyTopics: analysis.keyTopics,
+        realLifeApplications: analysis.realLifeApplications,
+        suggestedQuizQuestions: analysis.suggestedQuizQuestions
       });
 
-      clearInterval(interval);
+      console.log('Material saved successfully:', response.data);
+      
+      // Update local context immediately
+      const newMaterial = {
+        ...response.data,
+        id: response.data._id || response.data.id,
+        uploadDate: new Date().toLocaleDateString()
+      };
+      setMaterials([newMaterial, ...materials]);
+      
       setUploadProgress(100);
       setIsUploading(false);
       setIsSuccess(true);
     } catch (err: any) {
-      console.error(err);
+      console.error('Upload error:', err);
       alert('Failed to save material: ' + (err.response?.data?.message || err.message));
       setIsUploading(false);
     }
@@ -76,6 +120,28 @@ export default function UploadMaterial() {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!title) {
+      setTitle(file.name.split('.')[0]);
+    }
+
+    // For now, we'll just use the filename as content if it's a PDF, 
+    // or try to read it if it's a text file.
+    if (file.type === 'application/pdf') {
+      // In a real app, we'd use a PDF library. For now, we'll inform the user.
+      setContent(`Content from PDF: ${file.name}. (PDF text extraction would happen here)`);
+    } else if (file.type.startsWith('text/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setContent(event.target?.result as string);
+      };
+      reader.readAsText(file);
+    }
+  };
+
   const tabs = [
     { id: 'file', icon: Upload, label: 'PDF / File' },
     { id: 'ocr', icon: Camera, label: 'Snap & Scan' },
@@ -99,6 +165,11 @@ export default function UploadMaterial() {
             onClick={() => {
               setActiveTab(tab.id as any);
               setIsSuccess(false);
+              setContent('');
+              setTitle('');
+              setUrl('');
+              setOcrText('');
+              setImagePreview(null);
             }}
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap border border-border shadow-sm",
@@ -165,15 +236,19 @@ export default function UploadMaterial() {
             {activeTab === 'ocr' && (
               <div className="space-y-4 sm:space-y-6">
                 {!imagePreview ? (
-                  <div className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50">
+                  <div 
+                    onClick={() => ocrInputRef.current?.click()}
+                    className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50"
+                  >
                     <Camera className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4" />
                     <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">📸 Scan Notes</h3>
                     <p className="text-[10px] sm:text-sm text-text-muted">Take a photo of your notes</p>
                     <input 
+                      ref={ocrInputRef}
                       type="file" 
                       accept="image/*" 
                       capture="environment" 
-                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                      className="hidden" 
                       onChange={handleOcrUpload}
                     />
                   </div>
@@ -205,7 +280,13 @@ export default function UploadMaterial() {
                             className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none resize-none"
                           />
                         </div>
-                        <button onClick={() => handleUpload('Scanned Notes', 'image', ocrText)} className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm">Process Text</button>
+                        <button 
+                          onClick={() => handleUpload('Scanned Notes', 'image', ocrText)} 
+                          disabled={!ocrText}
+                          className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                        >
+                          Process Text
+                        </button>
                       </div>
                     ) : null}
                   </div>
@@ -225,12 +306,27 @@ export default function UploadMaterial() {
                     className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none"
                   />
                 </div>
-                <div className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50">
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50"
+                >
                   <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4" />
-                  <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">Upload PDF</h3>
+                  <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">Upload PDF / Text</h3>
                   <p className="text-[10px] sm:text-sm text-text-muted">Max file size: 20MB</p>
-                  <input type="file" className="hidden" />
-                  <button onClick={() => handleUpload(title, 'pdf')} className="mt-6 sm:mt-8 btn-primary py-2 sm:py-3 text-xs sm:text-sm">Select File</button>
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    accept=".pdf,.txt,.doc,.docx"
+                    className="hidden" 
+                    onChange={handleFileChange}
+                  />
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleUpload(title, 'pdf', content); }} 
+                    disabled={!title || !content}
+                    className="mt-6 sm:mt-8 btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                  >
+                    {content ? 'Process Selected File' : 'Select File'}
+                  </button>
                 </div>
               </div>
             )}
@@ -247,7 +343,13 @@ export default function UploadMaterial() {
                     className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none placeholder:text-text-muted"
                   />
                 </div>
-                <button onClick={() => handleUpload('YouTube Video', 'video')} className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm">Process Video</button>
+                <button 
+                  onClick={() => handleUpload('YouTube Video', 'youtube')} 
+                  disabled={!url}
+                  className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                >
+                  Process Video
+                </button>
               </div>
             )}
 
@@ -263,7 +365,13 @@ export default function UploadMaterial() {
                     className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none resize-none placeholder:text-text-muted"
                   />
                 </div>
-                <button onClick={() => handleUpload('Article Summary', 'note', content)} className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm">Summarize</button>
+                <button 
+                  onClick={() => handleUpload('Article Summary', 'article', content)} 
+                  disabled={!content}
+                  className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                >
+                  Summarize
+                </button>
               </div>
             )}
 
@@ -275,7 +383,7 @@ export default function UploadMaterial() {
                 </div>
                 <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">Record Session</h3>
                 <p className="text-[10px] sm:text-sm text-text-muted mb-6 sm:mb-8">Record your lecture or discussion.</p>
-                <button onClick={() => handleUpload('Voice Note', 'note')} className="btn-primary py-2 sm:py-3 text-xs sm:text-sm">Start Recording</button>
+                <button onClick={() => handleUpload('Voice Note', 'audio')} className="btn-primary py-2 sm:py-3 text-xs sm:text-sm">Start Recording</button>
               </div>
             )}
           </motion.div>

@@ -12,14 +12,16 @@ export const getMaterials = async (req: Request, res: Response) => {
 
 export const createMaterial = async (req: Request, res: Response) => {
   try {
-    const { title, type, summary, content, keyTopics } = req.body;
+    const { title, type, summary, content, keyTopics, realLifeApplications, suggestedQuizQuestions } = req.body;
     const material = new Material({
       userId: (req as any).userId,
       title,
       type,
       summary,
       content,
-      keyTopics
+      keyTopics,
+      realLifeApplications,
+      suggestedQuizQuestions
     });
     await material.save();
     res.status(201).json(material);

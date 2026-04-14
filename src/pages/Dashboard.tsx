@@ -9,7 +9,8 @@ import {
   PlayCircle, 
   CheckCircle2, 
   Award, 
-  Users2 
+  Users2,
+  Clock
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -26,13 +27,26 @@ import {
 } from '../components/OverviewWidgets';
 
 export default function Dashboard() {
-  const { user, theme, materials, allProfiles } = useAppContext();
+  const { user, theme, materials, allProfiles, studySessions } = useAppContext();
   const isLight = theme === 'light';
 
   const recentMaterials = Array.isArray(materials) 
     ? [...materials]
         .sort((a, b) => new Date(b.uploadDate || 0).getTime() - new Date(a.uploadDate || 0).getTime())
         .slice(0, 3)
+    : [];
+
+  const recentSessions = Array.isArray(studySessions)
+    ? [...studySessions]
+        .filter(s => s && s.startTime)
+        .sort((a, b) => {
+          try {
+            return new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
+          } catch {
+            return 0;
+          }
+        })
+        .slice(0, 4)
     : [];
 
   const topLearners = Array.isArray(allProfiles) 
@@ -128,8 +142,30 @@ export default function Dashboard() {
           <div className="lg:col-span-8">
             <CalendarWidget className="h-[300px] sm:h-[420px]" />
           </div>
-          <div className="lg:col-span-4">
-            <SmartCalendarWidget className="h-[300px] sm:h-[420px]" />
+          <div className="lg:col-span-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">Recent Activity</h2>
+            </div>
+            <div className="glass-card p-4 space-y-3 h-[calc(100%-2rem)]">
+              {recentSessions.length > 0 ? (
+                recentSessions.map((session, idx) => (
+                  <div key={session.id || idx} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-border">
+                    <div className="w-8 h-8 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center">
+                      <Clock size={16} />
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <h4 className="text-xs font-bold text-text-main truncate">{session.title}</h4>
+                      <p className="text-[10px] text-text-muted">{session.durationMinutes} mins • {new Date(session.startTime).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                  <Clock size={32} className="text-text-muted mb-2 opacity-20" />
+                  <p className="text-xs text-text-muted">No recent study activity tracked yet.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>

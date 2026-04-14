@@ -16,15 +16,17 @@ export default function Library() {
   const [activeTab, setActiveTab] = React.useState<'materials' | 'unified' | 'plans'>('materials');
 
   const filteredStandardMaterials = materials.filter(m => {
-    if (m.type === 'unified') return false;
-    const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'All' || m.type.toLowerCase() === filter.toLowerCase();
+    if (!m || m.type === 'unified') return false;
+    const title = m.title || 'Untitled';
+    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filter === 'All' || (m.type && m.type.toLowerCase() === filter.toLowerCase());
     return matchesSearch && matchesFilter;
   });
 
   const filteredUnifiedMaterials = materials.filter(m => {
-    if (m.type !== 'unified') return false;
-    const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!m || m.type !== 'unified') return false;
+    const title = m.title || 'Untitled';
+    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
     // Unified usually doesn't need internal media type filters
     return matchesSearch;
   });

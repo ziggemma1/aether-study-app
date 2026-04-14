@@ -23,10 +23,12 @@ export interface User {
 export interface Material {
   id: string;
   title: string;
-  type: 'pdf' | 'youtube' | 'article' | 'audio' | 'unified';
+  type: 'pdf' | 'youtube' | 'article' | 'audio' | 'unified' | 'image' | 'video' | 'note';
   uploadDate: string;
   summary: string;
   keyTopics: string[];
+  realLifeApplications?: string[];
+  suggestedQuizQuestions?: Question[];
   progress: number;
   content?: string;
 }

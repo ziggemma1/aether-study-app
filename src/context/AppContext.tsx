@@ -81,7 +81,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           api.get('/users/profiles')
         ]);
         
-        const mapId = (item: any) => ({ ...item, id: item._id || item.id });
+        const mapId = (item: any) => ({ 
+          ...item, 
+          id: item._id || item.id,
+          uploadDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'
+        });
 
         setMaterials(Array.isArray(materialsRes.data) ? materialsRes.data.map(mapId) : []);
         setStudySessions(Array.isArray(sessionsRes.data) ? sessionsRes.data.map(mapId) : []);

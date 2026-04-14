@@ -1,19 +1,22 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MOCK_QUIZ_QUESTIONS } from '../mockData';
+import { useAppContext } from '../context/AppContext';
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { StudyTimer } from '../components/StudyTimer';
 
 export default function QuizInterface() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { materials } = useAppContext();
   const [currentQuestion, setCurrentQuestion] = React.useState(0);
   const [selectedAnswers, setSelectedAnswers] = React.useState<number[]>([]);
   const [isFinished, setIsFinished] = React.useState(false);
   const [score, setScore] = React.useState(0);
 
-  const questions = MOCK_QUIZ_QUESTIONS;
+  const material = materials.find(m => m.id === id);
+  const questions = material?.suggestedQuizQuestions || [];
 
   const handleAnswer = (optionIdx: number) => {
     const newAnswers = [...selectedAnswers];
@@ -88,6 +91,15 @@ export default function QuizInterface() {
     );
   }
 
+  if (questions.length === 0) {
+    return (
+      <div className="p-12 text-center">
+        <h2 className="text-2xl font-bold mb-4 text-text-main">No quiz questions available for this material</h2>
+        <button onClick={() => navigate(-1)} className="btn-primary">Go Back</button>
+      </div>
+    );
+  }
+
   const question = questions[currentQuestion];
 
   return (
@@ -118,7 +130,7 @@ export default function QuizInterface() {
           className="glass-card p-5 sm:p-12"
         >
           <h2 className="text-lg sm:text-2xl font-bold mb-6 sm:mb-12 leading-relaxed">
-            {question.text}
+            {question.text || (question as any).question}
           </h2>
 
           <div className="space-y-3 sm:space-y-4">
@@ -172,6 +184,8 @@ export default function QuizInterface() {
           <ChevronRight size={20} className="hidden sm:block" />
         </button>
       </footer>
+      
+      <StudyTimer title="Quiz Session" />
     </div>
   );
 }
