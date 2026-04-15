@@ -5,16 +5,43 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const SITE_URL = window.location.origin;
 const SITE_NAME = 'Aether Study';
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const fetchWithRetry = async (url: string, data: any, headers: any, retries = 3, backoff = 1000): Promise<any> => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await axios.post(url, data, { headers });
+      return response;
+    } catch (error: any) {
+      const status = error.response?.status;
+      if ((status === 503 || status === 429 || status === 502) && i < retries - 1) {
+        console.warn(`OpenRouter API error ${status}. Retrying in ${backoff}ms... (Attempt ${i + 1}/${retries})`);
+        await sleep(backoff);
+        backoff *= 2; // Exponential backoff
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+
 export const generateDetailedNotes = async (content: string, title: string, keyTopics?: string[]): Promise<{ detailedNotes: string, noteSections: NoteSection[] }> => {
   if (!OPENROUTER_API_KEY) {
     console.warn('OPENROUTER_API_KEY is missing. Falling back to Gemini for detailed notes.');
     return { detailedNotes: '', noteSections: [] };
   }
 
+  const headers = {
+    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+    'HTTP-Referer': SITE_URL,
+    'X-OpenRouter-Title': SITE_NAME,
+    'Content-Type': 'application/json',
+  };
+
   try {
     // Step 1: Deep Reasoning with Minimax
     console.log('Step 1: Deep Reasoning with Minimax...');
-    const reasoningResponse = await axios.post(
+    const reasoningResponse = await fetchWithRetry(
       'https://openrouter.ai/api/v1/chat/completions',
       {
         model: 'minimax/minimax-m2.5:free',
@@ -31,21 +58,14 @@ export const generateDetailedNotes = async (content: string, title: string, keyT
         ],
         reasoning: { enabled: true }
       },
-      {
-        headers: {
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'HTTP-Referer': SITE_URL,
-          'X-OpenRouter-Title': SITE_NAME,
-          'Content-Type': 'application/json',
-        }
-      }
+      headers
     );
 
     const reasoningMessage = reasoningResponse.data.choices[0]?.message;
     
     // Step 2: Structured Content Generation with Gemma
     console.log('Step 2: Structured Content Generation with Gemma...');
-    const structuredResponse = await axios.post(
+    const structuredResponse = await fetchWithRetry(
       'https://openrouter.ai/api/v1/chat/completions',
       {
         model: 'google/gemma-4-31b-it:free',
@@ -74,14 +94,7 @@ export const generateDetailedNotes = async (content: string, title: string, keyT
         ],
         response_format: { type: 'json_object' }
       },
-      {
-        headers: {
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'HTTP-Referer': SITE_URL,
-          'X-OpenRouter-Title': SITE_NAME,
-          'Content-Type': 'application/json',
-        }
-      }
+      headers
     );
 
     const rawContent = structuredResponse.data.choices[0]?.message?.content || '{}';

@@ -5,6 +5,25 @@ import { NoteSection } from "../types";
 // The platform provides GEMINI_API_KEY in the environment
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const withRetry = async <T>(fn: () => Promise<T>, retries = 3, backoff = 1000): Promise<T> => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      if (i < retries - 1) {
+        console.warn(`Gemini API error. Retrying in ${backoff}ms... (Attempt ${i + 1}/${retries})`);
+        await sleep(backoff);
+        backoff *= 2;
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error('Max retries exceeded');
+};
+
 export interface StudyMaterialAnalysis {
   summary: string;
   keyTopics: string[];
@@ -21,7 +40,7 @@ export interface StudyMaterialAnalysis {
 
 export const generateVisualAid = async (prompt: string): Promise<string> => {
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
         parts: [
@@ -38,7 +57,7 @@ export const generateVisualAid = async (prompt: string): Promise<string> => {
           imageSize: "1K"
         },
       },
-    });
+    }));
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) {
@@ -55,7 +74,7 @@ export const generateVisualAid = async (prompt: string): Promise<string> => {
 export const analyzeStudyMaterial = async (content: string, title: string = "Material"): Promise<StudyMaterialAnalysis> => {
   try {
     // Step 1: Get basic analysis and key topics from Gemini
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Material Title: ${title}\n\nMaterial Content:\n${content}`,
       config: {
@@ -90,7 +109,7 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
           required: ["summary", "keyTopics", "realLifeApplications", "detailedNotes", "suggestedQuizQuestions"]
         }
       }
-    });
+    }));
 
     let text = response.text;
 
@@ -116,8 +135,13 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
       // Generate images for each section in parallel
       const sectionsWithImages = await Promise.all(
         openRouterResult.noteSections.map(async (section) => {
-          const imageUrl = await generateVisualAid(section.imagePrompt);
-          return { ...section, imageUrl };
+          try {
+            const imageUrl = await generateVisualAid(section.imagePrompt);
+            return { ...section, imageUrl };
+          } catch (err) {
+            console.error(`Failed to generate image for section: ${section.heading}`, err);
+            return { ...section, imageUrl: '' };
+          }
         })
       );
       
