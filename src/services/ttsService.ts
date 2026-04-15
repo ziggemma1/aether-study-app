@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 
 export async function generateSpeech(text: string): Promise<string | null> {
   try {
@@ -9,12 +9,12 @@ export async function generateSpeech(text: string): Promise<string | null> {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    const model = (ai as any).getGenerativeModel({ model: "gemini-2.0-flash" });
     
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: `Read this summary clearly: ${text}` }] }],
-      generationConfig: {
-        responseModalities: ["AUDIO"],
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text: `Read this summary clearly: ${text}` }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: 'Kore' },
@@ -23,11 +23,10 @@ export async function generateSpeech(text: string): Promise<string | null> {
       },
     });
 
-    const response = await result.response;
-    const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     
-    if (audioPart?.inlineData?.data) {
-      return audioPart.inlineData.data;
+    if (base64Audio) {
+      return base64Audio;
     }
     return null;
   } catch (error) {

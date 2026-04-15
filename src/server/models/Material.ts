@@ -14,6 +14,14 @@ const materialSchema = new mongoose.Schema({
     correctAnswer: { type: Number },
     explanation: { type: String }
   }],
+  detailedNotes: { type: String },
+  noteSections: [{
+    heading: { type: String },
+    content: { type: String },
+    imagePrompt: { type: String },
+    imageUrl: { type: String }
+  }],
+  visualAidUrl: { type: String },
   progress: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });

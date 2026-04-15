@@ -19,7 +19,8 @@ async function startServer() {
   const PORT = 3000;
 
   // Middleware
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cookieParser());
   app.use(cors({
     origin: true, // Reflect request origin
@@ -32,16 +33,23 @@ async function startServer() {
     if (MONGODB_URI.includes('<') || MONGODB_URI.includes('>')) {
       console.error("CRITICAL: Your MONGODB_URI contains '<' or '>'.");
     } else {
-      try {
-        // Use a shorter timeout for serverless to avoid function timeout
-        await mongoose.connect(MONGODB_URI, {
-          serverSelectionTimeoutMS: 5000,
-          connectTimeoutMS: 10000,
-        });
-        console.log("✅ Connected to MongoDB");
-      } catch (err: any) {
-        console.error("❌ MongoDB connection error:", err.message);
-      }
+      const connectWithRetry = async (retries = 5) => {
+        try {
+          await mongoose.connect(MONGODB_URI, {
+            serverSelectionTimeoutMS: 5000,
+            connectTimeoutMS: 10000,
+          });
+          console.log("✅ Connected to MongoDB");
+        } catch (err: any) {
+          if (retries > 0) {
+            console.warn(`❌ MongoDB connection failed. Retrying in 5s... (${retries} retries left)`);
+            setTimeout(() => connectWithRetry(retries - 1), 5000);
+          } else {
+            console.error("❌ MongoDB connection error after all retries:", err.message);
+          }
+        }
+      };
+      connectWithRetry();
     }
   } else {
     console.warn("⚠️ MONGODB_URI not found.");

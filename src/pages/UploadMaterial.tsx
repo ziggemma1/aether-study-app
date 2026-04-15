@@ -4,9 +4,13 @@ import { Upload, Youtube, BookOpen, Mic, X, CheckCircle2, Loader2, Camera, Image
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { extractTextFromImage } from '../services/OCRService';
-import { analyzeStudyMaterial } from '../services/geminiService';
+import { analyzeStudyMaterial, generateVisualAid } from '../services/geminiService';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set worker path for pdfjs using unpkg which is often more reliable for ES modules
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.mjs`;
 
 export default function UploadMaterial() {
   const navigate = useNavigate();
@@ -17,6 +21,7 @@ export default function UploadMaterial() {
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [ocrText, setOcrText] = React.useState('');
   const [isOcrProcessing, setIsOcrProcessing] = React.useState(false);
+  const [isPdfProcessing, setIsPdfProcessing] = React.useState(false);
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const [title, setTitle] = React.useState('');
   const [url, setUrl] = React.useState('');
@@ -49,16 +54,25 @@ export default function UploadMaterial() {
       console.log('Analyzing material with AI...');
       
       // AI Analysis with fallback
-      let analysis = {
+      let analysis: any = {
         summary: 'No summary available.',
         keyTopics: [],
         realLifeApplications: [],
-        suggestedQuizQuestions: []
+        detailedNotes: '',
+        suggestedQuizQuestions: [],
+        visualAidUrl: '',
+        noteSections: []
       };
 
       try {
-        analysis = await analyzeStudyMaterial(finalContent || materialTitle);
-        console.log('AI Analysis successful');
+        // Run analysis and visual aid generation in parallel
+        const [analysisResult, visualAidUrl] = await Promise.all([
+          analyzeStudyMaterial(finalContent || materialTitle, materialTitle),
+          generateVisualAid(`Conceptual diagram for ${materialTitle}`)
+        ]);
+        
+        analysis = { ...analysisResult, visualAidUrl };
+        console.log('AI Analysis and Visual Aid generation successful');
       } catch (aiErr: any) {
         console.warn('AI Analysis failed, using fallback:', aiErr);
         analysis.summary = finalContent ? finalContent.substring(0, 200) + '...' : `Study material for ${materialTitle}`;
@@ -74,6 +88,9 @@ export default function UploadMaterial() {
         summary: analysis.summary,
         keyTopics: analysis.keyTopics,
         realLifeApplications: analysis.realLifeApplications,
+        detailedNotes: analysis.detailedNotes,
+        noteSections: analysis.noteSections,
+        visualAidUrl: analysis.visualAidUrl,
         suggestedQuizQuestions: analysis.suggestedQuizQuestions
       });
 
@@ -128,11 +145,64 @@ export default function UploadMaterial() {
       setTitle(file.name.split('.')[0]);
     }
 
-    // For now, we'll just use the filename as content if it's a PDF, 
-    // or try to read it if it's a text file.
     if (file.type === 'application/pdf') {
-      // In a real app, we'd use a PDF library. For now, we'll inform the user.
-      setContent(`Content from PDF: ${file.name}. (PDF text extraction would happen here)`);
+      setIsPdfProcessing(true);
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        
+        const maxPages = Math.min(pdf.numPages, 10); // Limit to 10 pages for OCR performance
+        
+        // First try normal text extraction
+        for (let i = 1; i <= maxPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += pageText + '\n';
+        }
+        
+        // If no text found, attempt OCR fallback
+        if (!fullText.trim()) {
+          console.log('No text layer found, attempting OCR fallback...');
+          let ocrResult = '';
+          
+          for (let i = 1; i <= maxPages; i++) {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            if (context) {
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+              
+              await page.render({
+                canvasContext: context,
+                viewport: viewport,
+                canvas: canvas
+              }).promise;
+              
+              // Use Tesseract on the canvas
+              const text = await extractTextFromImage(canvas as any);
+              ocrResult += text + '\n';
+            }
+          }
+          fullText = ocrResult;
+        }
+        
+        if (!fullText.trim()) {
+          throw new Error('No text found in PDF even after OCR. The file might be corrupted or unreadable.');
+        }
+        
+        setContent(fullText);
+      } catch (error: any) {
+        console.error('PDF extraction error:', error);
+        alert(error.message || 'Failed to extract text from PDF.');
+        setContent(`Failed to extract text from ${file.name}.`);
+      } finally {
+        setIsPdfProcessing(false);
+      }
     } else if (file.type.startsWith('text/')) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -320,13 +390,20 @@ export default function UploadMaterial() {
                     className="hidden" 
                     onChange={handleFileChange}
                   />
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleUpload(title, 'pdf', content); }} 
-                    disabled={!title || !content}
-                    className="mt-6 sm:mt-8 btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
-                  >
-                    {content ? 'Process Selected File' : 'Select File'}
-                  </button>
+                  {isPdfProcessing ? (
+                    <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2">
+                      <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                      <p className="text-[10px] sm:text-xs font-medium text-text-muted">Extracting text from PDF...</p>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleUpload(title, 'pdf', content); }} 
+                      disabled={!title || !content}
+                      className="mt-6 sm:mt-8 btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                    >
+                      {content ? 'Process Selected File' : 'Select File'}
+                    </button>
+                  )}
                 </div>
               </div>
             )}

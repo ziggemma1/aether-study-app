@@ -1,9 +1,9 @@
 import Tesseract from 'tesseract.js';
 
-export async function extractTextFromImage(imageFile: File): Promise<string> {
+export async function extractTextFromImage(image: string | File | HTMLCanvasElement): Promise<string> {
   try {
     const { data: { text } } = await Tesseract.recognize(
-      imageFile,
+      image,
       'eng',
       { logger: m => console.log(m) }
     );

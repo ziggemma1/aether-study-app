@@ -20,6 +20,13 @@ export interface User {
   weeklyTimeData?: { day: string; hours: number }[];
 }
 
+export interface NoteSection {
+  heading: string;
+  content: string;
+  imagePrompt: string;
+  imageUrl?: string;
+}
+
 export interface Material {
   id: string;
   title: string;
@@ -29,6 +36,9 @@ export interface Material {
   keyTopics: string[];
   realLifeApplications?: string[];
   suggestedQuizQuestions?: Question[];
+  detailedNotes?: string;
+  noteSections?: NoteSection[];
+  visualAidUrl?: string;
   progress: number;
   content?: string;
 }

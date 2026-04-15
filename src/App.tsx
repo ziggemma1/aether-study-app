@@ -24,6 +24,7 @@ import ReadingPlanGenerator from './pages/ReadingPlanGenerator';
 import UploadMaterial from './pages/UploadMaterial';
 import CurriculumLibrary from './pages/CurriculumLibrary';
 import QuizInterface from './pages/QuizInterface';
+import DetailedNotes from './pages/DetailedNotes';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/library" element={<Library />} />
             <Route path="/library/:id" element={<MaterialDetail />} />
+            <Route path="/materials/:id/notes" element={<DetailedNotes />} />
             <Route path="/upload" element={<UploadMaterial />} />
             <Route path="/curriculum" element={<CurriculumLibrary />} />
             <Route path="/messages" element={<Messages />} />

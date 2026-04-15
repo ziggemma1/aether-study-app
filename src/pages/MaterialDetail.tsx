@@ -6,13 +6,17 @@ import { BookOpen, FileText, Calendar, Sparkles, GraduationCap, ArrowLeft, Downl
 import ReactMarkdown from 'react-markdown';
 import { generateSpeech, playAudio } from '../services/ttsService';
 import { StudyTimer } from '../components/StudyTimer';
+import { analyzeStudyMaterial, generateVisualAid } from '../services/geminiService';
+import api from '../services/api';
+import { cn } from '../lib/utils';
 
 export default function MaterialDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { materials } = useAppContext();
+  const { materials, setMaterials } = useAppContext();
   const material = materials.find(m => m.id === id);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   if (!material) {
     return (
@@ -24,7 +28,7 @@ export default function MaterialDetail() {
   }
 
   const handleListen = async () => {
-    if (isSpeaking) return;
+    if (isSpeaking || !material.summary) return;
     
     setIsSpeaking(true);
     try {
@@ -36,6 +40,45 @@ export default function MaterialDetail() {
       setIsSpeaking(false);
     }
   };
+
+  const handleRegenerate = async () => {
+    if (isRegenerating || !material) return;
+    
+    setIsRegenerating(true);
+    try {
+      console.log('Regenerating analysis for:', material.title);
+      const [analysis, visualAidUrl] = await Promise.all([
+        analyzeStudyMaterial(material.content || material.title, material.title),
+        generateVisualAid(`Conceptual diagram for ${material.title}`)
+      ]);
+      
+      const response = await api.put(`/materials/${material.id}`, {
+        summary: analysis.summary,
+        keyTopics: analysis.keyTopics,
+        realLifeApplications: analysis.realLifeApplications,
+        detailedNotes: analysis.detailedNotes,
+        noteSections: analysis.noteSections,
+        visualAidUrl: visualAidUrl,
+        suggestedQuizQuestions: analysis.suggestedQuizQuestions
+      });
+
+      // Update local state
+      const updatedMaterials = materials.map(m => 
+        m.id === material.id ? { ...m, ...response.data } : m
+      );
+      setMaterials(updatedMaterials);
+      alert('Analysis regenerated successfully!');
+    } catch (error: any) {
+      console.error('Regeneration error:', error);
+      alert('Failed to regenerate analysis: ' + error.message);
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  const isFallback = material.summary?.includes('(PDF text extraction would happen here)') || 
+                     material.summary?.length < 100 || 
+                     !material.keyTopics?.length;
 
   return (
     <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto">
@@ -75,26 +118,56 @@ export default function MaterialDetail() {
                 <Sparkles className="text-secondary" size={24} />
                 <h2 className="text-xl font-bold text-text-main">AI Summary</h2>
               </div>
-              <button
-                onClick={handleListen}
-                disabled={isSpeaking}
-                className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors disabled:opacity-50"
-              >
-                {isSpeaking ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    <span>Generating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Volume2 size={18} />
-                    <span>Listen to Summary</span>
-                  </>
+              <div className="flex gap-2">
+                {isFallback && (
+                  <button
+                    onClick={handleRegenerate}
+                    disabled={isRegenerating}
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 text-orange-600 rounded-xl hover:bg-orange-500/20 transition-colors disabled:opacity-50 text-xs font-bold"
+                  >
+                    {isRegenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                    Regenerate
+                  </button>
                 )}
-              </button>
+                <button
+                  onClick={handleListen}
+                  disabled={isSpeaking || !material.summary}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors disabled:opacity-50"
+                >
+                  {isSpeaking ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 size={18} />
+                      <span>Listen to Summary</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-            <div className="markdown-body text-text-main">
-              <ReactMarkdown>{material.summary}</ReactMarkdown>
+            <div className={cn(
+              "markdown-body text-text-main leading-relaxed",
+              !material.summary && "italic text-text-muted"
+            )}>
+              {material.summary ? (
+                <ReactMarkdown>{material.summary}</ReactMarkdown>
+              ) : (
+                "No summary available. Try regenerating the analysis."
+              )}
+            </div>
+
+            {/* Detailed Notes Button */}
+            <div className="mt-8 pt-6 border-t border-border">
+              <Link
+                to={`/materials/${material.id}/notes`}
+                className="flex items-center justify-center gap-2 w-full p-4 bg-secondary/10 text-secondary hover:bg-secondary/20 rounded-xl transition-all font-bold border border-secondary/20 group"
+              >
+                <FileText size={20} className="group-hover:scale-110 transition-transform" />
+                View Detailed Explained Notes
+              </Link>
             </div>
           </section>
 
