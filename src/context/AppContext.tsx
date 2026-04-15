@@ -21,6 +21,8 @@ interface AppContextType {
   setAllProfiles: React.Dispatch<React.SetStateAction<any[]>>;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  dbError: string | null;
+  setDbError: (error: string | null) => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   signOut: () => Promise<void>;
@@ -38,6 +40,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   const toggleTheme = () => {
@@ -64,6 +67,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
   }, [theme]);
+
+  useEffect(() => {
+    const handleDbError = (e: any) => {
+      setDbError(e.detail?.message || 'Database connection error');
+    };
+    window.addEventListener('app:db-error', handleDbError);
+    return () => window.removeEventListener('app:db-error', handleDbError);
+  }, []);
 
   // Check auth on mount
   useEffect(() => {
@@ -123,6 +134,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setAllProfiles,
       isLoading, 
       setIsLoading,
+      dbError,
+      setDbError,
       theme,
       toggleTheme,
       signOut

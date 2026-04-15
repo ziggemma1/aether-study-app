@@ -8,6 +8,10 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 503 && error.response?.data?.message?.includes('Database')) {
+      console.error('Database connection error detected.');
+      window.dispatchEvent(new CustomEvent('app:db-error', { detail: error.response.data }));
+    }
     if (error.response?.status === 401) {
       // Clear user data and redirect to login if unauthorized
       localStorage.removeItem('user');

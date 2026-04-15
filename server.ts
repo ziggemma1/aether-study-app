@@ -30,8 +30,9 @@ async function startServer() {
   // MongoDB Connection
   const MONGODB_URI = process.env.MONGODB_URI;
   if (MONGODB_URI) {
-    if (MONGODB_URI.includes('<') || MONGODB_URI.includes('>')) {
-      console.error("CRITICAL: Your MONGODB_URI contains '<' or '>'.");
+    if (MONGODB_URI.includes('<db_password>') || MONGODB_URI.includes('<') || MONGODB_URI.includes('>')) {
+      console.error("❌ CRITICAL ERROR: Your MONGODB_URI contains placeholder text like '<db_password>'.");
+      console.error("👉 ACTION REQUIRED: Please replace '<db_password>' with your actual MongoDB database password in your environment variables.");
     } else {
       const connectWithRetry = async (retries = 5) => {
         try {
@@ -39,20 +40,22 @@ async function startServer() {
             serverSelectionTimeoutMS: 5000,
             connectTimeoutMS: 10000,
           });
-          console.log("✅ Connected to MongoDB");
+          console.log("✅ Connected to MongoDB successfully");
         } catch (err: any) {
           if (retries > 0) {
-            console.warn(`❌ MongoDB connection failed. Retrying in 5s... (${retries} retries left)`);
+            console.warn(`❌ MongoDB connection failed: ${err.message}. Retrying in 5s... (${retries} retries left)`);
             setTimeout(() => connectWithRetry(retries - 1), 5000);
           } else {
-            console.error("❌ MongoDB connection error after all retries:", err.message);
+            console.error("❌ FATAL: MongoDB connection error after all retries:", err.message);
+            console.error("💡 HINT: Check if your MongoDB Atlas IP Whitelist allows connections from your deployment IP (or 0.0.0.0/0 for testing).");
           }
         }
       };
       connectWithRetry();
     }
   } else {
-    console.warn("⚠️ MONGODB_URI not found.");
+    console.error("❌ ERROR: MONGODB_URI environment variable is missing.");
+    console.error("👉 ACTION REQUIRED: You must set the MONGODB_URI environment variable in your deployment settings (e.g., Vercel, GitHub, or .env file).");
   }
 
   // API Routes
