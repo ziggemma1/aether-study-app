@@ -1,9 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 
-export const checkDbConnection = (req: Request, res: Response, next: NextFunction) => {
-  const state = mongoose.connection.readyState;
+export const checkDbConnection = async (req: Request, res: Response, next: NextFunction) => {
+  let state = mongoose.connection.readyState;
   
+  // If connecting, wait a bit
+  if (state === 2) {
+    console.log('⏳ DB is connecting, waiting...');
+    for (let i = 0; i < 5; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      state = mongoose.connection.readyState;
+      if (state === 1) break;
+    }
+  }
+
   // 0: disconnected, 1: connected, 2: connecting, 3: disconnecting
   if (state === 1) {
     return next();

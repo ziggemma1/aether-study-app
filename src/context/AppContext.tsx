@@ -76,6 +76,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('app:db-error', handleDbError);
   }, []);
 
+  // Auto-retry polling when DB error exists
+  useEffect(() => {
+    if (!dbError) return;
+
+    console.log('🔄 DB Error detected, starting auto-retry poll...');
+    let pollInterval: any;
+
+    const checkHealth = async () => {
+      try {
+        const response = await api.get('/health');
+        if (response.data.dbConnected) {
+          console.log('✅ DB is back online! Clearing error...');
+          setDbError(null);
+          // Reload current data
+          window.location.reload();
+        }
+      } catch (err) {
+        console.warn('Polling health check failed, still disconnected.');
+      }
+    };
+
+    pollInterval = setInterval(checkHealth, 3000); // Check every 3 seconds
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [dbError]);
+
   // Check auth on mount
   useEffect(() => {
     const checkAuth = async () => {
