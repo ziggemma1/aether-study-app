@@ -34,21 +34,21 @@ async function startServer() {
       console.error("❌ CRITICAL ERROR: Your MONGODB_URI contains placeholder text like '<db_password>'.");
       console.error("👉 ACTION REQUIRED: Please replace '<db_password>' with your actual MongoDB database password in your environment variables.");
     } else {
-      const connectWithRetry = async (retries = 5) => {
+      const connectWithRetry = async (retries = 3) => {
         try {
           await mongoose.connect(MONGODB_URI, {
             serverSelectionTimeoutMS: 5000,
-            connectTimeoutMS: 10000,
+            connectTimeoutMS: 5000,
           });
           console.log("✅ Connected to MongoDB successfully");
         } catch (err: any) {
           if (retries > 0) {
-            console.warn(`❌ MongoDB connection failed: ${err.message}. Retrying in 5s... (${retries} retries left)`);
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            const delay = process.env.VERCEL ? 1000 : 5000;
+            console.warn(`❌ MongoDB connection failed: ${err.message}. Retrying in ${delay}ms... (${retries} retries left)`);
+            await new Promise(resolve => setTimeout(resolve, delay));
             return connectWithRetry(retries - 1);
           } else {
             console.error("❌ FATAL: MongoDB connection error after all retries:", err.message);
-            console.error("💡 HINT: Check if your MongoDB Atlas IP Whitelist allows connections from your deployment IP (or 0.0.0.0/0 for testing).");
             throw err;
           }
         }
