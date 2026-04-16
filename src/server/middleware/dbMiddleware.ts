@@ -21,6 +21,8 @@ export const checkDbConnection = (req: Request, res: Response, next: NextFunctio
   return res.status(status).json({ 
     message,
     state,
-    hint: 'If this persists, ensure your MongoDB Atlas IP whitelist includes 0.0.0.0/0 for testing.'
+    hint: process.env.VERCEL 
+      ? 'On Vercel, ensure you have added MONGODB_URI to your Project Settings > Environment Variables.' 
+      : 'If this persists, ensure your MongoDB Atlas IP whitelist includes 0.0.0.0/0 for testing.'
   });
 };

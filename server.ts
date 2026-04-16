@@ -44,14 +44,29 @@ async function startServer() {
         } catch (err: any) {
           if (retries > 0) {
             console.warn(`❌ MongoDB connection failed: ${err.message}. Retrying in 5s... (${retries} retries left)`);
-            setTimeout(() => connectWithRetry(retries - 1), 5000);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            return connectWithRetry(retries - 1);
           } else {
             console.error("❌ FATAL: MongoDB connection error after all retries:", err.message);
             console.error("💡 HINT: Check if your MongoDB Atlas IP Whitelist allows connections from your deployment IP (or 0.0.0.0/0 for testing).");
+            throw err;
           }
         }
       };
-      connectWithRetry();
+      
+      // In production/Vercel, we MUST wait for the connection to be established
+      // before returning the app, otherwise the serverless function may complete 
+      // while the connection is still in 'disconnected' state.
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        console.log("⏳ Awaiting MongoDB connection for production environment...");
+        try {
+          await connectWithRetry();
+        } catch (e) {
+          console.error("Failed to establish initial DB connection in production.");
+        }
+      } else {
+        connectWithRetry();
+      }
     }
   } else {
     console.error("❌ ERROR: MONGODB_URI environment variable is missing.");
