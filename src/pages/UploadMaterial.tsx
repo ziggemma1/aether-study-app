@@ -51,31 +51,28 @@ export default function UploadMaterial() {
       }
 
       setUploadProgress(30);
-      console.log('Analyzing material with AI...');
+      console.log('Analyzing material with AI (server-side)...');
       
-      // AI Analysis with fallback
-      let analysis: any = {
-        summary: 'No summary available.',
-        keyTopics: [],
-        realLifeApplications: [],
-        detailedNotes: '',
-        suggestedQuizQuestions: [],
-        visualAidUrl: '',
-        noteSections: []
-      };
-
+      // AI Analysis via server
+      let analysis: any;
       try {
-        // Run analysis and visual aid generation in parallel
-        const [analysisResult, visualAidUrl] = await Promise.all([
-          analyzeStudyMaterial(finalContent || materialTitle, materialTitle),
-          generateVisualAid(`Conceptual diagram for ${materialTitle}`)
-        ]);
-        
-        analysis = { ...analysisResult, visualAidUrl };
+        const analyzeResponse = await api.post('/materials/analyze', {
+          content: finalContent || materialTitle,
+          title: materialTitle
+        });
+        analysis = analyzeResponse.data;
         console.log('AI Analysis and Visual Aid generation successful');
       } catch (aiErr: any) {
-        console.warn('AI Analysis failed, using fallback:', aiErr);
-        analysis.summary = finalContent ? finalContent.substring(0, 200) + '...' : `Study material for ${materialTitle}`;
+        console.warn('Server-side AI Analysis failed, using fallback:', aiErr);
+        analysis = {
+          summary: finalContent ? finalContent.substring(0, 200) + '...' : `Study material for ${materialTitle}`,
+          keyTopics: [],
+          realLifeApplications: [],
+          detailedNotes: '',
+          noteSections: [],
+          visualAidUrl: '',
+          suggestedQuizQuestions: []
+        };
       }
       
       setUploadProgress(70);

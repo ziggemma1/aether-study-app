@@ -2,10 +2,11 @@ import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Sparkles, Download, Share2, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Sparkles, Download, Share2, FileText, Trash2, Loader2, Calendar } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { StudyTimer } from '../components/StudyTimer';
 import api from '../services/api';
+import { cn } from '../lib/utils';
 
 export default function DetailedNotes() {
   const { id } = useParams();
@@ -21,6 +22,45 @@ export default function DetailedNotes() {
       </div>
     );
   }
+
+  const [isRegenerating, setIsRegenerating] = React.useState(false);
+
+  const handleRegenerate = async () => {
+    if (isRegenerating || !material) return;
+    
+    setIsRegenerating(true);
+    try {
+      console.log('Regenerating detailed analysis for:', material.title);
+      // Run analysis via server
+      const analyzeResponse = await api.post('/materials/analyze', {
+        content: material.content || material.title,
+        title: material.title
+      });
+      const analysis = analyzeResponse.data;
+      
+      const response = await api.put(`/materials/${material.id}`, {
+        summary: analysis.summary,
+        keyTopics: analysis.keyTopics,
+        realLifeApplications: analysis.realLifeApplications,
+        detailedNotes: analysis.detailedNotes,
+        noteSections: analysis.noteSections,
+        visualAidUrl: analysis.visualAidUrl,
+        suggestedQuizQuestions: analysis.suggestedQuizQuestions
+      });
+
+      // Update local state
+      const updatedMaterials = materials.map(m => 
+        m.id === material.id ? { ...m, ...response.data } : m
+      );
+      setMaterials(updatedMaterials);
+      alert('Detailed notes successfully updated with better content!');
+    } catch (error: any) {
+      console.error('Regeneration error:', error);
+      alert('Failed to regenerate: ' + error.message);
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this material? This action cannot be undone.')) {
@@ -46,56 +86,83 @@ export default function DetailedNotes() {
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors"
+            className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors text-sm font-medium"
           >
-            <ArrowLeft size={20} /> Back to Material
+            <ArrowLeft size={18} /> Back to Library
           </button>
 
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-all font-bold text-sm"
-          >
-            <Trash2 size={18} />
-            Delete Note
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleRegenerate}
+              disabled={isRegenerating}
+              className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl transition-all font-bold text-sm disabled:opacity-50"
+            >
+              {isRegenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              Regenerate
+            </button>
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-all font-bold text-sm"
+            >
+              <Trash2 size={18} />
+              Delete Note
+            </button>
+          </div>
         </div>
 
         <header className="mb-12">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-2 bg-secondary/10 text-secondary rounded-lg">
-              <FileText size={20} />
+            <div className="p-2 bg-secondary/10 text-secondary rounded-xl">
+              <BookOpen size={20} />
             </div>
-            <span className="text-text-muted text-sm font-medium uppercase tracking-wider">Detailed Study Notes</span>
+            <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">Detailed Study Notes</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-text-main mb-4">{material.title}</h1>
-          <p className="text-text-muted">A deep dive into the core concepts and detailed explanations.</p>
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-text-main mb-6 tracking-tighter leading-tight drop-shadow-sm">
+            {material.title}
+          </h1>
+          <div className="flex items-center gap-4 text-text-muted text-sm border-t border-border pt-6 mt-6">
+            <span className="flex items-center gap-2"><Calendar size={16} /> {material.uploadDate}</span>
+            <span className="flex items-center gap-2"><FileText size={16} /> {material.type.toUpperCase()}</span>
+          </div>
         </header>
 
-        <div className="glass-card p-8 sm:p-12">
+        <div className="glass-card shadow-2xl p-6 sm:p-16 relative">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-accent opacity-50" />
+          
           {/* Render Multi-section Notes if available */}
           {material.noteSections && material.noteSections.length > 0 ? (
-            <div className="space-y-16">
+            <div className="space-y-20 divide-y divide-border">
               {material.noteSections.map((section, idx) => (
-                <div key={idx} className="space-y-6">
-                  <h2 className="text-2xl font-bold text-text-main border-b border-border pb-2">
-                    {section.heading}
-                  </h2>
+                <div key={idx} className={cn("space-y-10", idx > 0 && "pt-20")}>
+                  <header className="space-y-2">
+                    <span className="text-xs font-bold text-primary opacity-60 uppercase tracking-widest">Section {idx + 1}</span>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-text-main tracking-tight leading-none">
+                      {section.heading}
+                    </h2>
+                  </header>
                   
                   {section.imageUrl && (
-                    <div className="rounded-2xl overflow-hidden border border-border bg-surface shadow-lg max-w-2xl mx-auto">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      className="rounded-3xl overflow-hidden border border-border bg-surface shadow-2xl group"
+                    >
                       <img 
                         src={section.imageUrl} 
                         alt={section.heading} 
-                        className="w-full h-auto object-cover"
+                        className="w-full h-auto object-cover transform group-hover:scale-[1.02] transition-transform duration-700"
                         referrerPolicy="no-referrer"
                       />
-                      <p className="text-[10px] text-text-muted p-2 text-center italic bg-surface/50">
-                        Visual representation for: {section.heading}
-                      </p>
-                    </div>
+                      <div className="bg-surface-alt p-4 flex items-center justify-center gap-2 border-t border-border">
+                        <Sparkles size={14} className="text-secondary" />
+                        <p className="text-[10px] text-text-muted italic tracking-wide">
+                          AI-generated visual aid for "{section.heading}"
+                        </p>
+                      </div>
+                    </motion.div>
                   )}
 
-                  <div className="markdown-body text-text-main leading-relaxed prose prose-invert max-w-none">
+                  <div className="markdown-body text-text-main selection:bg-primary/30">
                     <ReactMarkdown>{section.content}</ReactMarkdown>
                   </div>
                 </div>

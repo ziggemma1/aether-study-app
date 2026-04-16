@@ -47,10 +47,12 @@ export default function MaterialDetail() {
     setIsRegenerating(true);
     try {
       console.log('Regenerating analysis for:', material.title);
-      const [analysis, visualAidUrl] = await Promise.all([
-        analyzeStudyMaterial(material.content || material.title, material.title),
-        generateVisualAid(`Conceptual diagram for ${material.title}`)
-      ]);
+      // Run analysis via server
+      const analyzeResponse = await api.post('/materials/analyze', {
+        content: material.content || material.title,
+        title: material.title
+      });
+      const analysis = analyzeResponse.data;
       
       const response = await api.put(`/materials/${material.id}`, {
         summary: analysis.summary,
@@ -58,7 +60,7 @@ export default function MaterialDetail() {
         realLifeApplications: analysis.realLifeApplications,
         detailedNotes: analysis.detailedNotes,
         noteSections: analysis.noteSections,
-        visualAidUrl: visualAidUrl,
+        visualAidUrl: analysis.visualAidUrl,
         suggestedQuizQuestions: analysis.suggestedQuizQuestions
       });
 

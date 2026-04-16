@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { generateDetailedNotes } from "./openRouterService";
-import { NoteSection } from "../types";
+import { generateDetailedNotes } from "./openRouterService.js";
+import { NoteSection } from "../types.js";
 
 // The platform provides GEMINI_API_KEY in the environment
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
@@ -126,9 +126,51 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
 
     // Step 2: Use the generated key topics to create structured detailed notes via OpenRouter
     console.log('Generating structured notes based on key topics:', result.keyTopics);
-    const openRouterResult = await generateDetailedNotes(content, title, result.keyTopics);
+    let openRouterResult = await generateDetailedNotes(content, title, result.keyTopics);
     
-    if (openRouterResult && openRouterResult.noteSections.length > 0) {
+    // Fallback to Gemini if OpenRouter fails or returns nothing
+    if (!openRouterResult || openRouterResult.noteSections.length === 0) {
+      console.warn('OpenRouter failed or key missing. Falling back to Gemini for detailed notes structure...');
+      const fallbackResponse = await withRetry(() => ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Create structured study notes for the following material based on these key topics: ${result.keyTopics.join(', ')}.
+        Each topic must be explained in great detail as a mini-lesson.
+        
+        Material: ${content}`,
+        config: {
+          systemInstruction: `Return a JSON object with:
+          1. "detailedNotes": Full markdown version.
+          2. "noteSections": Array of { "heading", "content", "imagePrompt" }.`,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              detailedNotes: { type: Type.STRING },
+              noteSections: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    heading: { type: Type.STRING },
+                    content: { type: Type.STRING },
+                    imagePrompt: { type: Type.STRING }
+                  },
+                  required: ["heading", "content", "imagePrompt"]
+                }
+              }
+            },
+            required: ["detailedNotes", "noteSections"]
+          }
+        }
+      }));
+      
+      const fallbackText = fallbackResponse.text;
+      if (fallbackText) {
+        openRouterResult = JSON.parse(fallbackText);
+      }
+    }
+
+    if (openRouterResult && openRouterResult.noteSections && openRouterResult.noteSections.length > 0) {
       console.log('Using high-quality multi-model notes and sections');
       result.detailedNotes = openRouterResult.detailedNotes;
       
