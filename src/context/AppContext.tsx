@@ -60,6 +60,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setStudySessions([]);
     setAchievements([]);
     setQuizResults([]);
+    localStorage.removeItem('user');
+    localStorage.removeItem('cached_materials');
   };
 
   useEffect(() => {
@@ -79,12 +81,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const fetchUserData = React.useCallback(async () => {
     try {
       const response = await api.get('/auth/me');
-      setUser(response.data);
-      return true;
+      if (response.data) {
+        setUser(response.data);
+        localStorage.setItem('user', JSON.stringify(response.data));
+        return true;
+      }
+      return false;
     } catch (err: any) {
       console.log('Not authenticated or error checking auth');
+      // Only clear user on definitive 401 Unauthorized
       if (err.response?.status === 401) {
         setUser(null);
+        localStorage.removeItem('user');
       }
       return false;
     }
@@ -105,23 +113,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
       uploadDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'
     });
 
-    await Promise.all(endpoints.map(async ({ url, setter }) => {
-      try {
-        const res = await api.get(url);
-        if (Array.isArray(res.data)) {
-          setter(res.data.map(mapId));
+    try {
+      await Promise.all(endpoints.map(async ({ url, setter }) => {
+        try {
+          const res = await api.get(url);
+          if (Array.isArray(res.data)) {
+            const mapped = res.data.map(mapId);
+            setter(mapped);
+            // Persistent cache for materials to prevent flicker
+            if (url === '/materials') {
+              localStorage.setItem('cached_materials', JSON.stringify(mapped));
+            }
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch ${url}:`, err);
         }
-      } catch (err) {
-        console.warn(`Failed to fetch ${url}:`, err);
-      }
-    }));
+      }));
+    } catch (err) {
+      console.error('Fetch App Data error:', err);
+    }
   }, []);
 
   const initialize = React.useCallback(async () => {
+    // Try to load from cache first for immediate UI responsiveness
+    const cachedUser = localStorage.getItem('user');
+    const cachedMaterials = localStorage.getItem('cached_materials');
+    
+    if (cachedUser) {
+      try {
+        setUser(JSON.parse(cachedUser));
+      } catch (e) {
+        localStorage.removeItem('user');
+      }
+    }
+    
+    if (cachedMaterials) {
+      try {
+        setMaterials(JSON.parse(cachedMaterials));
+      } catch (e) {
+        localStorage.removeItem('cached_materials');
+      }
+    }
+
     setIsLoading(true);
     const isAuthed = await fetchUserData();
     if (isAuthed) {
       await fetchAppData();
+    } else if (!localStorage.getItem('user')) {
+      // If we are definitely not authed and have no cache, clear state
+      setMaterials([]);
     }
     setIsLoading(false);
   }, [fetchUserData, fetchAppData]);

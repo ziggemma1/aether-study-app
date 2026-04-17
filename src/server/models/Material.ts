@@ -26,4 +26,6 @@ const materialSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+materialSchema.index({ userId: 1, createdAt: -1 });
+
 export const Material = mongoose.model('Material', materialSchema);

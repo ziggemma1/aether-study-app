@@ -3,18 +3,26 @@ import { Material } from '../models/Material.js';
 
 export const getMaterials = async (req: Request, res: Response) => {
   try {
-    const materials = await Material.find({ userId: (req as any).userId }).sort({ createdAt: -1 });
+    const userId = (req as any).userId;
+    console.log(`Fetching materials for user ID: ${userId}`);
+    const materials = await Material.find({ userId }).sort({ createdAt: -1 });
+    console.log(`Found ${materials.length} materials for user ${userId}`);
     res.json(materials);
   } catch (error: any) {
+    console.error(`Error fetching materials for user ${(req as any).userId}:`, error);
     res.status(500).json({ message: error.message });
   }
 };
 
 export const createMaterial = async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const { title, type, summary, content, keyTopics, realLifeApplications, detailedNotes, noteSections, visualAidUrl, suggestedQuizQuestions } = req.body;
+    
+    console.log(`Creating material for user ID: ${userId}, Title: ${title}`);
+    
     const material = new Material({
-      userId: (req as any).userId,
+      userId,
       title,
       type,
       summary,
@@ -27,8 +35,10 @@ export const createMaterial = async (req: Request, res: Response) => {
       suggestedQuizQuestions
     });
     await material.save();
+    console.log(`Material saved successfully with ID: ${material._id}`);
     res.status(201).json(material);
   } catch (error: any) {
+    console.error(`Error creating material for user ${(req as any).userId}:`, error);
     res.status(500).json({ message: error.message });
   }
 };
