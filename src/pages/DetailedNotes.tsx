@@ -8,6 +8,7 @@ import { StudyTimer } from '../components/StudyTimer';
 import api from '../services/api';
 import { cn } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
+import { analyzeStudyMaterialOnClient, generateVisualAidOnClient } from '../lib/gemini';
 
 export default function DetailedNotes() {
   const { id } = useParams();
@@ -36,21 +37,42 @@ export default function DetailedNotes() {
     
     setIsRegenerating(true);
     try {
-      console.log('Regenerating detailed analysis for:', material.title);
-      // Run analysis via server
-      const analyzeResponse = await api.post('/materials/analyze', {
-        content: material.content || material.title,
-        title: material.title
-      });
-      const analysis = analyzeResponse.data;
+      console.log('Regenerating detailed analysis for (Client-Side Gemini first):', material.title);
       
+      // Step 1: Perform initial analysis on client to use platform API Key
+      const analysis = await analyzeStudyMaterialOnClient(material.content || material.title, material.title);
+      
+      // Step 2: Request massive chapters from backend (OpenRouter)
+      const chaptersResponse = await api.post('/materials/generate-chapters', {
+        content: material.content || material.title,
+        title: material.title,
+        keyTopics: analysis.keyTopics
+      });
+      
+      const { noteSections } = chaptersResponse.data;
+
+      // Step 3: Generate visual aids on client for each section
+      console.log('Generating visual aids on client...');
+      const processedSections = await Promise.all(
+        noteSections.map(async (section: any) => {
+          try {
+            const imageUrl = await generateVisualAidOnClient(section.imagePrompt);
+            return { ...section, imageUrl };
+          } catch (err) {
+            return { ...section, imageUrl: '' };
+          }
+        })
+      );
+      
+      // Final detailed notes string
+      const detailedNotes = processedSections.map((s: any) => `# ${s.heading}\n\n${s.content}`).join('\n\n---\n\n');
+
       const response = await api.put(`/materials/${material.id}`, {
         summary: analysis.summary,
         keyTopics: analysis.keyTopics,
         realLifeApplications: analysis.realLifeApplications,
-        detailedNotes: analysis.detailedNotes,
-        noteSections: analysis.noteSections,
-        visualAidUrl: analysis.visualAidUrl,
+        detailedNotes: detailedNotes,
+        noteSections: processedSections,
         suggestedQuizQuestions: analysis.suggestedQuizQuestions
       });
 
@@ -60,10 +82,11 @@ export default function DetailedNotes() {
       );
       setMaterials(updatedMaterials);
       setCurrentPage(0);
-      alert('Detailed notes successfully updated with significantly more content!');
+      alert('Academic deep-dive complete! Your textbook-sized study guide is ready.');
     } catch (error: any) {
       console.error('Regeneration error:', error);
-      alert('Failed to regenerate: ' + error.message);
+      const message = error.response?.data?.error || error.response?.data?.message || error.message;
+      alert('Analysis failed: ' + message);
     } finally {
       setIsRegenerating(false);
     }

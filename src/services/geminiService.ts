@@ -2,8 +2,21 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { generateDetailedNotes } from "./openRouterService.js";
 import { NoteSection } from "../types.js";
 
-// The platform provides GEMINI_API_KEY in the environment
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+// Lazy initialization to prevent startup crashes and provide better error messages
+let aiClient: GoogleGenAI | null = null;
+
+const getAiClient = () => {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("❌ MISSING API KEY: GEMINI_API_KEY environment variable is not set.");
+      console.error("👉 If you are on Vercel, add GEMINI_API_KEY to your Project Settings > Environment Variables.");
+      throw new Error("GEMINI_API_KEY is not configured on the server. Please check your environment variables.");
+    }
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
+};
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -40,6 +53,7 @@ export interface StudyMaterialAnalysis {
 
 export const generateVisualAid = async (prompt: string): Promise<string> => {
   try {
+    const ai = getAiClient();
     const response = await withRetry(() => ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -71,19 +85,49 @@ export const generateVisualAid = async (prompt: string): Promise<string> => {
   }
 };
 
+export const generateGeminiTopicSection = async (content: string, title: string, topic: string): Promise<NoteSection> => {
+  const ai = getAiClient();
+  const response = await withRetry(() => ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Create an EXTREMELY detailed study chapter for the topic "${topic}" based on the following material: ${title}.
+    
+    Material Context: ${content.substring(0, 10000)}`,
+    config: {
+      systemInstruction: `You are an elite academic professor. Write a massive, deep-dive chapter for this specific topic. 
+      Target at least 1000 words for this topic alone. 
+      Include 3 detailed examples, sub-headings, and professional explanations of first principles.
+      Return a JSON object with: { "heading", "content", "imagePrompt" }.`,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          heading: { type: Type.STRING },
+          content: { type: Type.STRING },
+          imagePrompt: { type: Type.STRING }
+        },
+        required: ["heading", "content", "imagePrompt"]
+      }
+    }
+  }));
+
+  const text = response.text;
+  if (!text) throw new Error("Gemini fallback section failed");
+  return JSON.parse(text);
+};
+
 export const analyzeStudyMaterial = async (content: string, title: string = "Material"): Promise<StudyMaterialAnalysis> => {
   try {
+    const ai = getAiClient();
     // Step 1: Get basic analysis and key topics from Gemini
     const response = await withRetry(() => ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Material Title: ${title}\n\nMaterial Content:\n${content}`,
+      contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, 15000)}`,
       config: {
         systemInstruction: `You are an expert academic analyzer. Analyze the provided study material and return a JSON object containing:
         1. summary: A comprehensive summary.
-        2. keyTopics: An array of important topics.
+        2. keyTopics: An array of important topics (aim for 5-8 topics).
         3. realLifeApplications: An array of practical examples.
-        4. detailedNotes: A well-explained note in Markdown.
-        5. suggestedQuizQuestions: An array of 5 multiple-choice questions with 'question', 'options' (array of 4), 'correctAnswer' (0-3), and 'explanation'.`,
+        4. suggestedQuizQuestions: An array of 5 multiple-choice questions with 'question', 'options' (array of 4), 'correctAnswer' (0-3), and 'explanation'.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -91,7 +135,6 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
             summary: { type: Type.STRING },
             keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
             realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
-            detailedNotes: { type: Type.STRING },
             suggestedQuizQuestions: {
               type: Type.ARRAY,
               items: {
@@ -106,82 +149,47 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
               }
             }
           },
-          required: ["summary", "keyTopics", "realLifeApplications", "detailedNotes", "suggestedQuizQuestions"]
+          required: ["summary", "keyTopics", "realLifeApplications", "suggestedQuizQuestions"]
         }
       }
     }));
 
     let text = response.text;
-
-    if (!text && response.candidates?.[0]?.content?.parts?.[0]?.text) {
-      text = response.candidates[0].content.parts[0].text;
-    }
-
-    if (!text) {
-      const finishReason = response.candidates?.[0]?.finishReason;
-      throw new Error(`Gemini returned an empty response. Finish reason: ${finishReason || 'unknown'}`);
-    }
-
+    if (!text) throw new Error("Gemini initial analysis failed");
     const result: StudyMaterialAnalysis = JSON.parse(text);
 
-    // Step 2: Use the generated key topics to create structured detailed notes via OpenRouter
-    console.log('Generating structured notes based on key topics:', result.keyTopics);
+    // Step 2: Generate massive structured detailed notes (Iterative)
+    console.log('Generating massive structured notes based on key topics:', result.keyTopics);
     let openRouterResult = await generateDetailedNotes(content, title, result.keyTopics);
     
-    // Fallback to Gemini if OpenRouter fails or returns nothing
+    // Fallback to Gemini iterative if OpenRouter fails
     if (!openRouterResult || openRouterResult.noteSections.length === 0) {
-      console.warn('OpenRouter failed or key missing. Falling back to Gemini for detailed notes structure...');
-      const fallbackResponse = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Create structured study notes for the following material based on these key topics: ${result.keyTopics.join(', ')}.
-        Each topic must be explained in great detail as a mini-lesson.
-        
-        Material: ${content}`,
-        config: {
-          systemInstruction: `Return a JSON object with:
-          1. "detailedNotes": Full markdown version.
-          2. "noteSections": Array of { "heading", "content", "imagePrompt" }.`,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              detailedNotes: { type: Type.STRING },
-              noteSections: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    heading: { type: Type.STRING },
-                    content: { type: Type.STRING },
-                    imagePrompt: { type: Type.STRING }
-                  },
-                  required: ["heading", "content", "imagePrompt"]
-                }
-              }
-            },
-            required: ["detailedNotes", "noteSections"]
-          }
+      console.warn('OpenRouter failed. Falling back to Gemini iterative generation...');
+      const noteSections: NoteSection[] = [];
+      for (const topic of result.keyTopics) {
+        try {
+          const section = await generateGeminiTopicSection(content, title, topic);
+          noteSections.push(section);
+        } catch (err) {
+          console.error(`Gemini fallback failed for topic ${topic}`, err);
         }
-      }));
-      
-      const fallbackText = fallbackResponse.text;
-      if (fallbackText) {
-        openRouterResult = JSON.parse(fallbackText);
       }
+      openRouterResult = {
+        detailedNotes: noteSections.map(s => `# ${s.heading}\n\n${s.content}`).join('\n\n'),
+        noteSections: noteSections
+      };
     }
 
     if (openRouterResult && openRouterResult.noteSections && openRouterResult.noteSections.length > 0) {
-      console.log('Using high-quality multi-model notes and sections');
       result.detailedNotes = openRouterResult.detailedNotes;
       
-      // Generate images for each section in parallel
+      // Step 3: Generate visual aids in parallel
       const sectionsWithImages = await Promise.all(
         openRouterResult.noteSections.map(async (section) => {
           try {
             const imageUrl = await generateVisualAid(section.imagePrompt);
             return { ...section, imageUrl };
           } catch (err) {
-            console.error(`Failed to generate image for section: ${section.heading}`, err);
             return { ...section, imageUrl: '' };
           }
         })

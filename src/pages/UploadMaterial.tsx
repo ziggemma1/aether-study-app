@@ -4,7 +4,7 @@ import { Upload, Youtube, BookOpen, Mic, X, CheckCircle2, Loader2, Camera, Image
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { extractTextFromImage } from '../services/OCRService';
-import { analyzeStudyMaterial, generateVisualAid } from '../services/geminiService';
+import { analyzeStudyMaterialOnClient, generateVisualAidOnClient } from '../lib/gemini';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -51,19 +51,37 @@ export default function UploadMaterial() {
       }
 
       setUploadProgress(30);
-      console.log('Analyzing material with AI (server-side)...');
+      console.log('Analyzing material with AI (Client-Side)...');
       
-      // AI Analysis via server
+      // AI Analysis via client to use platform API Key
       let analysis: any;
       try {
-        const analyzeResponse = await api.post('/materials/analyze', {
+        analysis = await analyzeStudyMaterialOnClient(finalContent || materialTitle, materialTitle);
+        console.log('Client-side Gemini Analysis successful');
+        
+        // Detailed Notes generation via backend (OpenRouter)
+        setUploadProgress(50);
+        console.log('Generating massive chapters via backend...');
+        const chaptersResponse = await api.post('/materials/generate-chapters', {
           content: finalContent || materialTitle,
-          title: materialTitle
+          title: materialTitle,
+          keyTopics: analysis.keyTopics
         });
-        analysis = analyzeResponse.data;
-        console.log('AI Analysis and Visual Aid generation successful');
+        
+        const { noteSections } = chaptersResponse.data;
+        analysis.noteSections = noteSections;
+        analysis.detailedNotes = noteSections.map((s: any) => `# ${s.heading}\n\n${s.content}`).join('\n\n---\n\n');
+
+        // Visual Aid for first topic on client
+        console.log('Generating first visual aid on client...');
+        if (analysis.noteSections?.[0]) {
+          const mainImageUrl = await generateVisualAidOnClient(analysis.noteSections[0].imagePrompt);
+          analysis.noteSections[0].imageUrl = mainImageUrl;
+          analysis.visualAidUrl = mainImageUrl;
+        }
+
       } catch (aiErr: any) {
-        console.warn('Server-side AI Analysis failed, using fallback:', aiErr);
+        console.warn('AI Analysis failed, using fallback:', aiErr);
         analysis = {
           summary: finalContent ? finalContent.substring(0, 200) + '...' : `Study material for ${materialTitle}`,
           keyTopics: [],

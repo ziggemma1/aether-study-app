@@ -1,7 +1,15 @@
 import axios from 'axios';
 import { NoteSection } from '../types.js';
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const getOpenRouterKey = () => {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key || key === 'undefined' || key.length < 10) {
+    console.warn('⚠️ OPENROUTER_API_KEY is missing or invalid. Detailed notes generation via OpenRouter will be skipped.');
+    return null;
+  }
+  return key;
+};
+
 const SITE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://aether-study.app';
 const SITE_NAME = 'Aether Study';
 
@@ -60,89 +68,110 @@ const callOpenRouterWithFallback = async (messages: any[], modelList: string[], 
   throw new Error('All OpenRouter models failed to provide a valid response.');
 };
 
+export const generateTopicSection = async (content: string, title: string, topic: string, context?: string): Promise<NoteSection> => {
+  const apiKey = getOpenRouterKey();
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY is missing. Deep analysis requires this key.');
+  }
+
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'HTTP-Referer': SITE_URL,
+    'X-OpenRouter-Title': SITE_NAME,
+    'Content-Type': 'application/json',
+  };
+
+  const response = await callOpenRouterWithFallback(
+    [
+      {
+        role: 'system',
+        content: `You are an elite academic professor and textbook author. Your goal is to write the MOST comprehensive, deep-dive chapter for a textbook about a specific topic.
+        
+        TOPIC TO EXPLAIN: "${topic}"
+        
+        GOAL: Write at least 800-1200 words for this specific topic alone. 
+        
+        STYLE GUIDELINES:
+        1. FIRST PRINCIPLES: Start from the very base assumptions and build up.
+        2. NO SUMMARIES: Do not summarize. Elaborate on every detail, nuance, and edge case.
+        3. EXAMPLES: Include at least THREE very detailed, step-by-step real-world examples.
+        4. STRUCTURE: Use multiple sub-headings (###), bolding ( ** ), and bullet points.
+        5. ACADEMIC FLOW: Use blockquotes for major laws, definitions, or equations.
+        6. LENGTH IS QUALITY: The more you explain, the better. Be extremely verbose but professional.
+        
+        Format the output as a JSON object with:
+        - "heading": The topic name ("${topic}").
+        - "content": The massive, EXQUISITELY detailed explanation in Markdown.
+        - "imagePrompt": A descriptive prompt for a professional textbook diagram illustrating this specific topic.`
+      },
+      {
+        role: 'user',
+        content: `Material Title: ${title}\n\nOverarching Context: ${context || 'N/A'}\n\nCore Reference Material: ${content.substring(0, 10000)}`
+      }
+    ],
+    MODELS.synthesis,
+    headers,
+    true
+  );
+
+  const rawJson = response.content || '{}';
+  const cleanJson = rawJson.replace(/```json\n?|```/g, '').trim();
+  return JSON.parse(cleanJson);
+};
+
 export const generateDetailedNotes = async (content: string, title: string, keyTopics?: string[]): Promise<{ detailedNotes: string, noteSections: NoteSection[] }> => {
-  if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'undefined' || OPENROUTER_API_KEY.length < 10) {
-    console.warn('OPENROUTER_API_KEY is missing or invalid. Detailed notes generation via OpenRouter will be skipped.');
+  const apiKey = getOpenRouterKey();
+  if (!apiKey) {
     return { detailedNotes: '', noteSections: [] };
   }
 
   const headers = {
-    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+    'Authorization': `Bearer ${apiKey}`,
     'HTTP-Referer': SITE_URL,
     'X-OpenRouter-Title': SITE_NAME,
     'Content-Type': 'application/json',
   };
 
   try {
-    // Step 1: Reasoning
-    console.log('Step 1: Reasoning with OpenRouter...');
+    // Step 1: Deep Reasoning Context
+    console.log('Step 1: Gathering deep reasoning context...');
     const reasoningMessage = await callOpenRouterWithFallback(
       [
         {
           role: 'user',
-          content: `Analyze and reason deeply about the following study material titled "${title}". 
-          Break down the core logic, explain the "why" behind every concept, provide derivations for formulas, and identify the deeper academic context.
-          Create a highly informative intellectual map of this material.
-          ${keyTopics ? `Focus specifically on these key topics: ${keyTopics.join(', ')}` : ''}
+          content: `You are a highly advanced analytical researcher. Analyze the following material titled "${title}" and create a 2000-word deep-dive reasoning map. 
+          Identify every subtle concept, the mathematical or logical foundations, and how these topics interconnect.
           
-          Material Content:
-          ${content}
-          
-          IMPORTANT: Your reasoning MUST be extremely thorough and long. Leave no stone unturned.`
+          Material: ${content.substring(0, 15000)}`
         }
       ],
       MODELS.reasoning,
       headers
     );
-    
-    // Step 2: Structured Content Generation
-    console.log('Step 2: Structured Content Generation with OpenRouter...');
-    const structuredMessage = await callOpenRouterWithFallback(
-      [
-        {
-          role: 'system',
-          content: `You are an elite academic tutor and textbook author. Your goal is to take the provided reasoning and create the most comprehensive, detailed, and beautifully structured study notes possible.
-          
-          STYLE GUIDELINES:
-          - EXHAUSTIVE DETAIL: Every concept must be explained as if to a student who needs to understand the "first principles". Do not skip steps.
-          - ACADEMIC RIGOR: Use professional terminology but explain it clearly.
-          - LENGTH: Each section MUST be significantly long (at least 600-1000 words per section). Expand on every nuance.
-          - EXAMPLES: Include at least THREE concrete, step-by-step examples for every single key topic. Use a "#### Example:" heading for these.
-          - FORMATTING: Use bolding for key terms, blockquotes for important laws/theorems, and clear sub-headings.
-          
-          STRUCTURE REQUIREMENT:
-          ${keyTopics ? `You MUST create a massive, separate section for EACH of these specific key topics: ${keyTopics.join(', ')}.` : 'You MUST create a separate section for EACH of the key topics identified in the material.'}
-          Each section is a complete "chapter" in a textbook dedicated to that topic.
-          
-          Format the output as a JSON object with:
-          1. "detailedNotes": A massive full markdown version of the notes (the combination of all sections).
-          2. "noteSections": An array of objects, each containing:
-             - "heading": The section title (MUST match one of the key topics).
-             - "content": The EXQUISITELY detailed, long-form explanation for this topic (Markdown). Use multiple paragraphs, sub-points, and deep explanations.
-             - "imagePrompt": A highly detailed, descriptive prompt for an AI image generator to create a high-quality, professional textbook illustration or diagram of the core concept.
-          
-          Be authoritative, incredibly thorough, and clear.`
-        },
-        {
-          role: 'user',
-          content: `Material Title: ${title}\n\nReasoning Context: ${reasoningMessage.content}`
-        }
-      ],
-      MODELS.synthesis,
-      headers,
-      true
-    );
 
-    const rawContent = structuredMessage.content || '{}';
-    const cleanJson = rawContent.replace(/```json\n?|```/g, '').trim();
-    const result = JSON.parse(cleanJson);
+    const context = reasoningMessage.content;
+    const topicsToProcess = keyTopics || [];
+    const noteSections: NoteSection[] = [];
+
+    // Step 2: Iterative Section Generation (500% more content approach)
+    console.log(`Step 2: Generating ${topicsToProcess.length} massive chapters iteratively...`);
     
-    return {
-      detailedNotes: result.detailedNotes || '',
-      noteSections: result.noteSections || []
-    };
+    // We do this one by one to ensure max tokens per section
+    for (const topic of topicsToProcess) {
+      try {
+        console.log(`Generating massive chapter for: ${topic}`);
+        const section = await generateTopicSection(content, title, topic, context);
+        noteSections.push(section);
+      } catch (err) {
+        console.error(`Failed to generate section ${topic}:`, err);
+      }
+    }
+
+    const detailedNotes = noteSections.map(s => `# ${s.heading}\n\n${s.content}`).join('\n\n---\n\n');
+    
+    return { detailedNotes, noteSections };
   } catch (error: any) {
     console.error('OpenRouter Pipeline Error:', error.message);
-    return { detailedNotes: '', noteSections: [] };
+    return { detailedNotes: 'Generation failed.', noteSections: [] };
   }
 };
