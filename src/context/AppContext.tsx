@@ -76,6 +76,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('app:db-error', handleDbError);
   }, []);
 
+  const fetchUserData = React.useCallback(async () => {
+    try {
+      const response = await api.get('/auth/me');
+      setUser(response.data);
+      return true;
+    } catch (err: any) {
+      console.log('Not authenticated or error checking auth');
+      if (err.response?.status === 401) {
+        setUser(null);
+      }
+      return false;
+    }
+  }, []);
+
+  const fetchAppData = React.useCallback(async () => {
+    const endpoints = [
+      { key: 'materials', url: '/materials', setter: setMaterials },
+      { key: 'sessions', url: '/sessions', setter: setStudySessions },
+      { key: 'quizzes', url: '/quizzes', setter: setQuizResults },
+      { key: 'messages', url: '/messages', setter: setMessages },
+      { key: 'profiles', url: '/users/profiles', setter: setAllProfiles }
+    ];
+
+    const mapId = (item: any) => ({ 
+      ...item, 
+      id: item._id || item.id,
+      uploadDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'
+    });
+
+    await Promise.all(endpoints.map(async ({ url, setter }) => {
+      try {
+        const res = await api.get(url);
+        if (Array.isArray(res.data)) {
+          setter(res.data.map(mapId));
+        }
+      } catch (err) {
+        console.warn(`Failed to fetch ${url}:`, err);
+      }
+    }));
+  }, []);
+
+  const initialize = React.useCallback(async () => {
+    setIsLoading(true);
+    const isAuthed = await fetchUserData();
+    if (isAuthed) {
+      await fetchAppData();
+    }
+    setIsLoading(false);
+  }, [fetchUserData, fetchAppData]);
+
   // Auto-retry polling when DB error exists
   useEffect(() => {
     if (!dbError) return;
@@ -89,8 +139,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (response.data.dbConnected) {
           console.log('✅ DB is back online! Clearing error...');
           setDbError(null);
-          // Reload current data
-          window.location.reload();
+          // Gently refresh app state instead of a hard reload
+          initialize();
         }
       } catch (err) {
         console.warn('Polling health check failed, still disconnected.');
@@ -102,64 +152,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [dbError]);
+  }, [dbError, initialize]);
 
   // Check auth on mount
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await api.get('/auth/me');
-        setUser(response.data);
-        return true;
-      } catch (err: any) {
-        console.log('Not authenticated or error checking auth');
-        // Only clear user on explicit 401
-        if (err.response?.status === 401) {
-          setUser(null);
-        }
-        return false;
-      }
-    };
-
-    const fetchAppData = async () => {
-      const endpoints = [
-        { key: 'materials', url: '/materials', setter: setMaterials },
-        { key: 'sessions', url: '/sessions', setter: setStudySessions },
-        { key: 'quizzes', url: '/quizzes', setter: setQuizResults },
-        { key: 'messages', url: '/messages', setter: setMessages },
-        { key: 'profiles', url: '/users/profiles', setter: setAllProfiles }
-      ];
-
-      const mapId = (item: any) => ({ 
-        ...item, 
-        id: item._id || item.id,
-        uploadDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'
-      });
-
-      // Fetch each independently to prevent one failure from blocking others
-      await Promise.all(endpoints.map(async ({ url, setter }) => {
-        try {
-          const res = await api.get(url);
-          if (Array.isArray(res.data)) {
-            setter(res.data.map(mapId));
-          }
-        } catch (err) {
-          console.warn(`Failed to fetch ${url}:`, err);
-        }
-      }));
-    };
-
-    const initialize = async () => {
-      setIsLoading(true);
-      const isAuthed = await fetchUserData();
-      if (isAuthed) {
-        await fetchAppData();
-      }
-      setIsLoading(false);
-    };
-
     initialize();
-  }, []);
+  }, [initialize]);
 
   return (
     <AppContext.Provider value={{ 
