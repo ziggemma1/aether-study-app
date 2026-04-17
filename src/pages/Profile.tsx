@@ -74,15 +74,15 @@ export default function Profile() {
             <div className="flex items-center justify-center sm:justify-start gap-6 sm:gap-8 pt-4 border-t border-border/30">
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
                 <span className="text-sm sm:text-xl font-bold text-text-main">1.2k</span>
-                <span className="text-[8px] sm:text-sm font-bold text-text-muted uppercase tracking-widest">Followers</span>
+                <span className="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-widest">Followers</span>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
                 <span className="text-sm sm:text-xl font-bold text-text-main">850</span>
-                <span className="text-[8px] sm:text-sm font-bold text-text-muted uppercase tracking-widest">Friends</span>
+                <span className="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-widest">Friends</span>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
                 <span className="text-sm sm:text-xl font-bold text-text-main">4,250</span>
-                <span className="text-[8px] sm:text-sm font-bold text-text-muted uppercase tracking-widest">Points</span>
+                <span className="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-widest">Points</span>
               </div>
             </div>
           </div>
@@ -96,12 +96,12 @@ export default function Profile() {
           {/* Bio Card */}
           <div className="glass-card p-6 sm:p-8">
             <h3 className="text-sm sm:text-xl font-bold mb-3 sm:mb-4 text-text-main">About Me</h3>
-            <p className="text-[10px] sm:text-base text-text-muted leading-relaxed mb-4 sm:mb-6">
+            <p className="text-xs sm:text-base text-text-muted leading-relaxed mb-4 sm:mb-6">
               Passionate about Physics and helping others learn! I'm currently preparing for my SATs and love sharing my study notes with the community. Let's grow together! 🚀
             </p>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {['Physics', 'Calculus', 'SAT Prep', 'AI Learning', 'Generous'].map((tag) => (
-                <span key={tag} className="px-2 py-0.5 sm:px-3 sm:py-1 bg-surface-alt/50 border border-border/50 rounded-lg text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                <span key={tag} className="px-2 py-0.5 sm:px-3 sm:py-1 bg-surface-alt/50 border border-border/50 rounded-lg text-[10px] sm:text-[10px] font-bold uppercase tracking-wider text-text-muted">
                   #{tag}
                 </span>
               ))}
@@ -119,7 +119,7 @@ export default function Profile() {
                 <TrendingUp size={24} className="text-primary hidden sm:block" />
                 Learning Progress
               </h3>
-              <span className="text-[8px] sm:text-xs font-bold text-primary uppercase tracking-widest">Last 30 Days</span>
+              <span className="text-xs font-bold text-primary uppercase tracking-widest">Last 30 Days</span>
             </div>
             
             <div className="space-y-4 sm:space-y-6">
@@ -129,7 +129,7 @@ export default function Profile() {
                 { label: 'English Literature', progress: 45, color: 'bg-accent' },
               ].map((item) => (
                 <div key={item.label} className="space-y-1.5 sm:space-y-2">
-                  <div className="flex justify-between text-[10px] sm:text-sm font-bold">
+                  <div className="flex justify-between text-xs sm:text-sm font-bold">
                     <span className="text-text-main">{item.label}</span>
                     <span className="text-text-muted">{item.progress}%</span>
                   </div>
@@ -166,9 +166,9 @@ export default function Profile() {
                     <achievement.icon size={24} className="hidden sm:block" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-text-main text-[10px] sm:text-sm">{achievement.title}</h4>
-                    <p className="text-[8px] sm:text-[10px] text-text-muted mb-0.5 sm:mb-1">{achievement.desc}</p>
-                    <p className="text-[8px] font-bold text-primary/60 uppercase tracking-widest">{achievement.date}</p>
+                    <h4 className="font-bold text-text-main text-xs sm:text-sm">{achievement.title}</h4>
+                    <p className="text-xs sm:text-[10px] text-text-muted mb-0.5 sm:mb-1">{achievement.desc}</p>
+                    <p className="text-[10px] font-bold text-primary/60 uppercase tracking-widest">{achievement.date}</p>
                   </div>
                 </div>
               ))}

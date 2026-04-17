@@ -109,7 +109,7 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
       </div>
 
       {/* Timeline/Events */}
-      <div className="space-y-4 flex-grow relative z-10 overflow-y-auto no-scrollbar">
+      <div className="space-y-4 flex-grow relative z-10 overflow-y-auto custom-scrollbar">
         <AnimatePresence mode="popLayout">
           {Array.isArray(studySessions) && studySessions.map((event, idx) => (
             <motion.div 

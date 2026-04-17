@@ -59,7 +59,7 @@ export default function MessagesList({ className }: MessagesListProps) {
         />
       </div>
 
-      <div className="space-y-6 overflow-y-auto pr-2 no-scrollbar">
+      <div className="space-y-6 overflow-y-auto pr-2 custom-scrollbar">
         {contacts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-text-muted">
             <MessageSquare size={32} className="mb-2 opacity-20" />
@@ -81,7 +81,7 @@ export default function MessagesList({ className }: MessagesListProps) {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-text-main mb-0.5">{contact.name}</p>
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
                     {contact.status === 'Online' && <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />}
                     {contact.status}
                   </p>

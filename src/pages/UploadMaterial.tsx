@@ -228,7 +228,7 @@ export default function UploadMaterial() {
       </header>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 mb-6 sm:mb-10 overflow-x-auto no-scrollbar pb-2">
+      <div className="flex items-center gap-2 mb-6 sm:mb-10 overflow-x-auto custom-scrollbar pb-2">
         {tabs.map((tab) => (
           <button
             key={tab.id}

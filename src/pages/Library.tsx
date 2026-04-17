@@ -149,7 +149,7 @@ export default function Library() {
                 <span className="text-[10px] sm:text-xs font-bold text-text-muted">{material.uploadDate}</span>
               </div>
               <h3 className="text-sm sm:text-lg font-bold mb-1 sm:mb-2 line-clamp-1 text-text-main pr-6 sm:pr-8">{material.title}</h3>
-              <p className="text-[10px] sm:text-sm text-text-muted mb-4 sm:mb-6 line-clamp-2 leading-tight">{material.summary}</p>
+              <p className="text-xs sm:text-sm text-text-muted mb-4 sm:mb-6 line-clamp-2 leading-tight">{material.summary}</p>
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="flex-grow h-1 sm:h-1.5 bg-surface rounded-full overflow-hidden border border-border">
                   <div
@@ -157,7 +157,7 @@ export default function Library() {
                     style={{ width: `${material.progress}%` }}
                   />
                 </div>
-                <span className="text-[10px] sm:text-xs font-bold text-text-muted">{material.progress}%</span>
+                <span className="text-xs font-bold text-text-muted">{material.progress}%</span>
               </div>
             </Link>
           </motion.div>
@@ -225,7 +225,7 @@ export default function Library() {
       <header className="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
         <div>
           <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-2 text-text-main">Library</h1>
-          <p className="text-[10px] sm:text-base text-text-muted">All your study materials in one place.</p>
+          <p className="text-sm sm:text-base text-text-muted">All your study materials in one place.</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex bg-surface rounded-lg sm:rounded-xl p-0.5 sm:p-1 shadow-sm border border-border">
@@ -249,7 +249,7 @@ export default function Library() {
       </header>
 
       {/* Tabs */}
-      <div className="flex gap-4 sm:gap-6 mb-6 sm:mb-8 border-b border-border/50 overflow-x-auto no-scrollbar">
+      <div className="flex gap-4 sm:gap-6 mb-6 sm:mb-8 border-b border-border/50 overflow-x-auto custom-scrollbar">
         <button 
           onClick={() => setActiveTab('materials')} 
           className={cn("pb-3 sm:pb-4 text-[10px] sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap", activeTab === 'materials' ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main")}
@@ -287,7 +287,7 @@ export default function Library() {
                 className="w-full pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-border/40 focus:ring-2 focus:ring-primary/20 outline-none bg-surface/30 backdrop-blur-sm text-xs sm:text-sm text-text-main placeholder:text-text-muted/50 transition-all"
               />
             </div>
-            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar w-full md:w-auto">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar w-full md:w-auto">
               {filterChips.map((chip) => (
                 <button
                   key={chip}

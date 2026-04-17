@@ -62,7 +62,46 @@ export default function Dashboard() {
 
   // Data Tracking Calculations (mirrored from Reports)
   const calculatedStudyMins = Array.isArray(studySessions) ? studySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0) : 0;
-  const totalStudyTime = Math.round(calculatedStudyMins / 60) || user?.totalStudyTime || 0;
+  // If the user hasn't tracked any active study sessions natively, fall back to parsing their base user profile object
+  const fallbackMins = (user?.totalStudyTime || 0) * 60;
+  const totalStudyMinutes = calculatedStudyMins > 0 ? calculatedStudyMins : fallbackMins; 
+  
+  // Real life dynamic active week processing for the bar chart
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const realWeeklyMap = new Map();
+  // Initialize with exactly what Rechart expects for scaling
+  weekDays.forEach(d => realWeeklyMap.set(d, 0));
+
+  const todayDate = new Date();
+  const startOfWeek = new Date(todayDate);
+  startOfWeek.setDate(todayDate.getDate() - todayDate.getDay());
+  startOfWeek.setHours(0,0,0,0);
+
+  let hasChronologicalData = false;
+
+  if (Array.isArray(studySessions) && studySessions.length > 0) {
+    studySessions.forEach(session => {
+      const sessionDate = new Date(session.startTime);
+      if (sessionDate >= startOfWeek) {
+        hasChronologicalData = true;
+        const dayName = weekDays[sessionDate.getDay()];
+        realWeeklyMap.set(dayName, realWeeklyMap.get(dayName)! + ((session.durationMinutes || 0) / 60));
+      }
+    });
+  } 
+
+  if (!hasChronologicalData && user?.weeklyTimeData?.length) {
+      // Fallback safely to native user profile tracking if session arrays exist but are empty
+      user.weeklyTimeData.forEach(d => {
+        realWeeklyMap.set(d.day, d.hours);
+      })
+  }
+
+  // Ensure Recharts doesn't get completely flatline empty sets which causes visual collapse
+  const realWeeklyData = weekDays.map(day => ({ 
+    day, 
+    hours: realWeeklyMap.get(day) === 0 ? 0.01 : realWeeklyMap.get(day) 
+  }));
 
   const avgScorePercentage = Array.isArray(quizResults) && quizResults.length > 0 
     ? Math.round(
@@ -71,7 +110,15 @@ export default function Dashboard() {
           return acc + p;
         }, 0) / quizResults.length
       ) 
-    : 0;
+    : (user?.avgQuizScore || 0);
+
+  const highestQuizScore = Array.isArray(quizResults) && quizResults.length > 0 
+    ? Math.max(...quizResults.map(r => r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0))
+    : (user?.highestQuizScore || 0);
+    
+  const lowestQuizScore = Array.isArray(quizResults) && quizResults.length > 0
+    ? Math.min(...quizResults.map(r => r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0))
+    : (user?.lowestQuizScore || 0);
 
   const myRankIndex = Array.isArray(allProfiles) ? allProfiles.findIndex(p => p.id === user?.id) : -1;
   const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
@@ -83,7 +130,7 @@ export default function Dashboard() {
         <h1 className="text-xl sm:text-2xl font-bold text-text-main tracking-tight">
           Welcome back, <span className="text-primary">{user?.name?.split(' ')[0] || "Student"}</span>!
         </h1>
-        <p className="text-text-muted text-[10px] sm:text-sm max-w-2xl leading-relaxed">
+        <p className="text-text-muted text-xs sm:text-sm max-w-2xl leading-relaxed">
           It's a great day to stay productive. Manage your tasks and explore your tools today.
         </p>
       </div>
@@ -92,7 +139,7 @@ export default function Dashboard() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">Overview</h2>
-          <Link to="/reports" className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
+          <Link to="/reports" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
             Reports <ArrowRight size={10} />
           </Link>
         </div>
@@ -100,23 +147,23 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <Link to="/reports" className="block">
             <TimeSpentCard 
-              totalHours={totalStudyTime} 
+              totalMinutes={totalStudyMinutes} 
               trend={user?.timeTrend}
-              weeklyData={user?.weeklyTimeData?.length ? user.weeklyTimeData : undefined} 
+              weeklyData={realWeeklyData} 
             />
           </Link>
           <Link to="/reports" className="block">
             <QuizScoreCard 
               score={avgScorePercentage} 
               trend={user?.quizTrend}
-              highest={user?.highestQuizScore}
-              lowest={user?.lowestQuizScore}
+              highest={highestQuizScore}
+              lowest={lowestQuizScore}
             />
           </Link>
           <Link to="/reports" className="block">
             <StreakCard 
               currentStreak={user?.streak} 
-              longestStreak={user?.longestStreak} 
+              longestStreak={user?.longestStreak && user.longestStreak > (user?.streak || 0) ? user.longestStreak : (user?.streak || 0)} 
             />
           </Link>
           <Link to="/reports" className="block">
@@ -132,7 +179,7 @@ export default function Dashboard() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">Recent Materials</h2>
-              <Link to="/library" className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
+              <Link to="/library" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
                 View All <ArrowRight size={10} />
               </Link>
             </div>
@@ -148,7 +195,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex-grow min-w-0">
                     <h3 className="text-xs font-bold text-text-main truncate">{material.title}</h3>
-                    <p className="text-[10px] text-text-muted">{material.uploadDate}</p>
+                    <p className="text-xs text-text-muted">{material.uploadDate}</p>
                   </div>
                 </Link>
               ))}
@@ -174,7 +221,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex-grow min-w-0">
                       <h4 className="text-xs font-bold text-text-main truncate">{session.title}</h4>
-                      <p className="text-[10px] text-text-muted">{session.durationMinutes} mins • {new Date(session.startTime).toLocaleDateString()}</p>
+                      <p className="text-xs text-text-muted">{session.durationMinutes} mins • {new Date(session.startTime).toLocaleDateString()}</p>
                     </div>
                   </div>
                 ))
@@ -210,7 +257,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-grow">
                   <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">Snap & Scan</h3>
-                  <p className="text-[10px] text-text-muted max-w-md leading-tight">Transform physical notes into digital study guides with AI.</p>
+                  <p className="text-xs text-text-muted max-w-md leading-tight">Transform physical notes into digital study guides with AI.</p>
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all shrink-0">
                   <ArrowRight size={14} className="text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
@@ -227,7 +274,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-grow">
                   <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">Curriculum Library</h3>
-                  <p className="text-[10px] text-text-muted max-w-md leading-tight">Access your entire collection of courses and study materials.</p>
+                  <p className="text-xs text-text-muted max-w-md leading-tight">Access your entire collection of courses and study materials.</p>
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-secondary group-hover:bg-secondary/5 transition-all shrink-0">
                   <ArrowRight size={14} className="text-text-muted group-hover:text-secondary group-hover:translate-x-1 transition-all" />

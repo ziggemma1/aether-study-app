@@ -96,7 +96,7 @@ export default function Settings() {
         </div>
         
         {/* Tab Navigation */}
-        <div className="flex items-center bg-surface-alt/50 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-border overflow-x-auto no-scrollbar">
+        <div className="flex items-center bg-surface-alt/50 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-border overflow-x-auto custom-scrollbar">
           {tabs.map((tab) => (
             <button
               key={tab.id}

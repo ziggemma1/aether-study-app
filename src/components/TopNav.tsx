@@ -14,11 +14,13 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
   const [scrolled, setScrolled] = React.useState(false);
 
   React.useEffect(() => {
+    const mainEl = document.querySelector('main');
+    if (!mainEl) return;
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      setScrolled(mainEl.scrollTop > 20);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => mainEl.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (

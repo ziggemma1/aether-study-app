@@ -77,7 +77,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="h-full flex flex-col overflow-y-auto no-scrollbar">
+        <div className="h-full flex flex-col overflow-y-auto custom-scrollbar">
           <div className="p-8">
             <Link to="/" className="flex items-center gap-2 mb-12">
               <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.3)]">

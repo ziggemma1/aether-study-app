@@ -196,7 +196,7 @@ export default function Messages() {
             />
           </div>
 
-          <div className="flex-grow overflow-y-auto no-scrollbar space-y-3 sm:space-y-4">
+          <div className="flex-grow overflow-y-auto custom-scrollbar space-y-3 sm:space-y-4">
             {isLoadingProfiles ? (
               <div className="flex flex-col items-center justify-center h-40 text-text-muted">
                 <Loader2 size={24} className="animate-spin mb-2" />
@@ -316,7 +316,7 @@ export default function Messages() {
               </div>
 
               {/* Messages Area */}
-              <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 no-scrollbar">
+              <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar">
                 {filteredMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-text-muted">
                     <MessageSquare size={48} className="mb-4 opacity-20" />
@@ -414,7 +414,7 @@ export default function Messages() {
             </div>
           )
         ) : (
-          <div className="flex-grow flex flex-col items-center p-6 sm:p-12 text-center overflow-y-auto no-scrollbar">
+          <div className="flex-grow flex flex-col items-center p-6 sm:p-12 text-center overflow-y-auto custom-scrollbar">
             <div className="w-16 h-16 sm:w-24 sm:h-24 bg-primary/10 rounded-[30px] sm:rounded-[40px] flex items-center justify-center text-primary mb-6 sm:mb-8 animate-bounce shrink-0">
               <UserCheck size={32} className="sm:hidden" />
               <UserCheck size={48} className="hidden sm:block" />

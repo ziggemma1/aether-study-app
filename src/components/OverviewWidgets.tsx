@@ -41,14 +41,14 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
       className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
     >
       <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[9px] sm:text-[11px] font-medium text-text-muted">Avg Quiz Score</p>
+        <p className="text-[10px] sm:text-xs font-medium text-text-muted">Avg Quiz Score</p>
       </div>
       
       <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">{Math.round(score)}%</span>
+        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">{Math.round(score)}%</span>
         {trend !== 0 && (
           <span className={cn(
-            "flex items-center text-[7px] sm:text-[9px] font-medium px-1 sm:px-1.5 py-0.5 rounded-md",
+            "flex items-center text-[10px] sm:text-[11px] font-medium px-1.5 py-0.5 rounded-md",
             trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
           )}>
             {trend > 0 ? '+' : ''}{trend}% {trend > 0 ? <TrendingUp size={6} className="sm:ml-0.5" /> : <ChevronDown size={6} className="sm:ml-0.5" />}
@@ -60,11 +60,11 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
 
       <div className="space-y-2 sm:space-y-4 mt-auto">
         <div className="space-y-1">
-          <div className="flex justify-between text-[8px] sm:text-[10px] font-medium text-text-muted">
+          <div className="flex justify-between text-xs sm:text-sm font-medium text-text-muted">
             <span>Highest</span>
-            <span className="text-text-main">{highest}%</span>
+            <span className="text-text-main font-semibold">{highest}%</span>
           </div>
-          <div className="h-2 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
+          <div className="h-2.5 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${highest}%` }}
@@ -74,11 +74,11 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
           </div>
         </div>
         <div className="space-y-1">
-          <div className="flex justify-between text-[8px] sm:text-[10px] font-medium text-text-muted">
+          <div className="flex justify-between text-xs sm:text-sm font-medium text-text-muted">
             <span>Lowest</span>
-            <span className="text-text-main">{lowest}%</span>
+            <span className="text-text-main font-semibold">{lowest}%</span>
           </div>
-          <div className="h-2 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
+          <div className="h-2.5 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${lowest}%` }}
@@ -92,10 +92,13 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
   );
 }
 
-export function TimeSpentCard({ totalHours = 0, trend = 0, weeklyData = [] }: { totalHours?: number, trend?: number, weeklyData?: { day: string, hours: number }[] }) {
-  const displayTime = totalHours < 1 && totalHours > 0 
-    ? `${Math.round(totalHours * 60)}m` 
-    : `${totalHours}h`;
+export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: { totalMinutes?: number, trend?: number, weeklyData?: { day: string, hours: number }[] }) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  const displayTime = hours > 0 
+    ? `${hours}h ${minutes > 0 ? `${minutes}m` : ''}` 
+    : `${minutes}m`;
 
   return (
     <motion.div 
@@ -104,29 +107,29 @@ export function TimeSpentCard({ totalHours = 0, trend = 0, weeklyData = [] }: { 
       className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
     >
       <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[9px] sm:text-[11px] font-medium text-text-muted">Total Time</p>
+        <p className="text-[10px] sm:text-xs font-medium text-text-muted">Total Time</p>
       </div>
 
-      <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">{displayTime}</span>
+      <div className="flex items-center gap-1 mb-1 sm:mb-2 text-nowrap">
+        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight shrink-0">{displayTime}</span>
         {trend !== 0 && (
           <span className={cn(
-            "flex items-center text-[7px] sm:text-[9px] font-medium px-1 sm:px-1.5 py-0.5 rounded-md",
+            "flex items-center text-[10px] sm:text-[11px] font-medium px-1.5 py-0.5 rounded-md shrink-0 ml-auto",
             trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
           )}>
-            {trend > 0 ? '+' : ''}{trend}% {trend > 0 ? <TrendingUp size={6} className="sm:ml-0.5" /> : <ChevronDown size={6} className="sm:ml-0.5" />}
+            {trend > 0 ? '+' : ''}{trend}%
           </span>
         )}
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
 
-      <div className="flex justify-between text-[8px] sm:text-[10px] font-medium text-text-muted mb-1 sm:mb-2">
+      <div className="flex justify-between text-[10px] sm:text-xs font-medium text-text-muted mb-1 sm:mb-2">
         <span>This Week</span>
-        <span className="text-text-main">
+        <span className="text-text-main font-semibold">
           {weeklyData.reduce((acc, curr) => acc + curr.hours, 0) < 1 
             ? `${Math.round(weeklyData.reduce((acc, curr) => acc + curr.hours, 0) * 60)}M`
-            : `${weeklyData.reduce((acc, curr) => acc + curr.hours, 0).toFixed(1)}H`}
+            : `${Math.floor(weeklyData.reduce((acc, curr) => acc + curr.hours, 0))}H`}
         </span>
       </div>
 
@@ -155,10 +158,20 @@ export function TimeSpentCard({ totalHours = 0, trend = 0, weeklyData = [] }: { 
 }
 
 export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentStreak?: number, longestStreak?: number }) {
-  const days = Array.from({ length: 15 }, (_, i) => ({
-    label: (i + 1).toString().padStart(2, '0'),
-    active: i < currentStreak
-  }));
+  // Real life functional day generation based on the actual calendar week
+  const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const todayIndex = new Date().getDay();
+  
+  // Get the last 5 days strictly wrapping around standard calendar indices
+  const displayDays = Array.from({ length: 5 }, (_, i) => {
+    const historicalIndex = (todayIndex - 4 + i + 7) % 7;
+    // Assuming if the current streak covers this day looking backwards, it's 'active'
+    const isActive = (4 - i) < currentStreak;
+    return {
+      label: daysOfWeek[historicalIndex],
+      active: isActive
+    };
+  });
 
   return (
     <motion.div 
@@ -167,32 +180,32 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
       className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
     >
       <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[9px] sm:text-[11px] font-medium text-text-muted">Weekly Streak</p>
+        <p className="text-[10px] sm:text-xs font-medium text-text-muted">Weekly Streak</p>
       </div>
 
       <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">{currentStreak} Days</span>
+        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">{currentStreak} Days</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
 
-      <div className="flex justify-between text-[8px] sm:text-[10px] font-medium text-text-muted mb-2 sm:mb-4">
+      <div className="flex justify-between text-[10px] sm:text-xs font-medium text-text-muted mb-2 sm:mb-4">
         <span>Longest</span>
-        <span className="text-text-main">{longestStreak}d</span>
+        <span className="text-text-main font-semibold">{longestStreak}d</span>
       </div>
 
-      <div className="overflow-y-auto no-scrollbar pr-1 -mr-1 flex-grow">
-        <div className="grid grid-cols-5 gap-y-2 gap-x-1 sm:gap-y-3 sm:gap-x-1.5">
-          {days.map((day, i) => (
-            <div key={i} className="flex flex-col items-center gap-0.5 sm:gap-1">
+      <div className="overflow-hidden flex-grow flex items-end">
+        <div className="grid grid-cols-5 gap-1 sm:gap-2 w-full">
+          {displayDays.map((day, i) => (
+            <div key={i} className="flex flex-col items-center gap-1 sm:gap-1.5">
               <div className={cn(
-                "w-5 h-5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[6px] sm:text-[8px] font-semibold transition-all shadow-sm",
-                day.active ? "bg-primary text-white" : "bg-surface-alt/30 text-text-muted border border-border/20"
+                "w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-semibold transition-all shadow-sm ring-1 ring-inset",
+                day.active 
+                  ? "bg-primary text-white ring-primary shadow-primary/20" 
+                  : "bg-surface-alt/50 text-text-muted ring-border/50"
               )}>
-                {day.active ? <Check size={8} className="sm:hidden" /> : day.label}
-                {day.active && <Check size={10} className="hidden sm:block" />}
+                {day.label}
               </div>
-              <span className="text-[6px] sm:text-[8px] text-text-muted font-medium">{day.label}</span>
             </div>
           ))}
         </div>
@@ -209,31 +222,31 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
       className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
     >
       <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[9px] sm:text-[11px] font-medium text-text-muted">Global Rank</p>
+        <p className="text-[10px] sm:text-xs font-medium text-text-muted">Global Rank</p>
       </div>
 
       <div className="flex items-baseline gap-1 mb-1 sm:mb-2">
-        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">#{rank}</span>
-        <span className="text-[8px] sm:text-[10px] text-text-muted">of {total > 1000 ? `${(total/1000).toFixed(0)}K` : total}</span>
+        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">#{rank}</span>
+        <span className="text-[10px] sm:text-xs text-text-muted font-medium">of {total > 1000 ? `${(total/1000).toFixed(0)}K` : total}</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
 
-      <p className="text-[8px] sm:text-[10px] font-medium text-text-muted mb-2 sm:mb-3 uppercase tracking-tighter">Top local</p>
+      <p className="text-[10px] sm:text-xs font-medium text-text-muted mb-2 sm:mb-3 uppercase tracking-tighter">Top local</p>
 
-      <div className="overflow-y-auto no-scrollbar pr-1 -mr-1 flex-grow">
+      <div className="overflow-y-auto custom-scrollbar pr-1 -mr-1 flex-grow">
         <div className="space-y-1.5 sm:space-y-2.5">
           {topLearnersData.map((learner, i) => (
             <div key={i} className="flex items-center gap-1.5 sm:gap-2.5">
               <div className="relative">
-                <img src={learner.avatar} alt={learner.name} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-border/20" />
+                <img src={learner.avatar} alt={learner.name} className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-border/20" />
                 {i === 0 && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-orange-500 rounded-full flex items-center justify-center text-[4px] sm:text-[5px] text-white border border-white">
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-orange-500 rounded-full flex items-center justify-center text-[7px] sm:text-[9px] text-white border border-white">
                     ★
                   </div>
                 )}
               </div>
-              <span className="text-[9px] sm:text-[11px] font-medium text-text-main truncate">{learner.name}</span>
+              <span className="text-[11px] sm:text-sm font-medium text-text-main truncate w-full">{learner.name}</span>
             </div>
           ))}
         </div>

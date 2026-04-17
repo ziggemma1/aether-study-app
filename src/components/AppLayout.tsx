@@ -14,7 +14,7 @@ export default function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   return (
-    <div className={cn("min-h-screen bg-background relative overflow-hidden flex", theme)}>
+    <div className={cn("h-full w-full bg-background relative overflow-hidden flex", theme)}>
       {/* Enhanced Database Connection Handling & Loading Overlay */}
       <AnimatePresence>
         {(dbError || (isLoading && !user)) && (
@@ -113,9 +113,9 @@ export default function AppLayout() {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <div className="flex-grow relative z-10 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-grow relative z-10 lg:ml-64 flex flex-col h-full bg-background transition-all duration-500">
         <TopNav onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="max-w-[1600px] w-full mx-auto px-4 md:px-8 pt-16 sm:pt-24 pb-24 sm:pb-10 flex-grow">
+        <main className="max-w-[1600px] w-full mx-auto px-4 md:px-8 pt-16 sm:pt-24 pb-24 sm:pb-10 flex-grow overflow-y-auto scroll-smooth custom-scrollbar select-none overscroll-contain">
           <Outlet />
         </main>
         <BottomNav />

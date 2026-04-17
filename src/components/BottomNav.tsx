@@ -24,23 +24,23 @@ export default function BottomNav() {
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pointer-events-none">
-      <nav className="bg-surface/80 backdrop-blur-xl border border-border shadow-lg rounded-2xl flex items-center justify-around p-2 pointer-events-auto">
+      <nav className="bg-surface/80 backdrop-blur-xl border border-border shadow-lg rounded-2xl flex items-center justify-around p-3 pointer-events-auto">
         {navItems.map((item) => (
           <Link
             key={item.path}
             to={item.path}
             className={cn(
-              "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 min-w-[64px]",
+               "flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all duration-200 min-w-[64px]",
               isActive(item.path)
                 ? "text-primary bg-primary/10"
                 : "text-text-muted hover:text-text-main"
             )}
           >
-            <item.icon size={20} className={cn(
+            <item.icon size={22} className={cn(
               "transition-colors",
               isActive(item.path) ? "text-primary" : "text-text-muted"
             )} />
-            <span className="text-[11px] font-bold uppercase tracking-tighter">{item.label}</span>
+            <span className="text-xs font-bold uppercase tracking-tighter">{item.label}</span>
           </Link>
         ))}
       </nav>

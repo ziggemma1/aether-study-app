@@ -140,7 +140,7 @@ export default function Achievements() {
               {/* Progress for Locked Achievements */}
               {!achievement.isUnlocked && (
                 <div className="w-full space-y-2">
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-muted">
                     <span>Progress</span>
                     <span>{achievement.currentProgress}/{achievement.target}</span>
                   </div>
@@ -155,7 +155,7 @@ export default function Achievements() {
 
               {achievement.isUnlocked && (
                 <div className="mt-auto pt-4">
-                  <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-3 py-1 rounded-full uppercase tracking-wider">
+                  <span className="text-xs font-bold text-green-500 bg-green-500/10 px-3 py-1 rounded-full uppercase tracking-wider">
                     Unlocked
                   </span>
                 </div>

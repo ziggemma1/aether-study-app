@@ -77,7 +77,14 @@ export default function Reports() {
 
   // Calculate real stats
   const calculatedStudyMins = safeStudySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
-  const totalStudyTime = Math.round(calculatedStudyMins / 60) || user?.totalStudyTime || 0;
+  const fallbackMins = (user?.totalStudyTime || 0) * 60;
+  const totalStudyMinutes = calculatedStudyMins > 0 ? calculatedStudyMins : fallbackMins; 
+  
+  const displayHours = Math.floor(totalStudyMinutes / 60);
+  const displayMinutes = totalStudyMinutes % 60;
+  const formattedTimeSpent = displayHours > 0 
+    ? `${displayHours}h ${displayMinutes > 0 ? `${displayMinutes}m` : ''}` 
+    : `${displayMinutes}m`;
 
   // Calculate Average Percentage Score instead of raw points
   const avgScorePercentage = safeQuizResults.length > 0 
@@ -137,7 +144,7 @@ export default function Reports() {
         <StatCard 
           icon={Clock} 
           label="Time on Platform" 
-          value={`${totalStudyTime}h`} 
+          value={formattedTimeSpent} 
           trend={`${timeTrend > 0 ? '+' : ''}${timeTrend}% from last week`} 
           trendUp={timeTrend >= 0}
           color={isLight ? "text-blue-600" : "text-blue-400"}
@@ -184,11 +191,11 @@ export default function Reports() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-primary" />
-                <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Your Score</span>
+                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Your Score</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-slate-600" />
-                <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Avg. Student</span>
+                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Avg. Student</span>
               </div>
             </div>
           </div>
@@ -266,7 +273,7 @@ export default function Reports() {
           <div className="flex-grow flex items-center justify-center relative">
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-3xl font-bold text-text-main">{accuracy}%</span>
-              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Accuracy</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-widest">Accuracy</span>
             </div>
             <ResponsiveContainer width="100%" height={250} minWidth={0}>
               <PieChart>
