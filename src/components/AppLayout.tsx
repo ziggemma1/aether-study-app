@@ -10,14 +10,14 @@ import { Database, ArrowRight, Loader2, Sparkles, WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AppLayout() {
-  const { theme, dbError } = useAppContext();
+  const { theme, dbError, isLoading, user } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   return (
     <div className={cn("min-h-screen bg-background relative overflow-hidden flex", theme)}>
-      {/* Enhanced Database Connection Handling Overlay */}
+      {/* Enhanced Database Connection Handling & Loading Overlay */}
       <AnimatePresence>
-        {dbError && (
+        {(dbError || (isLoading && !user)) && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -27,7 +27,7 @@ export default function AppLayout() {
             <div className="max-w-md w-full glass-card p-10 flex flex-col items-center text-center space-y-8 shadow-[0_0_50px_rgba(139,92,246,0.3)] border-primary/20">
               <div className="relative">
                 <div className="w-24 h-24 bg-primary/10 rounded-3xl flex items-center justify-center text-primary animate-pulse">
-                  <Database size={40} />
+                  {dbError ? <Database size={40} /> : <Sparkles size={40} />}
                 </div>
                 <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-surface border-4 border-background rounded-full flex items-center justify-center text-secondary">
                   <Loader2 size={18} className="animate-spin" />
@@ -35,12 +35,16 @@ export default function AppLayout() {
               </div>
               
               <div className="space-y-3">
-                <h2 className="text-2xl font-extrabold text-text-main tracking-tight">Syncing with Aether Secure</h2>
+                <h2 className="text-2xl font-extrabold text-text-main tracking-tight">
+                  {dbError ? "Syncing with Aether Secure" : "Initializing Aether"}
+                </h2>
                 <p className="text-text-muted text-sm leading-relaxed">
-                  We're establishing a secure high-speed connection to your study portal. This usually takes just a few seconds.
+                  {dbError 
+                    ? "We're establishing a secure high-speed connection to your study portal. This usually takes just a few seconds."
+                    : "Preparing your personalized study environment and securing your data."}
                 </p>
                 <div className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] pt-2">
-                  Auto-Retry in progress...
+                  {dbError ? "Auto-Retry in progress..." : "Checking credentials..."}
                 </div>
               </div>
 
@@ -53,19 +57,27 @@ export default function AppLayout() {
                 />
               </div>
 
-              <div className="flex flex-col gap-3 w-full">
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="w-full py-4 bg-primary text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-lg active:scale-95 text-sm"
-                >
-                  Force Refresh
-                  <ArrowRight size={16} />
-                </button>
-                <div className="flex items-center justify-center gap-2 text-text-muted/60 text-xs">
-                  <WifiOff size={12} />
-                  <span>Connection status: {dbError.includes('connecting') ? 'Negotiating handshake' : 'Retrying uplink'}</span>
+              {!dbError && (
+                <p className="text-[10px] text-text-muted italic">
+                  Tip: Aether study sessions are optimized for focus.
+                </p>
+              )}
+
+              {dbError && (
+                <div className="flex flex-col gap-3 w-full">
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="w-full py-4 bg-primary text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-lg active:scale-95 text-sm"
+                  >
+                    Force Refresh
+                    <ArrowRight size={16} />
+                  </button>
+                  <div className="flex items-center justify-center gap-2 text-text-muted/60 text-xs">
+                    <WifiOff size={12} />
+                    <span>Connection status: {dbError.includes('connecting') ? 'Negotiating handshake' : 'Retrying uplink'}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </motion.div>
         )}

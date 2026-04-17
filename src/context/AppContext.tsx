@@ -106,40 +106,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Check auth on mount
   useEffect(() => {
-    const checkAuth = async () => {
+    const fetchUserData = async () => {
       try {
         const response = await api.get('/auth/me');
         setUser(response.data);
-        
-        // Fetch initial data
-        const [materialsRes, sessionsRes, quizzesRes, messagesRes, profilesRes] = await Promise.all([
-          api.get('/materials'),
-          api.get('/sessions'),
-          api.get('/quizzes'),
-          api.get('/messages'),
-          api.get('/users/profiles')
-        ]);
-        
-        const mapId = (item: any) => ({ 
-          ...item, 
-          id: item._id || item.id,
-          uploadDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'
-        });
-
-        setMaterials(Array.isArray(materialsRes.data) ? materialsRes.data.map(mapId) : []);
-        setStudySessions(Array.isArray(sessionsRes.data) ? sessionsRes.data.map(mapId) : []);
-        setQuizResults(Array.isArray(quizzesRes.data) ? quizzesRes.data.map(mapId) : []);
-        setMessages(Array.isArray(messagesRes.data) ? messagesRes.data.map(mapId) : []);
-        setAllProfiles(Array.isArray(profilesRes.data) ? profilesRes.data.map(mapId) : []);
-      } catch (err) {
-        console.log('Not authenticated');
-        setUser(null);
-      } finally {
-        setIsLoading(false);
+        return true;
+      } catch (err: any) {
+        console.log('Not authenticated or error checking auth');
+        // Only clear user on explicit 401
+        if (err.response?.status === 401) {
+          setUser(null);
+        }
+        return false;
       }
     };
 
-    checkAuth();
+    const fetchAppData = async () => {
+      const endpoints = [
+        { key: 'materials', url: '/materials', setter: setMaterials },
+        { key: 'sessions', url: '/sessions', setter: setStudySessions },
+        { key: 'quizzes', url: '/quizzes', setter: setQuizResults },
+        { key: 'messages', url: '/messages', setter: setMessages },
+        { key: 'profiles', url: '/users/profiles', setter: setAllProfiles }
+      ];
+
+      const mapId = (item: any) => ({ 
+        ...item, 
+        id: item._id || item.id,
+        uploadDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'
+      });
+
+      // Fetch each independently to prevent one failure from blocking others
+      await Promise.all(endpoints.map(async ({ url, setter }) => {
+        try {
+          const res = await api.get(url);
+          if (Array.isArray(res.data)) {
+            setter(res.data.map(mapId));
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch ${url}:`, err);
+        }
+      }));
+    };
+
+    const initialize = async () => {
+      setIsLoading(true);
+      const isAuthed = await fetchUserData();
+      if (isAuthed) {
+        await fetchAppData();
+      }
+      setIsLoading(false);
+    };
+
+    initialize();
   }, []);
 
   return (

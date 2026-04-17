@@ -141,10 +141,12 @@ export default function DetailedNotes() {
   };
 
   return (
-    <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24">
+    <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24 relative">
+      <div className="atmosphere-bg" />
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <div className="flex items-center justify-between mb-8">
           <button

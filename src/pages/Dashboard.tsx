@@ -27,8 +27,12 @@ import {
 } from '../components/OverviewWidgets';
 
 export default function Dashboard() {
-  const { user, theme, materials, allProfiles, studySessions } = useAppContext();
+  const { user, theme, materials, allProfiles, studySessions, isLoading } = useAppContext();
   const isLight = theme === 'light';
+
+  if (isLoading && !user) {
+    return null; // AppLayout will show the global loader
+  }
 
   const recentMaterials = Array.isArray(materials) 
     ? [...materials]

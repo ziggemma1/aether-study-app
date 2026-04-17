@@ -94,7 +94,8 @@ export const generateGeminiTopicSection = async (content: string, title: string,
     Material Context: ${content.substring(0, 10000)}`,
     config: {
       systemInstruction: `You are an elite academic professor. Write a massive, deep-dive chapter for this specific topic. 
-      Target at least 1000 words for this topic alone. 
+      Use simple, easy to understand words (Explain like I'm 15). Refine the text and focus on readability.
+      Target a volume about 400% larger than a basic summary for this topic.
       Include 3 detailed examples, sub-headings, and professional explanations of first principles.
       Return a JSON object with: { "heading", "content", "imagePrompt" }.`,
       responseMimeType: "application/json",
@@ -123,11 +124,15 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
       model: "gemini-3-flash-preview",
       contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, 15000)}`,
       config: {
-        systemInstruction: `You are an expert academic analyzer. Analyze the provided study material and return a JSON object containing:
+        systemInstruction: `You are an expert academic analyzer. Analyze the provided study material and return a JSON object.
+        Use simple, clear, and easy to understand language (Explain like I'm 15).
+        
+        Return:
         1. summary: A comprehensive summary.
         2. keyTopics: An array of important topics (aim for 5-8 topics).
         3. realLifeApplications: An array of practical examples.
-        4. suggestedQuizQuestions: An array of 5 multiple-choice questions with 'question', 'options' (array of 4), 'correctAnswer' (0-3), and 'explanation'.`,
+        4. simpleDetailedNotes: Create standard, accurately detailed notes using Markdown. This should be about 400% longer than the summary.
+        5. suggestedQuizQuestions: An array of 5 multiple-choice questions with 'question', 'options' (array of 4), 'correctAnswer' (0-3), and 'explanation'.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -135,6 +140,7 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
             summary: { type: Type.STRING },
             keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
             realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
+            simpleDetailedNotes: { type: Type.STRING },
             suggestedQuizQuestions: {
               type: Type.ARRAY,
               items: {
@@ -149,14 +155,19 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
               }
             }
           },
-          required: ["summary", "keyTopics", "realLifeApplications", "suggestedQuizQuestions"]
+          required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
         }
       }
     }));
 
     let text = response.text;
     if (!text) throw new Error("Gemini initial analysis failed");
-    const result: StudyMaterialAnalysis = JSON.parse(text);
+    const resultJson = JSON.parse(text);
+    const result: StudyMaterialAnalysis = {
+      ...resultJson,
+      detailedNotes: resultJson.simpleDetailedNotes,
+      noteSections: []
+    };
 
     // Step 2: Generate massive structured detailed notes (Iterative)
     console.log('Generating massive structured notes based on key topics:', result.keyTopics);

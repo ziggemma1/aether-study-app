@@ -83,33 +83,38 @@ export default function MaterialDetail() {
                      !material.keyTopics?.length;
 
   return (
-    <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-text-muted hover:text-primary mb-8 transition-colors"
+    <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24 relative">
+      <div className="atmosphere-bg" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6 }}
       >
-        <ArrowLeft size={20} /> Back
-      </button>
-
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="px-3 py-1 bg-secondary/10 text-secondary rounded-full text-xs font-bold uppercase tracking-wider">
-              {material.type}
-            </span>
-            <span className="text-text-muted text-sm">{material.uploadDate}</span>
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-text-muted hover:text-primary mb-8 transition-colors text-sm font-medium"
+        >
+          <ArrowLeft size={18} /> Back to Library
+        </button>
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="px-3 py-1 bg-secondary/10 text-secondary rounded-full text-xs font-bold uppercase tracking-wider">
+                {material.type}
+              </span>
+              <span className="text-text-muted text-sm">{material.uploadDate}</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-text-main">{material.title}</h1>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-text-main">{material.title}</h1>
-        </div>
-        <div className="flex gap-3">
-          <button className="p-3 bg-surface rounded-xl shadow-sm text-text-muted hover:text-primary transition-colors border border-border">
-            <Download size={20} />
-          </button>
-          <button className="p-3 bg-surface rounded-xl shadow-sm text-text-muted hover:text-primary transition-colors border border-border">
-            <Share2 size={20} />
-          </button>
-        </div>
-      </header>
+          <div className="flex gap-3">
+            <button className="p-3 bg-surface rounded-xl shadow-sm text-text-muted hover:text-primary transition-colors border border-border">
+              <Download size={20} />
+            </button>
+            <button className="p-3 bg-surface rounded-xl shadow-sm text-text-muted hover:text-primary transition-colors border border-border">
+              <Share2 size={20} />
+            </button>
+          </div>
+        </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
@@ -245,6 +250,7 @@ export default function MaterialDetail() {
           </div>
         </div>
       </div>
+      </motion.div>
       
       <StudyTimer materialId={material.id} title={material.title} />
     </div>

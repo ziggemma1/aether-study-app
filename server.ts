@@ -34,7 +34,7 @@ async function startServer() {
       console.error("❌ CRITICAL ERROR: Your MONGODB_URI contains placeholder text like '<db_password>'.");
       console.error("👉 ACTION REQUIRED: Please replace '<db_password>' with your actual MongoDB database password in your environment variables.");
     } else {
-      const connectWithRetry = async (retries = 3) => {
+      const connectWithRetry = async (retries = 10) => {
         try {
           await mongoose.connect(MONGODB_URI, {
             serverSelectionTimeoutMS: 5000,
@@ -43,7 +43,7 @@ async function startServer() {
           console.log("✅ Connected to MongoDB successfully");
         } catch (err: any) {
           if (retries > 0) {
-            const delay = process.env.VERCEL ? 1000 : 5000;
+            const delay = 5000;
             console.warn(`❌ MongoDB connection failed: ${err.message}. Retrying in ${delay}ms... (${retries} retries left)`);
             await new Promise(resolve => setTimeout(resolve, delay));
             return connectWithRetry(retries - 1);

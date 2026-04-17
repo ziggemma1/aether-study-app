@@ -68,7 +68,7 @@ const stripeStyle = {
 
 // --- Sub-components ---
 
-export function QuizScoreCard({ score = 82, trend = -10, highest = 92.5, lowest = 64.2 }: { score?: number, trend?: number, highest?: number, lowest?: number }) {
+export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }: { score?: number, trend?: number, highest?: number, lowest?: number }) {
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
@@ -127,7 +127,7 @@ export function QuizScoreCard({ score = 82, trend = -10, highest = 92.5, lowest 
   );
 }
 
-export function TimeSpentCard({ totalHours = 0, trend = 0, weeklyData = weeklyTimeData }: { totalHours?: number, trend?: number, weeklyData?: { day: string, hours: number }[] }) {
+export function TimeSpentCard({ totalHours = 0, trend = 0, weeklyData = [] }: { totalHours?: number, trend?: number, weeklyData?: { day: string, hours: number }[] }) {
   const displayTime = totalHours < 1 && totalHours > 0 
     ? `${Math.round(totalHours * 60)}m` 
     : totalHours === 0 ? "1m" : `${totalHours}h`;
@@ -189,7 +189,7 @@ export function TimeSpentCard({ totalHours = 0, trend = 0, weeklyData = weeklyTi
   );
 }
 
-export function StreakCard({ currentStreak = 5, longestStreak = 15 }: { currentStreak?: number, longestStreak?: number }) {
+export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentStreak?: number, longestStreak?: number }) {
   const days = Array.from({ length: 15 }, (_, i) => ({
     label: (i + 1).toString().padStart(2, '0'),
     active: i < currentStreak
@@ -236,7 +236,7 @@ export function StreakCard({ currentStreak = 5, longestStreak = 15 }: { currentS
   );
 }
 
-export function RankingCard({ rank = 15, total = 23000, topLearnersData = topLearners }: { rank?: number, total?: number, topLearnersData?: { name: string, avatar: string }[] }) {
+export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { rank?: number, total?: number, topLearnersData?: { name: string, avatar: string }[] }) {
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}

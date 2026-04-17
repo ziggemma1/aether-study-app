@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { StudyTimer } from '../components/StudyTimer';
 
@@ -101,13 +101,14 @@ export default function QuizInterface() {
   }
 
   const question = questions[currentQuestion];
+  const questionText = question?.text || (question as any)?.question;
 
   return (
     <div className="p-4 sm:p-8 max-w-3xl mx-auto">
       <header className="mb-6 sm:mb-12 flex items-center justify-between">
         <div>
-          <span className="text-[10px] sm:text-sm font-bold text-gray-400 uppercase tracking-wider">Question {currentQuestion + 1} of {questions.length}</span>
-          <div className="w-32 sm:w-48 h-1.5 sm:h-2 bg-gray-100 rounded-full mt-1.5 sm:mt-2 overflow-hidden">
+          <span className="text-[10px] sm:text-sm font-bold text-text-muted uppercase tracking-wider">Question {currentQuestion + 1} of {questions.length}</span>
+          <div className="w-32 sm:w-48 h-1.5 sm:h-2 bg-white/10 rounded-full mt-1.5 sm:mt-2 overflow-hidden">
             <div
               className="h-full bg-secondary transition-all duration-300"
               style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
@@ -117,7 +118,7 @@ export default function QuizInterface() {
         <div className="flex items-center gap-1.5 sm:gap-2 text-primary font-bold text-xs sm:text-base">
           <Clock size={16} className="sm:hidden" />
           <Clock size={20} className="hidden sm:block" />
-          <span>14:59</span>
+          <span>Session Start</span>
         </div>
       </header>
 
@@ -127,10 +128,14 @@ export default function QuizInterface() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
-          className="glass-card p-5 sm:p-12"
+          className="glass-card p-5 sm:p-12 relative overflow-hidden"
         >
-          <h2 className="text-lg sm:text-2xl font-bold mb-6 sm:mb-12 leading-relaxed">
-            {question.text || (question as any).question}
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Sparkles size={120} />
+          </div>
+
+          <h2 className="text-lg sm:text-2xl font-bold mb-6 sm:mb-12 leading-relaxed relative z-10">
+            {questionText}
           </h2>
 
           <div className="space-y-3 sm:space-y-4">

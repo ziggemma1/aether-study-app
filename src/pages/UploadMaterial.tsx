@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Youtube, BookOpen, Mic, X, CheckCircle2, Loader2, Camera, Image as ImageIcon } from 'lucide-react';
+import { Upload, Youtube, BookOpen, Mic, X, CheckCircle2, Loader2, Camera, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { extractTextFromImage } from '../services/OCRService';
@@ -283,18 +283,31 @@ export default function UploadMaterial() {
             </div>
           </motion.div>
         ) : isUploading ? (
-          <div className="text-center py-8 sm:py-12">
-            <Loader2 className="w-8 h-8 sm:w-12 sm:h-12 text-primary animate-spin mx-auto mb-4 sm:mb-6" />
-            <h2 className="text-sm sm:text-xl font-bold mb-3 sm:mb-4 text-text-main">Processing...</h2>
-            <div className="max-w-[200px] sm:max-w-xs mx-auto h-1.5 sm:h-2 bg-surface rounded-full overflow-hidden border border-border">
-              <motion.div
-                className="h-full bg-primary"
-                initial={{ width: 0 }}
-                animate={{ width: `${uploadProgress}%` }}
-              />
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-8 sm:py-16 relative overflow-hidden"
+          >
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/5 to-transparent blur-3xl" />
+            <div className="relative">
+              <div className="relative w-12 h-12 sm:w-20 sm:h-20 mx-auto mb-6 sm:mb-8">
+                <Loader2 className="w-full h-full text-primary animate-spin" />
+                <Sparkles className="absolute top-0 right-0 text-accent animate-pulse" size={20} />
+              </div>
+              <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4 text-text-main tracking-tight italic">Analyzing Context...</h2>
+              <div className="max-w-[200px] sm:max-w-xs mx-auto h-2 bg-white/5 rounded-full overflow-hidden border border-white/10 shadow-inner">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-primary via-indigo-500 to-accent"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${uploadProgress}%` }}
+                  transition={{ ease: "easeOut" }}
+                />
+              </div>
+              <p className="text-[10px] sm:text-sm text-text-muted mt-6 sm:mt-8 font-medium max-w-xs mx-auto leading-relaxed">
+                Our Aether AI is extracting key topics and preparing your explained notes.
+              </p>
             </div>
-            <p className="text-[10px] sm:text-sm text-text-muted mt-3 sm:mt-4">Our AI is analyzing your content.</p>
-          </div>
+          </motion.div>
         ) : (
           <motion.div
             key={activeTab}
