@@ -70,11 +70,24 @@ export default function Reports() {
   const quizTrend = user?.quizTrend || 4.2;
 
   // Calculate real stats
-  const totalStudyTime = user?.totalStudyTime || 0;
-  const avgScore = quizResults.length > 0 
-    ? Math.round(quizResults.reduce((acc, curr) => acc + curr.score, 0) / quizResults.length) 
+  const calculatedStudyMins = studySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+  const totalStudyTime = Math.round(calculatedStudyMins / 60) || user?.totalStudyTime || 0;
+
+  // Calculate Average Percentage Score instead of raw points
+  const avgScorePercentage = quizResults.length > 0 
+    ? Math.round(
+        quizResults.reduce((acc, curr) => {
+          const p = curr.totalQuestions > 0 ? (curr.score / curr.totalQuestions) * 100 : 0;
+          return acc + p;
+        }, 0) / quizResults.length
+      ) 
     : 0;
+
   const totalPoints = quizResults.reduce((acc, curr) => acc + (curr.score * 10), 0);
+
+  // Global Ranking calculation based on streaks (allProfiles is already sorted by streak DESC from backend)
+  const myRankIndex = allProfiles.findIndex(p => p.id === user?.id);
+  const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
   
   // Accuracy breakdown
   const totalCorrect = quizResults.reduce((acc, curr) => acc + curr.score, 0);
@@ -83,13 +96,13 @@ export default function Reports() {
 
   const performanceData = [
     { name: 'Correct', value: totalCorrect, color: '#10B981', lightColor: '#059669' },
-    { name: 'Incorrect', value: totalQuestions - totalCorrect, color: '#EF4444', lightColor: '#DC2626' },
+    { name: 'Incorrect', value: totalQuestions - totalCorrect > 0 ? totalQuestions - totalCorrect : 0, color: '#EF4444', lightColor: '#DC2626' },
   ];
 
-  // Growth data (last 7 quizzes)
+  // Growth data (last 7 quizzes) using percentage
   const growthData = quizResults.slice(0, 7).reverse().map(r => ({
     month: new Date(r.date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-    score: r.score,
+    score: r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0,
     avg: 75 // Platform average mock
   }));
 
@@ -136,7 +149,7 @@ export default function Reports() {
         <StatCard 
           icon={Target} 
           label="Average Score" 
-          value={avgScore.toString()} 
+          value={`${avgScorePercentage}%`} 
           trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% from last quiz`} 
           trendUp={quizTrend >= 0}
           color={isLight ? "text-orange-600" : "text-orange-400"}
@@ -144,9 +157,9 @@ export default function Reports() {
         />
         <StatCard 
           icon={Award} 
-          label="Total Points" 
-          value={totalPoints.toLocaleString()} 
-          trend={`+${totalCorrect * 10} total`} 
+          label="Global Ranking" 
+          value={`#${globalRank.toLocaleString()}`} 
+          trend="Top 5% of students" 
           trendUp={true}
           color={isLight ? "text-purple-600" : "text-purple-400"}
           bg={isLight ? "bg-purple-100" : "bg-purple-400/10"}

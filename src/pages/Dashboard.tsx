@@ -26,7 +26,7 @@ import {
 } from '../components/OverviewWidgets';
 
 export default function Dashboard() {
-  const { user, theme, materials, allProfiles, studySessions, isLoading } = useAppContext();
+  const { user, theme, materials, allProfiles, studySessions, quizResults, isLoading } = useAppContext();
   const isLight = theme === 'light';
 
   if (isLoading && !user) {
@@ -60,6 +60,22 @@ export default function Dashboard() {
       }))
     : [];
 
+  // Data Tracking Calculations (mirrored from Reports)
+  const calculatedStudyMins = Array.isArray(studySessions) ? studySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0) : 0;
+  const totalStudyTime = Math.round(calculatedStudyMins / 60) || user?.totalStudyTime || 0;
+
+  const avgScorePercentage = Array.isArray(quizResults) && quizResults.length > 0 
+    ? Math.round(
+        quizResults.reduce((acc, curr) => {
+          const p = curr.totalQuestions > 0 ? (curr.score / curr.totalQuestions) * 100 : 0;
+          return acc + p;
+        }, 0) / quizResults.length
+      ) 
+    : 0;
+
+  const myRankIndex = Array.isArray(allProfiles) ? allProfiles.findIndex(p => p.id === user?.id) : -1;
+  const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20 sm:pb-12">
       {/* Welcome Header */}
@@ -84,14 +100,14 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <Link to="/reports" className="block">
             <TimeSpentCard 
-              totalHours={user?.totalStudyTime} 
+              totalHours={totalStudyTime} 
               trend={user?.timeTrend}
               weeklyData={user?.weeklyTimeData?.length ? user.weeklyTimeData : undefined} 
             />
           </Link>
           <Link to="/reports" className="block">
             <QuizScoreCard 
-              score={user?.avgQuizScore} 
+              score={avgScorePercentage} 
               trend={user?.quizTrend}
               highest={user?.highestQuizScore}
               lowest={user?.lowestQuizScore}
@@ -105,7 +121,7 @@ export default function Dashboard() {
           </Link>
           <Link to="/reports" className="block">
             <RankingCard 
-              rank={user?.globalRank} 
+              rank={globalRank} 
               topLearnersData={topLearners.length > 0 ? topLearners : undefined}
             />
           </Link>

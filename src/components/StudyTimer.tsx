@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Clock, Play, Pause, Save } from 'lucide-react';
 import api from '../services/api';
+import { useAppContext } from '../context/AppContext';
 
 interface StudyTimerProps {
   materialId?: string;
@@ -12,6 +13,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title }) => 
   const [isActive, setIsActive] = useState(true);
   const secondsRef = useRef(0);
   const startTimeRef = useRef<Date>(new Date());
+  const { setStudySessions, showToast } = useAppContext();
   
   useEffect(() => {
     secondsRef.current = seconds;
@@ -41,7 +43,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title }) => 
     if (currentSeconds < 10) return; // For testing, let's lower it to 10 seconds
 
     try {
-      await api.post('/sessions', {
+      const response = await api.post('/sessions', {
         title: `Study: ${title}`,
         startTime: startTimeRef.current,
         durationMinutes: Math.max(1, Math.ceil(currentSeconds / 60)),
@@ -49,6 +51,12 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title }) => 
         completed: true
       });
       console.log('Study session saved automatically:', title);
+      
+      const newSession = {
+        ...response.data,
+        id: response.data._id || response.data.id
+      };
+      setStudySessions(prev => [...prev, newSession]);
     } catch (error) {
       console.error('Failed to save study session:', error);
     }
@@ -84,8 +92,13 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title }) => 
             {isActive ? <Pause size={20} /> : <Play size={20} />}
           </button>
           <button 
-            onClick={saveSession}
-            disabled={seconds < 60}
+            onClick={() => {
+              saveSession();
+              showToast('Session saved!');
+              setSeconds(0);
+              startTimeRef.current = new Date();
+            }}
+            disabled={seconds < 10}
             className="p-2 hover:bg-white/5 rounded-lg text-primary transition-colors disabled:opacity-30"
             title="Save Session"
           >

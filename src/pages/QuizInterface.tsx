@@ -6,10 +6,12 @@ import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy, Sparkl
 import { cn } from '../lib/utils';
 import { StudyTimer } from '../components/StudyTimer';
 
+import api from '../services/api';
+
 export default function QuizInterface() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { materials } = useAppContext();
+  const { materials, setQuizResults } = useAppContext();
   const [currentQuestion, setCurrentQuestion] = React.useState(0);
   const [selectedAnswers, setSelectedAnswers] = React.useState<number[]>([]);
   const [isFinished, setIsFinished] = React.useState(false);
@@ -38,13 +40,33 @@ export default function QuizInterface() {
     }
   };
 
-  const finishQuiz = () => {
+  const finishQuiz = async () => {
     let correct = 0;
     selectedAnswers.forEach((answer, idx) => {
       if (answer === questions[idx].correctAnswer) {
         correct++;
       }
     });
+
+    try {
+      const response = await api.post('/quizzes', {
+        quizId: id,
+        score: correct,
+        totalQuestions: questions.length,
+        answers: selectedAnswers,
+        date: new Date().toISOString()
+      });
+      
+      const newResult = {
+        ...response.data,
+        id: response.data._id || response.data.id
+      };
+      
+      setQuizResults(prev => [...prev, newResult]);
+    } catch (err) {
+      console.error('Failed to save quiz result', err);
+    }
+
     setScore(correct);
     setIsFinished(true);
   };
