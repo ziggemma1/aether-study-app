@@ -3,7 +3,15 @@ import { StudySession } from '../models/StudySession.js';
 
 export const getSessions = async (req: Request, res: Response) => {
   try {
-    const sessions = await StudySession.find({ userId: (req as any).userId }).sort({ startTime: 1 });
+    const sessions = await StudySession.find({ userId: (req as any).userId });
+    
+    // Sort natively to bypass Mongo memory ceilings
+    sessions.sort((a: any, b: any) => {
+      const dateA = a.startTime ? new Date(a.startTime).getTime() : 0;
+      const dateB = b.startTime ? new Date(b.startTime).getTime() : 0;
+      return dateA - dateB; // Sort ascending 1
+    });
+
     res.json(sessions);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

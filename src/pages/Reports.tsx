@@ -50,12 +50,18 @@ const performanceData = [
 import { useAppContext } from '../context/AppContext';
 
 export default function Reports() {
-  const { theme, quizResults, user, studySessions, materials } = useAppContext();
+  const { theme, quizResults, user, studySessions, materials, allProfiles } = useAppContext();
   const isLight = theme === 'light';
 
+  // Safe arrays
+  const safeMaterials = Array.isArray(materials) ? materials : [];
+  const safeQuizResults = Array.isArray(quizResults) ? quizResults : [];
+  const safeStudySessions = Array.isArray(studySessions) ? studySessions : [];
+  const safeAllProfiles = Array.isArray(allProfiles) ? allProfiles : [];
+
   // Subject breakdown (derived from materials and quiz results)
-  const subjectData = materials.map(m => {
-    const materialQuizzes = quizResults.filter(r => r.quizId === m.id);
+  const subjectData = safeMaterials.map(m => {
+    const materialQuizzes = safeQuizResults.filter(r => r.quizId === m.id);
     const avgScore = materialQuizzes.length > 0
       ? Math.round(materialQuizzes.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions), 0) / materialQuizzes.length * 100)
       : 0;
@@ -70,28 +76,28 @@ export default function Reports() {
   const quizTrend = user?.quizTrend || 4.2;
 
   // Calculate real stats
-  const calculatedStudyMins = studySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+  const calculatedStudyMins = safeStudySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
   const totalStudyTime = Math.round(calculatedStudyMins / 60) || user?.totalStudyTime || 0;
 
   // Calculate Average Percentage Score instead of raw points
-  const avgScorePercentage = quizResults.length > 0 
+  const avgScorePercentage = safeQuizResults.length > 0 
     ? Math.round(
-        quizResults.reduce((acc, curr) => {
+        safeQuizResults.reduce((acc, curr) => {
           const p = curr.totalQuestions > 0 ? (curr.score / curr.totalQuestions) * 100 : 0;
           return acc + p;
-        }, 0) / quizResults.length
+        }, 0) / safeQuizResults.length
       ) 
     : 0;
 
-  const totalPoints = quizResults.reduce((acc, curr) => acc + (curr.score * 10), 0);
+  const totalPoints = safeQuizResults.reduce((acc, curr) => acc + (curr.score * 10), 0);
 
   // Global Ranking calculation based on streaks (allProfiles is already sorted by streak DESC from backend)
-  const myRankIndex = allProfiles.findIndex(p => p.id === user?.id);
+  const myRankIndex = safeAllProfiles.findIndex(p => p.id === user?.id);
   const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
   
   // Accuracy breakdown
-  const totalCorrect = quizResults.reduce((acc, curr) => acc + curr.score, 0);
-  const totalQuestions = quizResults.reduce((acc, curr) => acc + curr.totalQuestions, 0);
+  const totalCorrect = safeQuizResults.reduce((acc, curr) => acc + curr.score, 0);
+  const totalQuestions = safeQuizResults.reduce((acc, curr) => acc + curr.totalQuestions, 0);
   const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
 
   const performanceData = [
@@ -100,7 +106,7 @@ export default function Reports() {
   ];
 
   // Growth data (last 7 quizzes) using percentage
-  const growthData = quizResults.slice(0, 7).reverse().map(r => ({
+  const growthData = safeQuizResults.slice(0, 7).reverse().map(r => ({
     month: new Date(r.date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
     score: r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0,
     avg: 75 // Platform average mock
