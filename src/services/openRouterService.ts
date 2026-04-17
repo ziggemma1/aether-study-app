@@ -15,17 +15,23 @@ const SITE_NAME = 'Aether Study';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// List of free models to try in order of preference
+// List of models to try in order of preference
+// Including both free and reliable low-cost models
 const MODELS = {
   reasoning: [
-    'meta-llama/llama-3.1-8b-instruct:free',
-    'mistralai/mistral-7b-instruct:free',
-    'google/gemma-2-9b-it:free'
+    'google/gemini-flash-1.5-8b',
+    'meta-llama/llama-3.1-8b-instruct',
+    'mistralai/mistral-7b-instruct',
+    'google/gemma-2-9b-it',
+    'meta-llama/llama-3-8b-instruct:free'
   ],
   synthesis: [
-    'google/gemma-2-9b-it:free',
-    'meta-llama/llama-3.1-8b-instruct:free',
-    'mistralai/pixtral-12b:free'
+    'google/gemini-flash-1.5-8b',
+    'meta-llama/llama-3.1-8b-instruct',
+    'mistralai/mistral-7b-instruct',
+    'google/gemma-2-9b-it',
+    'qwen/qwen-2.5-72b-instruct',
+    'meta-llama/llama-3-8b-instruct:free'
   ]
 };
 
@@ -60,8 +66,10 @@ const callOpenRouterWithFallback = async (messages: any[], modelList: string[], 
       if (response.data.choices?.[0]?.message?.content) {
         return response.data.choices[0].message;
       }
+      throw new Error('Empty response from model');
     } catch (err: any) {
-      console.warn(`Model ${model} failed:`, err.response?.data || err.message);
+      const errorData = err.response?.data?.error || err.response?.data || err.message;
+      console.warn(`Model ${model} failed:`, JSON.stringify(errorData));
       // Try next model
     }
   }
@@ -85,19 +93,20 @@ export const generateTopicSection = async (content: string, title: string, topic
     [
       {
         role: 'system',
-        content: `You are an elite academic professor and textbook author. Your goal is to write the MOST comprehensive, deep-dive chapter for a textbook about a specific topic.
+        content: `You are an elite academic professor and textbook author. Your goal is to write a comprehensive, deep-dive chapter for a textbook about a specific topic.
         
         TOPIC TO EXPLAIN: "${topic}"
         
-        GOAL: Write at least 800-1200 words for this specific topic alone. 
+        GOAL: Write a massive deep-dive about 400% larger than a standard summary. 
         
         STYLE GUIDELINES:
-        1. FIRST PRINCIPLES: Start from the very base assumptions and build up.
-        2. NO SUMMARIES: Do not summarize. Elaborate on every detail, nuance, and edge case.
-        3. EXAMPLES: Include at least THREE very detailed, step-by-step real-world examples.
-        4. STRUCTURE: Use multiple sub-headings (###), bolding ( ** ), and bullet points.
-        5. ACADEMIC FLOW: Use blockquotes for major laws, definitions, or equations.
-        6. LENGTH IS QUALITY: The more you explain, the better. Be extremely verbose but professional.
+        1. SIMPLE WORDS: Use very simple, clear, and easy to understand language (Explain like I'm 15).
+        2. VISUAL REFINEMENT: Structure your Markdown beautifully. Use clear headings, bullet points, and white space.
+        3. FIRST PRINCIPLES: Start from the very base assumptions and build up.
+        4. NO SUMMARIES: Do not summarize. Elaborate on every detail, nuance, and edge case in simple terms.
+        5. EXAMPLES: Include at least THREE very detailed, step-by-step real-world examples.
+        6. STRUCTURE: Use multiple sub-headings (###), bolding ( ** ), and bullet points.
+        7. ACADEMIC FLOW: Use blockquotes for major laws, definitions, or equations.
         
         Format the output as a JSON object with:
         - "heading": The topic name ("${topic}").
@@ -153,7 +162,7 @@ export const generateDetailedNotes = async (content: string, title: string, keyT
     const topicsToProcess = keyTopics || [];
     const noteSections: NoteSection[] = [];
 
-    // Step 2: Iterative Section Generation (500% more content approach)
+    // Step 2: Iterative Section Generation
     console.log(`Step 2: Generating ${topicsToProcess.length} massive chapters iteratively...`);
     
     // We do this one by one to ensure max tokens per section
@@ -162,9 +171,13 @@ export const generateDetailedNotes = async (content: string, title: string, keyT
         console.log(`Generating massive chapter for: ${topic}`);
         const section = await generateTopicSection(content, title, topic, context);
         noteSections.push(section);
-      } catch (err) {
-        console.error(`Failed to generate section ${topic}:`, err);
+      } catch (err: any) {
+        console.error(`Failed to generate section ${topic}:`, err.message);
       }
+    }
+
+    if (noteSections.length === 0) {
+      throw new Error('All OpenRouter models failed to provide a valid response. Check your OPENROUTER_API_KEY or model availability.');
     }
 
     const detailedNotes = noteSections.map(s => `# ${s.heading}\n\n${s.content}`).join('\n\n---\n\n');

@@ -27,8 +27,12 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, backoff = 1000): 
     try {
       return await fn();
     } catch (error: any) {
-      if (i < retries - 1 && (error.message?.includes('429') || error.message?.includes('500') || error.message?.includes('retry'))) {
-        console.warn(`Gemini API error. Retrying in ${backoff}ms... (Attempt ${i + 1}/${retries})`);
+      // Log more details for debugging
+      const errorMsg = error.message || String(error);
+      console.error(`Gemini Attempt ${i + 1} failed:`, errorMsg);
+
+      if (i < retries - 1 && (errorMsg.includes('429') || errorMsg.includes('500') || errorMsg.includes('retry') || errorMsg.includes('limit'))) {
+        console.warn(`Retrying in ${backoff}ms...`);
         await sleep(backoff);
         backoff *= 2;
         continue;
@@ -44,27 +48,32 @@ export const generateVisualAidOnClient = async (prompt: string): Promise<string>
     console.warn("GEMINI_API_KEY missing on client. Visual aid generation skipped.");
     return '';
   }
-  try {
-    const response = await withRetry(() => ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [{ text: `Create a professional educational diagram for: ${prompt}` }],
-      },
-      config: {
-        imageConfig: { aspectRatio: "16:9" },
-      },
-    }));
+  
+  // Try multiple image generations models if one fails
+  const models = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image-preview'];
+  
+  for (const model of models) {
+    try {
+      const response = await withRetry(() => ai.models.generateContent({
+        model,
+        contents: {
+          parts: [{ text: `Create a professional educational diagram for: ${prompt}` }],
+        },
+        config: {
+          imageConfig: { aspectRatio: "16:9" },
+        },
+      }));
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
       }
+    } catch (error) {
+      console.warn(`Model ${model} failed for visual aid, trying next...`);
     }
-    return '';
-  } catch (error) {
-    console.error('Visual Aid Generation Error (Client):', error);
-    return '';
   }
+  return '';
 };
 
 export const analyzeStudyMaterialOnClient = async (content: string, title: string = "Material"): Promise<StudyMaterialAnalysis> => {
@@ -72,48 +81,114 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
     throw new Error("GEMINI_API_KEY is not configured on the client. Please ensure you have added it to your environment.");
   }
 
-  const response = await withRetry(() => ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, 15000)}`,
-    config: {
-      systemInstruction: `Analyze the material and return JSON:
-      1. summary (comprehensive)
-      2. keyTopics (5-8 strings)
-      3. realLifeApplications (3-5 strings)
-      4. suggestedQuizQuestions (5 MCQs)`,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          summary: { type: Type.STRING },
-          keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
-          realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
-          suggestedQuizQuestions: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                question: { type: Type.STRING },
-                options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                correctAnswer: { type: Type.NUMBER },
-                explanation: { type: Type.STRING }
-              },
-              required: ["question", "options", "correctAnswer", "explanation"]
-            }
-          }
-        },
-        required: ["summary", "keyTopics", "realLifeApplications", "suggestedQuizQuestions"]
-      }
-    }
-  }));
+  // Try multiple model aliases
+  const models = ['gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-3.1-pro-preview'];
+  let lastError = null;
 
-  const text = response.text;
-  if (!text) throw new Error("Gemini analysis failed on client");
-  const result = JSON.parse(text);
+  for (const model of models) {
+    try {
+      console.log(`Analyzing material with model: ${model}`);
+      // Reduce content size slightly to avoid proxy buffer issues
+      const contentLimit = 12000; 
+      const response = await withRetry(() => ai.models.generateContent({
+        model,
+        contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, contentLimit)}`,
+        config: {
+          systemInstruction: `Analyze the material and return JSON. 
+          Use simple, clear, and easy to understand language (Explain like I'm 15).
+          
+          Return:
+          1. summary (comprehensive)
+          2. keyTopics (5-8 strings)
+          3. realLifeApplications (3-5 strings)
+          4. simpleDetailedNotes: Create a standard accurately detailed note using Markdown. This should be about 400% longer than the summary. Use headings, lists, and examples.
+          5. suggestedQuizQuestions (5 MCQs)`,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: { type: Type.STRING },
+              keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+              realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
+              simpleDetailedNotes: { type: Type.STRING },
+              suggestedQuizQuestions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    correctAnswer: { type: Type.NUMBER },
+                    explanation: { type: Type.STRING }
+                  },
+                  required: ["question", "options", "correctAnswer", "explanation"]
+                }
+              }
+            },
+            required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
+          }
+        }
+      }));
+
+      const text = response.text;
+      if (!text) throw new Error("Gemini analysis failed on client: No text returned");
+      const result = JSON.parse(text);
+      
+      return {
+        ...result,
+        detailedNotes: result.simpleDetailedNotes, 
+        noteSections: []
+      };
+    } catch (error) {
+      console.warn(`Model ${model} failed for analysis:`, error);
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("All Gemini models failed for analysis");
+};
+
+export const generateTopicSectionOnClient = async (content: string, title: string, topic: string): Promise<NoteSection> => {
+  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
   
-  return {
-    ...result,
-    detailedNotes: '', // Will be filled by backend/OpenRouter
-    noteSections: []
-  };
+  const models = ['gemini-3-flash-preview', 'gemini-3.1-pro-preview', 'gemini-flash-latest'];
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      console.log(`Generating topic section with model: ${model}`);
+      // Reduce content size slightly to avoid proxy buffer issues
+      const contentLimit = 8000;
+      const response = await withRetry(() => ai.models.generateContent({
+        model,
+        contents: `Create an EXTREMELY detailed study chapter for the topic "${topic}" based on the following material: ${title}.
+        
+        Material Context: ${content.substring(0, contentLimit)}`,
+        config: {
+          systemInstruction: `You are an elite academic professor. Write a massive, deep-dive chapter for this specific topic. 
+          Use simple, easy to understand words. Refine the text and focus on readability.
+          Target a volume about 400% larger than a basic summary for this topic.
+          Include 3 detailed examples, sub-headings, and professional explanations of first principles.
+          Return a JSON object with: { "heading", "content", "imagePrompt" }.`,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              heading: { type: Type.STRING },
+              content: { type: Type.STRING },
+              imagePrompt: { type: Type.STRING }
+            },
+            required: ["heading", "content", "imagePrompt"]
+          }
+        }
+      }));
+
+      const text = response.text;
+      if (!text) throw new Error("Gemini fallback section failed: No text returned");
+      return JSON.parse(text);
+    } catch (error) {
+      console.warn(`Model ${model} failed for topic generation:`, error);
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("All Gemini models failed for topic generation");
 };

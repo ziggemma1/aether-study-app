@@ -4,13 +4,16 @@ import mongoose from 'mongoose';
 export const checkDbConnection = async (req: Request, res: Response, next: NextFunction) => {
   let state = mongoose.connection.readyState;
   
-  // If connecting, wait a bit
+  // If connecting, wait longer (up to 15 seconds)
   if (state === 2) {
-    console.log('⏳ DB is connecting, waiting...');
-    for (let i = 0; i < 5; i++) {
+    console.log('⏳ DB is connecting, waiting up to 15s...');
+    for (let i = 0; i < 15; i++) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       state = mongoose.connection.readyState;
-      if (state === 1) break;
+      if (state === 1) {
+        console.log('✅ DB became ready!');
+        break;
+      }
     }
   }
 

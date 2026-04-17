@@ -8,7 +8,7 @@ import { StudyTimer } from '../components/StudyTimer';
 import api from '../services/api';
 import { cn } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
-import { analyzeStudyMaterialOnClient, generateVisualAidOnClient } from '../lib/gemini';
+import { analyzeStudyMaterialOnClient, generateVisualAidOnClient, generateTopicSectionOnClient } from '../lib/gemini';
 
 export default function DetailedNotes() {
   const { id } = useParams();
@@ -43,13 +43,32 @@ export default function DetailedNotes() {
       const analysis = await analyzeStudyMaterialOnClient(material.content || material.title, material.title);
       
       // Step 2: Request massive chapters from backend (OpenRouter)
-      const chaptersResponse = await api.post('/materials/generate-chapters', {
-        content: material.content || material.title,
-        title: material.title,
-        keyTopics: analysis.keyTopics
-      });
-      
-      const { noteSections } = chaptersResponse.data;
+      let noteSections = [];
+      try {
+        const chaptersResponse = await api.post('/materials/generate-chapters', {
+          content: material.content || material.title,
+          title: material.title,
+          keyTopics: analysis.keyTopics
+        });
+        noteSections = chaptersResponse.data.noteSections;
+        console.log('Backend chapter generation successful');
+      } catch (backendErr) {
+        console.warn('Backend chapter generation failed, falling back to client-side Gemini:', backendErr);
+        // Fallback to client-side Gemini for iterative chapter generation
+        for (const topic of analysis.keyTopics) {
+          try {
+            console.log(`Generating fallback chapter for: ${topic}`);
+            const section = await generateTopicSectionOnClient(material.content || material.title, material.title, topic);
+            noteSections.push(section);
+          } catch (geminiErr) {
+            console.error(`Gemini fallback failed for ${topic}:`, geminiErr);
+          }
+        }
+      }
+
+      if (noteSections.length === 0) {
+        throw new Error('Both OpenRouter and Gemini fallback failed to generate chapters.');
+      }
 
       // Step 3: Generate visual aids on client for each section
       console.log('Generating visual aids on client...');
@@ -139,10 +158,14 @@ export default function DetailedNotes() {
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl transition-all font-bold text-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-accent/10 text-accent hover:bg-accent/20 rounded-xl transition-all font-bold text-[10px] sm:text-sm disabled:opacity-50 border border-accent/20"
+              title="Generate ultra-detailed, textbook-sized notes. This takes a few minutes."
             >
               {isRegenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              Deep Analysis
+              <div className="flex flex-col items-start leading-none">
+                <span>Deep Analysis</span>
+                <span className="text-[8px] opacity-60 font-medium">BETA • INTENSIVE</span>
+              </div>
             </button>
             <button
               onClick={handleDelete}
@@ -190,14 +213,17 @@ export default function DetailedNotes() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
-                className="glass-card shadow-2xl p-6 sm:p-12 relative"
+                className="glass-card shadow-2xl p-6 sm:p-12 relative border-t-8 border-primary"
               >
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-accent opacity-50" />
                 
                 <div className="space-y-10">
                   <header className="space-y-2">
-                    <span className="text-xs font-bold text-primary opacity-60 uppercase tracking-widest">Topic {currentPage + 1}</span>
-                    <h2 className="text-3xl sm:text-4xl font-extrabold text-text-main tracking-tight leading-none italic">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={14} className="text-accent animate-pulse" />
+                      <span className="text-xs font-bold text-accent uppercase tracking-widest">Enhanced Insight • Chapter {currentPage + 1}</span>
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-text-main tracking-tight leading-none italic decoration-primary/30 underline decoration-4 underline-offset-8">
                       {sections[currentPage].heading}
                     </h2>
                   </header>
@@ -206,18 +232,19 @@ export default function DetailedNotes() {
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.98 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="rounded-3xl overflow-hidden border border-border bg-surface shadow-2xl group"
+                      className="rounded-3xl overflow-hidden border-2 border-primary/20 bg-surface shadow-2xl group relative"
                     >
                       <img 
                         src={sections[currentPage].imageUrl} 
                         alt={sections[currentPage].heading} 
-                        className="w-full h-[300px] object-cover transform group-hover:scale-[1.02] transition-transform duration-700"
+                        className="w-full h-[300px] object-cover transform group-hover:scale-[1.02] transition-transform duration-1000"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="bg-surface-alt p-4 flex items-center justify-center gap-2 border-t border-border">
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-60 pointer-events-none" />
+                      <div className="absolute bottom-4 left-4 right-4 bg-surface/60 backdrop-blur-xl p-3 flex items-center justify-center gap-2 border border-white/10 rounded-2xl">
                         <Sparkles size={14} className="text-secondary" />
-                        <p className="text-[10px] text-text-muted italic tracking-wide">
-                          AI Diagram for {sections[currentPage].heading}
+                        <p className="text-[10px] text-white font-bold italic tracking-wide">
+                          AI Visual Learning Aid
                         </p>
                       </div>
                     </motion.div>
@@ -266,10 +293,25 @@ export default function DetailedNotes() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="glass-card shadow-2xl p-6 sm:p-12"
+                className="glass-card shadow-2xl p-6 sm:p-12 border-l-8 border-secondary/30"
               >
+                <div className="flex items-center gap-2 mb-8 opacity-60">
+                  <BookOpen size={16} />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Core Concept Review</span>
+                </div>
                 <div className="markdown-body text-text-main leading-relaxed prose prose-invert max-w-none">
                   <ReactMarkdown>{material.detailedNotes}</ReactMarkdown>
+                </div>
+                
+                <div className="mt-12 p-6 bg-primary/5 rounded-3xl border border-primary/10 text-center">
+                  <p className="text-xs text-text-muted mb-4 font-medium italic">Want to dive deeper into these topics with textbooks-sized chapters and diagrams?</p>
+                  <button
+                    onClick={handleRegenerate}
+                    disabled={isRegenerating}
+                    className="btn-primary py-2 text-xs flex items-center gap-2 mx-auto"
+                  >
+                    <Sparkles size={14} /> Start Deep Analysis
+                  </button>
                 </div>
               </motion.div>
             ) : (

@@ -36,9 +36,18 @@ export default function LoginPage() {
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      const status = err.response?.status;
-      const message = err.response?.data?.message || err.message || 'Failed to log in';
-      setError(status ? `Error ${status}: ${message}` : message);
+      if (err.message === 'Network Error') {
+        setError(
+          <div className="flex flex-col gap-1">
+            <span className="font-bold">Backend is starting up...</span>
+            <span className="text-xs opacity-80">The server is still booting and connecting to the database. This normally takes 30-60 seconds. Please wait and try again.</span>
+          </div>
+        );
+      } else {
+        const status = err.response?.status;
+        const message = err.response?.data?.message || err.message || 'Failed to log in';
+        setError(status ? `Error ${status}: ${message}` : message);
+      }
     } finally {
       setLoading(false);
     }

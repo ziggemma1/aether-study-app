@@ -81,21 +81,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .markdown-body {
-  @apply text-text-muted leading-relaxed text-[15px] sm:text-base;
+  @apply text-text-muted leading-relaxed text-[15px] sm:text-base selection:bg-primary/20;
 }
 
-.markdown-body h1 { @apply font-heading text-2xl sm:text-3xl mt-8 mb-6 text-text-main font-bold; }
-.markdown-body h2 { @apply font-heading text-xl sm:text-2xl mt-8 mb-4 text-text-main border-b border-border pb-2; }
-.markdown-body h3 { @apply font-heading text-lg sm:text-xl mt-6 mb-3 text-text-main font-semibold; }
-.markdown-body h4 { @apply font-heading text-base sm:text-lg mt-5 mb-2 text-primary font-bold uppercase tracking-wider; }
+.markdown-body h1 { @apply font-heading text-2xl sm:text-3xl mt-10 mb-8 text-text-main font-extrabold tracking-tighter; }
+.markdown-body h2 { @apply font-heading text-xl sm:text-2xl mt-12 mb-6 text-text-main border-b-2 border-primary/20 pb-3 font-bold italic tracking-tight underline-offset-8; }
+.markdown-body h3 { @apply font-heading text-lg sm:text-xl mt-8 mb-4 text-text-main font-bold border-l-4 border-primary pl-4; }
+.markdown-body h4 { @apply font-heading text-base sm:text-lg mt-6 mb-3 text-secondary font-bold uppercase tracking-widest; }
 
-.markdown-body p { @apply mb-6 leading-[1.8]; }
-.markdown-body strong { @apply text-primary font-semibold mx-0.5; }
-.markdown-body blockquote { @apply border-l-4 border-secondary bg-secondary/5 p-6 rounded-r-2xl italic my-8 text-text-main; }
+.markdown-body p { @apply mb-8 leading-[1.85] font-sans antialiased; }
+.markdown-body strong { @apply text-primary font-bold mx-0.5 px-1 bg-primary/5 rounded; }
+.markdown-body em { @apply text-text-muted italic border-b border-white/10 pb-0.5 px-0.5; }
+.markdown-body blockquote { @apply border-l-8 border-primary bg-primary/5 px-8 py-10 rounded-r-3xl italic my-12 text-text-main font-medium shadow-soft; }
 
-.markdown-body ul { @apply list-disc pl-6 mb-6 space-y-2; }
-.markdown-body ol { @apply list-decimal pl-6 mb-6 space-y-2; }
-.markdown-body li { @apply mb-2; }
+.markdown-body ul { @apply list-none pl-2 mb-10 space-y-4; }
+.markdown-body ul li { @apply relative pl-8 before:content-[''] before:absolute before:left-0 before:top-[0.6em] before:w-3 before:h-3 before:bg-primary/40 before:rounded-sm transition-all hover:before:bg-primary; }
+.markdown-body ol { @apply list-decimal pl-8 mb-10 space-y-4 font-bold marker:text-primary/60; }
+.markdown-body ol li { @apply pl-2; }
+.markdown-body ol li > p, .markdown-body ul li > p { @apply mb-0; }
 
 .markdown-body code { @apply bg-white/5 px-2 py-0.5 rounded font-mono text-sm text-secondary border border-white/10; }
 .markdown-body pre { @apply bg-slate-950 p-6 rounded-2xl overflow-x-auto border border-white/10 my-8; }
