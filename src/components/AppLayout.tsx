@@ -3,6 +3,7 @@ import { Outlet, Link } from 'react-router-dom';
 import TopNav from './TopNav';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
+import InteractiveBackground from './InteractiveBackground';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -84,10 +85,7 @@ export default function AppLayout() {
       </AnimatePresence>
 
       {/* Background Glows */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[120px]" />
-      </div>
+      <InteractiveBackground />
 
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />

@@ -12,36 +12,33 @@ const isSupabaseConfigured = Boolean(
   supabaseUrl.includes('.supabase.co')
 );
 
-// Create a dummy client if not configured to prevent background network requests
-const dummyClient = new Proxy({} as any, {
-  get: (target, prop) => {
-    if (prop === 'auth') {
-      return new Proxy({} as any, {
-        get: (t, p) => {
-          if (p === 'onAuthStateChange') {
-            return () => ({ data: { subscription: { unsubscribe: () => {} } } });
-          }
-          return () => Promise.reject(new Error('Supabase is not configured. Please check your settings.'));
-        }
-      });
+// Create a robust dummy client using a recursive Proxy if not configured
+// This handles arbitrary chained method calls (like .from().select().limit()) 
+// and returns a rejected promise when the result is awaited.
+const createDummyClient = (message: string) => {
+  const proxyHandler: ProxyHandler<any> = {
+    get(_, prop) {
+      // Handle the case where the result is awaited (it looks for a 'then' method)
+      if (prop === 'then') {
+        return (onFulfilled?: any, onRejected?: any) =>
+          Promise.reject(new Error(message)).catch(onRejected);
+      }
+
+      // Handle common auth event patterns
+      if (prop === 'onAuthStateChange') {
+        return () => ({ data: { subscription: { unsubscribe: () => {} } } });
+      }
+
+      // For any other property access or method call, return a recursive proxy
+      // We return a function that, when called, also returns the same proxy
+      const dummyFunc = (..._args: any[]) => new Proxy(() => {}, proxyHandler);
+      return new Proxy(dummyFunc, proxyHandler);
     }
-    if (prop === 'from') {
-      return () => ({
-        select: () => ({
-          eq: () => ({
-            single: () => Promise.reject(new Error('Supabase is not configured.')),
-            order: () => Promise.reject(new Error('Supabase is not configured.')),
-          }),
-          order: () => Promise.reject(new Error('Supabase is not configured.')),
-        }),
-        insert: () => Promise.reject(new Error('Supabase is not configured.')),
-        update: () => Promise.reject(new Error('Supabase is not configured.')),
-        delete: () => Promise.reject(new Error('Supabase is not configured.')),
-      });
-    }
-    return () => Promise.reject(new Error('Supabase is not configured.'));
-  }
-});
+  };
+  return new Proxy({} as any, proxyHandler);
+};
+
+const dummyClient = createDummyClient('Supabase is not configured. Please check your settings in the menu.');
 
 if (!isSupabaseConfigured) {
   console.warn('Supabase credentials missing or invalid. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables in the Settings menu.');
