@@ -5,6 +5,7 @@ import { Search, Filter, Grid, List, FileText, Youtube, BookOpen, Mic, ChevronRi
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Material } from '../types';
+import api from '../services/api';
 
 export default function Library() {
   const { materials, savedPlans, setMaterials, showToast } = useAppContext();

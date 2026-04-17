@@ -10,7 +10,7 @@ import { Database, ArrowRight, Loader2, Sparkles, WifiOff, CheckCircle2, AlertCi
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AppLayout() {
-  const { theme, dbError, isLoading, user } = useAppContext();
+  const { theme, dbError, isLoading, user, toast } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   return (
@@ -94,20 +94,20 @@ export default function AppLayout() {
 
       {/* Toast Notification */}
       <AnimatePresence>
-        {useAppContext().toast && (
+        {toast && (
           <motion.div
             initial={{ opacity: 0, y: 50, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: 50, x: '-50%' }}
             className={cn(
               "fixed bottom-24 sm:bottom-10 left-1/2 z-[2000] px-6 py-3 rounded-full font-bold shadow-2xl border backdrop-blur-md flex items-center gap-3",
-              useAppContext().toast?.type === 'success' 
+              toast?.type === 'success' 
                 ? "bg-green-500/10 text-green-500 border-green-500/20" 
                 : "bg-red-500/10 text-red-500 border-red-500/20"
             )}
           >
-            {useAppContext().toast?.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-            <span className="text-sm whitespace-nowrap">{useAppContext().toast?.text}</span>
+            {toast?.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+            <span className="text-sm whitespace-nowrap">{toast?.text}</span>
           </motion.div>
         )}
       </AnimatePresence>
