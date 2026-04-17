@@ -86,7 +86,9 @@ export const generateDetailedNotes = async (content: string, title: string, keyT
           ${keyTopics ? `Focus specifically on these key topics: ${keyTopics.join(', ')}` : ''}
           
           Material Content:
-          ${content}`
+          ${content}
+          
+          IMPORTANT: Your reasoning MUST be extremely thorough and long. Leave no stone unturned.`
         }
       ],
       MODELS.reasoning,
@@ -104,8 +106,8 @@ export const generateDetailedNotes = async (content: string, title: string, keyT
           STYLE GUIDELINES:
           - EXHAUSTIVE DETAIL: Every concept must be explained as if to a student who needs to understand the "first principles". Do not skip steps.
           - ACADEMIC RIGOR: Use professional terminology but explain it clearly.
-          - LENGTH: Each section should be as long as possible (at least 3-5 thick paragraphs per section).
-          - EXAMPLES: Include at least TWO concrete, step-by-step examples for every single key topic. Use a "#### Example:" heading for these.
+          - LENGTH: Each section MUST be significantly long (at least 600-1000 words per section). Expand on every nuance.
+          - EXAMPLES: Include at least THREE concrete, step-by-step examples for every single key topic. Use a "#### Example:" heading for these.
           - FORMATTING: Use bolding for key terms, blockquotes for important laws/theorems, and clear sub-headings.
           
           STRUCTURE REQUIREMENT:
@@ -116,7 +118,7 @@ export const generateDetailedNotes = async (content: string, title: string, keyT
           1. "detailedNotes": A massive full markdown version of the notes (the combination of all sections).
           2. "noteSections": An array of objects, each containing:
              - "heading": The section title (MUST match one of the key topics).
-             - "content": The EXQUISITELY detailed, long-form explanation for this topic (Markdown).
+             - "content": The EXQUISITELY detailed, long-form explanation for this topic (Markdown). Use multiple paragraphs, sub-points, and deep explanations.
              - "imagePrompt": A highly detailed, descriptive prompt for an AI image generator to create a high-quality, professional textbook illustration or diagram of the core concept.
           
           Be authoritative, incredibly thorough, and clear.`
