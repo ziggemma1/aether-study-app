@@ -7,9 +7,23 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   avatar: { type: String },
   streak: { type: Number, default: 0 },
+  longestStreak: { type: Number, default: 0 },
+  streakTrend: { type: Number, default: 0 },
   curriculum: { type: String, default: 'General' },
   language: { type: String, default: 'English' },
   plan: { type: String, enum: ['free', 'pro'], default: 'free' },
+  avgQuizScore: { type: Number, default: 0 },
+  highestQuizScore: { type: Number, default: 0 },
+  lowestQuizScore: { type: Number, default: 0 },
+  quizTrend: { type: Number, default: 0 },
+  totalStudyTime: { type: Number, default: 0 },
+  timeTrend: { type: Number, default: 0 },
+  globalRank: { type: Number, default: 0 },
+  rankTrend: { type: Number, default: 0 },
+  weeklyTimeData: [{ 
+    day: { type: String },
+    hours: { type: Number }
+  }],
   createdAt: { type: Date, default: Date.now }
 });
 

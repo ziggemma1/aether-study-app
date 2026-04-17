@@ -25,41 +25,6 @@ import {
 } from 'recharts';
 import { cn } from '../lib/utils';
 
-// --- Mock Data ---
-const weeklyTimeData = [
-  { day: 'Mon', hours: 1.5 },
-  { day: 'Tue', hours: 2.3 },
-  { day: 'Wed', hours: 1.8 },
-  { day: 'Thu', hours: 3.5 },
-  { day: 'Fri', hours: 2.0 },
-  { day: 'Sat', hours: 0.8 },
-  { day: 'Sun', hours: 0.5 },
-];
-
-const enrollmentData = [
-  { month: 'Jan', enrollments: 800, completion: 75 },
-  { month: 'Feb', enrollments: 950, completion: 78 },
-  { month: 'Mar', enrollments: 1100, completion: 82 },
-  { month: 'Apr', enrollments: 1050, completion: 80 },
-  { month: 'May', enrollments: 1200, completion: 85 },
-  { month: 'Jun', enrollments: 1150, completion: 83 },
-  { month: 'Jul', enrollments: 1350, completion: 88 },
-  { month: 'Aug', enrollments: 1250, completion: 86 },
-  { month: 'Sep', enrollments: 1400, completion: 90 },
-  { month: 'Oct', enrollments: 1300, completion: 87 },
-  { month: 'Nov', enrollments: 1500, completion: 92 },
-  { month: 'Dec', enrollments: 1450, completion: 91 },
-];
-
-const topLearners = [
-  { name: 'Brooklyn Simmons', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Brooklyn' },
-  { name: 'Annette Black', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Annette' },
-  { name: 'Guy Hawkins', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guy' },
-  { name: 'Theresa Webb', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Theresa' },
-  { name: 'Robert Fox', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Robert' },
-  { name: 'Jane Cooper', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jane' },
-];
-
 // --- Styles ---
 const stripeStyle = {
   backgroundImage: 'linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent)',
@@ -80,7 +45,7 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
       </div>
       
       <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">{score}%</span>
+        <span className="text-lg sm:text-2xl font-semibold text-text-main tracking-tight">{Math.round(score)}%</span>
         {trend !== 0 && (
           <span className={cn(
             "flex items-center text-[7px] sm:text-[9px] font-medium px-1 sm:px-1.5 py-0.5 rounded-md",
@@ -130,7 +95,7 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
 export function TimeSpentCard({ totalHours = 0, trend = 0, weeklyData = [] }: { totalHours?: number, trend?: number, weeklyData?: { day: string, hours: number }[] }) {
   const displayTime = totalHours < 1 && totalHours > 0 
     ? `${Math.round(totalHours * 60)}m` 
-    : totalHours === 0 ? "1m" : `${totalHours}h`;
+    : `${totalHours}h`;
 
   return (
     <motion.div 
@@ -277,83 +242,3 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
   );
 }
 
-export function EnrollmentChart() {
-  return (
-    <div className="glass-card p-8 flex flex-col border-border/30 bg-white/50 dark:bg-surface/30">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h3 className="text-lg font-semibold text-text-main mb-1">Monthly Course Enrollments & Completion Rates</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-semibold text-text-main">1,250.00</span>
-            <span className="flex items-center text-[10px] font-medium text-orange-500 bg-orange-500/5 px-2 py-1 rounded-lg border border-orange-500/10">
-              13.4% <TrendingUp size={10} className="ml-0.5" />
-            </span>
-          </div>
-          <p className="text-[10px] font-medium text-text-muted uppercase tracking-widest mt-1">Avg per month</p>
-        </div>
-
-        <div className="flex items-center gap-2 bg-surface-alt/30 p-1 rounded-xl border border-border/20">
-          {['1 Year', '6 Months', '3 Months', '1 Month'].map((period, i) => (
-            <button 
-              key={i} 
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all",
-                i === 0 ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text-main"
-              )}
-            >
-              {period}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-end gap-6 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-primary" />
-          <span className="text-[10px] font-medium text-text-muted uppercase tracking-tighter">Completion Rate (%)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-orange-500" />
-          <span className="text-[10px] font-medium text-text-muted uppercase tracking-tighter">Enrollments</span>
-        </div>
-      </div>
-
-      <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <ComposedChart data={enrollmentData}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.1} />
-            <XAxis 
-              dataKey="month" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: 'var(--text-muted)', fontSize: 10, fontWeight: 500 }} 
-              dy={10}
-            />
-            <YAxis hide />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'var(--surface)', 
-                borderColor: 'var(--border)', 
-                borderRadius: '12px',
-                fontSize: '10px',
-                fontWeight: 500,
-                color: 'var(--text-main)',
-                border: '1px solid var(--border)'
-              }}
-              itemStyle={{ color: 'var(--text-main)' }}
-            />
-            <Bar dataKey="enrollments" fill="var(--border)" fillOpacity={0.1} radius={[4, 4, 0, 0]} barSize={40} />
-            <Line 
-              type="monotone" 
-              dataKey="completion" 
-              stroke="var(--primary)" 
-              strokeWidth={2.5} 
-              dot={{ fill: 'var(--primary)', strokeWidth: 2, r: 4, stroke: 'var(--surface)' }}
-              activeDot={{ r: 6, strokeWidth: 0 }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}

@@ -22,8 +22,7 @@ import {
   QuizScoreCard, 
   TimeSpentCard, 
   StreakCard, 
-  RankingCard, 
-  EnrollmentChart 
+  RankingCard
 } from '../components/OverviewWidgets';
 
 export default function Dashboard() {

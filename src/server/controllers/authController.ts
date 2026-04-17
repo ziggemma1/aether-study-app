@@ -32,6 +32,11 @@ export const register = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         streak: user.streak,
+        longestStreak: user.longestStreak,
+        globalRank: user.globalRank,
+        avgQuizScore: user.avgQuizScore,
+        totalStudyTime: user.totalStudyTime,
+        weeklyTimeData: user.weeklyTimeData,
         plan: user.plan
       }
     });
@@ -79,6 +84,11 @@ export const login = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         streak: user.streak,
+        longestStreak: user.longestStreak,
+        globalRank: user.globalRank,
+        avgQuizScore: user.avgQuizScore,
+        totalStudyTime: user.totalStudyTime,
+        weeklyTimeData: user.weeklyTimeData,
         plan: user.plan
       }
     });
@@ -103,7 +113,25 @@ export const getMe = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json(user);
+    
+    // Transform to consistent frontend structure
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      streak: user.streak,
+      longestStreak: user.longestStreak,
+      globalRank: user.globalRank,
+      avgQuizScore: user.avgQuizScore,
+      highestQuizScore: user.highestQuizScore,
+      lowestQuizScore: user.lowestQuizScore,
+      totalStudyTime: user.totalStudyTime,
+      weeklyTimeData: user.weeklyTimeData,
+      curriculum: user.curriculum,
+      language: user.language,
+      plan: user.plan
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

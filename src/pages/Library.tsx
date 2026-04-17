@@ -58,25 +58,36 @@ export default function Library() {
     navigate(`/plans?materials=${ids}`);
   };
 
-  const handleMergeMaterials = () => {
+  const handleMergeMaterials = async () => {
     if (selectedMaterials.length < 2) return;
     
-    const relatedMaterials = materials.filter(m => selectedMaterials.includes(m.id));
-    const combinedTopics = Array.from(new Set(relatedMaterials.flatMap(m => m.keyTopics)));
-    
-    const newMaterial: Material = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: `Combined: ${relatedMaterials[0].title} & ${relatedMaterials.length - 1} more`,
-      type: 'unified',
-      uploadDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      summary: `A unified collection containing insights from: ${relatedMaterials.map(m => m.title).join(', ')}.`,
-      keyTopics: combinedTopics,
-      progress: 0,
-    };
+    try {
+      const relatedMaterials = materials.filter(m => selectedMaterials.includes(m.id));
+      const combinedTopics = Array.from(new Set(relatedMaterials.flatMap(m => m.keyTopics || [])));
+      const combinedContent = relatedMaterials.map(m => `--- ${m.title} ---\n${m.content || m.summary}`).join('\n\n');
+      
+      const response = await api.post('/materials', {
+        title: `Combined: ${relatedMaterials[0].title} & ${relatedMaterials.length - 1} more`,
+        type: 'unified',
+        summary: `A unified collection containing insights from: ${relatedMaterials.map(m => m.title).join(', ')}.`,
+        content: combinedContent,
+        keyTopics: combinedTopics,
+        progress: 0,
+      });
 
-    setMaterials([newMaterial, ...materials]);
-    setSelectedMaterials([]);
-    setActiveTab('unified');
+      const newMaterial = {
+        ...response.data,
+        id: response.data._id || response.data.id,
+        uploadDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      };
+
+      setMaterials([newMaterial, ...materials]);
+      setSelectedMaterials([]);
+      setActiveTab('unified');
+    } catch (err) {
+      console.error('Merge error:', err);
+      alert('Failed to save merged material to cloud.');
+    }
   };
 
   const renderMaterialGrid = (items: Material[]) => (
