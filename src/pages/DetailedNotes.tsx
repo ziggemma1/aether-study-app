@@ -13,10 +13,12 @@ import { analyzeStudyMaterialOnClient, generateVisualAidOnClient, generateTopicS
 export default function DetailedNotes() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { materials, setMaterials } = useAppContext();
+  const { materials, setMaterials, showToast } = useAppContext();
   const material = materials.find(m => m.id === id);
 
   const [currentPage, setCurrentPage] = React.useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   if (!material) {
     return (
@@ -101,11 +103,11 @@ export default function DetailedNotes() {
       );
       setMaterials(updatedMaterials);
       setCurrentPage(0);
-      alert('Academic deep-dive complete! Your textbook-sized study guide is ready.');
+      showToast('Academic deep-dive complete! Your study guide is ready.');
     } catch (error: any) {
       console.error('Regeneration error:', error);
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      alert('Analysis failed: ' + message);
+      showToast('Analysis failed: ' + message, 'error');
     } finally {
       setIsRegenerating(false);
     }
@@ -126,17 +128,20 @@ export default function DetailedNotes() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this material? This action cannot be undone.')) {
-      return;
-    }
-
+    if (!material) return;
+    
+    setIsDeleting(true);
     try {
       await api.delete(`/materials/${material.id}`);
       setMaterials(materials.filter(m => m.id !== material.id));
+      showToast('Material deleted successfully.');
       navigate('/library');
     } catch (error) {
       console.error('Failed to delete material:', error);
-      alert('Failed to delete material. Please try again.');
+      showToast('Failed to delete material.', 'error');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -170,7 +175,7 @@ export default function DetailedNotes() {
               </div>
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-all font-bold text-sm"
             >
               <Trash2 size={18} />
@@ -343,6 +348,51 @@ export default function DetailedNotes() {
       </motion.div>
 
       <StudyTimer materialId={material.id} title={material.title} />
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteConfirm(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm glass-card p-8 border-red-500/20 shadow-[0_0_50px_rgba(239,68,68,0.2)]"
+            >
+              <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <Trash2 size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-text-main text-center mb-2">Delete Study?</h3>
+              <p className="text-text-muted text-center text-sm mb-8">
+                Are you sure you want to delete <span className="text-text-main font-bold italic">"{material.title}"</span>? This action is permanent.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="btn-outline py-3"
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? <Loader2 size={18} className="animate-spin" /> : 'Delete Now'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

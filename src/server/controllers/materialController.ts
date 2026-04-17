@@ -73,3 +73,22 @@ export const updateMaterial = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const deleteMaterials = async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ message: 'Invalid IDs provided' });
+    }
+
+    const userId = (req as any).userId;
+    const result = await Material.deleteMany({
+      _id: { $in: ids },
+      userId
+    });
+
+    res.json({ message: `${result.deletedCount} materials deleted`, deletedCount: result.deletedCount });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

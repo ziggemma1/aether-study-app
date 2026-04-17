@@ -26,6 +26,8 @@ interface AppContextType {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   signOut: () => Promise<void>;
+  showToast: (text: string, type?: 'success' | 'error') => void;
+  toast: { text: string, type: 'success' | 'error' } | null;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -42,6 +44,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [toast, setToast] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
@@ -223,7 +231,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setDbError,
       theme,
       toggleTheme,
-      signOut
+      signOut,
+      showToast,
+      toast
     }}>
       {children}
     </AppContext.Provider>

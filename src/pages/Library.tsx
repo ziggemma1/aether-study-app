@@ -1,19 +1,21 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { Search, Filter, Grid, List, FileText, Youtube, BookOpen, Mic, ChevronRight, Check, Calendar as CalendarIcon, CheckCircle2, Layers } from 'lucide-react';
+import { Search, Filter, Grid, List, FileText, Youtube, BookOpen, Mic, ChevronRight, Check, Calendar as CalendarIcon, CheckCircle2, Layers, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Material } from '../types';
 
 export default function Library() {
-  const { materials, savedPlans, setMaterials } = useAppContext();
+  const { materials, savedPlans, setMaterials, showToast } = useAppContext();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filter, setFilter] = React.useState('All');
   const [selectedMaterials, setSelectedMaterials] = React.useState<string[]>([]);
   const [activeTab, setActiveTab] = React.useState<'materials' | 'unified' | 'plans'>('materials');
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   const filteredStandardMaterials = materials.filter(m => {
     if (!m || m.type === 'unified') return false;
@@ -84,9 +86,28 @@ export default function Library() {
       setMaterials([newMaterial, ...materials]);
       setSelectedMaterials([]);
       setActiveTab('unified');
+      showToast('Materials merged successfully!');
     } catch (err) {
       console.error('Merge error:', err);
-      alert('Failed to save merged material to cloud.');
+      showToast('Failed to save merged material to cloud.', 'error');
+    }
+  };
+
+  const handleDeleteMaterials = async () => {
+    if (selectedMaterials.length === 0) return;
+    
+    setIsDeleting(true);
+    try {
+      await api.post('/materials/bulk-delete', { ids: selectedMaterials });
+      setMaterials(materials.filter(m => !selectedMaterials.includes(m.id)));
+      setSelectedMaterials([]);
+      setShowDeleteConfirm(false);
+      showToast('Selected materials deleted successfully.');
+    } catch (err) {
+      console.error('Delete error:', err);
+      showToast('Failed to delete materials. Please try again.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -375,6 +396,12 @@ export default function Library() {
                 <span className="text-primary">{selectedMaterials.length}</span> selected
               </span>
               <div className="flex items-center gap-2 sm:gap-3 sm:border-l sm:border-border/50 sm:pl-6 w-full sm:w-auto">
+                <button 
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white py-1.5 px-3 sm:py-2 sm:px-6 rounded-lg sm:rounded-xl font-bold transition-all text-[10px] sm:text-sm whitespace-nowrap border border-red-500/20"
+                >
+                  Delete
+                </button>
                 {selectedMaterials.length > 1 && (
                   <button 
                     onClick={handleMergeMaterials}
@@ -392,6 +419,51 @@ export default function Library() {
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteConfirm(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm glass-card p-8 border-red-500/20 shadow-[0_0_50px_rgba(239,68,68,0.2)]"
+            >
+              <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <Search size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-text-main text-center mb-2">Delete Materials?</h3>
+              <p className="text-text-muted text-center text-sm mb-8">
+                Are you sure you want to delete {selectedMaterials.length} items? This action cannot be undone.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="btn-outline py-3"
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteMaterials}
+                  disabled={isDeleting}
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? <Loader2 size={18} className="animate-spin" /> : 'Delete All'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMaterials, createMaterial, deleteMaterial, updateMaterial } from '../controllers/materialController.js';
+import { getMaterials, createMaterial, deleteMaterial, deleteMaterials, updateMaterial } from '../controllers/materialController.js';
 import { analyzeMaterial, generateChapters } from '../controllers/analysisController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -13,5 +13,6 @@ router.post('/analyze', analyzeMaterial);
 router.post('/generate-chapters', generateChapters);
 router.put('/:id', updateMaterial);
 router.delete('/:id', deleteMaterial);
+router.post('/bulk-delete', deleteMaterials);
 
 export default router;

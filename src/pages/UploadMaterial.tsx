@@ -14,7 +14,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 
 export default function UploadMaterial() {
   const navigate = useNavigate();
-  const { user, materials, setMaterials } = useAppContext();
+  const { user, materials, setMaterials, showToast } = useAppContext();
   const [activeTab, setActiveTab] = React.useState<'file' | 'youtube' | 'article' | 'voice' | 'ocr'>('file');
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState(0);
@@ -31,7 +31,7 @@ export default function UploadMaterial() {
 
   const handleUpload = async (materialTitle: string, materialType: string, materialContent?: string) => {
     if (!user) {
-      alert('Please log in to upload materials.');
+      showToast('Please log in to upload materials.', 'error');
       return;
     }
 
@@ -105,9 +105,10 @@ export default function UploadMaterial() {
       setUploadProgress(100);
       setIsUploading(false);
       setIsSuccess(true);
+      showToast('Material uploaded successfully!');
     } catch (err: any) {
       console.error('Upload error:', err);
-      alert('Failed to save material: ' + (err.response?.data?.message || err.message));
+      showToast('Failed to save material: ' + (err.response?.data?.message || err.message), 'error');
       setIsUploading(false);
     }
   };
@@ -129,7 +130,7 @@ export default function UploadMaterial() {
       setOcrText(text);
     } catch (error) {
       console.error(error);
-      alert('Failed to extract text. Please try again with a clearer photo.');
+      showToast('Failed to extract text. Please try again with a clearer photo.', 'error');
     } finally {
       setIsOcrProcessing(false);
     }
@@ -194,9 +195,10 @@ export default function UploadMaterial() {
         }
         
         setContent(fullText);
+        showToast('Text extracted from PDF successfully.');
       } catch (error: any) {
         console.error('PDF extraction error:', error);
-        alert(error.message || 'Failed to extract text from PDF.');
+        showToast(error.message || 'Failed to extract text from PDF.', 'error');
         setContent(`Failed to extract text from ${file.name}.`);
       } finally {
         setIsPdfProcessing(false);

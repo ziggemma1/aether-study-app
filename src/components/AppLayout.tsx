@@ -6,7 +6,7 @@ import BottomNav from './BottomNav';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import { isSupabaseConfigured } from '../lib/supabase';
-import { Database, ArrowRight, Loader2, Sparkles, WifiOff } from 'lucide-react';
+import { Database, ArrowRight, Loader2, Sparkles, WifiOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AppLayout() {
@@ -91,6 +91,26 @@ export default function AppLayout() {
 
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {useAppContext().toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 50, x: '-50%' }}
+            className={cn(
+              "fixed bottom-24 sm:bottom-10 left-1/2 z-[2000] px-6 py-3 rounded-full font-bold shadow-2xl border backdrop-blur-md flex items-center gap-3",
+              useAppContext().toast?.type === 'success' 
+                ? "bg-green-500/10 text-green-500 border-green-500/20" 
+                : "bg-red-500/10 text-red-500 border-red-500/20"
+            )}
+          >
+            {useAppContext().toast?.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+            <span className="text-sm whitespace-nowrap">{useAppContext().toast?.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content Area */}
       <div className="flex-grow relative z-10 lg:ml-64 flex flex-col min-h-screen">

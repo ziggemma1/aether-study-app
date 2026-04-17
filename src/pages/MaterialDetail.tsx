@@ -13,7 +13,7 @@ import { cn } from '../lib/utils';
 export default function MaterialDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { materials, setMaterials } = useAppContext();
+  const { materials, setMaterials, showToast } = useAppContext();
   const material = materials.find(m => m.id === id);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -69,10 +69,10 @@ export default function MaterialDetail() {
         m.id === material.id ? { ...m, ...response.data } : m
       );
       setMaterials(updatedMaterials);
-      alert('Analysis regenerated successfully!');
+      showToast('Analysis regenerated successfully!');
     } catch (error: any) {
       console.error('Regeneration error:', error);
-      alert('Failed to regenerate analysis: ' + error.message);
+      showToast('Failed to regenerate analysis: ' + error.message, 'error');
     } finally {
       setIsRegenerating(false);
     }

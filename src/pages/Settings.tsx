@@ -24,7 +24,7 @@ import { cn } from '../lib/utils';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function Settings() {
-  const { user, setUser, theme, toggleTheme, signOut } = useAppContext();
+  const { user, setUser, theme, toggleTheme, signOut, showToast } = useAppContext();
   const location = useLocation();
   const [activeTab, setActiveTab] = React.useState<'account' | 'social' | 'security' | 'billing'>('account');
 
@@ -52,7 +52,7 @@ export default function Settings() {
 
   const handleSave = async () => {
     if (!isSupabaseConfigured) {
-      alert('Supabase is not connected. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables in the Settings menu.');
+      showToast('Backend connection is initializing. Please wait.', 'error');
       return;
     }
 
@@ -78,10 +78,10 @@ export default function Settings() {
         curriculum: formData.curriculum
       });
 
-      alert('Profile updated successfully!');
+      showToast('Profile updated successfully!');
     } catch (err: any) {
       console.error(err);
-      alert('Failed to update profile: ' + err.message);
+      showToast('Failed to update profile: ' + err.message, 'error');
     } finally {
       setIsSaving(false);
     }
