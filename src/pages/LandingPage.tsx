@@ -9,36 +9,12 @@ import BeforeAfterSection from '../components/BeforeAfterSection';
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const cursorX = useSpring(mouseX, { stiffness: 800, damping: 40 });
-  const cursorY = useSpring(mouseY, { stiffness: 800, damping: 40 });
-  const [isHovering, setIsHovering] = React.useState(false);
-
-  // Center the cursor follower (w-48 = 192px, so offset by 96px)
-  const centeredX = useTransform(cursorX, (val) => val - 96);
-  const centeredY = useTransform(cursorY, (val) => val - 96);
-
-  React.useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX);
-      mouseY.set(e.clientY);
-
-      const target = e.target as HTMLElement;
-      const isInteractive = target.closest('button, a, .btn-primary, .btn-secondary, .btn-accent, .btn-outline');
-      setIsHovering(!!isInteractive);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
 
   React.useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -53,30 +29,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Blurred Light Cursor Follower */}
-      <motion.div
-        className="fixed top-0 left-0 w-48 h-48 bg-white/10 rounded-full pointer-events-none z-[100] blur-[60px]"
-        animate={{
-          scale: isHovering ? 1.4 : 1,
-          opacity: isHovering ? 0.6 : 0.3,
-        }}
-        style={{
-          x: centeredX,
-          y: centeredY,
-        }}
-      />
-      <motion.div
-        className="fixed top-0 left-0 w-24 h-24 bg-white/20 rounded-full pointer-events-none z-[100] blur-[30px]"
-        animate={{
-          scale: isHovering ? 1.2 : 1,
-          opacity: isHovering ? 0.7 : 0.2,
-        }}
-        style={{
-          x: useTransform(cursorX, (val) => val - 48),
-          y: useTransform(cursorY, (val) => val - 48),
-        }}
-      />
-
       {/* Moving Background */}
       <GeometricBackground className="z-0" />
 
@@ -85,16 +37,16 @@ export default function LandingPage() {
         <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
           <motion.nav 
             layout
-            initial={{ y: -100 }}
+            initial={{ y: -50 }}
             animate={{ y: 0 }}
             transition={{ 
-              layout: { type: "spring", stiffness: 200, damping: 30 },
-              y: { duration: 0.5 }
+              layout: { type: "spring", stiffness: 300, damping: 30 },
+              y: { duration: 0.3 }
             }}
             className={cn(
-              "flex items-center justify-between pointer-events-auto transition-colors duration-500",
+              "flex items-center justify-between pointer-events-auto transition-all duration-300",
               isScrolled 
-                ? "mt-4 w-[92%] max-w-5xl px-4 py-2 bg-background/40 backdrop-blur-xl border border-white/10 shadow-lg rounded-full" 
+                ? "mt-4 w-[92%] max-w-5xl px-4 py-2 bg-background/60 backdrop-blur-xl border border-white/10 shadow-lg rounded-full" 
                 : "mt-0 w-full px-4 py-4 bg-transparent border-transparent"
             )}
           >
@@ -138,9 +90,9 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="px-6 md:px-12 lg:px-24 pt-24 sm:pt-32 pb-12 sm:pb-24 grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center max-w-7xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
             <h1 className="text-3xl md:text-5xl font-medium mb-6 leading-[1.1] tracking-tight">
               <span className="block text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-100 via-80% to-slate-400">
@@ -170,15 +122,15 @@ export default function LandingPage() {
 
           {/* Hero Visuals */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
             className="relative"
           >
             {/* Main Card 1 */}
             <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
               className="w-full max-w-[280px] sm:max-w-[320px] bg-gradient-to-br from-[#FF55D2] to-[#FF9F68] rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 shadow-xl relative z-20 mb-6 sm:mb-8 mx-auto lg:ml-auto"
             >
               <div className="flex flex-col gap-1 mb-3 sm:mb-4">
@@ -190,8 +142,8 @@ export default function LandingPage() {
 
             {/* Main Card 2 */}
             <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+              animate={{ y: [0, 6, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
               className="w-full max-w-[280px] sm:max-w-[320px] bg-gradient-to-br from-primary to-violet-700 rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 shadow-xl relative z-10 mx-auto lg:ml-auto lg:mr-8"
             >
               <div className="flex flex-col gap-1 mb-3 sm:mb-4">

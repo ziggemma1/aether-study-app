@@ -124,7 +124,7 @@ export default function Dashboard() {
   const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-20 sm:pb-12">
+    <div className="space-y-6 animate-in fade-in duration-300 pb-20 sm:pb-12">
       {/* Welcome Header */}
       <div className="space-y-1">
         <h1 className="text-xl sm:text-2xl font-bold text-text-main tracking-tight">

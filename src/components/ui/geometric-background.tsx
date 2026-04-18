@@ -22,29 +22,28 @@ function ElegantShape({
         <motion.div
             initial={{
                 opacity: 0,
-                y: -150,
-                rotate: rotate - 15,
+                y: -100,
+                rotate: rotate - 10,
             }}
             animate={{
-                opacity: 1,
+                opacity: 0.6,
                 y: 0,
                 rotate: rotate,
             }}
             transition={{
-                duration: 2.4,
+                duration: 1.2,
                 delay,
-                ease: [0.23, 0.86, 0.39, 0.96] as any,
-                opacity: { duration: 1.2 },
+                ease: "easeOut",
             }}
-            className={cn("absolute", className)}
+            className={cn("absolute will-change-transform", className)}
         >
             <motion.div
                 animate={{
-                    y: [0, 30, 0],
-                    rotate: [0, 5, 0],
+                    y: [0, 20, 0],
+                    rotate: [0, 3, 0],
                 }}
                 transition={{
-                    duration: 8,
+                    duration: 10,
                     repeat: Number.POSITIVE_INFINITY,
                     ease: "easeInOut",
                 }}
@@ -59,10 +58,10 @@ function ElegantShape({
                         "absolute inset-0 rounded-full",
                         "bg-gradient-to-r to-transparent",
                         gradient,
-                        "backdrop-blur-[2px] border-2 border-white/[0.05]",
-                        "shadow-[0_8px_32px_0_rgba(0,0,0,0.2)]",
+                        "border border-white/[0.03]",
+                        "shadow-lg",
                         "after:absolute after:inset-0 after:rounded-full",
-                        "after:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.05),transparent_70%)]"
+                        "after:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.02),transparent_80%)]"
                     )}
                 />
             </motion.div>

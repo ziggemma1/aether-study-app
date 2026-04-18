@@ -147,9 +147,10 @@ export default function QuizInterface() {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentQuestion}
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className="glass-card p-5 sm:p-12 relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-4 opacity-10">

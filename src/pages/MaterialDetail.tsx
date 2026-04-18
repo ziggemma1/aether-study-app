@@ -86,9 +86,9 @@ export default function MaterialDetail() {
     <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24 relative">
       <div className="atmosphere-bg" />
       <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
       >
         <button
           onClick={() => navigate(-1)}

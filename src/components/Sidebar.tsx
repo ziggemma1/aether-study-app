@@ -72,9 +72,11 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
       {/* Sidebar Content */}
       <motion.aside
+        initial={false}
+        animate={{ x: isOpen ? 0 : '-100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.5 }}
         className={cn(
-          "fixed top-0 left-0 h-full w-64 bg-surface/80 backdrop-blur-xl border-r border-border z-45 transition-transform lg:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed top-0 left-0 h-full w-64 bg-surface/80 backdrop-blur-xl border-r border-border z-[100] lg:translate-x-0"
         )}
       >
         <div className="h-full flex flex-col overflow-y-auto custom-scrollbar">

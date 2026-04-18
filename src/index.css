@@ -48,7 +48,7 @@
 
 @layer components {
   .glass-card {
-    @apply backdrop-blur-xl bg-surface border border-border rounded-[32px] shadow-2xl overflow-hidden transition-all duration-500;
+    @apply backdrop-blur-xl bg-surface border border-border rounded-[32px] shadow-2xl overflow-hidden transition-all duration-300 ease-out;
   }
   
   .glass-nav {
@@ -64,7 +64,7 @@
       radial-gradient(circle at 10% 90%, var(--secondary) 0%, transparent 50%),
       radial-gradient(circle at 90% 90%, var(--primary) 0%, transparent 50%);
     filter: blur(80px);
-    transition: all 0.5s ease;
+    transition: opacity 0.3s ease-out;
   }
   
   .dark .atmosphere-bg {
@@ -114,7 +114,7 @@
 }
 
 html, body {
-  @apply bg-background text-text-main font-sans antialiased transition-colors duration-300;
+  @apply bg-background text-text-main font-sans antialiased transition-colors duration-200;
   background-image: linear-gradient(180deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%);
   height: 100dvh;
   margin: 0;

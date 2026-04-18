@@ -116,14 +116,14 @@ export default function DetailedNotes() {
   const handleNext = () => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo(0, 0);
     }
   };
 
   const handlePrev = () => {
     if (currentPage > 0) {
       setCurrentPage(prev => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo(0, 0);
     }
   };
 
@@ -149,9 +149,9 @@ export default function DetailedNotes() {
     <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24 relative">
       <div className="atmosphere-bg" />
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
       >
         <div className="flex items-center justify-between mb-8">
           <button
@@ -216,10 +216,10 @@ export default function DetailedNotes() {
             {sections.length > 0 ? (
               <motion.div
                 key={currentPage}
-                initial={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
                 className="glass-card shadow-2xl p-6 sm:p-12 relative border-t-8 border-primary"
               >
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-accent opacity-50" />
