@@ -40,30 +40,38 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
       } else {
         if (!readContent) return;
         
-        // Cancel first to clear queue
         window.speechSynthesis.cancel();
         
-        // Strip markdown for cleaner reading
         const plainText = readContent
           .replace(/[#*`_]/g, '')
           .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
-          .replace(/\n\n/g, '. ');
+          .replace(/\n/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
 
-        const utterance = new SpeechSynthesisUtterance(plainText);
+        // Chunk by sentences to prevent Chrome TTS timeout limit on long text
+        const chunks = plainText.match(/[^.!?]+[.!?]+/g) || [plainText];
         
-        // Set language
         const langMap: Record<string, string> = {
           'English (US)': 'en-US',
           'English (UK)': 'en-GB',
           'Indonesia': 'id-ID'
         };
-        utterance.lang = user?.language ? langMap[user.language] || 'en-US' : 'en-US';
+        const selectedLang = user?.language ? langMap[user.language] || 'en-US' : 'en-US';
+
+        chunks.forEach((chunkText, idx) => {
+          if (!chunkText.trim()) return;
+          const u = new SpeechSynthesisUtterance(chunkText.trim());
+          u.lang = selectedLang;
+          
+          if (idx === chunks.length - 1) {
+            u.onend = () => setIsPlayingAudio(false);
+          }
+          u.onerror = () => setIsPlayingAudio(false);
+          
+          window.speechSynthesis.speak(u);
+        });
         
-        utterance.onend = () => setIsPlayingAudio(false);
-        utterance.onerror = () => setIsPlayingAudio(false);
-        
-        utteranceRef.current = utterance;
-        window.speechSynthesis.speak(utterance);
         setIsPlayingAudio(true);
       }
     }
@@ -98,7 +106,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
 
   const saveSession = async () => {
     const currentSeconds = secondsRef.current;
-    if (currentSeconds < 10) return; // For testing, let's lower it to 10 seconds
+    if (currentSeconds < 60) return; // Only save meaningful study sessions (at least 1 minute)
 
     try {
       const response = await api.post('/sessions', {
@@ -137,7 +145,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
             <Clock size={20} className={isActive ? "animate-pulse" : ""} />
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Focus Time</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('focus_time')}</span>
             <span className="text-lg font-mono font-bold text-white">{formatTime(seconds)}</span>
           </div>
         </div>

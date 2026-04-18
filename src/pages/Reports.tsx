@@ -124,17 +124,17 @@ export default function Reports() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-text-main tracking-tight mb-2">Performance Reports</h1>
-          <p className="text-text-muted text-sm">Detailed analysis of your learning journey and growth.</p>
+          <h1 className="text-3xl font-bold text-text-main tracking-tight mb-2">{t('performance_reports')}</h1>
+          <p className="text-text-muted text-sm">{t('reports_desc')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2.5 bg-surface-alt/50 hover:bg-surface-alt text-text-main text-xs font-bold rounded-xl border border-border transition-all">
             <Calendar size={16} />
-            Last 6 Months
+            6 {t('months')}
           </button>
           <button className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 transition-all">
             <Download size={16} />
-            Export PDF
+            {t('export')}
           </button>
         </div>
       </div>
@@ -143,36 +143,36 @@ export default function Reports() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           icon={Clock} 
-          label="Time on Platform" 
+          label={t('time_on_platform')} 
           value={formattedTimeSpent} 
-          trend={`${timeTrend > 0 ? '+' : ''}${timeTrend}% from last week`} 
+          trend={`${timeTrend > 0 ? '+' : ''}${timeTrend}% ${t('from_last_week')}`} 
           trendUp={timeTrend >= 0}
           color={isLight ? "text-blue-600" : "text-blue-400"}
           bg={isLight ? "bg-blue-100" : "bg-blue-400/10"}
         />
         <StatCard 
           icon={TrendingUp} 
-          label="Overall Growth" 
+          label={t('overall_growth')} 
           value={`${accuracy}%`} 
-          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% this week`} 
+          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% ${t('this_week')}`} 
           trendUp={quizTrend >= 0}
           color={isLight ? "text-emerald-600" : "text-emerald-400"}
           bg={isLight ? "bg-emerald-100" : "bg-emerald-400/10"}
         />
         <StatCard 
           icon={Target} 
-          label="Average Score" 
+          label={t('avg_quiz_score')} 
           value={`${avgScorePercentage}%`} 
-          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% from last quiz`} 
+          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% ${t('from_last_quiz')}`} 
           trendUp={quizTrend >= 0}
           color={isLight ? "text-orange-600" : "text-orange-400"}
           bg={isLight ? "bg-orange-100" : "bg-orange-400/10"}
         />
         <StatCard 
           icon={Award} 
-          label="Global Ranking" 
+          label={t('global_rank')} 
           value={`#${globalRank.toLocaleString()}`} 
-          trend="Top 5% of students" 
+          trend={t('top_5_percent')} 
           trendUp={true}
           color={isLight ? "text-purple-600" : "text-purple-400"}
           bg={isLight ? "bg-purple-100" : "bg-purple-400/10"}
@@ -185,8 +185,8 @@ export default function Reports() {
         <div className="lg:col-span-8 glass-card p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-xl font-bold text-text-main">Growth Over Time</h2>
-              <p className="text-xs text-text-muted mt-1">Your score progression vs platform average</p>
+              <h2 className="text-xl font-bold text-text-main">{t('growth_over_time')}</h2>
+              <p className="text-xs text-text-muted mt-1">{t('growth_over_time_desc') || 'Your score progression vs platform average'}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -266,8 +266,8 @@ export default function Reports() {
         {/* Wins vs Losses Chart */}
         <div className="lg:col-span-4 glass-card p-8 flex flex-col">
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-text-main">Accuracy Breakdown</h2>
-            <p className="text-xs text-text-muted mt-1">Correct vs Incorrect answers</p>
+            <h2 className="text-xl font-bold text-text-main">{t('accuracy_breakdown')}</h2>
+            <p className="text-xs text-text-muted mt-1">{t('accuracy_breakdown_desc') || 'Correct vs Incorrect answers'}</p>
           </div>
           
           <div className="flex-grow flex items-center justify-center relative">
@@ -322,8 +322,8 @@ export default function Reports() {
         <div className="lg:col-span-12 glass-card p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-xl font-bold text-text-main">Subject Proficiency</h2>
-              <p className="text-xs text-text-muted mt-1">Detailed performance across all enrolled subjects</p>
+              <h2 className="text-xl font-bold text-text-main">{t('subject_proficiency')}</h2>
+              <p className="text-xs text-text-muted mt-1">{t('subject_proficiency_desc') || 'Detailed performance across all enrolled subjects'}</p>
             </div>
             <button className="p-2.5 bg-surface/50 text-text-muted hover:text-text-main rounded-xl border border-border transition-all">
               <Filter size={18} />

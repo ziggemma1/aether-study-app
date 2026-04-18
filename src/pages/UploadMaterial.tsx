@@ -355,20 +355,24 @@ export default function UploadMaterial() {
                     ) : ocrText ? (
                       <div className="space-y-3 sm:space-y-4">
                         <div>
-                          <label className="block text-[10px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">Extracted Text</label>
+                          <label className="block text-[10px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main flex items-center justify-between">
+                            <span>Review Extracted Text</span>
+                            <span className="text-secondary font-medium text-[9px] sm:text-[10px] bg-secondary/10 px-2 py-0.5 rounded-full">Correct Handwriting Errors Here</span>
+                          </label>
                           <textarea
-                            rows={6}
+                            rows={8}
                             value={ocrText}
                             onChange={(e) => setOcrText(e.target.value)}
-                            className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none resize-none"
+                            placeholder="Review and correct any mistaken words before analyzing..."
+                            className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-secondary/30 bg-surface/80 text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-secondary outline-none resize-y shadow-inner"
                           />
                         </div>
                         <button 
                           onClick={() => handleUpload('Scanned Notes', 'image', ocrText)} 
                           disabled={!ocrText}
-                          className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                          className="w-full btn-primary bg-secondary hover:bg-secondary/90 py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
                         >
-                          Process Text
+                          Confirm & Analyze Text
                         </button>
                       </div>
                     ) : null}

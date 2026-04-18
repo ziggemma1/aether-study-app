@@ -24,6 +24,7 @@ export interface User {
   points: number;
   followersCount: number;
   friendsCount: number;
+  following?: string[];
   achievements: Achievement[];
 }
 

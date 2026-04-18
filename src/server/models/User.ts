@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema({
   points: { type: Number, default: 0 },
   followersCount: { type: Number, default: 0 },
   friendsCount: { type: Number, default: 0 },
+  following: [{ type: String }],
+  followers: [{ type: String }],
   achievements: [{
     id: String,
     title: String,
