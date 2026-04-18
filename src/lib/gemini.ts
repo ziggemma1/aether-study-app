@@ -76,10 +76,13 @@ export const generateVisualAidOnClient = async (prompt: string): Promise<string>
   return '';
 };
 
-export const analyzeStudyMaterialOnClient = async (content: string, title: string = "Material"): Promise<StudyMaterialAnalysis> => {
+export const analyzeStudyMaterialOnClient = async (content: string, title: string = "Material", language: string = "English (US)"): Promise<StudyMaterialAnalysis> => {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured on the client. Please ensure you have added it to your environment.");
   }
+
+  // Determine actual language prompt
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
   // Try multiple model aliases
   const models = ['gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-3.1-pro-preview'];
@@ -87,7 +90,7 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
 
   for (const model of models) {
     try {
-      console.log(`Analyzing material with model: ${model}`);
+      console.log(`Analyzing material with model: ${model} in ${language}`);
       // Reduce content size slightly to avoid proxy buffer issues
       const contentLimit = 12000; 
       const response = await withRetry(() => ai.models.generateContent({
@@ -95,6 +98,7 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
         contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, contentLimit)}`,
         config: {
           systemInstruction: `Analyze the material and return JSON. 
+          STRICT REQUIREMENT: All generated text MUST be in ${langPrompt}.
           Use simple, clear, and easy to understand language (Explain like I'm 15).
           
           Return:
@@ -147,15 +151,17 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
   throw lastError || new Error("All Gemini models failed for analysis");
 };
 
-export const generateTopicSectionOnClient = async (content: string, title: string, topic: string): Promise<NoteSection> => {
+export const generateTopicSectionOnClient = async (content: string, title: string, topic: string, language: string = "English (US)"): Promise<NoteSection> => {
   if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
   
   const models = ['gemini-3-flash-preview', 'gemini-3.1-pro-preview', 'gemini-flash-latest'];
   let lastError = null;
 
   for (const model of models) {
     try {
-      console.log(`Generating topic section with model: ${model}`);
+      console.log(`Generating topic section with model: ${model} in ${language}`);
       // Reduce content size slightly to avoid proxy buffer issues
       const contentLimit = 8000;
       const response = await withRetry(() => ai.models.generateContent({
@@ -165,6 +171,7 @@ export const generateTopicSectionOnClient = async (content: string, title: strin
         Material Context: ${content.substring(0, contentLimit)}`,
         config: {
           systemInstruction: `You are an elite academic professor. Write a massive, deep-dive chapter for this specific topic. 
+          STRICT REQUIREMENT: All content MUST be written in ${langPrompt}.
           Use simple, easy to understand words. Refine the text and focus on readability.
           Target a volume about 400% larger than a basic summary for this topic.
           Include 3 detailed examples, sub-headings, and professional explanations of first principles.

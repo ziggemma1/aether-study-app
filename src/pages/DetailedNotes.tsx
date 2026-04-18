@@ -13,7 +13,7 @@ import { analyzeStudyMaterialOnClient, generateVisualAidOnClient, generateTopicS
 export default function DetailedNotes() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { materials, setMaterials, showToast } = useAppContext();
+  const { user, materials, setMaterials, showToast } = useAppContext();
   const material = materials.find(m => m.id === id);
 
   const [currentPage, setCurrentPage] = React.useState(0);
@@ -42,7 +42,7 @@ export default function DetailedNotes() {
       console.log('Regenerating detailed analysis for (Client-Side Gemini first):', material.title);
       
       // Step 1: Perform initial analysis on client to use platform API Key
-      const analysis = await analyzeStudyMaterialOnClient(material.content || material.title, material.title);
+      const analysis = await analyzeStudyMaterialOnClient(material.content || material.title, material.title, user?.language);
       
       // Step 2: Request massive chapters from backend (OpenRouter)
       let noteSections = [];
@@ -60,7 +60,7 @@ export default function DetailedNotes() {
         for (const topic of analysis.keyTopics) {
           try {
             console.log(`Generating fallback chapter for: ${topic}`);
-            const section = await generateTopicSectionOnClient(material.content || material.title, material.title, topic);
+            const section = await generateTopicSectionOnClient(material.content || material.title, material.title, topic, user?.language);
             noteSections.push(section);
           } catch (geminiErr) {
             console.error(`Gemini fallback failed for ${topic}:`, geminiErr);

@@ -289,7 +289,7 @@ export default function Settings() {
                       >
                         <option>English (US)</option>
                         <option>English (UK)</option>
-                        <option>Indonesian</option>
+                        <option>Indonesia</option>
                       </select>
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">

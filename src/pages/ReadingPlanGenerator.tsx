@@ -35,7 +35,7 @@ export default function ReadingPlanGenerator() {
   const materialIdStr = searchParams.get('materials') || searchParams.get('materialId');
   const materialIds = materialIdStr ? materialIdStr.split(',') : [];
   
-  const { materials, savedPlans, setSavedPlans, showToast, t } = useAppContext();
+  const { user, materials, savedPlans, setSavedPlans, showToast, t } = useAppContext();
   const selectedMaterials = materials.filter(m => materialIds.includes(m.id));
 
   // Form States
@@ -79,7 +79,8 @@ export default function ReadingPlanGenerator() {
         duration,
         goal,
         complexity,
-        commitment
+        commitment,
+        user?.language
       );
       
       const planWithIds = generatedPlan.map(session => ({

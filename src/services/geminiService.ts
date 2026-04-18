@@ -85,8 +85,10 @@ export const generateVisualAid = async (prompt: string): Promise<string> => {
   }
 };
 
-export const generateGeminiTopicSection = async (content: string, title: string, topic: string): Promise<NoteSection> => {
+export const generateGeminiTopicSection = async (content: string, title: string, topic: string, language: string = "English (US)"): Promise<NoteSection> => {
   const ai = getAiClient();
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
+
   const response = await withRetry(() => ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Create an EXTREMELY detailed study chapter for the topic "${topic}" based on the following material: ${title}.
@@ -94,6 +96,7 @@ export const generateGeminiTopicSection = async (content: string, title: string,
     Material Context: ${content.substring(0, 10000)}`,
     config: {
       systemInstruction: `You are an elite academic professor. Write a massive, deep-dive chapter for this specific topic. 
+      STRICT REQUIREMENT: All generated text MUST be in ${langPrompt}.
       Use simple, easy to understand words (Explain like I'm 15). Refine the text and focus on readability.
       Target a volume about 400% larger than a basic summary for this topic.
       Include 3 detailed examples, sub-headings, and professional explanations of first principles.
@@ -116,10 +119,11 @@ export const generateGeminiTopicSection = async (content: string, title: string,
   return JSON.parse(text);
 };
 
-export const analyzeStudyMaterial = async (content: string, title: string = "Material"): Promise<StudyMaterialAnalysis> => {
+export const analyzeStudyMaterial = async (content: string, title: string = "Material", language: string = "English (US)"): Promise<StudyMaterialAnalysis> => {
   try {
     let initialResult: any;
     let usedFallback = false;
+    const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
     try {
       const ai = getAiClient();
@@ -129,6 +133,7 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
         contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, 15000)}`,
         config: {
           systemInstruction: `You are an expert academic analyzer. Analyze the provided study material and return a JSON object.
+          STRICT REQUIREMENT: All generated text MUST be in ${langPrompt}.
           Use simple, clear, and easy to understand language (Explain like I'm 15).
           
           Return:
@@ -201,7 +206,7 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
       const noteSections: NoteSection[] = [];
       for (const topic of result.keyTopics) {
         try {
-          const section = await generateGeminiTopicSection(content, title, topic);
+          const section = await generateGeminiTopicSection(content, title, topic, language);
           noteSections.push(section);
         } catch (err: any) {
           console.error(`Gemini fallback failed for topic ${topic}`, err.message);
@@ -252,15 +257,17 @@ export const generateStudyPlan = async (
   duration: number, 
   goal: string, 
   complexity: string, 
-  commitment: string
+  commitment: string,
+  language: string = "English (US)"
 ): Promise<PlanSession[]> => {
   try {
     const ai = getAiClient();
+    const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
     const materialContext = materials.map(m => `Title: ${m.title}\nKey Topics: ${(m.keyTopics || []).join(', ')}`).join('\n\n');
 
     const response = await withRetry(() => ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Generate a personalized study plan.
+      contents: `Generate a personalized study plan in ${langPrompt}.
       
       STUDENT PARAMETERS:
       - Learning Goal: ${goal} (This should dictate the strategy: e.g., 'Exam Prep' focuses on practice, 'Deep Dive' on theory, 'Quick Review' on key facts)
@@ -273,6 +280,7 @@ export const generateStudyPlan = async (
       ${materialContext}`,
       config: {
         systemInstruction: `You are a world-class academic advisor. Create a structured study plan as a JSON array of daily sessions.
+        STRICT REQUIREMENT: All generated text MUST be in ${langPrompt}.
         
         STRATEGY REQUIREMENTS:
         1. ADAPTIVE DEPTH: If complexity is 'Advanced', include academic deep-dives. If 'Beginner', focus on foundations.

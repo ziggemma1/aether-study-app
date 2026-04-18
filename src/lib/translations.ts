@@ -1,4 +1,4 @@
-export type Language = 'English (US)' | 'English (UK)' | 'Indonesian';
+export type Language = 'English (US)' | 'English (UK)' | 'Indonesia';
 
 export const translations: Record<Language, Record<string, string>> = {
   'English (US)': {
@@ -183,7 +183,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'attended': 'Attended',
     'missed': 'Missed'
   },
-  'Indonesian': {
+  'Indonesia': {
     'welcome_back': 'Selamat datang kembali',
     'welcome_subtext': "Hari yang luar biasa untuk tetap produktif. Kelola tugas Anda dan jelajahi alat bantu Anda hari ini.",
     'student': 'Siswa',

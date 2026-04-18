@@ -56,7 +56,7 @@ export default function UploadMaterial() {
       // AI Analysis via client - Fast summary and topics only
       let analysis: any;
       try {
-        analysis = await analyzeStudyMaterialOnClient(finalContent || materialTitle, materialTitle);
+        analysis = await analyzeStudyMaterialOnClient(finalContent || materialTitle, materialTitle, user?.language);
         console.log('Summary & Simple Detailed Notes Analysis successful');
         
         // Initial state for simple view
