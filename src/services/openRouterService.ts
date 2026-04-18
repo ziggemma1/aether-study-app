@@ -23,7 +23,8 @@ const MODELS = {
     'meta-llama/llama-3.1-8b-instruct',
     'mistralai/mistral-7b-instruct',
     'google/gemma-2-9b-it',
-    'meta-llama/llama-3-8b-instruct:free'
+    'meta-llama/llama-3-8b-instruct:free',
+    'microsoft/phi-3-mini-128k-instruct:free'
   ],
   synthesis: [
     'google/gemini-flash-1.5-8b',
@@ -31,7 +32,9 @@ const MODELS = {
     'mistralai/mistral-7b-instruct',
     'google/gemma-2-9b-it',
     'qwen/qwen-2.5-72b-instruct',
-    'meta-llama/llama-3-8b-instruct:free'
+    'meta-llama/llama-3-8b-instruct:free',
+    'microsoft/phi-3-medium-128k-instruct:free',
+    'openchat/openchat-7b:free'
   ]
 };
 
@@ -187,4 +190,50 @@ export const generateDetailedNotes = async (content: string, title: string, keyT
     console.error('OpenRouter Pipeline Error:', error.message);
     return { detailedNotes: 'Generation failed.', noteSections: [] };
   }
+};
+
+export const analyzeStudyMaterialWithOpenRouter = async (content: string, title: string = "Material"): Promise<{
+  summary: string;
+  keyTopics: string[];
+  realLifeApplications: string[];
+  simpleDetailedNotes: string;
+  suggestedQuizQuestions: any[];
+}> => {
+  const apiKey = getOpenRouterKey();
+  if (!apiKey) throw new Error('OpenRouter key missing for fallback.');
+
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'HTTP-Referer': SITE_URL,
+    'X-OpenRouter-Title': SITE_NAME,
+    'Content-Type': 'application/json',
+  };
+
+  const response = await callOpenRouterWithFallback(
+    [
+      {
+        role: 'system',
+        content: `You are an expert academic analyzer. Analyze the provided study material and return a JSON object.
+        Use simple, clear language.
+        
+        Return:
+        1. summary: A comprehensive summary.
+        2. keyTopics: Array of 5-8 important topics.
+        3. realLifeApplications: Array of 3 practical examples.
+        4. simpleDetailedNotes: Standard detailed notes in Markdown.
+        5. suggestedQuizQuestions: Array of 5 MCQs with 'question', 'options' (4), 'correctAnswer' (0-3), and 'explanation'.`
+      },
+      {
+        role: 'user',
+        content: `Material Title: ${title}\n\nContent:\n${content.substring(0, 15000)}`
+      }
+    ],
+    MODELS.synthesis,
+    headers,
+    true
+  );
+
+  const rawJson = response.content || '{}';
+  const cleanJson = rawJson.replace(/```json\n?|```/g, '').trim();
+  return JSON.parse(cleanJson);
 };

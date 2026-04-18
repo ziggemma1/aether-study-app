@@ -14,11 +14,18 @@ export default function AppLayout() {
   const { theme, dbError, isLoading, user, toast } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
+  // Critical loading should only block if there's no user in cache/state
+  const isCriticalLoading = (isLoading && !user);
+  
+  // Show full-screen overlay ONLY during initial application boot without user data
+  // Subsequent dbErrors will show as non-blocking indicators
+  const showBlockingOverlay = isCriticalLoading;
+
   return (
     <div className={cn("h-full w-full bg-background relative overflow-hidden flex", theme)}>
-      {/* Enhanced Database Connection Handling & Loading Overlay */}
+      {/* Enhanced Database Connection Handling & Loading Overlay (Now ONLY for Initial Boot) */}
       <AnimatePresence>
-        {(dbError || (isLoading && !user)) && (
+        {showBlockingOverlay && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -28,7 +35,7 @@ export default function AppLayout() {
             <div className="max-w-md w-full glass-card p-10 flex flex-col items-center text-center space-y-8 shadow-[0_0_50px_rgba(139,92,246,0.3)] border-primary/20">
               <div className="relative">
                 <div className="w-24 h-24 bg-primary/10 rounded-3xl flex items-center justify-center text-primary animate-pulse">
-                  {dbError ? <Database size={40} /> : <Sparkles size={40} />}
+                  <Sparkles size={40} />
                 </div>
                 <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-surface border-4 border-background rounded-full flex items-center justify-center text-secondary">
                   <Loader2 size={18} className="animate-spin" />
@@ -37,15 +44,13 @@ export default function AppLayout() {
               
               <div className="space-y-3">
                 <h2 className="text-2xl font-extrabold text-text-main tracking-tight">
-                  {dbError ? "Syncing with Aether Secure" : "Initializing Aether"}
+                  Initializing Aether
                 </h2>
                 <p className="text-text-muted text-sm leading-relaxed">
-                  {dbError 
-                    ? "We're establishing a secure high-speed connection to your study portal. This usually takes just a few seconds."
-                    : "Preparing your personalized study environment and securing your data."}
+                  Preparing your personalized study environment and securing your data.
                 </p>
                 <div className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] pt-2">
-                  {dbError ? "Auto-Retry in progress..." : "Checking credentials..."}
+                  Checking credentials...
                 </div>
               </div>
 
@@ -58,28 +63,38 @@ export default function AppLayout() {
                 />
               </div>
 
-              {!dbError && (
-                <p className="text-[10px] text-text-muted italic">
-                  Tip: Aether study sessions are optimized for focus.
-                </p>
-              )}
-
-              {dbError && (
-                <div className="flex flex-col gap-3 w-full">
-                  <button 
-                    onClick={() => window.location.reload()}
-                    className="w-full py-4 bg-primary text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-lg active:scale-95 text-sm"
-                  >
-                    Force Refresh
-                    <ArrowRight size={16} />
-                  </button>
-                  <div className="flex items-center justify-center gap-2 text-text-muted/60 text-xs">
-                    <WifiOff size={12} />
-                    <span>Connection status: {dbError.includes('connecting') ? 'Negotiating handshake' : 'Retrying uplink'}</span>
-                  </div>
-                </div>
-              )}
+              <p className="text-[10px] text-text-muted italic">
+                Tip: Aether study sessions are optimized for focus.
+              </p>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Non-Blocking Background Sync Indicator (Appears when dbError occurs while app is functional) */}
+      <AnimatePresence>
+        {dbError && !showBlockingOverlay && (
+          <motion.div
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[1500] px-4 py-2 bg-background/80 backdrop-blur-md border border-primary/20 rounded-full shadow-lg flex items-center gap-3"
+          >
+            <div className="relative flex items-center justify-center">
+              <Database size={14} className="text-primary animate-pulse" />
+              <Loader2 size={16} className="absolute -top-1 -right-1 text-secondary animate-spin" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-text-main uppercase tracking-widest">Aether Syncing</span>
+              <span className="text-[8px] text-text-muted">Weak uplink identified. Auto-retrying...</span>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="ml-2 p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors"
+              title="Refresh Connection"
+            >
+              <ArrowRight size={12} />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

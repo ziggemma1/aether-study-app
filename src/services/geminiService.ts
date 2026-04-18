@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { generateDetailedNotes } from "./openRouterService.js";
+import { generateDetailedNotes, analyzeStudyMaterialWithOpenRouter, generateTopicSection } from "./openRouterService.js";
 import { NoteSection } from "../types.js";
 
 // Lazy initialization to prevent startup crashes and provide better error messages
@@ -118,60 +118,82 @@ export const generateGeminiTopicSection = async (content: string, title: string,
 
 export const analyzeStudyMaterial = async (content: string, title: string = "Material"): Promise<StudyMaterialAnalysis> => {
   try {
-    const ai = getAiClient();
-    // Step 1: Get basic analysis and key topics from Gemini
-    const response = await withRetry(() => ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, 15000)}`,
-      config: {
-        systemInstruction: `You are an expert academic analyzer. Analyze the provided study material and return a JSON object.
-        Use simple, clear, and easy to understand language (Explain like I'm 15).
-        
-        Return:
-        1. summary: A comprehensive summary.
-        2. keyTopics: An array of important topics (aim for 5-8 topics).
-        3. realLifeApplications: An array of practical examples.
-        4. simpleDetailedNotes: Create standard, accurately detailed notes using Markdown. This should be about 400% longer than the summary.
-        5. suggestedQuizQuestions: An array of 5 multiple-choice questions with 'question', 'options' (array of 4), 'correctAnswer' (0-3), and 'explanation'.`,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            summary: { type: Type.STRING },
-            keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
-            realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
-            simpleDetailedNotes: { type: Type.STRING },
-            suggestedQuizQuestions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  question: { type: Type.STRING },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  correctAnswer: { type: Type.NUMBER },
-                  explanation: { type: Type.STRING }
-                },
-                required: ["question", "options", "correctAnswer", "explanation"]
-              }
-            }
-          },
-          required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
-        }
-      }
-    }));
+    let initialResult: any;
+    let usedFallback = false;
 
-    let text = response.text;
-    if (!text) throw new Error("Gemini initial analysis failed");
-    const resultJson = JSON.parse(text);
+    try {
+      const ai = getAiClient();
+      // Step 1: Get basic analysis and key topics from Gemini
+      const response = await withRetry(() => ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, 15000)}`,
+        config: {
+          systemInstruction: `You are an expert academic analyzer. Analyze the provided study material and return a JSON object.
+          Use simple, clear, and easy to understand language (Explain like I'm 15).
+          
+          Return:
+          1. summary: A comprehensive summary.
+          2. keyTopics: An array of important topics (aim for 5-8 topics).
+          3. realLifeApplications: An array of practical examples.
+          4. simpleDetailedNotes: Create standard, accurately detailed notes using Markdown. This should be about 400% longer than the summary.
+          5. suggestedQuizQuestions: An array of 5 multiple-choice questions with 'question', 'options' (array of 4), 'correctAnswer' (0-3), and 'explanation'.`,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: { type: Type.STRING },
+              keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+              realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
+              simpleDetailedNotes: { type: Type.STRING },
+              suggestedQuizQuestions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    correctAnswer: { type: Type.NUMBER },
+                    explanation: { type: Type.STRING }
+                  },
+                  required: ["question", "options", "correctAnswer", "explanation"]
+                }
+              }
+            },
+            required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
+          }
+        }
+      }));
+
+      const text = response.text;
+      if (!text) throw new Error("Gemini initial analysis failed");
+      initialResult = JSON.parse(text);
+    } catch (error: any) {
+      console.warn('Gemini initial analysis failed or credit exhausted. Falling back to OpenRouter...', error.message);
+      try {
+        initialResult = await analyzeStudyMaterialWithOpenRouter(content, title);
+        usedFallback = true;
+      } catch (fallbackError: any) {
+        console.error('Both Gemini and OpenRouter analysis failed:', fallbackError.message);
+        throw error; // Rethrow original error if fallback also fails
+      }
+    }
+
     const result: StudyMaterialAnalysis = {
-      ...resultJson,
-      detailedNotes: resultJson.simpleDetailedNotes,
+      ...initialResult,
+      detailedNotes: initialResult.simpleDetailedNotes,
       noteSections: []
     };
 
     // Step 2: Generate massive structured detailed notes (Iterative)
     console.log('Generating massive structured notes based on key topics:', result.keyTopics);
-    let openRouterResult = await generateDetailedNotes(content, title, result.keyTopics);
+    let openRouterResult: any;
+    
+    try {
+      openRouterResult = await generateDetailedNotes(content, title, result.keyTopics);
+    } catch (err) {
+      console.warn('Initial OpenRouter batch fail:', err);
+      openRouterResult = null;
+    }
     
     // Fallback to Gemini iterative if OpenRouter fails
     if (!openRouterResult || openRouterResult.noteSections.length === 0) {
@@ -181,8 +203,16 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
         try {
           const section = await generateGeminiTopicSection(content, title, topic);
           noteSections.push(section);
-        } catch (err) {
-          console.error(`Gemini fallback failed for topic ${topic}`, err);
+        } catch (err: any) {
+          console.error(`Gemini fallback failed for topic ${topic}`, err.message);
+          // If Gemini fails, we could try OpenRouter for JUST this topic as a last resort
+          try {
+            console.log(`Last resort: Trying OpenRouter for section ${topic}`);
+            const section = await generateTopicSection(content, title, topic);
+            noteSections.push(section);
+          } catch (lastResortErr) {
+             console.error(`Last resort failed for ${topic}`);
+          }
         }
       }
       openRouterResult = {
