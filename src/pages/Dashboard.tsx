@@ -227,14 +227,14 @@ export default function Dashboard() {
                     </div>
                     <div className="flex-grow min-w-0">
                       <h4 className="text-xs font-bold text-text-main truncate">{session.title}</h4>
-                      <p className="text-xs text-text-muted">{session.durationMinutes} mins • {new Date(session.startTime).toLocaleDateString()}</p>
+                      <p className="text-xs text-text-muted">{session.durationMinutes} {t('mins')} • {new Date(session.startTime).toLocaleDateString()}</p>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6">
                   <Clock size={32} className="text-text-muted mb-2 opacity-20" />
-                  <p className="text-xs text-text-muted">No recent study activity tracked yet.</p>
+                  <p className="text-xs text-text-muted">{t('no_recent_activity')}</p>
                 </div>
               )}
             </div>

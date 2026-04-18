@@ -24,6 +24,7 @@ import {
   Cell
 } from 'recharts';
 import { cn } from '../lib/utils';
+import { useAppContext } from '../context/AppContext';
 
 // --- Styles ---
 const stripeStyle = {
@@ -34,6 +35,7 @@ const stripeStyle = {
 // --- Sub-components ---
 
 export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }: { score?: number, trend?: number, highest?: number, lowest?: number }) {
+  const { t } = useAppContext();
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
@@ -41,7 +43,7 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
       className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
     >
       <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[10px] sm:text-xs font-medium text-text-muted">Avg Quiz Score</p>
+        <p className="text-[10px] sm:text-xs font-medium text-text-muted">{t('avg_quiz_score')}</p>
       </div>
       
       <div className="flex items-center gap-1 mb-1 sm:mb-2">
@@ -61,7 +63,7 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
       <div className="space-y-2 sm:space-y-4 mt-auto">
         <div className="space-y-1">
           <div className="flex justify-between text-xs sm:text-sm font-medium text-text-muted">
-            <span>Highest</span>
+            <span>{t('highest')}</span>
             <span className="text-text-main font-semibold">{highest}%</span>
           </div>
           <div className="h-2.5 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
@@ -75,7 +77,7 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
         </div>
         <div className="space-y-1">
           <div className="flex justify-between text-xs sm:text-sm font-medium text-text-muted">
-            <span>Lowest</span>
+            <span>{t('lowest')}</span>
             <span className="text-text-main font-semibold">{lowest}%</span>
           </div>
           <div className="h-2.5 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
@@ -93,6 +95,7 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
 }
 
 export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: { totalMinutes?: number, trend?: number, weeklyData?: { day: string, hours: number }[] }) {
+  const { t } = useAppContext();
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   
@@ -107,7 +110,7 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
       className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
     >
       <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[10px] sm:text-xs font-medium text-text-muted">Total Time</p>
+        <p className="text-[10px] sm:text-xs font-medium text-text-muted">{t('total_time')}</p>
       </div>
 
       <div className="flex items-center gap-1 mb-1 sm:mb-2 text-nowrap">
@@ -125,7 +128,7 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
 
       <div className="flex justify-between text-[10px] sm:text-xs font-medium text-text-muted mb-1 sm:mb-2">
-        <span>This Week</span>
+        <span>{t('this_week')}</span>
         <span className="text-text-main font-semibold">
           {weeklyData.reduce((acc, curr) => acc + curr.hours, 0) < 1 
             ? `${Math.round(weeklyData.reduce((acc, curr) => acc + curr.hours, 0) * 60)}M`
@@ -158,6 +161,7 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
 }
 
 export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentStreak?: number, longestStreak?: number }) {
+  const { t } = useAppContext();
   // Real life functional day generation based on the actual calendar week
   const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const todayIndex = new Date().getDay();
@@ -180,17 +184,17 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
       className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
     >
       <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[10px] sm:text-xs font-medium text-text-muted">Weekly Streak</p>
+        <p className="text-[10px] sm:text-xs font-medium text-text-muted">{t('weekly_streak')}</p>
       </div>
 
       <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">{currentStreak} Days</span>
+        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">{currentStreak} {t('days_label')}</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
 
       <div className="flex justify-between text-[10px] sm:text-xs font-medium text-text-muted mb-2 sm:mb-4">
-        <span>Longest</span>
+        <span>{t('longest')}</span>
         <span className="text-text-main font-semibold">{longestStreak}d</span>
       </div>
 
@@ -215,6 +219,7 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
 }
 
 export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { rank?: number, total?: number, topLearnersData?: { name: string, avatar?: string }[] }) {
+  const { t } = useAppContext();
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
@@ -222,17 +227,17 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
       className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
     >
       <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[10px] sm:text-xs font-medium text-text-muted">Global Rank</p>
+        <p className="text-[10px] sm:text-xs font-medium text-text-muted">{t('global_rank')}</p>
       </div>
 
       <div className="flex items-baseline gap-1 mb-1 sm:mb-2 text-nowrap">
         <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight shrink-0">#{rank}</span>
-        <span className="text-[10px] sm:text-[11px] text-text-muted font-medium truncate">of {total > 1000 ? `${(total/1000).toFixed(0)}K` : total}</span>
+        <span className="text-[10px] sm:text-[11px] text-text-muted font-medium truncate">{t('of_label')} {total > 1000 ? `${(total/1000).toFixed(0)}K` : total}</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
 
-      <p className="text-[10px] sm:text-xs font-medium text-text-muted mb-2 sm:mb-3 uppercase tracking-tighter">Top local</p>
+      <p className="text-[10px] sm:text-xs font-medium text-text-muted mb-2 sm:mb-3 uppercase tracking-tighter">{t('top_local')}</p>
 
       <div className="overflow-y-auto custom-scrollbar pr-1 -mr-1 flex-grow">
         <div className="space-y-1.5 sm:space-y-2.5">

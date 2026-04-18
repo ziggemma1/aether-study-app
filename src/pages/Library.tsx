@@ -328,9 +328,9 @@ export default function Library() {
               <div className="w-16 h-16 bg-surface-alt rounded-full flex items-center justify-center text-text-muted mb-4 opacity-50">
                 <Layers size={32} />
               </div>
-              <h2 className="text-xl font-bold mb-2 text-text-main">No Unified Materials</h2>
+              <h2 className="text-xl font-bold mb-2 text-text-main">{t('no_unified_materials')}</h2>
               <p className="text-text-muted max-w-md mx-auto">
-                You haven't merged any materials together yet. Select multiple materials from the <strong>Study Materials</strong> tab and combine them.
+                {t('no_unified_materials_desc')}
               </p>
             </div>
           )}
@@ -370,13 +370,13 @@ export default function Library() {
               <div className="w-16 h-16 bg-surface-alt rounded-full flex items-center justify-center text-text-muted mb-4 opacity-50">
                 <CalendarIcon size={32} />
               </div>
-              <h2 className="text-xl font-bold mb-2 text-text-main">No saved plans yet</h2>
-              <p className="text-text-muted">Start creating powerful combined study plans and they will appear here.</p>
+              <h2 className="text-xl font-bold mb-2 text-text-main">{t('no_saved_plans')}</h2>
+              <p className="text-text-muted">{t('no_saved_plans_desc')}</p>
               <button 
                 onClick={() => setActiveTab('materials')} 
                 className="text-primary text-sm font-bold mt-4 hover:underline"
               >
-                Browse Materials
+                {t('browse_materials')}
               </button>
             </div>
           )}
@@ -394,28 +394,28 @@ export default function Library() {
           >
             <div className="pointer-events-auto bg-surface/90 backdrop-blur-xl border border-border/50 shadow-2xl rounded-2xl sm:rounded-full px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
               <span className="text-[10px] sm:text-sm font-bold text-text-main whitespace-nowrap">
-                <span className="text-primary">{selectedMaterials.length}</span> selected
+                <span className="text-primary">{selectedMaterials.length}</span> {t('items_selected')}
               </span>
               <div className="flex items-center gap-2 sm:gap-3 sm:border-l sm:border-border/50 sm:pl-6 w-full sm:w-auto">
                 <button 
                   onClick={() => setShowDeleteConfirm(true)}
                   className="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white py-1.5 px-3 sm:py-2 sm:px-6 rounded-lg sm:rounded-xl font-bold transition-all text-[10px] sm:text-sm whitespace-nowrap border border-red-500/20"
                 >
-                  Delete
+                  {t('delete')}
                 </button>
                 {selectedMaterials.length > 1 && (
                   <button 
                     onClick={handleMergeMaterials}
                     className="flex-1 sm:flex-none bg-surface border border-border py-1.5 px-3 sm:py-2 sm:px-6 shadow-sm rounded-lg sm:rounded-xl hover:border-primary text-text-main font-bold transition-all text-[10px] sm:text-sm whitespace-nowrap"
                   >
-                    Merge
+                    {t('merge')}
                   </button>
                 )}
                 <button 
                   onClick={handleGeneratePlan}
                   className="flex-1 sm:flex-none btn-primary py-1.5 px-3 sm:py-2 sm:px-6 shadow-lg shadow-primary/20 whitespace-nowrap text-[10px] sm:text-sm"
                 >
-                  Study Plan
+                  {t('study_plans')}
                 </button>
               </div>
             </div>
@@ -443,9 +443,9 @@ export default function Library() {
               <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
                 <Search size={32} />
               </div>
-              <h3 className="text-xl font-bold text-text-main text-center mb-2">Delete Materials?</h3>
+              <h3 className="text-xl font-bold text-text-main text-center mb-2">{t('delete_materials_confirm_title')}</h3>
               <p className="text-text-muted text-center text-sm mb-8">
-                Are you sure you want to delete {selectedMaterials.length} items? This action cannot be undone.
+                {t('delete_materials_confirm_desc')}
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <button
@@ -453,14 +453,14 @@ export default function Library() {
                   className="btn-outline py-3"
                   disabled={isDeleting}
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   onClick={handleDeleteMaterials}
                   disabled={isDeleting}
                   className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
                 >
-                  {isDeleting ? <Loader2 size={18} className="animate-spin" /> : 'Delete All'}
+                  {isDeleting ? <Loader2 size={18} className="animate-spin" /> : t('delete_all')}
                 </button>
               </div>
             </motion.div>

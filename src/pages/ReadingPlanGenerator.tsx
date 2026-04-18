@@ -498,7 +498,7 @@ export default function ReadingPlanGenerator() {
               <div className="h-12 w-px bg-border" />
               <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Progress</p>
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">{t('progress')}</p>
                   <p className="text-2xl font-bold text-primary">{progress}%</p>
                 </div>
                 <div className="relative w-16 h-16">
@@ -539,12 +539,12 @@ export default function ReadingPlanGenerator() {
                 <thead>
                   <tr className="bg-surface-alt/50 border-b border-border">
                     <th className="px-6 py-4 w-10"></th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Day</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Date</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Study Topic</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Duration</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-right">Actions</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('day')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('date')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('study_topic')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('duration')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">{t('status')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-right">{t('actions')}</th>
                   </tr>
                 </thead>
                 {plan.map((session) => (

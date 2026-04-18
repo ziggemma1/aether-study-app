@@ -13,7 +13,7 @@ import { analyzeStudyMaterialOnClient, generateVisualAidOnClient, generateTopicS
 export default function DetailedNotes() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, materials, setMaterials, showToast } = useAppContext();
+  const { user, materials, setMaterials, showToast, t } = useAppContext();
   const material = materials.find(m => m.id === id);
 
   const [currentPage, setCurrentPage] = React.useState(0);
@@ -23,8 +23,8 @@ export default function DetailedNotes() {
   if (!material) {
     return (
       <div className="p-12 text-center">
-        <h2 className="text-2xl font-bold mb-4 text-text-main">Material not found</h2>
-        <Link to="/library" className="btn-primary">Back to Library</Link>
+        <h2 className="text-2xl font-bold mb-4 text-text-main">{t('material_not_found')}</h2>
+        <Link to="/library" className="btn-primary">{t('back_to_library')}</Link>
       </div>
     );
   }
@@ -158,7 +158,7 @@ export default function DetailedNotes() {
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors text-sm font-medium"
           >
-            <ArrowLeft size={18} /> Back to Library
+            <ArrowLeft size={18} /> {t('back_to_library')}
           </button>
 
           <div className="flex gap-2">
@@ -166,12 +166,12 @@ export default function DetailedNotes() {
               onClick={handleRegenerate}
               disabled={isRegenerating}
               className="flex items-center gap-2 px-4 py-2 bg-accent/10 text-accent hover:bg-accent/20 rounded-xl transition-all font-bold text-[10px] sm:text-sm disabled:opacity-50 border border-accent/20"
-              title="Generate ultra-detailed, textbook-sized notes. This takes a few minutes."
+              title={t('deep_analysis_tooltip')}
             >
               {isRegenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
               <div className="flex flex-col items-start leading-none">
-                <span>Deep Analysis</span>
-                <span className="text-[8px] opacity-60 font-medium">BETA • INTENSIVE</span>
+                <span>{t('deep_analysis')}</span>
+                <span className="text-[8px] opacity-60 font-medium">{t('beta_intensive')}</span>
               </div>
             </button>
             <button
@@ -179,7 +179,7 @@ export default function DetailedNotes() {
               className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-all font-bold text-sm"
             >
               <Trash2 size={18} />
-              Delete
+              {t('delete')}
             </button>
           </div>
         </div>
@@ -189,7 +189,7 @@ export default function DetailedNotes() {
             <div className="p-2 bg-secondary/10 text-secondary rounded-xl">
               <BookOpen size={20} />
             </div>
-            <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">Detailed Study Notes</span>
+            <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">{t('detailed_study_notes')}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-text-main mb-6 tracking-tighter leading-tight drop-shadow-sm">
             {material.title}
@@ -205,7 +205,7 @@ export default function DetailedNotes() {
                 />
               </div>
               <span className="text-[10px] font-bold text-text-muted uppercase shrink-0">
-                Page {currentPage + 1} of {totalPages}
+                {t('page_info', { current: currentPage + 1, total: totalPages })}
               </span>
             </div>
           )}
@@ -228,7 +228,7 @@ export default function DetailedNotes() {
                   <header className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Sparkles size={14} className="text-accent animate-pulse" />
-                      <span className="text-xs font-bold text-accent uppercase tracking-widest">Enhanced Insight • Chapter {currentPage + 1}</span>
+                      <span className="text-xs font-bold text-accent uppercase tracking-widest">{t('enhanced_insight_chapter', { count: currentPage + 1 })}</span>
                     </div>
                     <h2 className="text-3xl sm:text-4xl font-extrabold text-text-main tracking-tight leading-none italic decoration-primary/30 underline decoration-4 underline-offset-8">
                       {sections[currentPage].heading}
@@ -251,7 +251,7 @@ export default function DetailedNotes() {
                       <div className="absolute bottom-4 left-4 right-4 bg-surface/60 backdrop-blur-xl p-3 flex items-center justify-center gap-2 border border-white/10 rounded-2xl">
                         <Sparkles size={14} className="text-secondary" />
                         <p className="text-[10px] text-white font-bold italic tracking-wide">
-                          AI Visual Learning Aid
+                          {t('visual_aid')}
                         </p>
                       </div>
                     </motion.div>
@@ -272,11 +272,11 @@ export default function DetailedNotes() {
                       )}
                     >
                       <ChevronLeft size={20} />
-                      Previous Topic
+                      {t('previous_topic')}
                     </button>
 
                     <div className="hidden sm:block text-xs text-text-muted font-bold tracking-widest uppercase">
-                      Page {currentPage + 1} / {totalPages}
+                      {t('page_info', { current: currentPage + 1, total: totalPages })}
                     </div>
 
                     <button
@@ -288,9 +288,9 @@ export default function DetailedNotes() {
                       )}
                     >
                       {currentPage === totalPages - 1 ? (
-                        <>Complete Review <Sparkles size={18} /></>
+                        <>{t('complete_review')} <Sparkles size={18} /></>
                       ) : (
-                        <>Next Topic <ChevronRight size={20} /></>
+                        <>{t('next_topic')} <ChevronRight size={20} /></>
                       )}
                     </button>
                   </div>
@@ -304,33 +304,33 @@ export default function DetailedNotes() {
               >
                 <div className="flex items-center gap-2 mb-8 opacity-60">
                   <BookOpen size={16} />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Core Concept Review</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.3em]">{t('core_concept_review')}</span>
                 </div>
                 <div className="markdown-body text-text-main leading-relaxed prose prose-invert max-w-none">
                   <ReactMarkdown>{material.detailedNotes}</ReactMarkdown>
                 </div>
                 
                 <div className="mt-12 p-6 bg-primary/5 rounded-3xl border border-primary/10 text-center">
-                  <p className="text-xs text-text-muted mb-4 font-medium italic">Want to dive deeper into these topics with textbooks-sized chapters and diagrams?</p>
+                  <p className="text-xs text-text-muted mb-4 font-medium italic">{t('dive_deeper_prompt')}</p>
                   <button
                     onClick={handleRegenerate}
                     disabled={isRegenerating}
                     className="btn-primary py-2 text-xs flex items-center gap-2 mx-auto"
                   >
-                    <Sparkles size={14} /> Start Deep Analysis
+                    <Sparkles size={14} /> {t('start_deep_analysis')}
                   </button>
                 </div>
               </motion.div>
             ) : (
               <div className="glass-card p-12 text-center">
                 <Sparkles className="w-12 h-12 text-secondary/40 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-text-main mb-2">Academic Analysis Required</h3>
-                <p className="text-text-muted mb-8">This material hasn't been deeply analyzed yet. Run a Deep Analysis to generate Textbook-sized notes.</p>
+                <h3 className="text-xl font-bold text-text-main mb-2">{t('academic_analysis_required')}</h3>
+                <p className="text-text-muted mb-8">{t('academic_analysis_desc')}</p>
                 <button
                   onClick={handleRegenerate}
                   className="btn-primary"
                 >
-                  Start Deep Analysis
+                  {t('start_deep_analysis')}
                 </button>
               </div>
             )}
@@ -339,10 +339,10 @@ export default function DetailedNotes() {
 
         <div className="mt-12 flex justify-center gap-4">
           <button className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-xs font-bold text-text-main hover:border-primary transition-all">
-            <Download size={16} /> DOWNLOAD
+            <Download size={16} /> {t('download')}
           </button>
           <button className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-xs font-bold text-text-main hover:border-primary transition-all">
-            <Share2 size={16} /> SHARE
+            <Share2 size={16} /> {t('share')}
           </button>
         </div>
       </motion.div>
@@ -369,9 +369,9 @@ export default function DetailedNotes() {
               <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
                 <Trash2 size={32} />
               </div>
-              <h3 className="text-xl font-bold text-text-main text-center mb-2">Delete Study?</h3>
+              <h3 className="text-xl font-bold text-text-main text-center mb-2">{t('delete_study_confirm_title')}</h3>
               <p className="text-text-muted text-center text-sm mb-8">
-                Are you sure you want to delete <span className="text-text-main font-bold italic">"{material.title}"</span>? This action is permanent.
+                {t('delete_study_confirm_desc')}
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <button
@@ -379,14 +379,14 @@ export default function DetailedNotes() {
                   className="btn-outline py-3"
                   disabled={isDeleting}
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={isDeleting}
                   className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
                 >
-                  {isDeleting ? <Loader2 size={18} className="animate-spin" /> : 'Delete Now'}
+                  {isDeleting ? <Loader2 size={18} className="animate-spin" /> : t('delete_now')}
                 </button>
               </div>
             </motion.div>

@@ -29,7 +29,7 @@ interface AppContextType {
   signOut: () => Promise<void>;
   showToast: (text: string, type?: 'success' | 'error') => void;
   toast: { text: string, type: 'success' | 'error' } | null;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -57,10 +57,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  const t = (key: string): string => {
+  const t = (key: string, params?: Record<string, string | number>): string => {
     const lang = (user?.language as Language) || 'English (US)';
     const langGroup = translations[lang] || translations['English (US)'];
-    return langGroup[key] || translations['English (US)'][key] || key;
+    let text = langGroup[key] || translations['English (US)'][key] || key;
+    
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        text = text.replace(`{${k}}`, String(v));
+      });
+    }
+    
+    return text;
   };
 
   const signOut = async () => {
