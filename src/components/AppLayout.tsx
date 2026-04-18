@@ -6,7 +6,6 @@ import BottomNav from './BottomNav';
 import InteractiveBackground from './InteractiveBackground';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
-import { isSupabaseConfigured } from '../lib/supabase';
 import { Database, ArrowRight, Loader2, Sparkles, WifiOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 

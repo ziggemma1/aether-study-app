@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
-import { supabase } from '../lib/supabase';
+import api from '../services/api';
 
 const suggestedFriends = [
   { id: '101', name: 'Sarah Jenkins', school: 'Lagos State University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
@@ -27,33 +27,12 @@ const suggestedFriends = [
 ];
 
 export default function Messages() {
-  const { messages, user, setMessages } = useAppContext();
+  const { messages, user, setMessages, allProfiles, isLoading: isLoadingProfiles } = useAppContext();
   const [activeTab, setActiveTab] = useState<'chats' | 'friends'>('chats');
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [showChatMobile, setShowChatMobile] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [allProfiles, setAllProfiles] = useState<any[]>([]);
-  const [isLoadingProfiles, setIsLoadingProfiles] = useState(false);
-
-  useEffect(() => {
-    const fetchProfiles = async () => {
-      setIsLoadingProfiles(true);
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .limit(20);
-        if (error) throw error;
-        if (data) setAllProfiles(data);
-      } catch (err) {
-        console.error('Error fetching profiles:', err);
-      } finally {
-        setIsLoadingProfiles(false);
-      }
-    };
-    fetchProfiles();
-  }, []);
 
   // Derive contacts from messages
   const contacts = React.useMemo(() => {
@@ -86,7 +65,7 @@ export default function Messages() {
         contactMap.set(p.id, {
           id: p.id,
           name: p.name || 'User',
-          avatar: p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
+          avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
           lastMsg: 'Start a conversation',
           time: '',
           unread: 0,
@@ -106,28 +85,18 @@ export default function Messages() {
 
     setIsSending(true);
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .insert({
-          sender_id: user.id,
-          receiver_id: selectedContact.id,
-          content: newMessage.trim()
-        })
-        .select('*, sender:profiles(name, avatar_url)')
-        .single();
+      const response = await api.post('/messages', {
+        receiverId: selectedContact.id,
+        content: newMessage.trim()
+      });
 
-      if (error) throw error;
-
-      if (data) {
+      if (response.data) {
+        const data = response.data;
         const formattedMsg = {
-          id: data.id,
-          senderId: data.sender_id,
-          receiverId: data.receiver_id,
-          content: data.content,
-          isRead: data.is_read,
-          createdAt: data.created_at,
-          senderName: data.sender?.name,
-          senderAvatar: data.sender?.avatar_url
+          ...data,
+          id: data._id || data.id,
+          senderName: user.name,
+          senderAvatar: user.avatar
         };
         setMessages([formattedMsg, ...messages]);
         setNewMessage('');

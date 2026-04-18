@@ -32,6 +32,16 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAppContext();
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
@@ -73,7 +83,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       {/* Sidebar Content */}
       <motion.aside
         initial={false}
-        animate={{ x: isOpen ? 0 : '-100%' }}
+        animate={{ x: isMobile ? (isOpen ? 0 : '-100%') : 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.5 }}
         className={cn(
           "fixed top-0 left-0 h-full w-64 bg-surface/80 backdrop-blur-xl border-r border-border z-[100] lg:translate-x-0"

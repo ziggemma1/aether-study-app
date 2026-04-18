@@ -21,7 +21,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import api from '../services/api';
 
 export default function Settings() {
   const { user, setUser, theme, toggleTheme, signOut, showToast } = useAppContext();
@@ -51,37 +51,26 @@ export default function Settings() {
   ];
 
   const handleSave = async () => {
-    if (!isSupabaseConfigured) {
-      showToast('Backend connection is initializing. Please wait.', 'error');
-      return;
-    }
-
     if (!user) return;
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name: formData.name,
-          language: formData.language,
-          curriculum: formData.curriculum
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      setUser({
-        ...user,
+      const response = await api.put('/users/profile', {
         name: formData.name,
         language: formData.language,
         curriculum: formData.curriculum
       });
 
-      showToast('Profile updated successfully!');
+      if (response.data) {
+        setUser({
+          ...user,
+          ...response.data
+        });
+        showToast('Profile updated successfully!');
+      }
     } catch (err: any) {
       console.error(err);
-      showToast('Failed to update profile: ' + err.message, 'error');
+      showToast('Failed to update profile: ' + (err.response?.data?.message || err.message), 'error');
     } finally {
       setIsSaving(false);
     }
