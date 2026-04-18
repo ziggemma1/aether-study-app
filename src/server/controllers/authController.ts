@@ -37,7 +37,14 @@ export const register = async (req: Request, res: Response) => {
         avgQuizScore: user.avgQuizScore,
         totalStudyTime: user.totalStudyTime,
         weeklyTimeData: user.weeklyTimeData,
-        plan: user.plan
+        plan: user.plan,
+        points: user.points || 0,
+        followersCount: user.followersCount || 0,
+        friendsCount: user.friendsCount || 0,
+        achievements: user.achievements || [],
+        bio: user.bio || '',
+        location: user.location || '',
+        handle: user.handle || ''
       }
     });
   } catch (error: any) {
@@ -89,7 +96,14 @@ export const login = async (req: Request, res: Response) => {
         avgQuizScore: user.avgQuizScore,
         totalStudyTime: user.totalStudyTime,
         weeklyTimeData: user.weeklyTimeData,
-        plan: user.plan
+        plan: user.plan,
+        points: user.points || 0,
+        followersCount: user.followersCount || 0,
+        friendsCount: user.friendsCount || 0,
+        achievements: user.achievements || [],
+        bio: user.bio || '',
+        location: user.location || '',
+        handle: user.handle || ''
       }
     });
   } catch (error: any) {
@@ -130,7 +144,14 @@ export const getMe = async (req: Request, res: Response) => {
       weeklyTimeData: user.weeklyTimeData,
       curriculum: user.curriculum,
       language: user.language,
-      plan: user.plan
+      plan: user.plan,
+      points: user.points || 0,
+      followersCount: user.followersCount || 0,
+      friendsCount: user.friendsCount || 0,
+      achievements: user.achievements || [],
+      bio: user.bio || '',
+      location: user.location || '',
+      handle: user.handle || ''
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

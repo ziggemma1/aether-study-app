@@ -8,6 +8,10 @@ export const MOCK_USER: User = {
   curriculum: 'SAT',
   language: 'English',
   plan: 'free',
+  points: 1250,
+  followersCount: 154,
+  friendsCount: 42,
+  achievements: [],
 };
 
 export const MOCK_MATERIALS: Material[] = [

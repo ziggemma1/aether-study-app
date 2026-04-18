@@ -21,6 +21,10 @@ export interface User {
   streakTrend?: number;
   longestStreak?: number;
   weeklyTimeData?: { day: string; hours: number }[];
+  points: number;
+  followersCount: number;
+  friendsCount: number;
+  achievements: Achievement[];
 }
 
 export interface NoteSection {

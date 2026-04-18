@@ -23,6 +23,20 @@ const userSchema = new mongoose.Schema({
   timeTrend: { type: Number, default: 0 },
   globalRank: { type: Number, default: 0 },
   rankTrend: { type: Number, default: 0 },
+  points: { type: Number, default: 0 },
+  followersCount: { type: Number, default: 0 },
+  friendsCount: { type: Number, default: 0 },
+  achievements: [{
+    id: String,
+    title: String,
+    description: String,
+    icon: String,
+    category: String,
+    target: Number,
+    currentProgress: Number,
+    isUnlocked: Boolean,
+    unlockedAt: String
+  }],
   weeklyTimeData: [{ 
     day: { type: String },
     hours: { type: Number }

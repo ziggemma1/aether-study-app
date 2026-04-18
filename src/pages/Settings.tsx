@@ -203,11 +203,11 @@ export default function Settings() {
             
             <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-dashed border-border/40">
               <div className="text-center">
-                <p className="text-sm sm:text-lg font-bold text-text-main">1.2k</p>
+                <p className="text-sm sm:text-lg font-bold text-text-main">{user?.followersCount || 0}</p>
                 <p className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('followers')}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm sm:text-lg font-bold text-text-main">850</p>
+                <p className="text-sm sm:text-lg font-bold text-text-main">{user?.friendsCount || 0}</p>
                 <p className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('friends')}</p>
               </div>
             </div>
