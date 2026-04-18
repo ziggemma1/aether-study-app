@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { generateDetailedNotes, analyzeStudyMaterialWithOpenRouter, generateTopicSection } from "./openRouterService.js";
-import { NoteSection } from "../types.js";
+import { generateDetailedNotes, analyzeStudyMaterialWithOpenRouter, generateTopicSection, generateStudyPlanWithOpenRouter } from "./openRouterService.js";
+import { NoteSection, PlanSession } from "../types.js";
 
 // Lazy initialization to prevent startup crashes and provide better error messages
 let aiClient: GoogleGenAI | null = null;
@@ -243,5 +243,85 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
   } catch (error: any) {
     console.error('Gemini Analysis Error:', error);
     throw error;
+  }
+};
+
+export const generateStudyPlan = async (
+  materials: any[], 
+  startDate: string, 
+  duration: number, 
+  goal: string, 
+  complexity: string, 
+  commitment: string
+): Promise<PlanSession[]> => {
+  try {
+    const ai = getAiClient();
+    const materialContext = materials.map(m => `Title: ${m.title}\nKey Topics: ${(m.keyTopics || []).join(', ')}`).join('\n\n');
+
+    const response = await withRetry(() => ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Generate a personalized study plan.
+      
+      STUDENT PARAMETERS:
+      - Learning Goal: ${goal} (This should dictate the strategy: e.g., 'Exam Prep' focuses on practice, 'Deep Dive' on theory, 'Quick Review' on key facts)
+      - Complexity Level: ${complexity} (Adjust the technical depth and terminology accordingly)
+      - Daily Commitment: ${commitment} (The amount of material and number of tasks per day MUST realistically fit within this time)
+      - Total Duration: ${duration} days
+      - Start Date: ${startDate}
+      
+      MATERIAL CONTEXT:
+      ${materialContext}`,
+      config: {
+        systemInstruction: `You are a world-class academic advisor. Create a structured study plan as a JSON array of daily sessions.
+        
+        STRATEGY REQUIREMENTS:
+        1. ADAPTIVE DEPTH: If complexity is 'Advanced', include academic deep-dives. If 'Beginner', focus on foundations.
+        2. TIME-BOXING: If commitment is '30m', provide concise, high-impact tasks. If '4h+', provide comprehensive, multi-step active learning exercises.
+        3. GOAL ORIENTATION: 
+           - 'Exam Prep': Include practice questions, flashcard creation, and mock timed tests.
+           - 'Deep Dive': Focus on first principles, edge cases, and cross-material synthesis.
+           - 'Quick Review': Focus on lightning summaries, cheat sheets, and high-level concepts.
+        
+        Format accurately as a JSON array of objects.
+        
+        Session Schema:
+        - day: number
+        - date: string (e.g. "Mon, Apr 20")
+        - topic: string
+        - duration: string (match user's commitment)
+        - completed: false
+        - dailySummary: string (2-3 sentences reflecting the specific goal)
+        - detailedNotes: string (Extensive Markdown including: Objectives, Task List, Reading Assignments, and a "Pro-Tip")`,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              day: { type: Type.NUMBER },
+              date: { type: Type.STRING },
+              topic: { type: Type.STRING },
+              duration: { type: Type.STRING },
+              completed: { type: Type.BOOLEAN },
+              dailySummary: { type: Type.STRING },
+              detailedNotes: { type: Type.STRING }
+            },
+            required: ["day", "date", "topic", "duration", "completed", "dailySummary", "detailedNotes"]
+          }
+        }
+      }
+    }));
+
+    const text = response.text;
+    if (!text) throw new Error("Gemini study plan generation failed");
+    return JSON.parse(text);
+  } catch (error: any) {
+    console.warn('Gemini study plan failed. Falling back to OpenRouter...', error.message);
+    try {
+      return await generateStudyPlanWithOpenRouter(materials, startDate, duration, goal, complexity, commitment);
+    } catch (fallbackError: any) {
+      console.error('Both AI services failed for study plan:', fallbackError.message);
+      throw error;
+    }
   }
 };

@@ -237,3 +237,78 @@ export const analyzeStudyMaterialWithOpenRouter = async (content: string, title:
   const cleanJson = rawJson.replace(/```json\n?|```/g, '').trim();
   return JSON.parse(cleanJson);
 };
+
+export const generateStudyPlanWithOpenRouter = async (
+  materials: any[], 
+  startDate: string, 
+  duration: number, 
+  goal: string, 
+  complexity: string, 
+  commitment: string
+): Promise<any[]> => {
+  const apiKey = getOpenRouterKey();
+  if (!apiKey) throw new Error('OpenRouter key missing for fallback.');
+
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'HTTP-Referer': SITE_URL,
+    'X-OpenRouter-Title': SITE_NAME,
+    'Content-Type': 'application/json',
+  };
+
+  const materialContext = materials.map(m => `Title: ${m.title}\nKey Topics: ${(m.keyTopics || []).join(', ')}`).join('\n\n');
+
+  const response = await callOpenRouterWithFallback(
+    [
+      {
+        role: 'system',
+        content: `You are a world-class academic advisor and educational strategist. Your task is to generate a highly effective, personalized study plan.
+        
+        The plan must be structured specifically for the student's defined commitment, goal, and complexity level.
+        
+        ADAPTATION RULES:
+        1. COMPLEXITY (${complexity}): 
+           - 'Beginner': Explain concepts from scratch, no jargon.
+           - 'Intermediate': Connect concepts, use standard industry terminology.
+           - 'Advanced': Focus on nuances, optimizations, and deep theoretical analysis.
+        
+        2. DAILY COMMITMENT (${commitment}):
+           - If short (30m), keep tasks extremely focused and high-leverage.
+           - If long (4h+), include deep reading, multiple practice sets, and active recall sessions.
+        
+        3. LEARNING GOAL (${goal}):
+           - 'Exam Prep': Heavily weight practice tests, memory techniques, and high-frequency topics.
+           - 'Deep Dive': Focus on the "Why" and "How", encourage cross-referencing multiple materials.
+           - 'Quick Review': Create high-level summaries and rapid-fire identification of key terms.
+        
+        OUTPUT FORMAT:
+        A JSON array of objects, where each object represents one day's session.
+        Each object MUST have:
+        - "day": The day number (integer)
+        - "date": The formatted date string (e.g., "Mon, Apr 20")
+        - "topic": A specific study topic based on the material context
+        - "duration": The commitment time ("${commitment}")
+        - "completed": false
+        - "dailySummary": A 2-3 sentence overview clearly tied to the ${goal} goal.
+        - "detailedNotes": Markdown breakdown including: Daily Objectives, Detailed Task List, and a "Strategic Pro-Tip" relevant to the ${complexity} level.`
+      },
+      {
+        role: 'user',
+        content: `MATERIAL CONTEXT:\n${materialContext}\n\nDURATION: ${duration} days\nSTART DATE: ${startDate}`
+      }
+    ],
+    MODELS.synthesis,
+    headers,
+    true
+  );
+
+  const rawJson = response.content || '[]';
+  const cleanJson = rawJson.replace(/```json\n?|```/g, '').trim();
+  const parsed = JSON.parse(cleanJson);
+  
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed.sessions && Array.isArray(parsed.sessions)) return parsed.sessions;
+  if (parsed.plan && Array.isArray(parsed.plan)) return parsed.plan;
+  
+  return [];
+};

@@ -27,6 +27,8 @@ export default function Settings() {
   const { user, setUser, theme, toggleTheme, signOut, showToast } = useAppContext();
   const location = useLocation();
   const [activeTab, setActiveTab] = React.useState<'account' | 'social' | 'security' | 'billing'>('account');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isLocating, setIsLocating] = React.useState(false);
 
   React.useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -40,7 +42,10 @@ export default function Settings() {
     name: user?.name || '',
     email: user?.email || '',
     language: user?.language || 'English (US)',
-    curriculum: user?.curriculum || 'SAT / AP'
+    curriculum: user?.curriculum || 'SAT / AP',
+    bio: user?.bio || '',
+    location: user?.location || '',
+    handle: user?.handle || user?.name?.toLowerCase()?.replace(/\s+/g, '_') || ''
   });
 
   const tabs = [
@@ -50,16 +55,23 @@ export default function Settings() {
     { id: 'billing', label: 'Billing', icon: CreditCard },
   ];
 
-  const handleSave = async () => {
+  const handleSave = async (specificData?: any) => {
     if (!user) return;
     setIsSaving(true);
 
+    // Ensure we don't try to stringify a React/DOM event object
+    const isEvent = specificData && (specificData.nativeEvent || specificData.target);
+    const payload = (specificData && !isEvent) ? specificData : {
+      name: formData.name,
+      language: formData.language,
+      curriculum: formData.curriculum,
+      bio: formData.bio,
+      location: formData.location,
+      handle: formData.handle
+    };
+
     try {
-      const response = await api.put('/users/profile', {
-        name: formData.name,
-        language: formData.language,
-        curriculum: formData.curriculum
-      });
+      const response = await api.put('/users/profile', payload);
 
       if (response.data) {
         setUser({
@@ -74,6 +86,57 @@ export default function Settings() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Image too large. Max 2MB.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      handleSave({ avatar: base64String });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      showToast('Geolocation is not supported by your browser.', 'error');
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          // Reverse geocoding would be ideal, but for now we'll set a descriptive string
+          // In a real app we'd use a service like Google Maps API to get the city/country
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+          const data = await response.json();
+          const locationStr = data.address.city || data.address.town || data.address.state || 'Unknown Location';
+          const fullLocation = `${locationStr}, ${data.address.country}`;
+          
+          setFormData(prev => ({ ...prev, location: fullLocation }));
+          showToast(`Located: ${fullLocation}`);
+        } catch (err) {
+          showToast('Could not fetch address. Using coordinates.');
+          setFormData(prev => ({ ...prev, location: `${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}` }));
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        showToast('Location access denied or unavailable.', 'error');
+      }
+    );
   };
 
   return (
@@ -119,14 +182,24 @@ export default function Settings() {
                   user?.name.charAt(0)
                 )}
               </div>
-              <button className="absolute bottom-0 right-0 p-1.5 sm:p-2.5 bg-primary text-white rounded-full shadow-xl hover:scale-110 transition-transform z-20 border-2 border-background">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleAvatarUpload}
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 p-1.5 sm:p-2.5 bg-primary text-white rounded-full shadow-xl hover:scale-110 transition-transform z-20 border-2 border-background"
+              >
                 <Camera size={14} className="sm:hidden" />
                 <Camera size={18} className="hidden sm:block" />
               </button>
             </div>
             
             <h2 className="text-lg sm:text-2xl font-bold mb-0.5 sm:mb-1 text-text-main tracking-tight">{user?.name}</h2>
-            <p className="text-[10px] sm:text-sm text-text-muted mb-4 sm:mb-6 font-medium">@robert_fox_study</p>
+            <p className="text-[10px] sm:text-sm text-text-muted mb-4 sm:mb-6 font-medium">@{user?.handle || user?.name?.toLowerCase()?.replace(/\s+/g, '_')}</p>
             
             <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-dashed border-border/40">
               <div className="text-center">
@@ -231,10 +304,30 @@ export default function Settings() {
                         <option>JAMB / UTME</option>
                       </select>
                     </div>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest flex items-center justify-between">
+                        Location
+                        <button 
+                          onClick={detectLocation}
+                          disabled={isLocating}
+                          className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1 normal-case font-bold"
+                        >
+                          {isLocating ? <Loader2 size={12} className="animate-spin" /> : <Globe size={12} />}
+                          Detect
+                        </button>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="e.g. Lagos, Nigeria"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
+                      />
+                    </div>
                   </div>
                   <div className="mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-border/40 flex justify-end">
                     <button 
-                      onClick={handleSave}
+                      onClick={() => handleSave()}
                       disabled={isSaving}
                       className="btn-primary py-2 px-6 sm:py-3 sm:px-10 text-[10px] sm:text-sm flex items-center gap-2"
                     >
@@ -292,6 +385,8 @@ export default function Settings() {
                       <label className="text-xs font-bold text-text-muted uppercase tracking-widest">Public Bio</label>
                       <textarea
                         rows={4}
+                        value={formData.bio}
+                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                         placeholder="Tell the community about your study goals..."
                         className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none resize-none transition-all"
                       />
@@ -304,7 +399,8 @@ export default function Settings() {
                           <span className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted font-bold">@</span>
                           <input
                             type="text"
-                            defaultValue="robert_fox_study"
+                            value={formData.handle}
+                            onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
                             className="w-full pl-10 pr-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
                           />
                         </div>
@@ -320,7 +416,13 @@ export default function Settings() {
                     </div>
                   </div>
                   <div className="mt-10 pt-8 border-t border-border/40 flex justify-end">
-                    <button className="btn-primary px-10">Update Social Profile</button>
+                    <button 
+                      onClick={() => handleSave()}
+                      disabled={isSaving}
+                      className="btn-primary px-10 flex items-center gap-2"
+                    >
+                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : 'Update Social Profile'}
+                    </button>
                   </div>
                 </div>
               </div>

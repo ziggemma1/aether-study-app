@@ -1,5 +1,5 @@
 {
-  "name": "",
-  "description": "",
-  "requestFramePermissions": []
+  "name": "Aether Study",
+  "description": "AI-powered personalized study roadmaps and collaborative learning platform.",
+  "requestFramePermissions": ["geolocation"]
 }

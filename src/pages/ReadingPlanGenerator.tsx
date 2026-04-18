@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar as CalendarIcon, 
@@ -15,13 +15,15 @@ import {
   Trash2,
   Check,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import { format, addDays, startOfToday } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
+import { generateStudyPlan } from '../services/geminiService';
 
 import { PlanSession, SavedPlan } from '../types';
 
@@ -33,7 +35,7 @@ export default function ReadingPlanGenerator() {
   const materialIdStr = searchParams.get('materials') || searchParams.get('materialId');
   const materialIds = materialIdStr ? materialIdStr.split(',') : [];
   
-  const { materials, savedPlans, setSavedPlans } = useAppContext();
+  const { materials, savedPlans, setSavedPlans, showToast } = useAppContext();
   const selectedMaterials = materials.filter(m => materialIds.includes(m.id));
 
   // Form States
@@ -44,35 +46,57 @@ export default function ReadingPlanGenerator() {
   const [goal, setGoal] = useState('Exam Prep');
   
   const [isGenerated, setIsGenerated] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [plan, setPlan] = useState<PlanSession[]>([]);
   const [view, setView] = useState<'generator' | 'saved'>('generator');
   
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
 
-  const handleGenerate = () => {
-    // Collect topics from all selected materials
-    const allTopics = selectedMaterials.length > 0 
-      ? selectedMaterials.flatMap(m => m.keyTopics)
-      : ['General Study'];
-      
-    if (allTopics.length === 0) allTopics.push("Study Session");
+  // Auto-load plan if planId is provided in search params
+  useEffect(() => {
+    const planId = searchParams.get('planId');
+    if (planId && savedPlans.length > 0) {
+      const existingPlan = savedPlans.find(p => p.id === planId);
+      if (existingPlan) {
+        setPlan(existingPlan.sessions);
+        setIsGenerated(true);
+        setView('generator');
+      }
+    }
+  }, [searchParams, savedPlans]);
 
-    const generatedPlan: PlanSession[] = Array.from({ length: duration }).map((_, i) => {
-      const topic = allTopics[i % allTopics.length];
-      return {
-        id: Math.random().toString(36).substr(2, 9),
-        day: i + 1,
-        date: format(addDays(new Date(startDate), i), 'EEE, MMM d'),
-        topic: topic,
-        duration: commitment,
-        completed: false,
-        dailySummary: `Comprehensive summary of ${topic} combining insights from your uploaded materials to ensure mastery of the core principles.`,
-        detailedNotes: `### Overview\nThis session dives deep into **${topic}**.\n\n#### Key Objectives:\n* Understand the fundamental mechanics and definitions.\n* Review real-world examples and case studies.\n* Complete 3 practice scenarios related to the topic.\n\n> **Pro-Tip:** Make sure to cross-reference the diagrams and terminology glossaries associated with this topic from your primary material.\n\n#### Action Items:\n1. Read pages 14-22 of the source document.\n2. Watch the summary video for ${topic}.\n3. Write down 5 flashcards for active recall.`
-      };
-    });
-    setPlan(generatedPlan);
-    setIsGenerated(true);
-    setView('generator');
+  const handleGenerate = async () => {
+    if (selectedMaterials.length === 0) {
+      showToast('Please select at least one material first.', 'error');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const generatedPlan = await generateStudyPlan(
+        selectedMaterials,
+        startDate,
+        duration,
+        goal,
+        complexity,
+        commitment
+      );
+      
+      const planWithIds = generatedPlan.map(session => ({
+        ...session,
+        id: session.id || Math.random().toString(36).substr(2, 9)
+      }));
+
+      setPlan(planWithIds);
+      setIsGenerated(true);
+      setView('generator');
+      showToast('Your personalized study plan is ready!', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Failed to generate study plan. Please try again.', 'error');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSavePlan = () => {
@@ -89,6 +113,7 @@ export default function ReadingPlanGenerator() {
     };
     setSavedPlans(prev => [newSavedPlan, ...prev]);
     setView('saved');
+    showToast('Plan saved to your Study Roadmaps!', 'success');
   };
 
   const toggleComplete = (id: string, e?: React.MouseEvent) => {
@@ -117,6 +142,55 @@ export default function ReadingPlanGenerator() {
 
   return (
     <div className="p-4 md:p-8 lg:p-12 max-w-6xl mx-auto">
+      <AnimatePresence>
+        {isGenerating && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-background/80 backdrop-blur-xl"
+          >
+            <div className="max-w-md w-full glass-card p-10 flex flex-col items-center text-center space-y-8 shadow-[0_0_50px_rgba(139,92,246,0.3)] border-primary/20">
+              <div className="relative">
+                <div className="w-24 h-24 bg-primary/10 rounded-3xl flex items-center justify-center text-primary animate-pulse">
+                  <Zap size={40} />
+                </div>
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-surface border-4 border-background rounded-full flex items-center justify-center text-secondary">
+                  <Loader2 size={18} className="animate-spin" />
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <h2 className="text-2xl font-extrabold text-text-main tracking-tight">
+                  Crafting Your Roadmap
+                </h2>
+                <p className="text-text-muted text-sm leading-relaxed">
+                  Our educational AI is analyzing your materials and schedule to create the most efficient study path.
+                </p>
+                <div className="flex flex-col gap-2 pt-4">
+                  <div className="flex justify-between text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                    <span>Analyzing content</span>
+                    <span className="text-primary">In progress</span>
+                  </div>
+                  <div className="w-full bg-border/30 h-1 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 15, repeat: Infinity }}
+                      className="h-full bg-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-text-muted italic">
+                Aether Study: Intelligence optimized for focus.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between mb-8">
         <button
           onClick={() => navigate(-1)}
@@ -285,8 +359,8 @@ export default function ReadingPlanGenerator() {
                     type="number"
                     min="1"
                     max="60"
-                    value={duration}
-                    onChange={(e) => setDuration(parseInt(e.target.value))}
+                    value={duration || ''}
+                    onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
                     className="w-full px-4 py-3 rounded-2xl border border-border focus:ring-2 focus:ring-primary/20 outline-none bg-surface-alt/50 text-text-main transition-all"
                   />
                 </div>
@@ -362,12 +436,32 @@ export default function ReadingPlanGenerator() {
               <div className="pt-4">
                 <button 
                   onClick={handleGenerate} 
-                  className="w-full btn-primary py-4 flex items-center justify-center gap-3 text-lg"
-                  disabled={selectedMaterials.length === 0}
+                  className={cn(
+                    "w-full btn-primary py-4 flex items-center justify-center gap-3 text-lg relative overflow-hidden",
+                    isGenerating && "opacity-80 cursor-not-allowed"
+                  )}
+                  disabled={selectedMaterials.length === 0 || isGenerating}
                 >
-                  <Zap size={20} /> Generate Personalized Plan
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      Generating with AI...
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={20} /> Generate Personalized Plan
+                    </>
+                  )}
+                  {isGenerating && (
+                    <motion.div 
+                      initial={{ left: '-100%' }}
+                      animate={{ left: '100%' }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                      className="absolute top-0 bottom-0 w-1/2 bg-white/20 skew-x-[45deg]"
+                    />
+                  )}
                 </button>
-                {selectedMaterials.length === 0 && (
+                {selectedMaterials.length === 0 && !isGenerating && (
                   <p className="text-red-400 text-xs text-center mt-2">Please select materials from the Library first.</p>
                 )}
               </div>
@@ -443,7 +537,7 @@ export default function ReadingPlanGenerator() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-surface-alt/50 border-b border-border">
-                    <th className="px-6 py-4 px-4 w-10"></th> {/* Expand col */}
+                    <th className="px-6 py-4 w-10"></th>
                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Day</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Date</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Study Topic</th>
@@ -452,130 +546,122 @@ export default function ReadingPlanGenerator() {
                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/50">
-                  <AnimatePresence mode="popLayout">
-                    {plan.map((session) => (
-                      <React.Fragment key={session.id}>
-                        <motion.tr 
-                          layout
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          onClick={() => toggleExpand(session.id)}
+                {plan.map((session) => (
+                  <tbody key={session.id} className="border-b border-border/50 last:border-0">
+                    <motion.tr 
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      onClick={() => toggleExpand(session.id)}
+                      className={cn(
+                        "group transition-colors cursor-pointer",
+                        session.completed ? "bg-surface-alt/10" : "hover:bg-surface-alt/30"
+                      )}
+                    >
+                      <td className="px-4 py-4 text-text-muted">
+                        {expandedSessionId === session.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center text-primary font-bold text-xs">
+                          {session.day}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-text-main">{session.date}</span>
+                      </td>
+                      <td className="px-6 py-4 min-w-[240px]">
+                        {session.isEditing ? (
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="text"
+                              value={session.topic}
+                              onChange={(e) => updateTopic(session.id, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-grow bg-surface border border-primary/30 rounded-lg px-3 py-1.5 text-sm text-text-main outline-none focus:ring-2 focus:ring-primary/20"
+                              autoFocus
+                            />
+                            <button 
+                              onClick={(e) => toggleEdit(session.id, e)}
+                              className="p-1.5 bg-primary text-white rounded-lg hover:bg-primary/90"
+                            >
+                              <Check size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "text-sm font-bold transition-all",
+                              session.completed ? "text-text-muted line-through" : "text-text-main"
+                            )}>
+                              {session.topic}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-xs text-text-muted flex items-center gap-1.5">
+                          <Clock size={12} /> {session.duration}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button 
+                          onClick={(e) => toggleComplete(session.id, e)}
                           className={cn(
-                            "group transition-colors cursor-pointer",
-                            session.completed ? "bg-surface-alt/10" : "hover:bg-surface-alt/30"
+                            "inline-flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all",
+                            session.completed 
+                              ? "bg-secondary border-secondary text-primary" 
+                              : "border-border text-text-muted hover:border-primary hover:text-primary"
                           )}
                         >
-                          <td className="px-4 py-4 text-text-muted">
-                            {expandedSessionId === session.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center text-primary font-bold text-xs">
-                              {session.day}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-text-main">{session.date}</span>
-                          </td>
-                          <td className="px-6 py-4 min-w-[240px]">
-                            {session.isEditing ? (
-                              <div className="flex items-center gap-2">
-                                <input 
-                                  type="text"
-                                  value={session.topic}
-                                  onChange={(e) => updateTopic(session.id, e.target.value)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex-grow bg-surface border border-primary/30 rounded-lg px-3 py-1.5 text-sm text-text-main outline-none focus:ring-2 focus:ring-primary/20"
-                                  autoFocus
-                                />
-                                <button 
-                                  onClick={(e) => toggleEdit(session.id, e)}
-                                  className="p-1.5 bg-primary text-white rounded-lg hover:bg-primary/90"
-                                >
-                                  <Check size={14} />
-                                </button>
+                          <CheckCircle2 size={18} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => toggleEdit(session.id, e)}
+                            className="p-2 hover:bg-primary/10 rounded-lg text-text-muted hover:text-primary transition-colors"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                            onClick={(e) => e.stopPropagation()} 
+                            className="p-2 hover:bg-red-500/10 rounded-lg text-text-muted hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+
+                    <AnimatePresence>
+                      {expandedSessionId === session.id && (
+                        <motion.tr
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="bg-surface-alt/5 overflow-hidden"
+                        >
+                          <td colSpan={7} className="px-8 py-6 border-t border-border/50">
+                            <div className="max-w-4xl space-y-6">
+                              <div className="glass-card p-6 border-l-4 border-l-primary bg-primary/5">
+                                <h4 className="text-sm font-bold text-primary mb-2 uppercase tracking-wide">Daily Summary</h4>
+                                <p className="text-text-main leading-relaxed">{session.dailySummary}</p>
                               </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <span className={cn(
-                                  "text-sm font-bold transition-all",
-                                  session.completed ? "text-text-muted line-through" : "text-text-main"
-                                )}>
-                                  {session.topic}
-                                </span>
+                              <div>
+                                <h4 className="text-sm font-bold text-secondary mb-3 uppercase tracking-wide">Detailed Notes & Tasks</h4>
+                                <div className="glass-card p-6 prose prose-sm max-w-none prose-p:text-text-muted prose-headings:text-text-main prose-strong:text-text-main prose-ul:text-text-muted prose-li:marker:text-primary">
+                                  <ReactMarkdown>{session.detailedNotes || ''}</ReactMarkdown>
+                                </div>
                               </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-xs text-text-muted flex items-center gap-1.5">
-                              <Clock size={12} /> {session.duration}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            <button 
-                              onClick={(e) => toggleComplete(session.id, e)}
-                              className={cn(
-                                "inline-flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all",
-                                session.completed 
-                                  ? "bg-secondary border-secondary text-primary" 
-                                  : "border-border text-text-muted hover:border-primary hover:text-primary"
-                              )}
-                            >
-                              <CheckCircle2 size={18} />
-                            </button>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
-                                onClick={(e) => toggleEdit(session.id, e)}
-                                className="p-2 hover:bg-primary/10 rounded-lg text-text-muted hover:text-primary transition-colors"
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                              <button 
-                                onClick={(e) => e.stopPropagation()} 
-                                className="p-2 hover:bg-red-500/10 rounded-lg text-text-muted hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 size={14} />
-                              </button>
                             </div>
                           </td>
                         </motion.tr>
-
-                        {/* Expanded Notes Row */}
-                        <AnimatePresence>
-                          {expandedSessionId === session.id && (
-                            <motion.tr
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="bg-surface-alt/5 overflow-hidden"
-                            >
-                              <td colSpan={7} className="px-8 py-6 border-t border-border/50">
-                                <div className="max-w-4xl space-y-6">
-                                  {/* Summary Section */}
-                                  <div className="glass-card p-6 border-l-4 border-l-primary bg-primary/5">
-                                    <h4 className="text-sm font-bold text-primary mb-2 uppercase tracking-wide">Daily Summary</h4>
-                                    <p className="text-text-main leading-relaxed">{session.dailySummary}</p>
-                                  </div>
-
-                                  {/* Detailed Notes Section */}
-                                  <div>
-                                    <h4 className="text-sm font-bold text-secondary mb-3 uppercase tracking-wide">Detailed Notes & Tasks</h4>
-                                    <div className="glass-card p-6 prose prose-sm max-w-none prose-p:text-text-muted prose-headings:text-text-main prose-strong:text-text-main prose-ul:text-text-muted prose-li:marker:text-primary">
-                                      <ReactMarkdown>{session.detailedNotes || ''}</ReactMarkdown>
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                            </motion.tr>
-                          )}
-                        </AnimatePresence>
-                      </React.Fragment>
-                    ))}
-                  </AnimatePresence>
-                </tbody>
+                      )}
+                    </AnimatePresence>
+                  </tbody>
+                ))}
               </table>
             </div>
           </div>

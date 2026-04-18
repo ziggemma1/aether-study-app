@@ -7,6 +7,9 @@ export interface User {
   curriculum: string;
   language: string;
   plan: 'free' | 'pro';
+  bio?: string;
+  location?: string;
+  handle?: string;
   avgQuizScore?: number;
   highestQuizScore?: number;
   lowestQuizScore?: number;

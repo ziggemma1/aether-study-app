@@ -54,10 +54,10 @@ export default function Profile() {
                     <Edit2 size={18} className="hidden sm:block" />
                   </Link>
                 </div>
-                <p className="text-primary font-bold text-sm sm:text-lg mb-1 sm:mb-2">@robert_fox_study</p>
+                <p className="text-primary font-bold text-sm sm:text-lg mb-1 sm:mb-2">@{user?.handle || user?.name?.toLowerCase()?.replace(/\s+/g, '_')}</p>
                 <div className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 text-text-muted font-medium text-[10px] sm:text-sm">
                   <MapPin size={12} className="text-primary" />
-                  <span>Lagos, Nigeria</span>
+                  <span>{user?.location || 'Location not set'}</span>
                 </div>
               </div>
 
@@ -97,12 +97,12 @@ export default function Profile() {
           <div className="glass-card p-6 sm:p-8">
             <h3 className="text-sm sm:text-xl font-bold mb-3 sm:mb-4 text-text-main">About Me</h3>
             <p className="text-xs sm:text-base text-text-muted leading-relaxed mb-4 sm:mb-6">
-              Passionate about Physics and helping others learn! I'm currently preparing for my SATs and love sharing my study notes with the community. Let's grow together! 🚀
+              {user?.bio || "No bio yet. Tell the community about your study goals in Settings!"}
             </p>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
-              {['Physics', 'Calculus', 'SAT Prep', 'AI Learning', 'Generous'].map((tag) => (
+              {(user?.curriculum ? [user.curriculum, 'Learning', 'Student'] : ['Physics', 'Calculus', 'SAT Prep', 'AI Learning', 'Generous']).map((tag) => (
                 <span key={tag} className="px-2 py-0.5 sm:px-3 sm:py-1 bg-surface-alt/50 border border-border/50 rounded-lg text-[10px] sm:text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                  #{tag}
+                  #{tag.replace(/\s+/g, '')}
                 </span>
               ))}
             </div>

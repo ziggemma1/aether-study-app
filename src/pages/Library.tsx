@@ -357,10 +357,10 @@ export default function Library() {
                     <span className={cn("text-xs font-bold", p.progress === 100 ? "text-green-500" : "text-primary")}>{p.progress}%</span>
                   </div>
                   <button 
-                    onClick={() => navigate('/plans')}
+                    onClick={() => navigate(`/plans?planId=${p.id}`)}
                     className="w-full py-2.5 bg-surface-alt hover:bg-primary/10 text-text-main hover:text-primary rounded-xl text-xs font-bold transition-all"
                   >
-                    View Plan Directory
+                    Continue Studying
                   </button>
                 </div>
               ))}
