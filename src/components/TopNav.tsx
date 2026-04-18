@@ -10,7 +10,7 @@ interface TopNavProps {
 }
 
 export default function TopNav({ onMenuClick }: TopNavProps) {
-  const { user, theme, toggleTheme } = useAppContext();
+  const { user, theme, toggleTheme, t } = useAppContext();
   const [scrolled, setScrolled] = React.useState(false);
 
   React.useEffect(() => {
@@ -54,7 +54,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
             <Search size={18} className="text-text-muted shrink-0" />
             <input 
               type="text" 
-              placeholder="Search" 
+              placeholder={t('search')} 
               className="bg-transparent border-none outline-none text-xs w-full text-text-main placeholder:text-text-muted whitespace-nowrap overflow-hidden"
             />
           </div>
@@ -94,7 +94,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
           <Link to="/profile" className="flex items-center gap-2.5 pl-2.5 border-l border-border group shrink-0">
             <div className="text-right hidden xs:block">
               <p className="text-xs font-bold text-text-main leading-none whitespace-nowrap group-hover:text-primary transition-colors">
-                {user?.name?.split(' ')[0] || "Robert"}
+                {user?.name?.split(' ')[0] || t('student')}
               </p>
               <p className="text-[10px] font-bold text-text-muted uppercase tracking-tighter whitespace-nowrap">
                 #10532

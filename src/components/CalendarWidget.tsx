@@ -42,7 +42,7 @@ interface CalendarWidgetProps {
 }
 
 export default function CalendarWidget({ className }: CalendarWidgetProps) {
-  const { studySessions } = useAppContext();
+  const { studySessions, t } = useAppContext();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -109,7 +109,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
             <CalendarIcon size={20} className="hidden sm:block" />
           </div>
           <div>
-            <h2 className="text-sm sm:text-lg font-bold text-text-main leading-tight">Calendar</h2>
+            <h2 className="text-sm sm:text-lg font-bold text-text-main leading-tight">{t('calendar')}</h2>
             <p className="text-[8px] sm:text-[10px] font-bold text-text-muted/70 uppercase tracking-wider">Management</p>
           </div>
         </div>
@@ -275,25 +275,25 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
 
             <div className="space-y-6 flex-grow">
               <div className="p-4 rounded-2xl bg-surface-alt/30 border border-border/50">
-                <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">Status</p>
+                <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">{t('status')}</p>
                 <div className="flex items-center gap-3">
                   {dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'attended' ? (
                     <div className="flex items-center gap-2 text-green-500 font-bold text-sm">
-                      <CheckCircle2 size={18} /> Attended
+                      <CheckCircle2 size={18} /> {t('attended')}
                     </div>
                   ) : dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'missed' ? (
                     <div className="flex items-center gap-2 text-red-500 font-bold text-sm">
-                      <AlertCircle size={18} /> Missed
+                      <AlertCircle size={18} /> {t('missed')}
                     </div>
                   ) : (
-                    <div className="text-text-muted text-sm font-medium italic">No session recorded</div>
+                    <div className="text-text-muted text-sm font-medium italic">{t('no_session_recorded')}</div>
                   )}
                 </div>
               </div>
 
               {dayData[format(selectedDate, 'yyyy-MM-dd')]?.time && (
                 <div className="p-4 rounded-2xl bg-surface-alt/30 border border-border/50">
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">Time</p>
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">{t('time')}</p>
                   <div className="flex items-center gap-2 text-text-main font-bold text-sm">
                     <Clock size={18} /> {dayData[format(selectedDate, 'yyyy-MM-dd')]?.time}
                   </div>

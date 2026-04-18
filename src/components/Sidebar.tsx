@@ -31,7 +31,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAppContext();
+  const { signOut, t } = useAppContext();
   const [isMobile, setIsMobile] = React.useState(false);
 
   React.useEffect(() => {
@@ -44,16 +44,16 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   }, []);
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
-    { icon: Library, label: 'Library', path: '/library' },
-    { icon: MessageSquare, label: 'Messages', path: '/messages' },
-    { icon: Calendar, label: 'Calendar', path: '/calendar' },
-    { icon: FileText, label: 'Study Plans', path: '/plans' },
-    { icon: BarChart3, label: 'Reports', path: '/reports' },
-    { icon: Award, label: 'Achievements', path: '/achievements' },
-    { icon: User, label: 'Profile', path: '/profile' },
-    { icon: CreditCard, label: 'Subscription', path: '/subscription' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: LayoutDashboard, label: t('overview'), path: '/dashboard' },
+    { icon: Library, label: t('library'), path: '/library' },
+    { icon: MessageSquare, label: t('messages'), path: '/messages' },
+    { icon: Calendar, label: t('calendar'), path: '/calendar' },
+    { icon: FileText, label: t('study_plans'), path: '/plans' },
+    { icon: BarChart3, label: t('reports'), path: '/reports' },
+    { icon: Award, label: t('achievements'), path: '/achievements' },
+    { icon: User, label: t('profile'), path: '/profile' },
+    { icon: CreditCard, label: t('subscription'), path: '/subscription' },
+    { icon: Settings, label: t('settings'), path: '/settings' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -65,9 +65,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Menu Toggle - MOVED TO TOPNAV */}
-
-      {/* Sidebar Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -80,7 +77,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         )}
       </AnimatePresence>
 
-      {/* Sidebar Content */}
       <motion.aside
         initial={false}
         animate={{ x: isMobile ? (isOpen ? 0 : '-100%') : 0 }}
@@ -122,9 +118,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
             <div className="my-8 h-px bg-border w-full" />
 
-            {/* Go Premium Card - Redesigned */}
             <div className="relative rounded-[32px] overflow-hidden group h-40 flex items-center mb-4">
-              {/* Background Image with Gradient */}
               <div className="absolute inset-0 z-0">
                 <img 
                   src="https://picsum.photos/seed/study-premium/400/300" 
@@ -136,15 +130,15 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               </div>
 
               <div className="relative z-10 p-6 w-full">
-                <h4 className="text-lg font-bold text-white mb-1">Go premium</h4>
+                <h4 className="text-lg font-bold text-white mb-1">{t('go_premium')}</h4>
                 <p className="text-[10px] text-slate-300 mb-4 leading-relaxed max-w-[140px]">
-                  Explore 500+ courses with lifetime membership
+                  {t('go_premium_desc')}
                 </p>
                 <Link 
                   to="/subscription" 
                   className="inline-flex items-center justify-center bg-white text-primary hover:bg-slate-50 text-[10px] font-bold py-2 px-6 rounded-xl transition-all shadow-sm"
                 >
-                  Get Access
+                  {t('get_access')}
                 </Link>
               </div>
             </div>
@@ -154,7 +148,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               className="flex items-center gap-3 px-6 py-4 w-full text-red-400 hover:bg-red-500/10 rounded-2xl transition-all group mt-4"
             >
               <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
-              <span className="font-semibold text-sm">Logout</span>
+              <span className="font-semibold text-sm">{t('logout')}</span>
             </button>
           </div>
         </div>

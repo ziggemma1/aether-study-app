@@ -26,7 +26,7 @@ import {
 } from '../components/OverviewWidgets';
 
 export default function Dashboard() {
-  const { user, theme, materials, allProfiles, studySessions, quizResults, isLoading } = useAppContext();
+  const { user, theme, materials, allProfiles, studySessions, quizResults, isLoading, t } = useAppContext();
   const isLight = theme === 'light';
 
   if (isLoading && !user) {
@@ -133,19 +133,19 @@ export default function Dashboard() {
       {/* Welcome Header */}
       <div className="space-y-1">
         <h1 className="text-xl sm:text-2xl font-bold text-text-main tracking-tight">
-          Welcome back, <span className="text-primary">{user?.name?.split(' ')[0] || "Student"}</span>!
+          {t('welcome_back')}, <span className="text-primary">{user?.name?.split(' ')[0] || t('student')}</span>!
         </h1>
         <p className="text-text-muted text-xs sm:text-sm max-w-2xl leading-relaxed">
-          It's a great day to stay productive. Manage your tasks and explore your tools today.
+          {t('welcome_subtext')}
         </p>
       </div>
 
       {/* 1. Overview Section - Redesigned Widgets */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">Overview</h2>
+          <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">{t('overview')}</h2>
           <Link to="/reports" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
-            Reports <ArrowRight size={10} />
+            {t('reports')} <ArrowRight size={10} />
           </Link>
         </div>
         
@@ -184,9 +184,9 @@ export default function Dashboard() {
         {recentMaterials.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">Recent Materials</h2>
+              <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">{t('recent_materials')}</h2>
               <Link to="/library" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
-                View All <ArrowRight size={10} />
+                {t('view_all')} <ArrowRight size={10} />
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -216,7 +216,7 @@ export default function Dashboard() {
           </div>
           <div className="lg:col-span-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">Recent Activity</h2>
+              <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">{t('recent_activity')}</h2>
             </div>
             <div className="glass-card p-4 space-y-3 h-[calc(100%-2rem)]">
               {recentSessions.length > 0 ? (
@@ -246,13 +246,13 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 items-stretch">
         {/* Messages - Left (4 cols) */}
         <div className="lg:col-span-4 flex flex-col gap-3">
-          <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">Messages</h2>
+          <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">{t('messages')}</h2>
           <MessagesList className="h-[300px] sm:h-[420px]" />
         </div>
 
         {/* Quick Tools - Right (8 cols) */}
         <div className="lg:col-span-8 flex flex-col gap-3">
-          <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">Quick Tools</h2>
+          <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">{t('quick_tools')}</h2>
           <div className="flex flex-col gap-3 sm:gap-4 h-auto sm:h-[420px]">
             <Link to="/upload" className="glass-card p-4 sm:p-6 group hover:border-primary/50 transition-all relative overflow-hidden flex-1 flex items-center">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
@@ -262,8 +262,8 @@ export default function Dashboard() {
                   <Camera size={28} className="hidden sm:block" />
                 </div>
                 <div className="flex-grow">
-                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">Snap & Scan</h3>
-                  <p className="text-xs text-text-muted max-w-md leading-tight">Transform physical notes into digital study guides with AI.</p>
+                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">{t('snap_scan')}</h3>
+                  <p className="text-xs text-text-muted max-w-md leading-tight">{t('snap_scan_desc')}</p>
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all shrink-0">
                   <ArrowRight size={14} className="text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
@@ -279,8 +279,8 @@ export default function Dashboard() {
                   <BookOpen size={28} className="hidden sm:block" />
                 </div>
                 <div className="flex-grow">
-                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">Curriculum Library</h3>
-                  <p className="text-xs text-text-muted max-w-md leading-tight">Access your entire collection of courses and study materials.</p>
+                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">{t('curriculum_library')}</h3>
+                  <p className="text-xs text-text-muted max-w-md leading-tight">{t('curriculum_library_desc')}</p>
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-secondary group-hover:bg-secondary/5 transition-all shrink-0">
                   <ArrowRight size={14} className="text-text-muted group-hover:text-secondary group-hover:translate-x-1 transition-all" />

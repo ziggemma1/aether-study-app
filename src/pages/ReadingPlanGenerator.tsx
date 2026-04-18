@@ -35,7 +35,7 @@ export default function ReadingPlanGenerator() {
   const materialIdStr = searchParams.get('materials') || searchParams.get('materialId');
   const materialIds = materialIdStr ? materialIdStr.split(',') : [];
   
-  const { materials, savedPlans, setSavedPlans, showToast } = useAppContext();
+  const { materials, savedPlans, setSavedPlans, showToast, t } = useAppContext();
   const selectedMaterials = materials.filter(m => materialIds.includes(m.id));
 
   // Form States
@@ -162,10 +162,10 @@ export default function ReadingPlanGenerator() {
               
               <div className="space-y-3">
                 <h2 className="text-2xl font-extrabold text-text-main tracking-tight">
-                  Crafting Your Roadmap
+                  {t('crafting_roadmap')}
                 </h2>
                 <p className="text-text-muted text-sm leading-relaxed">
-                  Our educational AI is analyzing your materials and schedule to create the most efficient study path.
+                  {t('crafting_roadmap_desc')}
                 </p>
                 <div className="flex flex-col gap-2 pt-4">
                   <div className="flex justify-between text-[10px] font-bold text-text-muted uppercase tracking-wider">
@@ -196,7 +196,7 @@ export default function ReadingPlanGenerator() {
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors group"
         >
-          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> Back
+          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> {t('search')}
         </button>
         
         {savedPlans.length > 0 && (
@@ -205,7 +205,7 @@ export default function ReadingPlanGenerator() {
             className="text-xs font-bold text-primary bg-primary/10 px-4 py-2 rounded-xl hover:bg-primary/20 transition-all flex items-center gap-2"
           >
             {view === 'saved' ? <Zap size={14} /> : <Save size={14} />}
-            {view === 'saved' ? 'Back to Generator' : `View Saved Plans (${savedPlans.length})`}
+            {view === 'saved' ? t('back_to_generator') : `${t('view_saved_plans')} (${savedPlans.length})`}
           </button>
         )}
       </div>
@@ -216,13 +216,13 @@ export default function ReadingPlanGenerator() {
             {view === 'saved' ? <Save size={20} /> : <Zap size={20} />}
           </div>
           <h1 className="text-3xl font-bold text-text-main tracking-tight">
-            {view === 'saved' ? 'My Saved Plans' : 'AI Study Planner'}
+            {view === 'saved' ? t('my_saved_plans') : t('ai_study_planner')}
           </h1>
         </div>
         <p className="text-text-muted">
           {view === 'saved' 
-            ? 'Manage and track your active and completed study roadmaps.' 
-            : 'Generate a hyper-personalized, unified roadmap across all your selected materials.'}
+            ? t('my_saved_plans_desc') 
+            : t('ai_study_planner_desc')}
         </p>
       </header>
 
@@ -236,7 +236,7 @@ export default function ReadingPlanGenerator() {
           <section className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-2 h-8 bg-primary rounded-full" />
-              <h2 className="text-xl font-bold text-text-main">Upcoming Plans</h2>
+              <h2 className="text-xl font-bold text-text-main">{t('upcoming_plans')}</h2>
             </div>
             
             {upcomingPlans.length > 0 ? (
@@ -264,7 +264,7 @@ export default function ReadingPlanGenerator() {
                       }}
                       className="w-full py-2.5 bg-surface-alt hover:bg-primary/10 text-text-main hover:text-primary rounded-xl text-xs font-bold transition-all"
                     >
-                      Continue Studying
+                      {t('continue_studying')}
                     </button>
                   </div>
                 ))}
@@ -274,8 +274,8 @@ export default function ReadingPlanGenerator() {
                 <div className="w-16 h-16 bg-surface-alt rounded-full flex items-center justify-center text-text-muted mb-4 opacity-50">
                   <CalendarIcon size={32} />
                 </div>
-                <p className="text-text-muted font-medium">No upcoming plans yet.</p>
-                <button onClick={() => setView('generator')} className="text-primary text-sm font-bold mt-2 hover:underline">Create one now</button>
+                <p className="text-text-muted font-medium">{t('no_upcoming_plans')}</p>
+                <button onClick={() => setView('generator')} className="text-primary text-sm font-bold mt-2 hover:underline">{t('create_one_now')}</button>
               </div>
             )}
           </section>
@@ -284,7 +284,7 @@ export default function ReadingPlanGenerator() {
           <section className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-2 h-8 bg-green-500 rounded-full" />
-              <h2 className="text-xl font-bold text-text-main">Done</h2>
+              <h2 className="text-xl font-bold text-text-main">{t('done')}</h2>
             </div>
             
             {completedPlans.length > 0 ? (
@@ -309,7 +309,7 @@ export default function ReadingPlanGenerator() {
                 <div className="w-16 h-16 bg-surface-alt rounded-full flex items-center justify-center text-text-muted mb-4 opacity-50">
                   <CheckCircle2 size={32} />
                 </div>
-                <p className="text-text-muted font-medium">No completed plans yet.</p>
+                <p className="text-text-muted font-medium">{t('no_completed_plans')}</p>
               </div>
             )}
           </section>
@@ -342,7 +342,7 @@ export default function ReadingPlanGenerator() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold mb-3 text-text-main flex items-center gap-2">
-                    <CalendarIcon size={16} className="text-primary" /> Start Date
+                    <CalendarIcon size={16} className="text-primary" /> {t('start_date')}
                   </label>
                   <input
                     type="date"
@@ -353,7 +353,7 @@ export default function ReadingPlanGenerator() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold mb-3 text-text-main flex items-center gap-2">
-                    <Clock size={16} className="text-primary" /> Duration (Days)
+                    <Clock size={16} className="text-primary" /> {t('duration_days')}
                   </label>
                   <input
                     type="number"
@@ -368,7 +368,7 @@ export default function ReadingPlanGenerator() {
 
               <div>
                 <label className="block text-sm font-bold mb-3 text-text-main flex items-center gap-2">
-                  <Target size={16} className="text-primary" /> Learning Goal
+                  <Target size={16} className="text-primary" /> {t('learning_goal')}
                 </label>
                 <div className="grid grid-cols-3 gap-3">
                   {['Exam Prep', 'Deep Dive', 'Quick Review'].map((g) => (
@@ -393,7 +393,7 @@ export default function ReadingPlanGenerator() {
             <div className="space-y-8">
               <div>
                 <label className="block text-sm font-bold mb-3 text-text-main flex items-center gap-2">
-                  <BarChart3 size={16} className="text-primary" /> Complexity Level
+                  <BarChart3 size={16} className="text-primary" /> {t('complexity_level')}
                 </label>
                 <div className="flex p-1 bg-surface-alt/50 rounded-2xl border border-border">
                   {['Beginner', 'Intermediate', 'Advanced'].map((level) => (
@@ -413,7 +413,7 @@ export default function ReadingPlanGenerator() {
 
               <div>
                 <label className="block text-sm font-bold mb-3 text-text-main flex items-center gap-2">
-                  <Clock size={16} className="text-primary" /> Daily Commitment
+                  <Clock size={16} className="text-primary" /> {t('daily_commitment')}
                 </label>
                 <div className="grid grid-cols-4 gap-3">
                   {['30m', '1h', '2h', '4h+'].map((time) => (
@@ -445,11 +445,11 @@ export default function ReadingPlanGenerator() {
                   {isGenerating ? (
                     <>
                       <Loader2 className="animate-spin" size={20} />
-                      Generating with AI...
+                      {t('generating_plan')}
                     </>
                   ) : (
                     <>
-                      <Zap size={20} /> Generate Personalized Plan
+                      <Zap size={20} /> {t('generate_plan')}
                     </>
                   )}
                   {isGenerating && (
@@ -672,13 +672,13 @@ export default function ReadingPlanGenerator() {
               onClick={handleSavePlan}
               className="w-full sm:w-auto btn-primary px-10 py-4 flex items-center justify-center gap-3"
             >
-              <Save size={20} /> Save Study Plan
+              <Save size={20} /> {t('save_study_plan')}
             </button>
             <button 
               onClick={() => setIsGenerated(false)} 
               className="w-full sm:w-auto btn-outline px-10 py-4 flex items-center justify-center gap-3"
             >
-              <RotateCcw size={20} /> Start Over
+              <RotateCcw size={20} /> {t('start_over')}
             </button>
           </div>
         </motion.div>

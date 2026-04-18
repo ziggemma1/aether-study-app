@@ -8,7 +8,7 @@ import { Material } from '../types';
 import api from '../services/api';
 
 export default function Library() {
-  const { materials, savedPlans, setMaterials, showToast } = useAppContext();
+  const { materials, savedPlans, setMaterials, showToast, t } = useAppContext();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -224,8 +224,8 @@ export default function Library() {
     <div className="p-3 sm:p-8 lg:p-12 max-w-7xl mx-auto relative min-h-screen pb-24">
       <header className="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
         <div>
-          <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-2 text-text-main">Library</h1>
-          <p className="text-sm sm:text-base text-text-muted">All your study materials in one place.</p>
+          <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-2 text-text-main">{t('library')}</h1>
+          <p className="text-sm sm:text-base text-text-muted">{t('library_desc')}</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex bg-surface rounded-lg sm:rounded-xl p-0.5 sm:p-1 shadow-sm border border-border">
@@ -244,7 +244,7 @@ export default function Library() {
               <List size={20} className="hidden sm:block" />
             </button>
           </div>
-          <Link to="/upload" className="btn-primary py-1.5 px-4 sm:py-2 sm:px-6 text-[10px] sm:text-sm">Upload</Link>
+          <Link to="/upload" className="btn-primary py-1.5 px-4 sm:py-2 sm:px-6 text-[10px] sm:text-sm">{t('upload')}</Link>
         </div>
       </header>
 
@@ -254,21 +254,21 @@ export default function Library() {
           onClick={() => setActiveTab('materials')} 
           className={cn("pb-3 sm:pb-4 text-[10px] sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap", activeTab === 'materials' ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main")}
         >
-          Materials ({materials.filter(m => m.type !== 'unified').length})
+          {t('materials')} ({materials.filter(m => m.type !== 'unified').length})
         </button>
         <button 
           onClick={() => setActiveTab('unified')} 
           className={cn("pb-3 sm:pb-4 text-[10px] sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5", activeTab === 'unified' ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main")}
         >
           <Layers size={14} className="sm:hidden" />
-          <Layers size={16} className="hidden sm:block" /> Unified ({materials.filter(m => m.type === 'unified').length})
+          <Layers size={16} className="hidden sm:block" /> {t('unified')} ({materials.filter(m => m.type === 'unified').length})
         </button>
         <button 
           onClick={() => setActiveTab('plans')} 
           className={cn("pb-3 sm:pb-4 text-[10px] sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5", activeTab === 'plans' ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main")}
         >
           <CalendarIcon size={14} className="sm:hidden" />
-          <CalendarIcon size={16} className="hidden sm:block" /> Plans ({savedPlans.length})
+          <CalendarIcon size={16} className="hidden sm:block" /> {t('plans')} ({savedPlans.length})
         </button>
       </div>
 
@@ -281,7 +281,7 @@ export default function Library() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/50 hidden sm:block" size={18} />
               <input
                 type="text"
-                placeholder="Search materials..."
+                placeholder={t('search_materials')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-border/40 focus:ring-2 focus:ring-primary/20 outline-none bg-surface/30 backdrop-blur-sm text-xs sm:text-sm text-text-main placeholder:text-text-muted/50 transition-all"
@@ -312,8 +312,8 @@ export default function Library() {
               <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mx-auto mb-6 text-text-muted border border-border">
                 <Search size={32} />
               </div>
-              <h2 className="text-xl font-bold mb-2 text-text-main">No study materials found</h2>
-              <p className="text-text-muted">Try adjusting your search or filters.</p>
+              <h2 className="text-xl font-bold mb-2 text-text-main">{t('no_materials_found')}</h2>
+              <p className="text-text-muted">{t('adjust_filter')}</p>
             </div>
           )}
         </motion.div>
@@ -360,7 +360,7 @@ export default function Library() {
                     onClick={() => navigate(`/plans?planId=${p.id}`)}
                     className="w-full py-2.5 bg-surface-alt hover:bg-primary/10 text-text-main hover:text-primary rounded-xl text-xs font-bold transition-all"
                   >
-                    Continue Studying
+                    {t('continue_studying')}
                   </button>
                 </div>
               ))}

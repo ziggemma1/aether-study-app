@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, Material, SavedPlan, Message, StudySession, Achievement, QuizResult } from '../types';
 import api from '../services/api';
+import { translations, Language } from '../lib/translations';
 
 interface AppContextType {
   user: User | null;
@@ -28,6 +29,7 @@ interface AppContextType {
   signOut: () => Promise<void>;
   showToast: (text: string, type?: 'success' | 'error') => void;
   toast: { text: string, type: 'success' | 'error' } | null;
+  t: (key: string) => string;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -53,6 +55,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const t = (key: string): string => {
+    const lang = (user?.language as Language) || 'English (US)';
+    const langGroup = translations[lang] || translations['English (US)'];
+    return langGroup[key] || translations['English (US)'][key] || key;
   };
 
   const signOut = async () => {
@@ -233,7 +241,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toggleTheme,
       signOut,
       showToast,
-      toast
+      toast,
+      t
     }}>
       {children}
     </AppContext.Provider>

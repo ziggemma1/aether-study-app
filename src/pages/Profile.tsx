@@ -19,7 +19,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 export default function Profile() {
-  const { user } = useAppContext();
+  const { user, t } = useAppContext();
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 sm:space-y-10 animate-in fade-in duration-700 pb-24 sm:pb-20 p-3 sm:p-0">
@@ -74,11 +74,11 @@ export default function Profile() {
             <div className="flex items-center justify-center sm:justify-start gap-6 sm:gap-8 pt-4 border-t border-border/30">
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
                 <span className="text-sm sm:text-xl font-bold text-text-main">1.2k</span>
-                <span className="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-widest">Followers</span>
+                <span className="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-widest">{t('followers')}</span>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
                 <span className="text-sm sm:text-xl font-bold text-text-main">850</span>
-                <span className="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-widest">Friends</span>
+                <span className="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-widest">{t('friends')}</span>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
                 <span className="text-sm sm:text-xl font-bold text-text-main">4,250</span>
@@ -95,7 +95,7 @@ export default function Profile() {
         <div className="lg:col-span-4 space-y-6 sm:space-y-8">
           {/* Bio Card */}
           <div className="glass-card p-6 sm:p-8">
-            <h3 className="text-sm sm:text-xl font-bold mb-3 sm:mb-4 text-text-main">About Me</h3>
+            <h3 className="text-sm sm:text-xl font-bold mb-3 sm:mb-4 text-text-main">{t('about_me')}</h3>
             <p className="text-xs sm:text-base text-text-muted leading-relaxed mb-4 sm:mb-6">
               {user?.bio || "No bio yet. Tell the community about your study goals in Settings!"}
             </p>

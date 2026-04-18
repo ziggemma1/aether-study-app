@@ -24,7 +24,7 @@ import { cn } from '../lib/utils';
 import api from '../services/api';
 
 export default function Settings() {
-  const { user, setUser, theme, toggleTheme, signOut, showToast } = useAppContext();
+  const { user, setUser, theme, toggleTheme, signOut, showToast, t } = useAppContext();
   const location = useLocation();
   const [activeTab, setActiveTab] = React.useState<'account' | 'social' | 'security' | 'billing'>('account');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -49,10 +49,10 @@ export default function Settings() {
   });
 
   const tabs = [
-    { id: 'account', label: 'Account', icon: User },
-    { id: 'social', label: 'Social Profile', icon: Globe },
-    { id: 'security', label: 'Security', icon: Lock },
-    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'account', label: t('account_info'), icon: User },
+    { id: 'social', label: t('social_profile_bio'), icon: Globe },
+    { id: 'security', label: t('security'), icon: Lock },
+    { id: 'billing', label: t('billing'), icon: CreditCard },
   ];
 
   const handleSave = async (specificData?: any) => {
@@ -143,7 +143,7 @@ export default function Settings() {
     <div className="p-3 sm:p-8 lg:p-12 max-w-5xl mx-auto space-y-6 sm:space-y-10 animate-in fade-in duration-500 pb-24">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
         <div>
-          <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-2 text-text-main tracking-tight">Settings</h1>
+          <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-2 text-text-main tracking-tight">{t('settings')}</h1>
           <p className="text-[10px] sm:text-base text-text-muted">Manage your account and preferences.</p>
         </div>
         
@@ -204,11 +204,11 @@ export default function Settings() {
             <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-dashed border-border/40">
               <div className="text-center">
                 <p className="text-sm sm:text-lg font-bold text-text-main">1.2k</p>
-                <p className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest">Followers</p>
+                <p className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('followers')}</p>
               </div>
               <div className="text-center">
                 <p className="text-sm sm:text-lg font-bold text-text-main">850</p>
-                <p className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest">Friends</p>
+                <p className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('friends')}</p>
               </div>
             </div>
           </div>
@@ -224,7 +224,7 @@ export default function Settings() {
                 <span className="text-primary uppercase">{user?.plan}</span>
               </div>
               <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold">
-                <span className="text-text-muted">Verified</span>
+                <span className="text-text-muted">{t('verified')}</span>
                 <span className="text-green-500 uppercase">Yes</span>
               </div>
               <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold">
@@ -259,11 +259,11 @@ export default function Settings() {
                       <User size={16} className="sm:hidden" />
                       <User size={20} className="hidden sm:block" />
                     </div>
-                    Account Info
+                    {t('account_info')}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                     <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">Full Name</label>
+                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('full_name')}</label>
                       <input
                         type="text"
                         value={formData.name}
@@ -272,7 +272,7 @@ export default function Settings() {
                       />
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">Email</label>
+                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('email')}</label>
                       <input
                         type="email"
                         value={formData.email}
@@ -281,7 +281,7 @@ export default function Settings() {
                       />
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">Language</label>
+                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('language')}</label>
                       <select 
                         value={formData.language}
                         onChange={(e) => setFormData({ ...formData, language: e.target.value })}
@@ -289,11 +289,11 @@ export default function Settings() {
                       >
                         <option>English (US)</option>
                         <option>English (UK)</option>
-                        <option>French</option>
+                        <option>Indonesian</option>
                       </select>
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">Curriculum</label>
+                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('curriculum')}</label>
                       <select 
                         value={formData.curriculum}
                         onChange={(e) => setFormData({ ...formData, curriculum: e.target.value })}
@@ -306,14 +306,14 @@ export default function Settings() {
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
                       <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest flex items-center justify-between">
-                        Location
+                        {t('location')}
                         <button 
                           onClick={detectLocation}
                           disabled={isLocating}
                           className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1 normal-case font-bold"
                         >
                           {isLocating ? <Loader2 size={12} className="animate-spin" /> : <Globe size={12} />}
-                          Detect
+                          {t('detect')}
                         </button>
                       </label>
                       <input
@@ -331,7 +331,7 @@ export default function Settings() {
                       disabled={isSaving}
                       className="btn-primary py-2 px-6 sm:py-3 sm:px-10 text-[10px] sm:text-sm flex items-center gap-2"
                     >
-                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : 'Save Changes'}
+                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : t('save_changes')}
                     </button>
                   </div>
                 </div>
@@ -378,11 +378,11 @@ export default function Settings() {
                     <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500">
                       <Users2 size={20} />
                     </div>
-                    Social Profile & Bio
+                    {t('social_profile_bio')}
                   </h3>
                   <div className="space-y-8">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-muted uppercase tracking-widest">Public Bio</label>
+                      <label className="text-xs font-bold text-text-muted uppercase tracking-widest">{t('public_bio')}</label>
                       <textarea
                         rows={4}
                         value={formData.bio}
@@ -394,7 +394,7 @@ export default function Settings() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-text-muted uppercase tracking-widest">Username / Handle</label>
+                        <label className="text-xs font-bold text-text-muted uppercase tracking-widest">{t('username_handle')}</label>
                         <div className="relative">
                           <span className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted font-bold">@</span>
                           <input
@@ -406,7 +406,7 @@ export default function Settings() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-text-muted uppercase tracking-widest">Visibility Scope</label>
+                        <label className="text-xs font-bold text-text-muted uppercase tracking-widest">{t('visibility_scope')}</label>
                         <select className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all">
                           <option>Public (Everyone)</option>
                           <option>Friends Only</option>
@@ -421,7 +421,7 @@ export default function Settings() {
                       disabled={isSaving}
                       className="btn-primary px-10 flex items-center gap-2"
                     >
-                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : 'Update Social Profile'}
+                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : t('update_social_profile')}
                     </button>
                   </div>
                 </div>
