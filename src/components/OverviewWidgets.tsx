@@ -214,7 +214,7 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
   );
 }
 
-export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { rank?: number, total?: number, topLearnersData?: { name: string, avatar: string }[] }) {
+export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { rank?: number, total?: number, topLearnersData?: { name: string, avatar?: string }[] }) {
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
@@ -225,9 +225,9 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
         <p className="text-[10px] sm:text-xs font-medium text-text-muted">Global Rank</p>
       </div>
 
-      <div className="flex items-baseline gap-1 mb-1 sm:mb-2">
-        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">#{rank}</span>
-        <span className="text-[10px] sm:text-xs text-text-muted font-medium">of {total > 1000 ? `${(total/1000).toFixed(0)}K` : total}</span>
+      <div className="flex items-baseline gap-1 mb-1 sm:mb-2 text-nowrap">
+        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight shrink-0">#{rank}</span>
+        <span className="text-[10px] sm:text-[11px] text-text-muted font-medium truncate">of {total > 1000 ? `${(total/1000).toFixed(0)}K` : total}</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
@@ -238,15 +238,21 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
         <div className="space-y-1.5 sm:space-y-2.5">
           {topLearnersData.map((learner, i) => (
             <div key={i} className="flex items-center gap-1.5 sm:gap-2.5">
-              <div className="relative">
-                <img src={learner.avatar} alt={learner.name} className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-border/20" />
+              <div className="relative shrink-0">
+                {learner.avatar ? (
+                  <img src={learner.avatar} alt={learner.name} className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-border/20 object-cover" />
+                ) : (
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] sm:text-xs font-bold text-primary border border-primary/20">
+                    {learner.name.charAt(0)}
+                  </div>
+                )}
                 {i === 0 && (
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-orange-500 rounded-full flex items-center justify-center text-[7px] sm:text-[9px] text-white border border-white">
                     ★
                   </div>
                 )}
               </div>
-              <span className="text-[11px] sm:text-sm font-medium text-text-main truncate w-full">{learner.name}</span>
+              <span className="text-[11px] sm:text-sm font-medium text-text-main truncate">{learner.name}</span>
             </div>
           ))}
         </div>

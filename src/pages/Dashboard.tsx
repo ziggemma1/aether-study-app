@@ -53,11 +53,16 @@ export default function Dashboard() {
     : [];
 
   const topLearners = Array.isArray(allProfiles) 
-    ? allProfiles.slice(0, 6).map((p, i) => ({
-        id: p._id || p.id || `learner-${i}`,
-        name: p.name || 'User',
-        avatar: p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p._id || p.id || i}`
-      }))
+    ? allProfiles.slice(0, 6).map((p, i) => {
+        const pId = p._id || p.id;
+        const isMe = pId === user?.id;
+        return {
+          id: pId || `learner-${i}`,
+          name: isMe ? (user?.name || p.name) : (p.name || 'User'),
+          avatar: isMe ? (user?.avatar || p.avatar) : p.avatar,
+          fallbackAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${pId || i}`
+        };
+      })
     : [];
 
   // Data Tracking Calculations (mirrored from Reports)
@@ -120,7 +125,7 @@ export default function Dashboard() {
     ? Math.min(...quizResults.map(r => r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0))
     : (user?.lowestQuizScore || 0);
 
-  const myRankIndex = Array.isArray(allProfiles) ? allProfiles.findIndex(p => p.id === user?.id) : -1;
+  const myRankIndex = Array.isArray(allProfiles) ? allProfiles.findIndex(p => (p._id || p.id) === user?.id) : -1;
   const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
 
   return (
@@ -169,6 +174,7 @@ export default function Dashboard() {
           <Link to="/reports" className="block">
             <RankingCard 
               rank={globalRank} 
+              total={allProfiles.length || 1250}
               topLearnersData={topLearners.length > 0 ? topLearners : undefined}
             />
           </Link>
