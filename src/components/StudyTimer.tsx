@@ -1,23 +1,81 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Clock, Play, Pause, Save } from 'lucide-react';
+import { Clock, Play, Pause, Save, Volume2, VolumeX, Headphones } from 'lucide-react';
+import { cn } from '../lib/utils';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
 
 interface StudyTimerProps {
   materialId?: string;
   title: string;
+  readContent?: string;
 }
 
-export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title }) => {
+export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readContent }) => {
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(true);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const secondsRef = useRef(0);
   const startTimeRef = useRef<Date>(new Date());
-  const { setStudySessions, showToast } = useAppContext();
+  const { setStudySessions, showToast, user } = useAppContext();
   
   useEffect(() => {
     secondsRef.current = seconds;
   }, [seconds]);
+
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  const toggleAudio = () => {
+    if (isPlayingAudio) {
+      window.speechSynthesis.pause();
+      setIsPlayingAudio(false);
+    } else {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+        setIsPlayingAudio(true);
+      } else {
+        if (!readContent) return;
+        
+        // Cancel first to clear queue
+        window.speechSynthesis.cancel();
+        
+        // Strip markdown for cleaner reading
+        const plainText = readContent
+          .replace(/[#*`_]/g, '')
+          .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+          .replace(/\n\n/g, '. ');
+
+        const utterance = new SpeechSynthesisUtterance(plainText);
+        
+        // Set language
+        const langMap: Record<string, string> = {
+          'English (US)': 'en-US',
+          'English (UK)': 'en-GB',
+          'Indonesia': 'id-ID'
+        };
+        utterance.lang = user?.language ? langMap[user.language] || 'en-US' : 'en-US';
+        
+        utterance.onend = () => setIsPlayingAudio(false);
+        utterance.onerror = () => setIsPlayingAudio(false);
+        
+        utteranceRef.current = utterance;
+        window.speechSynthesis.speak(utterance);
+        setIsPlayingAudio(true);
+      }
+    }
+  };
+
+  // If content changes and we're playing, restart
+  useEffect(() => {
+    if (isPlayingAudio && readContent) {
+      window.speechSynthesis.cancel();
+      toggleAudio();
+    }
+  }, [readContent]);
 
   useEffect(() => {
     let interval: any = null;
@@ -85,6 +143,18 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title }) => 
         </div>
         
         <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+          {readContent && (
+            <button 
+              onClick={toggleAudio}
+              className={cn(
+                "p-2 rounded-lg transition-all",
+                isPlayingAudio ? "bg-primary/20 text-primary scale-110" : "hover:bg-white/5 text-slate-400"
+              )}
+              title={isPlayingAudio ? "Pause Reading" : "Read Notes Aloud"}
+            >
+              {isPlayingAudio ? <Volume2 size={20} className="animate-pulse" /> : <Headphones size={20} />}
+            </button>
+          )}
           <button 
             onClick={() => setIsActive(!isActive)}
             className="p-2 hover:bg-white/5 rounded-lg text-white transition-colors"

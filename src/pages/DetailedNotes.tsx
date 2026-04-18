@@ -347,7 +347,11 @@ export default function DetailedNotes() {
         </div>
       </motion.div>
 
-      <StudyTimer materialId={material.id} title={material.title} />
+      <StudyTimer 
+        materialId={material.id} 
+        title={material.title} 
+        readContent={sections.length > 0 ? sections[currentPage].content : material.detailedNotes}
+      />
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
