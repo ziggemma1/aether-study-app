@@ -17,7 +17,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const secondsRef = useRef(0);
   const startTimeRef = useRef<Date>(new Date());
-  const { setStudySessions, showToast, user } = useAppContext();
+  const { setStudySessions, showToast, user, t } = useAppContext();
   
   useEffect(() => {
     secondsRef.current = seconds;

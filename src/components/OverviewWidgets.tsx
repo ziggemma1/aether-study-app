@@ -25,6 +25,7 @@ import {
 } from 'recharts';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
+import api from '../services/api';
 
 // --- Styles ---
 const stripeStyle = {
@@ -218,8 +219,8 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
   );
 }
 
-export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { rank?: number, total?: number, topLearnersData?: { name: string, avatar?: string }[] }) {
-  const { t } = useAppContext();
+export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { rank?: number, total?: number, topLearnersData?: { id?: string, name: string, avatar?: string }[] }) {
+  const { t, user } = useAppContext();
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
@@ -251,7 +252,7 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
                     <img src={learner.avatar} alt={learner.name} className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-border/20 object-cover" />
                   ) : (
                     <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] sm:text-xs font-bold text-primary border border-primary/20">
-                      {learner.name.charAt(0)}
+                      {learner.name ? learner.name.charAt(0) : 'U'}
                     </div>
                   )}
                   {i === 0 && (

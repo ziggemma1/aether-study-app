@@ -50,7 +50,7 @@ const performanceData = [
 import { useAppContext } from '../context/AppContext';
 
 export default function Reports() {
-  const { theme, quizResults, user, studySessions, materials, allProfiles } = useAppContext();
+  const { theme, quizResults, user, studySessions, materials, allProfiles, t } = useAppContext();
   const isLight = theme === 'light';
 
   // Safe arrays
