@@ -33,83 +33,70 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
         className={cn(
           "flex items-center justify-between pointer-events-auto transition-all duration-500 ease-in-out",
           scrolled 
-            ? "mt-2 w-full max-w-[1400px] px-4 py-2 bg-surface/80 backdrop-blur-xl border border-border shadow-lg rounded-[20px]" 
-            : "mt-0 w-full px-6 py-3 bg-surface border-b border-border rounded-none shadow-none"
+            ? "mt-2 w-full max-w-[1400px] px-4 py-2 bg-surface/80 backdrop-blur-xl border border-border shadow-lg rounded-full" 
+            : "mt-0 w-full px-6 py-4 bg-surface border-b border-border rounded-none shadow-none"
         )}
       >
-        <div className="flex items-center gap-2.5">
-          {/* Menu Toggle / Logo - Mobile Only */}
+        <div className="flex items-center gap-4">
+           {/* Menu Toggle / Logo - Mobile Only */}
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2.5 bg-surface-alt/50 rounded-lg border border-border text-text-main shrink-0 active:scale-95 transition-transform"
+            className="lg:hidden p-2 bg-surface-alt/80 hover:bg-surface-alt rounded-lg border border-border text-text-main shrink-0 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
-            <Menu size={20} />
+            <Menu size={22} className="opacity-80" />
           </button>
-
-          {/* Search */}
-          <div className={cn(
-            "flex items-center gap-2 bg-surface-alt/50 px-3 py-2 rounded-lg border border-border focus-within:border-primary/30 transition-all",
-            scrolled ? "w-32 sm:w-48" : "w-40 sm:w-64"
-          )}>
-            <Search size={18} className="text-text-muted shrink-0" />
-            <input 
-              type="text" 
-              placeholder={t('search')} 
-              className="bg-transparent border-none outline-none text-xs w-full text-text-main placeholder:text-text-muted whitespace-nowrap overflow-hidden"
-            />
-          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-5">
           {/* Theme Toggle & Notifications */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="flex items-center bg-surface-alt/50 p-1 rounded-full border border-border">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex items-center bg-surface-alt/80 p-[3px] rounded-full border border-border shadow-inner">
               <button 
                 onClick={() => theme === 'dark' && toggleTheme()}
                 className={cn(
-                  "p-2 transition-all rounded-full",
-                  theme === 'light' ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text-main"
+                  "p-1.5 transition-all rounded-full outline-none",
+                  theme === 'light' ? "bg-primary text-white shadow-md scale-105" : "text-text-muted hover:text-text-main"
                 )}
               >
-                <Sun size={18} />
+                <Sun size={15} />
               </button>
               <button 
                 onClick={() => theme === 'light' && toggleTheme()}
                 className={cn(
-                  "p-2 transition-all rounded-full",
-                  theme === 'dark' ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text-main"
+                  "p-1.5 transition-all rounded-full outline-none",
+                  theme === 'dark' ? "bg-primary text-white shadow-md scale-105" : "text-text-muted hover:text-text-main"
                 )}
               >
-                <Moon size={18} />
+                <Moon size={15} />
               </button>
             </div>
             
-            <Link to="/notifications" className="p-2.5 bg-surface-alt/50 text-text-muted hover:bg-surface-alt rounded-lg transition-all border border-border relative">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-surface" />
+            <Link to="/notifications" className="p-2 bg-surface-alt/80 text-text-muted hover:bg-surface-alt hover:text-text-main rounded-full transition-all border border-border relative flex items-center justify-center shrink-0">
+              <Bell size={18} />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-surface" />
             </Link>
           </div>
 
           {/* User Profile */}
-          <Link to="/profile" className="flex items-center gap-2.5 pl-2.5 border-l border-border group shrink-0">
-            <div className="text-right hidden xs:block">
-              <p className="text-xs font-bold text-text-main leading-none whitespace-nowrap group-hover:text-primary transition-colors">
+          <Link to="/profile" className="flex items-center gap-3 pl-3 sm:pl-5 border-l border-border/50 group shrink-0">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-semibold text-text-main leading-none whitespace-nowrap group-hover:text-primary transition-colors">
                 {user?.name?.split(' ')[0] || t('student')}
               </p>
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-tighter whitespace-nowrap">
-                #10532
+              <p className="text-[11px] font-medium text-text-muted mt-1 whitespace-nowrap">
+                Student
               </p>
             </div>
-            <div className="relative shrink-0">
+            <div className="relative shrink-0 flex items-center justify-center">
               <img 
                 src={user?.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Robert"} 
                 alt="Profile" 
                 className={cn(
-                  "rounded-full border border-border shadow-sm group-hover:border-primary/30 transition-all",
+                  "rounded-full border border-border/50 shadow-sm group-hover:border-primary/50 transition-all object-cover",
                   scrolled ? "w-8 h-8" : "w-10 h-10"
                 )}
               />
-              <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border-2 border-surface" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-[10px] h-[10px] bg-green-500 rounded-full border-[2.5px] border-surface" />
             </div>
           </Link>
         </div>

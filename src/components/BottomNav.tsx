@@ -1,49 +1,88 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  Library, 
-  MessageSquare, 
-  Calendar,
+  Home, 
+  Workflow, 
+  Plus, 
+  BarChart2, 
   User
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BottomNav() {
   const location = useLocation();
   
   const navItems = [
-    { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
-    { icon: Library, label: 'Library', path: '/library' },
-    { icon: MessageSquare, label: 'Chat', path: '/messages' },
-    { icon: Calendar, label: 'Plans', path: '/calendar' },
-    { icon: User, label: 'Profile', path: '/profile' },
+    { icon: Home, path: '/dashboard', label: 'Home' },
+    { icon: Workflow, path: '/plans', label: 'Plans' },
+    { icon: Plus, path: '/upload', isAction: true },
+    { icon: BarChart2, path: '/reports', label: 'Reports' },
+    { icon: User, path: '/profile', label: 'Profile' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pointer-events-none">
-      <nav className="bg-surface/80 backdrop-blur-xl border border-border shadow-lg rounded-2xl flex items-center justify-around p-3 pointer-events-auto">
-        {navItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={cn(
-               "flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all duration-200 min-w-[64px]",
-              isActive(item.path)
-                ? "text-primary bg-primary/10"
-                : "text-text-muted hover:text-text-main"
-            )}
-          >
-            <item.icon size={22} className={cn(
-              "transition-colors",
-              isActive(item.path) ? "text-primary" : "text-text-muted"
-            )} />
-            <span className="text-xs font-bold uppercase tracking-tighter">{item.label}</span>
-          </Link>
-        ))}
+    <div className="lg:hidden fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none px-6">
+      {/* Blue Glow Background */}
+      <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-[80%] h-12 bg-primary/20 blur-2xl rounded-full -z-10" />
+
+      {/* Main Container */}
+      <nav className="bg-surface/90 backdrop-blur-xl border border-border shadow-lg rounded-full flex items-center justify-between px-6 sm:px-8 py-3.5 w-full max-w-[420px] pointer-events-auto">
+        {navItems.map((item, index) => {
+          if (item.isAction) {
+            return (
+              <div key="action" className="relative -mt-7 mx-1 hover:scale-105 transition-transform active:scale-95 duration-200">
+                {/* Outer Ring */}
+                <div className="p-[5px] bg-background/50 backdrop-blur-md rounded-full border border-border/50 shadow-inner">
+                  <Link
+                    to={item.path}
+                    className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-primary text-white hover:bg-primary/90 transition-colors rounded-full shadow-[0_4px_15px_rgba(139,92,246,0.5)]"
+                  >
+                    <Plus size={26} strokeWidth={2.5} />
+                  </Link>
+                </div>
+              </div>
+            );
+          }
+
+          const active = isActive(item.path);
+
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className="relative p-2 flex flex-col items-center justify-center transition-all duration-300 group"
+              title={item.label}
+            >
+              <item.icon 
+                size={22} 
+                strokeWidth={active ? 2.5 : 2}
+                className={cn(
+                  "transition-colors",
+                  active ? "text-primary" : "text-text-muted group-hover:text-text-main"
+                )} 
+              />
+              <AnimatePresence>
+                {active && (
+                  <motion.div 
+                    layoutId="bottom-nav-activeStyle"
+                    className="absolute -bottom-1.5 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(139,92,246,0.6)]"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  />
+                )}
+              </AnimatePresence>
+            </Link>
+          );
+        })}
       </nav>
+
+      {/* Safe Area / iOS Bottom Bar Indicator */}
+      <div className="fixed bottom-1.5 left-1/2 -translate-x-1/2 w-1/3 max-w-[120px] h-1 bg-border/80 rounded-full" />
     </div>
   );
 }

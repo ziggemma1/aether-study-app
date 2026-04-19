@@ -131,17 +131,20 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-20 sm:pb-12">
       {/* Welcome Header */}
-      <div className="space-y-1">
-        <h1 className="text-xl sm:text-2xl font-bold text-text-main tracking-tight">
-          {t('welcome_back')}, <span className="text-primary">{user?.name?.split(' ')[0] || t('student')}</span>!
+      <div className="flex flex-col mb-6 sm:mb-10">
+        <span className="text-xs sm:text-sm font-medium text-text-muted tracking-widest uppercase mb-1 sm:mb-2">
+          {t('welcome_back')}
+        </span>
+        <h1 className="text-4xl sm:text-5xl font-black text-secondary tracking-tight mb-2 pb-1">
+          {user?.name?.split(' ')[0] || t('student')}!
         </h1>
-        <p className="text-text-muted text-xs sm:text-sm max-w-2xl leading-relaxed">
+        <p className="text-text-muted text-sm sm:text-base max-w-2xl leading-relaxed">
           {t('welcome_subtext')}
         </p>
       </div>
 
       {/* 1. Overview Section - Redesigned Widgets */}
-      <section className="space-y-4">
+      <section className="space-y-4 pt-2">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">{t('overview')}</h2>
           <Link to="/reports" className="text-xs font-bold text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">

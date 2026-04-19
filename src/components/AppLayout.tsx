@@ -127,7 +127,7 @@ export default function AppLayout() {
       {/* Main Content Area */}
       <div className="flex-grow relative z-10 lg:ml-64 flex flex-col h-full bg-background transition-all duration-300 ease-out">
         <TopNav onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="max-w-[1600px] w-full mx-auto px-4 md:px-8 pt-16 sm:pt-24 pb-24 sm:pb-10 flex-grow overflow-y-auto scroll-smooth custom-scrollbar select-none overscroll-contain">
+        <main className="max-w-[1600px] w-full mx-auto px-4 md:px-8 pt-24 sm:pt-32 pb-24 sm:pb-10 flex-grow overflow-y-auto scroll-smooth custom-scrollbar select-none overscroll-contain">
           <Outlet />
         </main>
         <BottomNav />
