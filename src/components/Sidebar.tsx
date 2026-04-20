@@ -18,7 +18,15 @@ import {
   User,
   CreditCard,
   FileText,
-  ChevronDown
+  ChevronDown,
+  Youtube,
+  Globe,
+  Mic,
+  Image as ImageIcon,
+  Video,
+  Brain,
+  FileBadge,
+  Headphones
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -32,8 +40,9 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, t } = useAppContext();
+  const { signOut, t, materials } = useAppContext();
   const [isMobile, setIsMobile] = React.useState(false);
+  const [libraryExpanded, setLibraryExpanded] = React.useState(false);
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({
     'Dashboard': true,
     'Learning': true,
@@ -56,6 +65,18 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  const getMaterialCount = (type: string) => {
+    return Array.isArray(materials) ? materials.filter(m => m.type === type).length : 0;
+  };
+
+  const librarySubItems = [
+    { icon: FileBadge, label: 'PDFs', type: 'pdf', count: getMaterialCount('pdf') },
+    { icon: Youtube, label: 'YouTube', type: 'youtube', count: getMaterialCount('youtube') },
+    { icon: Globe, label: 'Articles', type: 'article', count: getMaterialCount('article') },
+    { icon: Headphones, label: 'Audio', type: 'audio', count: getMaterialCount('audio') },
+    { icon: Mic, label: 'Voice Notes', type: 'voicenote', count: getMaterialCount('voicenote') },
+  ];
+
   const navGroups = [
     {
       title: 'Dashboard',
@@ -68,7 +89,13 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     {
       title: 'Learning',
       items: [
-        { icon: Library, label: t('library'), path: '/library' },
+        { 
+          icon: Library, 
+          label: t('library'), 
+          path: '/library',
+          hasSubItems: true,
+          subItems: librarySubItems
+        },
         { icon: FileText, label: t('study_plans'), path: '/plans' },
         { icon: Calendar, label: t('calendar'), path: '/calendar' },
       ]
@@ -148,28 +175,80 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                         transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
                         className="space-y-1 overflow-hidden"
                       >
-                        {group.items.map((item) => (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            onClick={() => setIsOpen(false)}
-                            className={cn(
-                              "flex items-center gap-4 px-6 py-3 rounded-full transition-all duration-200 group relative overflow-hidden",
-                              isActive(item.path)
-                                ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                : "text-text-muted hover:text-text-main hover:bg-primary/5"
+                        {group.items.map((item: any) => (
+                          <div key={item.path} className="space-y-1">
+                            <div className="relative group">
+                              <Link
+                                to={item.path}
+                                onClick={() => setIsOpen(false)}
+                                className={cn(
+                                  "flex items-center gap-4 px-6 py-3 rounded-full transition-all duration-200 relative overflow-hidden",
+                                  isActive(item.path)
+                                    ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                    : "text-text-muted hover:text-text-main hover:bg-primary/5"
+                                )}
+                              >
+                                {!isActive(item.path) && (
+                                  <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                )}
+                                <item.icon size={20} className={cn(
+                                  "transition-colors relative z-10",
+                                  isActive(item.path) ? "text-white" : "text-text-muted group-hover:text-primary"
+                                )} />
+                                <span className="font-semibold text-sm relative z-10">{item.label}</span>
+                                
+                                {item.hasSubItems && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setLibraryExpanded(!libraryExpanded);
+                                    }}
+                                    className="ml-auto relative z-20 p-1 hover:bg-black/10 rounded-md transition-colors"
+                                  >
+                                    <ChevronDown 
+                                      size={14} 
+                                      className={cn(
+                                        "transition-transform duration-200",
+                                        libraryExpanded ? "rotate-180" : "rotate-0"
+                                      )} 
+                                    />
+                                  </button>
+                                )}
+                              </Link>
+                            </div>
+
+                            {/* Library Sub Items */}
+                            {item.hasSubItems && (
+                              <AnimatePresence>
+                                {libraryExpanded && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="ml-10 space-y-1 overflow-hidden border-l border-border/50"
+                                  >
+                                    {item.subItems.map((sub: any) => (
+                                      <Link
+                                        key={sub.type}
+                                        to={`/library?filter=${sub.type}`}
+                                        onClick={() => setIsOpen(false)}
+                                        className="flex items-center justify-between px-4 py-2 text-xs font-medium text-text-muted hover:text-primary hover:bg-primary/5 rounded-r-full transition-all group/sub"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <sub.icon size={14} className="group-hover/sub:scale-110 transition-transform" />
+                                          <span>{sub.label}</span>
+                                        </div>
+                                        <span className="bg-surface-alt px-1.5 py-0.5 rounded-md text-[9px] border border-border group-hover/sub:border-primary/30 transition-colors">
+                                          {sub.count}
+                                        </span>
+                                      </Link>
+                                    ))}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             )}
-                          >
-                            {/* Subtle Background Glow on Hover */}
-                            {!isActive(item.path) && (
-                              <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            )}
-                            <item.icon size={20} className={cn(
-                              "transition-colors relative z-10",
-                              isActive(item.path) ? "text-white" : "text-text-muted group-hover:text-primary"
-                            )} />
-                            <span className="font-semibold text-sm relative z-10">{item.label}</span>
-                          </Link>
+                          </div>
                         ))}
                       </motion.nav>
                     )}
@@ -179,31 +258,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </div>
 
             <div className="my-8 h-px bg-border w-full" />
-
-            <div className="relative rounded-[32px] overflow-hidden group h-40 flex items-center mb-4">
-              <div className="absolute inset-0 z-0">
-                <img 
-                  src="https://picsum.photos/seed/study-premium/400/300" 
-                  alt="Premium Background" 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
-              </div>
-
-              <div className="relative z-10 p-6 w-full">
-                <h4 className="text-lg font-bold text-white mb-1">{t('go_premium')}</h4>
-                <p className="text-[10px] text-slate-300 mb-4 leading-relaxed max-w-[140px]">
-                  {t('go_premium_desc')}
-                </p>
-                <Link 
-                  to="/subscription" 
-                  className="inline-flex items-center justify-center bg-white text-primary hover:bg-slate-50 text-[10px] font-bold py-2 px-6 rounded-xl transition-all shadow-sm"
-                >
-                  {t('get_access')}
-                </Link>
-              </div>
-            </div>
 
             <button 
               onClick={handleLogout}

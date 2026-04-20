@@ -39,7 +39,7 @@ export interface NoteSection {
 export interface Material {
   id: string;
   title: string;
-  type: 'pdf' | 'youtube' | 'article' | 'audio' | 'unified' | 'image' | 'video' | 'note';
+  type: 'pdf' | 'youtube' | 'article' | 'audio' | 'unified' | 'image' | 'video' | 'note' | 'voicenote';
   uploadDate: string;
   summary: string;
   keyTopics: string[];

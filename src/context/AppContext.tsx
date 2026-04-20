@@ -194,20 +194,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!dbError) return;
 
-    console.log('🔄 DB Error detected, starting auto-retry poll...');
     let pollInterval: any;
 
     const checkHealth = async () => {
       try {
         const response = await api.get('/health');
         if (response.data.dbConnected) {
-          console.log('✅ DB is back online! Clearing error...');
           setDbError(null);
           // Gently refresh app state instead of a hard reload
           initialize();
         }
       } catch (err) {
-        console.warn('Polling health check failed, still disconnected.');
+        // Polling failed, still disconnected
       }
     };
 

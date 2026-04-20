@@ -10,26 +10,23 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-// Automatic retry for Network Errors (server still booting)
-if (error.code === 'ERR_NETWORK') {
+// Automatic retry for Network Errors (server still booting or slow network)
+if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
   const retryCount = originalRequest._retryCount || 0;
-  if (retryCount < 20) {
+  if (retryCount < 100) { // Extreme persistence
     originalRequest._retryCount = retryCount + 1;
-    console.warn(`Network error detected. Retry ${originalRequest._retryCount}/20 in 3 seconds...`);
     await new Promise(resolve => setTimeout(resolve, 3000));
     return api(originalRequest);
   }
 }
 
 if (error.response?.status === 503 && error.response?.data?.message?.includes('Database')) {
-  console.error('Database connection error detected.');
   window.dispatchEvent(new CustomEvent('app:db-error', { detail: error.response.data }));
   
-  // If it's a 503 from DB, retry many times to cover cold start (approx 2 mins)
+  // If it's a 503 from DB, retry many times to cover cold start or slow provisioning
   const dbRetryCount = originalRequest._dbRetryCount || 0;
-  if (dbRetryCount < 20) {
+  if (dbRetryCount < 100) {
     originalRequest._dbRetryCount = dbRetryCount + 1;
-    console.warn(`DB not ready. Retry ${originalRequest._dbRetryCount}/20 in 5 seconds...`);
     await new Promise(resolve => setTimeout(resolve, 5000));
     return api(originalRequest);
   }

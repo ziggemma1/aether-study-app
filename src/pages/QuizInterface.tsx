@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy, Sparkles, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { StudyTimer } from '../components/StudyTimer';
 
@@ -11,13 +11,23 @@ import api from '../services/api';
 export default function QuizInterface() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { materials, setQuizResults } = useAppContext();
+  const { materials, setQuizResults, isLoading } = useAppContext();
   const [currentQuestion, setCurrentQuestion] = React.useState(0);
   const [selectedAnswers, setSelectedAnswers] = React.useState<number[]>([]);
   const [isFinished, setIsFinished] = React.useState(false);
   const [score, setScore] = React.useState(0);
 
   const material = materials.find(m => m.id === id);
+
+  if (isLoading && !material) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+        <p className="text-text-muted font-medium">Preparing quiz...</p>
+      </div>
+    );
+  }
+
   const questions = material?.suggestedQuizQuestions || [];
 
   const handleAnswer = (optionIdx: number) => {

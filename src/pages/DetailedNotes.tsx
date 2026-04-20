@@ -13,12 +13,21 @@ import { analyzeStudyMaterialOnClient, generateVisualAidOnClient, generateTopicS
 export default function DetailedNotes() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, materials, setMaterials, showToast, t } = useAppContext();
+  const { user, materials, setMaterials, showToast, t, isLoading } = useAppContext();
   const material = materials.find(m => m.id === id);
 
   const [currentPage, setCurrentPage] = React.useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+
+  if (isLoading && !material) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+        <p className="text-text-muted font-medium">{t('loading_data')}...</p>
+      </div>
+    );
+  }
 
   if (!material) {
     return (

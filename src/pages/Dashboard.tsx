@@ -146,7 +146,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* 1. Overview Section - Redesigned Widgets */}
+      {/* 1. Dashboard Section - Redesigned Widgets */}
       <section className="space-y-4 pt-2">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">{t('overview')}</h2>

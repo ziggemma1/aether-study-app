@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { Search, Filter, Grid, List, FileText, Youtube, BookOpen, Mic, ChevronRight, Check, Calendar as CalendarIcon, CheckCircle2, Layers, Loader2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Search, Filter, Grid, List, FileText, Youtube, BookOpen, Mic, ChevronRight, Check, Calendar as CalendarIcon, CheckCircle2, Layers, Loader2, Headphones } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Material } from '../types';
 import api from '../services/api';
@@ -10,13 +10,22 @@ import api from '../services/api';
 export default function Library() {
   const { materials, savedPlans, setMaterials, showToast, t } = useAppContext();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialFilter = searchParams.get('filter');
+
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [filter, setFilter] = React.useState('All');
+  const [filter, setFilter] = React.useState(initialFilter ? (initialFilter.charAt(0).toUpperCase() + initialFilter.slice(1)) : 'All');
   const [selectedMaterials, setSelectedMaterials] = React.useState<string[]>([]);
   const [activeTab, setActiveTab] = React.useState<'materials' | 'unified' | 'plans'>('materials');
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+
+  React.useEffect(() => {
+    if (initialFilter) {
+      setFilter(initialFilter.charAt(0).toUpperCase() + initialFilter.slice(1));
+    }
+  }, [initialFilter]);
 
   const filteredStandardMaterials = materials.filter(m => {
     if (!m || m.type === 'unified') return false;
@@ -34,14 +43,15 @@ export default function Library() {
     return matchesSearch;
   });
 
-  const filterChips = ['All', 'PDF', 'YouTube', 'Article', 'Audio'];
+  const filterChips = ['All', 'PDF', 'YouTube', 'Article', 'Audio', 'Voice Note'];
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'pdf': return FileText;
       case 'youtube': return Youtube;
       case 'article': return BookOpen;
-      case 'audio': return Mic;
+      case 'audio': return Headphones;
+      case 'voicenote': return Mic;
       case 'unified': return Layers;
       default: return FileText;
     }
