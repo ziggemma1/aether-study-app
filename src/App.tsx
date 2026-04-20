@@ -25,8 +25,10 @@ import UploadMaterial from './pages/UploadMaterial';
 import CurriculumLibrary from './pages/CurriculumLibrary';
 import QuizInterface from './pages/QuizInterface';
 import DetailedNotes from './pages/DetailedNotes';
+import FindFriends from './pages/FindFriends';
 
 export default function App() {
+
   return (
     <AppProvider>
       <Router>
@@ -51,7 +53,9 @@ export default function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/achievements" element={<Achievements />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/community" element={<FindFriends />} />
             <Route path="/settings" element={<Settings />} />
+
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/subscription" element={<SubscriptionManagement />} />
           </Route>

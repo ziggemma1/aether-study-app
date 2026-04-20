@@ -177,13 +177,14 @@ export default function Dashboard() {
               longestStreak={user?.longestStreak && user.longestStreak > (user?.streak || 0) ? user.longestStreak : (user?.streak || 0)} 
             />
           </Link>
-          <Link to="/reports" className="block">
+          <Link to="/community" className="block">
             <RankingCard 
               rank={globalRank} 
               total={allProfiles.length || 1250}
               topLearnersData={topLearners.length > 0 ? topLearners : undefined}
             />
           </Link>
+
         </div>
 
         {/* Recent Materials Section */}

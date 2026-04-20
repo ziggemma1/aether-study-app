@@ -4,7 +4,7 @@ import {
   Home, 
   Workflow, 
   Plus, 
-  BarChart2, 
+  Users, 
   User
 } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -17,9 +17,10 @@ export default function BottomNav() {
     { icon: Home, path: '/dashboard', label: 'Home' },
     { icon: Workflow, path: '/plans', label: 'Plans' },
     { icon: Plus, path: '/upload', isAction: true },
-    { icon: BarChart2, path: '/reports', label: 'Reports' },
+    { icon: Users, path: '/community', label: 'Community' },
     { icon: User, path: '/profile', label: 'Profile' },
   ];
+
 
   const isActive = (path: string) => location.pathname === path;
 

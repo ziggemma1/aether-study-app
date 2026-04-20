@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { User, Material, SavedPlan, Message, StudySession, Achievement, QuizResult, Group } from '../types';
+import { User, Material, SavedPlan, Message, StudySession, Achievement, QuizResult, Group, FriendRequest } from '../types';
 import api from '../services/api';
 import { getSocket, disconnectSocket } from '../services/socket';
 import { translations, Language } from '../lib/translations';
@@ -15,6 +15,8 @@ interface AppContextType {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   groups: Group[];
   setGroups: React.Dispatch<React.SetStateAction<Group[]>>;
+  friendRequests: FriendRequest[];
+  setFriendRequests: React.Dispatch<React.SetStateAction<FriendRequest[]>>;
   studySessions: StudySession[];
   setStudySessions: React.Dispatch<React.SetStateAction<StudySession[]>>;
   achievements: Achievement[];
@@ -36,6 +38,9 @@ interface AppContextType {
   sendMessage: (content: string, receiverId?: string, groupId?: string) => void;
   typingUsers: Record<string, boolean>;
   setTyping: (isTyping: boolean, receiverId?: string, groupId?: string) => void;
+  toggleFollow: (targetUserId: string) => Promise<void>;
+  sendFriendRequest: (receiverId: string) => Promise<void>;
+  respondToFriendRequest: (requestId: string, status: 'accepted' | 'declined') => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -46,10 +51,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -97,6 +104,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user');
     localStorage.removeItem('cached_materials');
   };
+
+  const fetchUserData = useCallback(async () => {
+    try {
+      const response = await api.get('/auth/me');
+      if (response.data) {
+        setUser(response.data);
+        localStorage.setItem('user', JSON.stringify(response.data));
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      console.log('Not authenticated or error checking auth');
+      if (err.response?.status === 401) {
+        setUser(null);
+        localStorage.removeItem('user');
+      }
+      return false;
+    }
+  }, []);
+
+  const toggleFollow = useCallback(async (targetUserId: string) => {
+    try {
+      const res = await api.post(`/users/follow/${targetUserId}`);
+      if (res.data) {
+        setUser(prev => prev ? { ...prev, following: res.data.following, friendsCount: res.data.friendsCount } : null);
+        showToast(res.data.isFollowing ? 'Followed successfully' : 'Unfollowed successfully', 'success');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to toggle follow', 'error');
+    }
+  }, []);
+
+  const sendFriendRequest = useCallback(async (receiverId: string) => {
+    try {
+      const res = await api.post('/users/friend-request', { receiverId });
+      if (res.data) {
+        showToast('Friend request sent!', 'success');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to send friend request', 'error');
+    }
+  }, []);
+
+  const respondToFriendRequest = useCallback(async (requestId: string, status: 'accepted' | 'declined') => {
+    try {
+      const res = await api.post('/users/friend-request/respond', { requestId, status });
+      if (res.data) {
+        setFriendRequests(prev => prev.filter(r => r.id !== requestId));
+        showToast(`Friend request ${status}`, 'success');
+        if (status === 'accepted') {
+          // Re-fetch user data to update friend counts/following
+          fetchUserData();
+        }
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to respond to friend request', 'error');
+    }
+  }, [fetchUserData]);
 
   const sendMessage = useCallback((content: string, receiverId?: string, groupId?: string) => {
     const socket = getSocket(); // Handled by cookie
@@ -159,33 +224,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('app:db-error', handleDbError);
   }, []);
 
-  const fetchUserData = useCallback(async () => {
-    try {
-      const response = await api.get('/auth/me');
-      if (response.data) {
-        setUser(response.data);
-        localStorage.setItem('user', JSON.stringify(response.data));
-        return true;
-      }
-      return false;
-    } catch (err: any) {
-      console.log('Not authenticated or error checking auth');
-      if (err.response?.status === 401) {
-        setUser(null);
-        localStorage.removeItem('user');
-      }
-      return false;
-    }
-  }, []);
-
   const fetchAppData = useCallback(async () => {
+
     const endpoints = [
       { key: 'materials', url: '/materials', setter: setMaterials },
       { key: 'sessions', url: '/sessions', setter: setStudySessions },
       { key: 'quizzes', url: '/quizzes', setter: setQuizResults },
       { key: 'messages', url: '/messages', setter: setMessages },
       { key: 'groups', url: '/groups', setter: setGroups },
-      { key: 'profiles', url: '/users/profiles', setter: setAllProfiles }
+      { key: 'profiles', url: '/users/profiles', setter: setAllProfiles },
+      { key: 'requests', url: '/users/friend-requests', setter: setFriendRequests }
     ];
 
     const mapId = (item: any) => ({ 
@@ -278,6 +326,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMessages,
       groups,
       setGroups,
+      friendRequests,
+      setFriendRequests,
       studySessions,
       setStudySessions,
       achievements,
@@ -298,7 +348,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       t,
       sendMessage,
       typingUsers,
-      setTyping
+      setTyping,
+      toggleFollow,
+      sendFriendRequest,
+      respondToFriendRequest
     }}>
       {children}
     </AppContext.Provider>

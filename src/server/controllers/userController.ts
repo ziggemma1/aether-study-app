@@ -1,17 +1,121 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User.js';
+import { FriendRequest } from '../models/FriendRequest.js';
 
 export const getAllProfiles = async (req: Request, res: Response) => {
   try {
-    const users = await User.find({}).select('name avatar streak following').sort({ streak: -1 });
+    const users = await User.find({}).select('name avatar streak following followers followersCount friendsCount').sort({ streak: -1 });
     res.json(users);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
 
+export const sendFriendRequest = async (req: Request, res: Response) => {
+  try {
+    const { receiverId } = req.body;
+    const senderId = (req as any).userId;
+
+    if (senderId === receiverId) {
+      return res.status(400).json({ message: "You cannot send a friend request to yourself." });
+    }
+
+    // Check if already friends
+    const sender = await User.findById(senderId);
+    if (sender?.following.includes(receiverId)) {
+      // Check if it's already a mutual thing
+      const receiver = await User.findById(receiverId);
+      if (receiver?.following.includes(senderId)) {
+        return res.status(400).json({ message: "You are already friends." });
+      }
+    }
+
+    // Check for existing request
+    const existingRequest = await FriendRequest.findOne({
+      $or: [
+        { senderId, receiverId },
+        { senderId: receiverId, receiverId: senderId }
+      ]
+    });
+
+    if (existingRequest) {
+      if (existingRequest.status === 'pending') {
+        return res.status(400).json({ message: "A friend request is already pending." });
+      }
+      if (existingRequest.status === 'accepted') {
+        return res.status(400).json({ message: "You are already friends." });
+      }
+    }
+
+    const request = new FriendRequest({ senderId, receiverId, status: 'pending' });
+    await request.save();
+
+    res.status(201).json(request);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getFriendRequests = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const requests = await FriendRequest.find({ 
+      receiverId: userId, 
+      status: 'pending' 
+    }).populate('senderId', 'name avatar streak');
+    
+    res.json(requests);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const respondToFriendRequest = async (req: Request, res: Response) => {
+  try {
+    const { requestId, status } = req.body; // 'accepted' or 'declined'
+    const userId = (req as any).userId;
+
+    const request = await FriendRequest.findById(requestId);
+    if (!request || request.receiverId !== userId) {
+      return res.status(404).json({ message: "Friend request not found." });
+    }
+
+    request.status = status;
+    await request.save();
+
+    if (status === 'accepted') {
+      const sender = await User.findById(request.senderId);
+      const receiver = await User.findById(request.receiverId);
+
+      if (sender && receiver) {
+        // Mutual follow for friendship
+        if (!sender.following.includes(receiver.id)) {
+          sender.following.push(receiver.id);
+          receiver.followers.push(sender.id);
+        }
+        if (!receiver.following.includes(sender.id)) {
+          receiver.following.push(sender.id);
+          sender.followers.push(receiver.id);
+        }
+
+        sender.friendsCount = sender.following.length;
+        receiver.friendsCount = receiver.following.length;
+        sender.followersCount = sender.followers.length;
+        receiver.followersCount = receiver.followers.length;
+
+        await sender.save();
+        await receiver.save();
+      }
+    }
+
+    res.json({ message: `Request ${status}`, request });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export const toggleFollow = async (req: Request, res: Response) => {
+
   try {
     const targetUserId = req.params.id;
     const currentUserId = (req as any).userId;

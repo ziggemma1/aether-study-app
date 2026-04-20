@@ -19,7 +19,13 @@ import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 export default function Profile() {
-  const { user, t, materials, achievements } = useAppContext();
+  const { 
+    user, 
+    t, 
+    materials, 
+    achievements, 
+    sendFriendRequest 
+  } = useAppContext();
 
   // DERIVED DATA: Learning progress based on real subject materials
   const subjectProgress = React.useMemo(() => {
@@ -120,12 +126,18 @@ export default function Profile() {
               </div>
 
               <div className="flex gap-2 justify-center sm:justify-start">
-                <button className="btn-primary px-6 py-2 sm:px-8 sm:py-3 shadow-lg shadow-primary/20 text-xs sm:text-base">Follow</button>
+                <button 
+                  onClick={() => user && sendFriendRequest(user.id)}
+                  className="btn-primary px-6 py-2 sm:px-8 sm:py-3 shadow-lg shadow-primary/20 text-xs sm:text-base"
+                >
+                  Add Friend
+                </button>
                 <button className="p-2 sm:p-3 bg-surface-alt/50 border border-border rounded-xl sm:rounded-2xl text-text-main hover:bg-surface-alt transition-all">
                   <MessageSquare size={18} className="sm:hidden" />
                   <MessageSquare size={22} className="hidden sm:block" />
                 </button>
               </div>
+
             </div>
 
             {/* Social Stats - Social Media Style */}

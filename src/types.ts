@@ -23,11 +23,21 @@ export interface User {
   longestStreak?: number;
   weeklyTimeData?: { day: string; hours: number }[];
   points: number;
+  followers?: string[];
   followersCount: number;
   friendsCount: number;
   following?: string[];
   achievements: Achievement[];
 }
+
+export interface FriendRequest {
+  id: string;
+  senderId: any; // Can be string or User depending on populate
+  receiverId: string;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: string;
+}
+
 
 export interface NoteSection {
   heading: string;

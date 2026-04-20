@@ -103,12 +103,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     {
       title: 'Social & Account',
       items: [
+        { icon: Users, label: 'Community', path: '/community' },
         { icon: MessageSquare, label: t('messages'), path: '/messages' },
         { icon: User, label: t('profile'), path: '/profile' },
         { icon: CreditCard, label: t('subscription'), path: '/subscription' },
         { icon: Settings, label: t('settings'), path: '/settings' },
       ]
     }
+
   ];
 
   const isActive = (path: string) => location.pathname === path;
