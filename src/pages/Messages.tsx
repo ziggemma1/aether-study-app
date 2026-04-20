@@ -20,6 +20,8 @@ import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import api from '../services/api';
 import { motion, AnimatePresence } from 'motion/react';
+import { Link } from 'react-router-dom';
+
 
 const suggestedFriends = [
   { id: '101', name: 'Sarah Jenkins', school: 'Lagos State University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
@@ -29,7 +31,19 @@ const suggestedFriends = [
 ];
 
 export default function Messages() {
-  const { messages, user, groups, setGroups, typingUsers, sendMessage, setTyping, allProfiles, isLoading: isLoadingProfiles } = useAppContext();
+  const { 
+    messages, 
+    user, 
+    groups, 
+    setGroups, 
+    typingUsers, 
+    sendMessage, 
+    setTyping, 
+    allProfiles, 
+    friendRequests,
+    isLoading: isLoadingProfiles 
+  } = useAppContext();
+
   const [activeTab, setActiveTab] = useState<'chats' | 'friends' | 'groups'>('chats');
   const [selectedChat, setSelectedChat] = useState<{ id: string, type: 'private' | 'group', name: string, avatar: string } | null>(null);
   const [showChatMobile, setShowChatMobile] = useState(false);
@@ -162,6 +176,18 @@ export default function Messages() {
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <h1 className="text-xl sm:text-2xl font-bold text-text-main">Messages</h1>
             <div className="flex gap-2">
+              <Link
+                to="/community"
+                title="Friend Requests"
+                className="relative p-1.5 sm:p-2 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white rounded-xl transition-all border border-secondary/20"
+              >
+                <UserPlus size={18} />
+                {friendRequests.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-surface animate-pulse">
+                    {friendRequests.length}
+                  </span>
+                )}
+              </Link>
               <button 
                 onClick={() => setShowCreateGroup(true)}
                 title="Create Group"
@@ -170,6 +196,7 @@ export default function Messages() {
                 <Users size={18} />
               </button>
             </div>
+
           </div>
 
           <AnimatePresence>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Bell, Check, Trash2, Clock, Info, AlertCircle, Sparkles } from 'lucide-react';
+import { Bell, Check, Trash2, Clock, Info, AlertCircle, Sparkles, UserPlus, X } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAppContext } from '../context/AppContext';
 
 interface Notification {
   id: number;
@@ -13,54 +14,42 @@ interface Notification {
 }
 
 const initialNotifications: Notification[] = [
-  {
-    id: 1,
-    title: 'New Study Material',
-    message: 'Dr. Adebayo uploaded "Advanced Calculus - Week 4" to your Math course.',
-    time: '2 minutes ago',
-    type: 'info',
-    read: false,
-  },
-  {
-    id: 2,
-    title: 'AI Insight Ready',
-    message: 'Your new AI summary for Physics notes is ready.',
-    time: '1 hour ago',
-    type: 'ai',
-    read: false,
-  },
-  {
-    id: 3,
-    title: 'Quiz Completed',
-    message: 'You scored 92% on the Organic Chemistry practice quiz! Great job.',
-    time: '3 hours ago',
-    type: 'success',
-    read: true,
-  },
-  {
-    id: 4,
-    title: 'Subscription Renewal',
-    message: 'Your premium subscription will renew in 3 days.',
-    time: '1 day ago',
-    type: 'warning',
-    read: true,
-  },
-  {
-    id: 5,
-    title: 'Welcome to Aether Study',
-    message: 'Start by uploading your first study material to see the magic happen.',
-    time: '2 days ago',
-    type: 'info',
-    read: true,
-  },
+  // ... (keeping them as fallback)
 ];
 
 export default function Notifications() {
-  const [notifications, setNotifications] = React.useState<Notification[]>(initialNotifications);
+  const { friendRequests, respondToFriendRequest, t } = useAppContext();
+  const [notifications, setNotifications] = React.useState<Notification[]>([
+    {
+      id: 1,
+      title: 'New Study Material',
+      message: 'Dr. Adebayo uploaded "Advanced Calculus - Week 4" to your Math course.',
+      time: '2 minutes ago',
+      type: 'info',
+      read: false,
+    },
+    {
+      id: 2,
+      title: 'AI Insight Ready',
+      message: 'Your new AI summary for Physics notes is ready.',
+      time: '1 hour ago',
+      type: 'ai',
+      read: false,
+    },
+    {
+      id: 3,
+      title: 'Quiz Completed',
+      message: 'You scored 92% on the Organic Chemistry practice quiz! Great job.',
+      time: '3 hours ago',
+      type: 'success',
+      read: true,
+    }
+  ]);
 
   const markAsRead = (id: number) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
+
 
   const deleteNotification = (id: number) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -100,9 +89,59 @@ export default function Notifications() {
       </div>
 
       <div className="glass-card overflow-hidden border-border/30">
-        {notifications.length > 0 ? (
+        {(notifications.length > 0 || friendRequests.length > 0) ? (
           <div className="divide-y divide-border/30">
+            {/* Friend Requests */}
+            <AnimatePresence>
+              {friendRequests.map((req) => (
+                <motion.div 
+                  layout
+                  key={req.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="p-4 sm:p-6 flex items-start gap-3 sm:gap-4 transition-all bg-primary/5 hover:bg-primary/10 group"
+                >
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                    <UserPlus size={16} className="sm:hidden" />
+                    <UserPlus size={20} className="hidden sm:block" />
+                  </div>
+
+                  <div className="flex-grow min-w-0">
+                    <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+                      <h3 className="text-xs sm:text-base font-bold text-text-main truncate">
+                        Friend Request
+                      </h3>
+                      <span className="text-[8px] sm:text-[10px] font-medium text-text-muted flex items-center gap-1 shrink-0">
+                        <Clock size={8} className="sm:hidden" />
+                        <Clock size={10} className="hidden sm:block" /> Recently
+                      </span>
+                    </div>
+                    <p className="text-[10px] sm:text-sm text-text-muted leading-relaxed">
+                      <span className="font-bold text-text-main">{req.senderId?.name || 'Someone'}</span> wants to be friends with you.
+                    </p>
+                    <div className="flex gap-2 mt-3">
+                      <button 
+                        onClick={() => respondToFriendRequest(req.id, 'accepted')}
+                        className="px-4 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+                      >
+                        <Check size={12} /> Accept
+                      </button>
+                      <button 
+                        onClick={() => respondToFriendRequest(req.id, 'declined')}
+                        className="px-4 py-1.5 bg-surface-alt text-text-muted text-[10px] font-bold rounded-lg hover:bg-surface-alt/80 transition-colors flex items-center gap-2"
+                      >
+                        <X size={12} /> Decline
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {/* Standard Notifications */}
             {notifications.map((notification) => (
+
               <motion.div 
                 layout
                 key={notification.id}
