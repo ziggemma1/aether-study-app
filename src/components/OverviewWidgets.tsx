@@ -162,16 +162,56 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
 }
 
 export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentStreak?: number, longestStreak?: number }) {
-  const { t } = useAppContext();
+  const { t, studySessions } = useAppContext();
+  
+  // Create a fast lookup Set of normalized date strings where the user actually completed a session
+  const studiedDates = new Set();
+  studySessions?.forEach(session => {
+    if (session.completed && session.startTime) {
+      const d = new Date(session.startTime);
+      const normalizedString = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      studiedDates.add(normalizedString);
+    }
+  });
+
+  // Dynamically calculate true current streak based on real data
+  let realCurrentStreak = 0;
+  const today = new Date();
+  
+  // Calculate backwards. Stop when a day is entirely missed. (Forgive today if they haven't studied yet, but studied yesterday).
+  for (let i = 0; i < 365; i++) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    
+    if (studiedDates.has(dateStr)) {
+      realCurrentStreak++;
+    } else if (i === 0) {
+      // It's today, they might just study later today. We don't break the streak yet.
+    } else {
+      break; // The streak is broken
+    }
+  }
+
+  // Use the calculated real streak if it's higher than the static user property, or if user property is 0
+  const finalCurrentStreak = Math.max(currentStreak, realCurrentStreak);
+  const finalLongestStreak = Math.max(longestStreak, finalCurrentStreak);
+
   // Real life functional day generation based on the actual calendar week
   const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const todayIndex = new Date().getDay();
+  const todayIndex = today.getDay();
   
   // Get the last 5 days strictly wrapping around standard calendar indices
   const displayDays = Array.from({ length: 5 }, (_, i) => {
     const historicalIndex = (todayIndex - 4 + i + 7) % 7;
-    // Assuming if the current streak covers this day looking backwards, it's 'active'
-    const isActive = (4 - i) < currentStreak;
+    
+    const dateToCheck = new Date();
+    dateToCheck.setDate(today.getDate() - (4 - i));
+    const dateStr = dateToCheck.getFullYear() + '-' + String(dateToCheck.getMonth() + 1).padStart(2, '0') + '-' + String(dateToCheck.getDate()).padStart(2, '0');
+
+    // Make active if the user explicitly studied on this day, OR if the generic fallback logic applies
+    const isActive = studiedDates.has(dateStr) || ((4 - i) < finalCurrentStreak && studiedDates.size === 0);
+
     return {
       label: daysOfWeek[historicalIndex],
       active: isActive
@@ -189,14 +229,14 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
       </div>
 
       <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">{currentStreak} {t('days_label')}</span>
+        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">{finalCurrentStreak} {t('days_label')}</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
 
       <div className="flex justify-between text-[10px] sm:text-xs font-medium text-text-muted mb-2 sm:mb-4">
         <span>{t('longest')}</span>
-        <span className="text-text-main font-semibold">{longestStreak}d</span>
+        <span className="text-text-main font-semibold">{finalLongestStreak}d</span>
       </div>
 
       <div className="overflow-hidden flex-grow flex items-end">

@@ -221,14 +221,14 @@ export default function UploadMaterial() {
   ];
 
   return (
-    <div className="p-3 sm:p-8 lg:p-12 max-w-3xl mx-auto pb-24">
-      <header className="mb-6 sm:mb-12 text-center">
+    <div className="p-3 sm:p-8 lg:p-12 w-full max-w-full lg:max-w-3xl mx-auto pb-40 lg:pb-12 overflow-x-hidden box-border">
+      <header className="mb-6 sm:mb-12 text-center w-full">
         <h1 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2 text-text-main">Upload Material</h1>
         <p className="text-[10px] sm:text-base text-text-muted">Upload a file, paste a link, or scan your notes.</p>
       </header>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 mb-6 sm:mb-10 overflow-x-auto custom-scrollbar pb-2">
+      <div className="flex items-center gap-2 mb-6 sm:mb-10 overflow-x-auto overflow-y-hidden custom-scrollbar pb-2 sm:pb-3 px-1 w-full max-w-full">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -242,7 +242,7 @@ export default function UploadMaterial() {
               setImagePreview(null);
             }}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap border border-border shadow-sm",
+              "flex flex-shrink-0 items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap border border-border shadow-sm",
               activeTab === tab.id
                 ? "bg-primary text-white shadow-md border-primary"
                 : "bg-surface text-text-muted hover:bg-surface/80 hover:border-primary/30"
@@ -256,7 +256,7 @@ export default function UploadMaterial() {
       </div>
 
       {/* Upload Area */}
-      <div className="glass-card p-6 sm:p-12">
+      <div className="glass-card p-4 sm:p-6 md:p-12 w-full max-w-full overflow-hidden box-border">
         {isSuccess ? (
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -321,9 +321,9 @@ export default function UploadMaterial() {
                 {!imagePreview ? (
                   <div 
                     onClick={() => ocrInputRef.current?.click()}
-                    className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50"
+                    className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-6 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50 w-full max-w-full overflow-hidden break-words box-border"
                   >
-                    <Camera className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4" />
+                    <Camera className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4 shrink-0" />
                     <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">📸 Scan Notes</h3>
                     <p className="text-[10px] sm:text-sm text-text-muted">Take a photo of your notes</p>
                     <input 
@@ -390,14 +390,14 @@ export default function UploadMaterial() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Biology Chapter 1"
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none"
+                    className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none"
                   />
                 </div>
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50"
+                  className="border-2 border-dashed border-primary/20 rounded-xl sm:rounded-2xl p-6 sm:p-12 text-center hover:bg-primary/5 transition-colors cursor-pointer relative bg-surface/50 w-full max-w-full overflow-hidden break-words box-border"
                 >
-                  <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4" />
+                  <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4 shrink-0" />
                   <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">Upload PDF / Text</h3>
                   <p className="text-[10px] sm:text-sm text-text-muted">Max file size: 20MB</p>
                   <input 
@@ -409,14 +409,14 @@ export default function UploadMaterial() {
                   />
                   {isPdfProcessing ? (
                     <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2">
-                      <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                      <Loader2 className="w-6 h-6 text-primary animate-spin shrink-0" />
                       <p className="text-[10px] sm:text-xs font-medium text-text-muted">Extracting text from PDF...</p>
                     </div>
                   ) : (
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleUpload(title, 'pdf', content); }} 
                       disabled={!title || !content}
-                      className="mt-6 sm:mt-8 btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                      className="mt-6 sm:mt-8 btn-primary w-full sm:w-auto py-2 sm:py-3 px-4 text-xs sm:text-sm disabled:opacity-50 whitespace-normal h-auto break-words"
                     >
                       {content ? 'Process Selected File' : 'Select File'}
                     </button>
@@ -434,13 +434,13 @@ export default function UploadMaterial() {
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://youtube.com/..."
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none placeholder:text-text-muted"
+                    className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none placeholder:text-text-muted"
                   />
                 </div>
                 <button 
                   onClick={() => handleUpload('YouTube Video', 'youtube')} 
                   disabled={!url}
-                  className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                  className="w-full box-border btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
                 >
                   Process Video
                 </button>
@@ -456,13 +456,13 @@ export default function UploadMaterial() {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Paste article content..."
-                    className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none resize-none placeholder:text-text-muted"
+                    className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none resize-none placeholder:text-text-muted"
                   />
                 </div>
                 <button 
                   onClick={() => handleUpload('Article Summary', 'article', content)} 
                   disabled={!content}
-                  className="w-full btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                  className="w-full box-border btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
                 >
                   Summarize
                 </button>

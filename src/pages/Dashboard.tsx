@@ -135,8 +135,11 @@ export default function Dashboard() {
         <span className="text-xs sm:text-sm font-medium text-text-muted tracking-widest uppercase mb-1 sm:mb-2">
           {t('welcome_back')}
         </span>
-        <h1 className="text-4xl sm:text-5xl font-black text-secondary tracking-tight mb-2 pb-1">
-          {user?.name?.split(' ')[0] || t('student')}!
+        <h1 
+          className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 pb-1"
+          style={{ color: 'var(--primary)' }}
+        >
+          {user?.name?.split(' ')[0] || t('student')}
         </h1>
         <p className="text-text-muted text-sm sm:text-base max-w-2xl leading-relaxed">
           {t('welcome_subtext')}

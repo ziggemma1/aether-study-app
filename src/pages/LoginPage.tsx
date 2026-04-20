@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Github, Chrome, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Github, Chrome, ArrowLeft, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const { setUser } = useAppContext();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<React.ReactNode | null>(null);
 
@@ -154,14 +155,23 @@ export default function LoginPage() {
                 </label>
                 <Link to="/reset-password" title="Reset Password" className="text-xs text-primary font-bold hover:underline">Forgot?</Link>
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <div className="space-y-4">
               <button 

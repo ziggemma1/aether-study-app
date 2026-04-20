@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User as UserIcon, ArrowRight, Github, Chrome, ArrowLeft, Loader2 } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, ArrowRight, Github, Chrome, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [fullName, setFullName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<React.ReactNode | null>(null);
 
@@ -28,6 +29,13 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address format.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -157,14 +165,23 @@ export default function SignupPage() {
               <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
                 <Lock size={16} /> Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <div className="pt-4 space-y-4">
               <button 
