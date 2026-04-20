@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   streakTrend: { type: Number, default: 0 },
   curriculum: { type: String, default: 'General' },
   language: { type: String, default: 'English (US)' },
+  country: { type: String, default: '' },
   bio: { type: String, default: '' },
   location: { type: String, default: '' },
   handle: { type: String, unique: true, sparse: true },

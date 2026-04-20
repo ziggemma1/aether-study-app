@@ -1,10 +1,22 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User as UserIcon, ArrowRight, Github, Chrome, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, ArrowRight, Github, Chrome, ArrowLeft, Loader2, Eye, EyeOff, Globe } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
+
+const countries = [
+  { name: 'China', flag: '🇨🇳', lang: 'Chinese' },
+  { name: 'India', flag: '🇮🇳', lang: 'English (UK)' },
+  { name: 'Indonesia', flag: '🇮🇩', lang: 'Indonesia' },
+  { name: 'Philippines', flag: '🇵🇭', lang: 'English (US)' },
+  { name: 'United States', flag: '🇺🇸', lang: 'English (US)' },
+  { name: 'United Kingdom', flag: '🇬🇧', lang: 'English (UK)' },
+  { name: 'Malaysia', flag: '🇲🇾', lang: 'English (US)' },
+  { name: 'Singapore', flag: '🇸🇬', lang: 'English (US)' },
+  { name: 'Nigeria', flag: '🇳🇬', lang: 'English (US)' },
+];
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -12,6 +24,8 @@ export default function SignupPage() {
   const [fullName, setFullName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [country, setCountry] = React.useState('');
+  const [language, setLanguage] = React.useState('English (US)');
   const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<React.ReactNode | null>(null);
@@ -43,7 +57,9 @@ export default function SignupPage() {
       const response = await api.post('/auth/register', { 
         name: fullName, 
         email, 
-        password 
+        password,
+        country,
+        language
       });
       setUser(response.data.user);
       navigate('/dashboard');
@@ -183,6 +199,37 @@ export default function SignupPage() {
                 </button>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <Globe size={16} /> Country
+              </label>
+              <select
+                value={country}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCountry(val);
+                  const selected = countries.find(c => c.name === val);
+                  if (selected) {
+                    if (['India', 'Indonesia', 'China'].includes(selected.name)) {
+                      setLanguage(selected.lang);
+                    } else {
+                      setLanguage('English (US)');
+                    }
+                  }
+                }}
+                required
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white outline-none focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer"
+              >
+                <option value="" disabled className="bg-slate-900">Select your country</option>
+                {countries.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
+                  <option key={c.name} value={c.name} className="bg-slate-900 text-white">
+                    {c.flag} {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="pt-4 space-y-4">
               <button 
                 type="submit" 

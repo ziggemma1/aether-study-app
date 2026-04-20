@@ -17,7 +17,8 @@ import {
   ArrowRight,
   User,
   CreditCard,
-  FileText
+  FileText,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -33,6 +34,18 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const navigate = useNavigate();
   const { signOut, t } = useAppContext();
   const [isMobile, setIsMobile] = React.useState(false);
+  const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({
+    'Dashboard': true,
+    'Learning': true,
+    'Social & Account': true
+  });
+
+  const toggleGroup = (title: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }));
+  };
 
   React.useEffect(() => {
     const checkMobile = () => {
@@ -43,17 +56,32 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const navItems = [
-    { icon: LayoutDashboard, label: t('overview'), path: '/dashboard' },
-    { icon: Library, label: t('library'), path: '/library' },
-    { icon: MessageSquare, label: t('messages'), path: '/messages' },
-    { icon: Calendar, label: t('calendar'), path: '/calendar' },
-    { icon: FileText, label: t('study_plans'), path: '/plans' },
-    { icon: BarChart3, label: t('reports'), path: '/reports' },
-    { icon: Award, label: t('achievements'), path: '/achievements' },
-    { icon: User, label: t('profile'), path: '/profile' },
-    { icon: CreditCard, label: t('subscription'), path: '/subscription' },
-    { icon: Settings, label: t('settings'), path: '/settings' },
+  const navGroups = [
+    {
+      title: 'Dashboard',
+      items: [
+        { icon: LayoutDashboard, label: t('overview'), path: '/dashboard' },
+        { icon: BarChart3, label: t('reports'), path: '/reports' },
+        { icon: Award, label: t('achievements'), path: '/achievements' },
+      ]
+    },
+    {
+      title: 'Learning',
+      items: [
+        { icon: Library, label: t('library'), path: '/library' },
+        { icon: FileText, label: t('study_plans'), path: '/plans' },
+        { icon: Calendar, label: t('calendar'), path: '/calendar' },
+      ]
+    },
+    {
+      title: 'Social & Account',
+      items: [
+        { icon: MessageSquare, label: t('messages'), path: '/messages' },
+        { icon: User, label: t('profile'), path: '/profile' },
+        { icon: CreditCard, label: t('subscription'), path: '/subscription' },
+        { icon: Settings, label: t('settings'), path: '/settings' },
+      ]
+    }
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -94,31 +122,61 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               <span className="text-lg font-bold text-text-main tracking-tight">Aether Study</span>
             </Link>
 
-            <nav className="space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "flex items-center gap-4 px-6 py-3.5 rounded-full transition-all duration-200 group relative overflow-hidden",
-                    isActive(item.path)
-                      ? "bg-primary text-white shadow-lg shadow-primary/20"
-                      : "text-text-muted hover:text-text-main hover:bg-primary/5"
-                  )}
-                >
-                  {/* Subtle Background Glow on Hover */}
-                  {!isActive(item.path) && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  )}
-                  <item.icon size={22} className={cn(
-                    "transition-colors relative z-10",
-                    isActive(item.path) ? "text-white" : "text-text-muted group-hover:text-primary"
-                  )} />
-                  <span className="font-semibold text-sm relative z-10">{item.label}</span>
-                </Link>
+            <div className="space-y-6">
+              {navGroups.map((group) => (
+                <div key={group.title} className="space-y-2">
+                  <button 
+                    onClick={() => toggleGroup(group.title)}
+                    className="w-full flex items-center justify-between px-6 text-[11px] font-bold text-text-muted uppercase tracking-widest hover:text-text-main transition-colors group/header"
+                  >
+                    <span>{group.title}</span>
+                    <ChevronDown 
+                      size={14} 
+                      className={cn(
+                        "transition-transform duration-300",
+                        expandedGroups[group.title] ? "rotate-0" : "-rotate-90"
+                      )} 
+                    />
+                  </button>
+                  
+                  <AnimatePresence initial={false}>
+                    {expandedGroups[group.title] && (
+                      <motion.nav 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                        className="space-y-1 overflow-hidden"
+                      >
+                        {group.items.map((item) => (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setIsOpen(false)}
+                            className={cn(
+                              "flex items-center gap-4 px-6 py-3 rounded-full transition-all duration-200 group relative overflow-hidden",
+                              isActive(item.path)
+                                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                : "text-text-muted hover:text-text-main hover:bg-primary/5"
+                            )}
+                          >
+                            {/* Subtle Background Glow on Hover */}
+                            {!isActive(item.path) && (
+                              <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            )}
+                            <item.icon size={20} className={cn(
+                              "transition-colors relative z-10",
+                              isActive(item.path) ? "text-white" : "text-text-muted group-hover:text-primary"
+                            )} />
+                            <span className="font-semibold text-sm relative z-10">{item.label}</span>
+                          </Link>
+                        ))}
+                      </motion.nav>
+                    )}
+                  </AnimatePresence>
+                </div>
               ))}
-            </nav>
+            </div>
 
             <div className="my-8 h-px bg-border w-full" />
 

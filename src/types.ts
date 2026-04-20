@@ -6,6 +6,7 @@ export interface User {
   streak: number;
   curriculum: string;
   language: string;
+  country: string;
   plan: 'free' | 'pro';
   bio?: string;
   location?: string;

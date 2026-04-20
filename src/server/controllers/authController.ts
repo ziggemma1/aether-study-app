@@ -13,7 +13,7 @@ const getJwtSecret = () => {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, country, language } = req.body;
     const normalizedEmail = email.toLowerCase();
     
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -21,7 +21,13 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const user = new User({ name, email: normalizedEmail, password });
+    const user = new User({ 
+      name, 
+      email: normalizedEmail, 
+      password,
+      country: country || '',
+      language: language || 'English (US)'
+    });
     await user.save();
 
     const token = jwt.sign({ id: user._id }, getJwtSecret(), { expiresIn: '7d' });
@@ -52,7 +58,9 @@ export const register = async (req: Request, res: Response) => {
         achievements: user.achievements || [],
         bio: user.bio || '',
         location: user.location || '',
-        handle: user.handle || ''
+        handle: user.handle || '',
+        country: user.country || '',
+        language: user.language || 'English (US)'
       }
     });
   } catch (error: any) {
@@ -112,7 +120,9 @@ export const login = async (req: Request, res: Response) => {
         achievements: user.achievements || [],
         bio: user.bio || '',
         location: user.location || '',
-        handle: user.handle || ''
+        handle: user.handle || '',
+        country: user.country || '',
+        language: user.language || 'English (US)'
       }
     });
   } catch (error: any) {
@@ -153,6 +163,7 @@ export const getMe = async (req: Request, res: Response) => {
       weeklyTimeData: user.weeklyTimeData,
       curriculum: user.curriculum,
       language: user.language,
+      country: user.country || '',
       plan: user.plan,
       points: user.points || 0,
       followersCount: user.followersCount || 0,
