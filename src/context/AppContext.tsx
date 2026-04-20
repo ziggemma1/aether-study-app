@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { User, Material, SavedPlan, Message, StudySession, Achievement, QuizResult } from '../types';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import { User, Material, SavedPlan, Message, StudySession, Achievement, QuizResult, Group } from '../types';
 import api from '../services/api';
+import { getSocket, disconnectSocket } from '../services/socket';
 import { translations, Language } from '../lib/translations';
 
 interface AppContextType {
@@ -12,6 +13,8 @@ interface AppContextType {
   setSavedPlans: React.Dispatch<React.SetStateAction<SavedPlan[]>>;
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  groups: Group[];
+  setGroups: React.Dispatch<React.SetStateAction<Group[]>>;
   studySessions: StudySession[];
   setStudySessions: React.Dispatch<React.SetStateAction<StudySession[]>>;
   achievements: Achievement[];
@@ -30,6 +33,9 @@ interface AppContextType {
   showToast: (text: string, type?: 'success' | 'error') => void;
   toast: { text: string, type: 'success' | 'error' } | null;
   t: (key: string, params?: Record<string, string | number>) => string;
+  sendMessage: (content: string, receiverId?: string, groupId?: string) => void;
+  typingUsers: Record<string, boolean>;
+  setTyping: (isTyping: boolean, receiverId?: string, groupId?: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -39,6 +45,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
@@ -47,6 +54,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [dbError, setDbError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [toast, setToast] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToast({ text, type });
@@ -81,12 +89,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setMaterials([]);
     setSavedPlans([]);
     setMessages([]);
+    setGroups([]);
     setStudySessions([]);
     setAchievements([]);
     setQuizResults([]);
+    disconnectSocket();
     localStorage.removeItem('user');
     localStorage.removeItem('cached_materials');
   };
+
+  const sendMessage = useCallback((content: string, receiverId?: string, groupId?: string) => {
+    const socket = getSocket("temp"); // Handled by cookie
+    if (socket) {
+      socket.emit("send_message", { content, receiverId, groupId });
+    }
+  }, []);
+
+  const setTyping = useCallback((isTyping: boolean, receiverId?: string, groupId?: string) => {
+    const socket = getSocket("temp");
+    if (socket) {
+      socket.emit("typing", { isTyping, receiverId, groupId });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      const socket = getSocket("temp");
+      if (socket) {
+        socket.on("new_message", (message: Message) => {
+          setMessages(prev => [...prev, { ...message, id: message.id || (message as any)._id }]);
+          
+          // Show toast if not current recipient (simple logic for now)
+          if (message.senderId !== user.id) {
+            showToast(`New message from ${message.senderId}`, 'success');
+          }
+        });
+
+        socket.on("typing_update", (data: { userId: string, isTyping: boolean, groupId?: string }) => {
+          setTypingUsers(prev => ({
+            ...prev,
+            [data.groupId || data.userId]: data.isTyping
+          }));
+        });
+
+        // Join rooms for user groups
+        groups.forEach(g => {
+          socket.emit("join_group", g.id);
+        });
+
+        return () => {
+          socket.off("new_message");
+          socket.off("typing_update");
+        };
+      }
+    }
+  }, [user, groups]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -102,7 +159,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('app:db-error', handleDbError);
   }, []);
 
-  const fetchUserData = React.useCallback(async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const response = await api.get('/auth/me');
       if (response.data) {
@@ -113,7 +170,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return false;
     } catch (err: any) {
       console.log('Not authenticated or error checking auth');
-      // Only clear user on definitive 401 Unauthorized
       if (err.response?.status === 401) {
         setUser(null);
         localStorage.removeItem('user');
@@ -122,12 +178,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const fetchAppData = React.useCallback(async () => {
+  const fetchAppData = useCallback(async () => {
     const endpoints = [
       { key: 'materials', url: '/materials', setter: setMaterials },
       { key: 'sessions', url: '/sessions', setter: setStudySessions },
       { key: 'quizzes', url: '/quizzes', setter: setQuizResults },
       { key: 'messages', url: '/messages', setter: setMessages },
+      { key: 'groups', url: '/groups', setter: setGroups },
       { key: 'profiles', url: '/users/profiles', setter: setAllProfiles }
     ];
 
@@ -144,7 +201,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (Array.isArray(res.data)) {
             const mapped = res.data.map(mapId);
             setter(mapped);
-            // Persistent cache for materials to prevent flicker
             if (url === '/materials') {
               localStorage.setItem('cached_materials', JSON.stringify(mapped));
             }
@@ -158,8 +214,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const initialize = React.useCallback(async () => {
-    // Try to load from cache first for immediate UI responsiveness
+  const initialize = useCallback(async () => {
     const cachedUser = localStorage.getItem('user');
     const cachedMaterials = localStorage.getItem('cached_materials');
     
@@ -184,39 +239,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (isAuthed) {
       await fetchAppData();
     } else if (!localStorage.getItem('user')) {
-      // If we are definitely not authed and have no cache, clear state
       setMaterials([]);
     }
     setIsLoading(false);
   }, [fetchUserData, fetchAppData]);
 
-  // Auto-retry polling when DB error exists
   useEffect(() => {
     if (!dbError) return;
-
     let pollInterval: any;
-
     const checkHealth = async () => {
       try {
         const response = await api.get('/health');
         if (response.data.dbConnected) {
           setDbError(null);
-          // Gently refresh app state instead of a hard reload
           initialize();
         }
-      } catch (err) {
-        // Polling failed, still disconnected
-      }
+      } catch (err) {}
     };
-
-    pollInterval = setInterval(checkHealth, 3000); // Check every 3 seconds
-
+    pollInterval = setInterval(checkHealth, 3000);
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
   }, [dbError, initialize]);
 
-  // Check auth on mount
   useEffect(() => {
     initialize();
   }, [initialize]);
@@ -231,6 +276,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSavedPlans,
       messages,
       setMessages,
+      groups,
+      setGroups,
       studySessions,
       setStudySessions,
       achievements,
@@ -248,7 +295,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       signOut,
       showToast,
       toast,
-      t
+      t,
+      sendMessage,
+      typingUsers,
+      setTyping
     }}>
       {children}
     </AppContext.Provider>

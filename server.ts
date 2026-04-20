@@ -13,13 +13,20 @@ import sessionRoutes from "./src/server/routes/sessionRoutes.js";
 import quizRoutes from "./src/server/routes/quizRoutes.js";
 import messageRoutes from "./src/server/routes/messageRoutes.js";
 import userRoutes from "./src/server/routes/userRoutes.js";
+import groupRoutes from "./src/server/routes/groupRoutes.js";
 import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
+import { createServer } from "http";
+import { initSocket } from "./src/server/socket.js";
 
 dotenv.config();
 
 async function startServer() {
   const app = express();
+  const httpServer = createServer(app);
   const PORT = 3000;
+
+  // Initialize Socket.io
+  initSocket(httpServer);
 
   // Trust the first proxy (e.g. Cloud Run / Nginx) to securely parse X-Forwarded-For
   app.set('trust proxy', 1);
@@ -127,6 +134,7 @@ async function startServer() {
   app.use("/api/quizzes", checkDbConnection, quizRoutes);
   app.use("/api/messages", checkDbConnection, messageRoutes);
   app.use("/api/users", checkDbConnection, userRoutes);
+  app.use("/api/groups", checkDbConnection, groupRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
@@ -149,7 +157,7 @@ async function startServer() {
   }
 
   if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-    app.listen(PORT, "0.0.0.0", () => {
+    httpServer.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   }

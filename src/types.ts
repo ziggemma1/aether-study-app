@@ -114,12 +114,23 @@ export interface QuizResult {
 export interface Message {
   id: string;
   senderId: string;
-  receiverId: string;
+  receiverId?: string;
+  groupId?: string;
   content: string;
   isRead: boolean;
   createdAt: string;
   senderName?: string;
   senderAvatar?: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  avatar?: string;
+  members: string[];
+  admin: any;
+  createdAt: string;
 }
 
 export interface StudySession {
