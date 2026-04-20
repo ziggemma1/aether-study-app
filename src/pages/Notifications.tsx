@@ -24,7 +24,7 @@ const initialNotifications: Notification[] = [
   {
     id: 2,
     title: 'AI Insight Ready',
-    message: 'Aether has generated a new summary for your Physics notes.',
+    message: 'Your new AI summary for Physics notes is ready.',
     time: '1 hour ago',
     type: 'ai',
     read: false,
@@ -47,7 +47,7 @@ const initialNotifications: Notification[] = [
   },
   {
     id: 5,
-    title: 'Welcome to Aether',
+    title: 'Welcome to Aether Study',
     message: 'Start by uploading your first study material to see the magic happen.',
     time: '2 days ago',
     type: 'info',

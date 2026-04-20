@@ -101,17 +101,21 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   to={item.path}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    "flex items-center gap-4 px-6 py-3.5 rounded-full transition-all duration-200 group",
+                    "flex items-center gap-4 px-6 py-3.5 rounded-full transition-all duration-200 group relative overflow-hidden",
                     isActive(item.path)
                       ? "bg-primary text-white shadow-lg shadow-primary/20"
-                      : "text-text-muted hover:text-text-main"
+                      : "text-text-muted hover:text-text-main hover:bg-primary/5"
                   )}
                 >
+                  {/* Subtle Background Glow on Hover */}
+                  {!isActive(item.path) && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  )}
                   <item.icon size={22} className={cn(
-                    "transition-colors",
+                    "transition-colors relative z-10",
                     isActive(item.path) ? "text-white" : "text-text-muted group-hover:text-primary"
                   )} />
-                  <span className="font-semibold text-sm">{item.label}</span>
+                  <span className="font-semibold text-sm relative z-10">{item.label}</span>
                 </Link>
               ))}
             </nav>

@@ -40,8 +40,8 @@ export default function LoginPage() {
       if (err.message === 'Network Error') {
         setError(
           <div className="flex flex-col gap-1">
-            <span className="font-bold">Backend is starting up...</span>
-            <span className="text-xs opacity-80">The server is still booting and connecting to the database. This normally takes 30-60 seconds. Please wait and try again.</span>
+            <span className="font-bold">Initialization loading...</span>
+            <span className="text-xs opacity-80">This normally takes 30-60 seconds on the first boot. Please wait and try again.</span>
           </div>
         );
       } else {

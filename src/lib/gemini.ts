@@ -50,7 +50,7 @@ export const generateVisualAidOnClient = async (prompt: string): Promise<string>
   }
   
   // Try multiple image generations models if one fails
-  const models = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image-preview'];
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
   
   for (const model of models) {
     try {
@@ -84,8 +84,8 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
   // Determine actual language prompt
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
-  // Try multiple model aliases
-  const models = ['gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-3.1-pro-preview'];
+  // Try primary rapid flash model
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
   let lastError = null;
 
   for (const model of models) {

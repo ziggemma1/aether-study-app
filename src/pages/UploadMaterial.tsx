@@ -306,7 +306,7 @@ export default function UploadMaterial() {
                 />
               </div>
               <p className="text-[10px] sm:text-sm text-text-muted mt-6 sm:mt-8 font-medium max-w-xs mx-auto leading-relaxed">
-                Our Aether AI is extracting key topics and preparing your explained notes.
+                The AI is extracting key topics and preparing your explained notes.
               </p>
             </div>
           </motion.div>

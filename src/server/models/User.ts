@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
   longestStreak: { type: Number, default: 0 },
   streakTrend: { type: Number, default: 0 },
   curriculum: { type: String, default: 'General' },
-  language: { type: String, default: 'English' },
+  language: { type: String, default: 'English (US)' },
   bio: { type: String, default: '' },
   location: { type: String, default: '' },
   handle: { type: String, unique: true, sparse: true },

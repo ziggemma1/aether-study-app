@@ -2,7 +2,14 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    console.error("CRITICAL ERROR: JWT_SECRET environment variable is not set. Throwing error to prevent fallback vulnerabilities.");
+    throw new Error('JWT_SECRET is not defined');
+  }
+  return secret;
+};
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -17,7 +24,7 @@ export const register = async (req: Request, res: Response) => {
     const user = new User({ name, email: normalizedEmail, password });
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id }, getJwtSecret(), { expiresIn: '7d' });
 
     res.cookie('token', token, {
       httpOnly: true,
@@ -77,7 +84,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id }, getJwtSecret(), { expiresIn: '7d' });
 
     res.cookie('token', token, {
       httpOnly: true,

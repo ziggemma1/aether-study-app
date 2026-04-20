@@ -4,6 +4,9 @@ import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import mongoSanitize from "express-mongo-sanitize";
 import authRoutes from "./src/server/routes/authRoutes.js";
 import materialRoutes from "./src/server/routes/materialRoutes.js";
 import sessionRoutes from "./src/server/routes/sessionRoutes.js";
@@ -18,13 +21,49 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Middleware
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  // Trust the first proxy (e.g. Cloud Run / Nginx) to securely parse X-Forwarded-For
+  app.set('trust proxy', 1);
+
+  // Security Middleware
+  app.use(helmet({
+    contentSecurityPolicy: false, 
+    crossOriginEmbedderPolicy: false,
+  }));
+  app.use(mongoSanitize());
+
+  // General rate limiter for all routes
+  const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: 1000,
+    message: "Too many requests from this IP, please try again later.",
+    validate: { xForwardedForHeader: false }
+  });
+  app.use("/api/", globalLimiter);
+
+  // Authentication specific rate limiter
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: 50, // Limit each IP to 50 login/register requests per windowMs
+    message: "Too many authentication attempts, please try again after 15 minutes",
+    standardHeaders: true, 
+    legacyHeaders: false, 
+    validate: { xForwardedForHeader: false }
+  });
+  app.use("/api/auth", authLimiter);
+
+  // Payload Limit constraints
+  app.use(express.json({ limit: '5mb' })); 
+  app.use(express.urlencoded({ limit: '5mb', extended: true }));
   app.use(cookieParser());
+  
+  // CORS Configuration (Strict)
   app.use(cors({
-    origin: true, // Reflect request origin
-    credentials: true
+    origin: process.env.NODE_ENV === 'production' 
+      ? ['https://ais-pre-ucscs5qurjgdfp2tmh76g3-315565043915.europe-west1.run.app'] 
+      : true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
   }));
 
   // MongoDB Connection

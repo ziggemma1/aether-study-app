@@ -90,7 +90,7 @@ export const generateGeminiTopicSection = async (content: string, title: string,
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
   const response = await withRetry(() => ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     contents: `Create an EXTREMELY detailed study chapter for the topic "${topic}" based on the following material: ${title}.
     
     Material Context: ${content.substring(0, 10000)}`,
@@ -129,7 +129,7 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
       const ai = getAiClient();
       // Step 1: Get basic analysis and key topics from Gemini
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, 15000)}`,
         config: {
           systemInstruction: `You are an expert academic analyzer. Analyze the provided study material and return a JSON object.
@@ -203,26 +203,29 @@ export const analyzeStudyMaterial = async (content: string, title: string = "Mat
     // Fallback to Gemini iterative if OpenRouter fails
     if (!openRouterResult || openRouterResult.noteSections.length === 0) {
       console.warn('OpenRouter failed. Falling back to Gemini iterative generation...');
-      const noteSections: NoteSection[] = [];
-      for (const topic of result.keyTopics) {
-        try {
-          const section = await generateGeminiTopicSection(content, title, topic, language);
-          noteSections.push(section);
-        } catch (err: any) {
-          console.error(`Gemini fallback failed for topic ${topic}`, err.message);
-          // If Gemini fails, we could try OpenRouter for JUST this topic as a last resort
+      
+      const noteSections = await Promise.all(
+        result.keyTopics.map(async (topic) => {
           try {
-            console.log(`Last resort: Trying OpenRouter for section ${topic}`);
-            const section = await generateTopicSection(content, title, topic);
-            noteSections.push(section);
-          } catch (lastResortErr) {
-             console.error(`Last resort failed for ${topic}`);
+            return await generateGeminiTopicSection(content, title, topic, language);
+          } catch (err: any) {
+            console.error(`Gemini fallback failed for topic ${topic}`, err.message);
+            try {
+              console.log(`Last resort: Trying OpenRouter for section ${topic}`);
+              return await generateTopicSection(content, title, topic);
+            } catch (lastResortErr) {
+               console.error(`Last resort failed for ${topic}`);
+               return null;
+            }
           }
-        }
-      }
+        })
+      );
+      
+      const filteredSections = noteSections.filter((s): s is NoteSection => s !== null);
+
       openRouterResult = {
-        detailedNotes: noteSections.map(s => `# ${s.heading}\n\n${s.content}`).join('\n\n'),
-        noteSections: noteSections
+        detailedNotes: filteredSections.map(s => `# ${s.heading}\n\n${s.content}`).join('\n\n'),
+        noteSections: filteredSections
       };
     }
 
@@ -266,7 +269,7 @@ export const generateStudyPlan = async (
     const materialContext = materials.map(m => `Title: ${m.title}\nKey Topics: ${(m.keyTopics || []).join(', ')}`).join('\n\n');
 
     const response = await withRetry(() => ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: `Generate a personalized study plan in ${langPrompt}.
       
       STUDENT PARAMETERS:

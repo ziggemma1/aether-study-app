@@ -25,9 +25,9 @@ export const checkDbConnection = async (req: Request, res: Response, next: NextF
   let status = 503;
   let message = 'Database is not ready.';
   
-  if (state === 0) message = 'Database is disconnected. Please check your MONGODB_URI.';
-  if (state === 2) message = 'Database is still connecting. Please wait a few seconds and try again.';
-  if (state === 3) message = 'Database is disconnecting.';
+  if (state === 0) message = 'Servers are booting. Please check your connection or try again in a moment.';
+  if (state === 2) message = 'Servers are still booting. Please wait a few seconds and try again.';
+  if (state === 3) message = 'Servers are resetting.';
   
   console.warn(`DB Connection State: ${state} - ${message}`);
   
