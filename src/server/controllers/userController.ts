@@ -3,12 +3,13 @@ import { User } from '../models/User.js';
 
 export const getAllProfiles = async (req: Request, res: Response) => {
   try {
-    const users = await User.find({}).select('name avatar streak').sort({ streak: -1 });
+    const users = await User.find({}).select('name avatar streak following').sort({ streak: -1 });
     res.json(users);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 export const toggleFollow = async (req: Request, res: Response) => {
   try {
@@ -100,8 +101,10 @@ export const updateProfile = async (req: Request, res: Response) => {
       points: user.points,
       followersCount: user.followersCount,
       friendsCount: user.friendsCount,
+      following: user.following || [],
       achievements: user.achievements
     });
+
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

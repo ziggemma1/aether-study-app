@@ -59,15 +59,19 @@ export default function Messages() {
     messages.filter(m => !m.groupId).forEach(m => {
       const otherId = m.senderId === user.id ? m.receiverId : m.senderId;
       if (otherId && !contactMap.has(otherId)) {
+        const otherProfile = allProfiles.find(p => p.id === otherId);
+        const isFriend = user.following?.includes(otherId) && otherProfile?.following?.includes(user.id);
+        
         contactMap.set(otherId, {
           id: otherId,
-          name: m.senderName || 'User',
-          avatar: m.senderAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherId}`,
+          name: m.senderName || otherProfile?.name || 'User',
+          avatar: m.senderAvatar || otherProfile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherId}`,
           lastMsg: m.content,
           time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           unread: m.receiverId === user.id && !m.isRead ? 1 : 0,
           type: 'private',
-          isTyping: !!typingUsers[otherId]
+          isTyping: !!typingUsers[otherId],
+          isFriend
         });
       }
     });
@@ -76,26 +80,35 @@ export default function Messages() {
     if (activeTab === 'friends' || contactMap.size === 0) {
       allProfiles.filter(p => p.id !== user.id).forEach(p => {
         if (!contactMap.has(p.id)) {
+          const isFriend = user.following?.includes(p.id) && p.following?.includes(user.id);
           contactMap.set(p.id, {
             id: p.id,
             name: p.name || 'User',
             avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
-            lastMsg: 'Start a conversation',
+            lastMsg: isFriend ? 'Start a conversation' : 'Follow each other to chat',
             time: '',
             unread: 0,
             type: 'private',
-            isTyping: false
+            isTyping: false,
+            isFriend
           });
         }
       });
     }
 
+    // Filter by friendship if in 'chats' tab (maybe show everyone you have messages with, but indicate status)
+    // Actually, user said "users should also not be able to send any message unless theyre friends"
+    // So if someone is NOT a friend, we should show it.
+    
     return Array.from(contactMap.values());
   }, [messages, user, allProfiles, activeTab, groups, typingUsers]);
 
+  const currentChatData = chatList.find(c => c.id === selectedChat?.id);
+  const isChatBlocked = selectedChat?.type === 'private' && !currentChatData?.isFriend;
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !selectedChat) return;
+    if (!input.trim() || !selectedChat || isChatBlocked) return;
     
     if (selectedChat.type === 'group') {
       sendMessage(input.trim(), undefined, selectedChat.id);
@@ -178,7 +191,7 @@ export default function Messages() {
                   />
                   <div className="flex gap-2">
                     <button type="submit" className="flex-1 bg-primary text-white text-[10px] font-bold py-2 rounded-lg">Create</button>
-                    <button onClick={() => setShowCreateGroup(false)} className="flex-1 bg-surface-alt text-text-muted text-[10px] font-bold py-2 rounded-lg">Cancel</button>
+                    <button type="button" onClick={() => setShowCreateGroup(false)} className="flex-1 bg-surface-alt text-text-muted text-[10px] font-bold py-2 rounded-lg">Cancel</button>
                   </div>
                 </form>
               </motion.div>
@@ -240,12 +253,17 @@ export default function Messages() {
                       <p className="text-xs sm:text-sm font-bold text-text-main truncate">{chat.name}</p>
                       <span className="text-[8px] sm:text-[10px] text-text-muted">{chat.time}</span>
                     </div>
-                    <p className={cn(
-                      "text-[10px] sm:text-xs truncate",
-                      chat.isTyping ? "text-primary italic" : "text-text-muted"
-                    )}>
-                      {chat.isTyping ? 'typing...' : chat.lastMsg}
-                    </p>
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      {chat.type === 'private' && !chat.isFriend && (
+                        <span className="shrink-0 text-[8px] bg-surface-alt text-text-muted px-1 rounded uppercase font-bold">Not Friend</span>
+                      )}
+                      <p className={cn(
+                        "text-[10px] sm:text-xs truncate",
+                        chat.isTyping ? "text-primary italic" : "text-text-muted"
+                      )}>
+                        {chat.isTyping ? 'typing...' : chat.lastMsg}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))
@@ -276,7 +294,7 @@ export default function Messages() {
                 <div>
                   <h2 className="text-sm sm:text-lg font-bold text-text-main truncate max-w-[120px] sm:max-w-none">{selectedChat.name}</h2>
                   <p className="text-[10px] sm:text-xs text-primary font-medium flex items-center gap-1">
-                    {typingUsers[selectedChat.id] ? 'typing...' : (selectedChat.type === 'group' ? 'Group Study' : 'Active Channel')}
+                    {typingUsers[selectedChat.id] ? 'typing...' : (selectedChat.type === 'group' ? 'Group Study' : (isChatBlocked ? 'Mutual friends only' : 'Active Channel'))}
                   </p>
                 </div>
               </div>
@@ -327,31 +345,37 @@ export default function Messages() {
 
             {/* Input Area */}
             <div className="p-4 sm:p-6 border-t border-border">
-              <form onSubmit={handleSend} className="flex items-center gap-2 sm:gap-4">
-                <button type="button" className="p-2 text-text-muted hover:text-text-main">
-                  <Paperclip size={20} />
-                </button>
-                <div className="flex-grow relative">
-                  <input 
-                    type="text" 
-                    value={input}
-                    onChange={(e) => {
-                      setInput(e.target.value);
-                      setTyping(e.target.value.length > 0, selectedChat.type === 'private' ? selectedChat.id : undefined, selectedChat.type === 'group' ? selectedChat.id : undefined);
-                    }}
-                    onBlur={() => setTyping(false, selectedChat.type === 'private' ? selectedChat.id : undefined, selectedChat.type === 'group' ? selectedChat.id : undefined)}
-                    placeholder="Type a message..." 
-                    className="w-full bg-surface-alt/50 border border-border rounded-xl py-2.5 sm:py-3 px-4 text-xs sm:text-sm outline-none focus:border-primary/50 transition-all text-text-main"
-                  />
+              {isChatBlocked ? (
+                <div className="bg-surface-alt/50 border border-border rounded-xl p-3 text-center">
+                  <p className="text-xs text-text-muted">You can only message friends who also follow you back.</p>
                 </div>
-                <button 
-                  type="submit"
-                  disabled={!input.trim()}
-                  className="w-10 h-10 sm:w-12 sm:h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  <Send size={18} />
-                </button>
-              </form>
+              ) : (
+                <form onSubmit={handleSend} className="flex items-center gap-2 sm:gap-4">
+                  <button type="button" className="p-2 text-text-muted hover:text-text-main">
+                    <Paperclip size={20} />
+                  </button>
+                  <div className="flex-grow relative">
+                    <input 
+                      type="text" 
+                      value={input}
+                      onChange={(e) => {
+                        setInput(e.target.value);
+                        setTyping(e.target.value.length > 0, selectedChat.type === 'private' ? selectedChat.id : undefined, selectedChat.type === 'group' ? selectedChat.id : undefined);
+                      }}
+                      onBlur={() => setTyping(false, selectedChat.type === 'private' ? selectedChat.id : undefined, selectedChat.type === 'group' ? selectedChat.id : undefined)}
+                      placeholder="Type a message..." 
+                      className="w-full bg-surface-alt/50 border border-border rounded-xl py-2.5 sm:py-3 px-4 text-xs sm:text-sm outline-none focus:border-primary/50 transition-all text-text-main"
+                    />
+                  </div>
+                  <button 
+                    type="submit"
+                    disabled={!input.trim()}
+                    className="w-10 h-10 sm:w-12 sm:h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <Send size={18} />
+                  </button>
+                </form>
+              )}
             </div>
           </>
         ) : (
@@ -365,4 +389,5 @@ export default function Messages() {
     </div>
   );
 }
+
 

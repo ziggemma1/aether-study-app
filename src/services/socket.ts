@@ -3,10 +3,10 @@ import { io, Socket } from "socket.io-client";
 let socket: Socket | null = null;
 
 export const getSocket = (token?: string) => {
-  if (!socket && token) {
+  if (!socket) {
     const origin = window.location.origin;
     socket = io(origin, {
-      auth: { token },
+      auth: token ? { token } : undefined,
       autoConnect: true,
       reconnection: true
     });

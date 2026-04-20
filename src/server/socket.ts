@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import { Message } from "./models/Message.js";
 import { Group } from "./models/Group.js";
+import { User } from "./models/User.js";
 import jwt from "jsonwebtoken";
 
 export const initSocket = (server: any) => {
@@ -16,6 +17,9 @@ export const initSocket = (server: any) => {
   io.use((socket, next) => {
     let token = socket.handshake.auth.token;
     
+    // Normalize "null" or "undefined" strings that might come from client state
+    if (token === "null" || token === "undefined") token = null;
+
     // Try to get token from cookies if not in auth
     if (!token && socket.handshake.headers.cookie) {
       const cookies = socket.handshake.headers.cookie.split(';');
@@ -30,13 +34,16 @@ export const initSocket = (server: any) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+      const secret = process.env.JWT_SECRET || 'secret';
+      const decoded = jwt.verify(token, secret) as any;
       (socket as any).userId = decoded.id;
       next();
     } catch (err) {
+      console.error("Socket Auth Error:", (err as Error).message);
       next(new Error("Authentication error: Token invalid"));
     }
   });
+
 
   io.on("connection", (socket) => {
     const userId = (socket as any).userId;
@@ -54,6 +61,29 @@ export const initSocket = (server: any) => {
       const { receiverId, groupId, content } = data;
 
       try {
+        // Enforce friendship/membership check
+        if (groupId) {
+          const group = await Group.findById(groupId);
+          if (!group || !group.members.includes(userId)) {
+            socket.emit("error_message", { message: "You are not a member of this group" });
+            return;
+          }
+        } else if (receiverId) {
+          const currentUser = await User.findById(userId);
+          const targetUser = await User.findById(receiverId);
+
+          if (!currentUser || !targetUser) {
+            socket.emit("error_message", { message: "User not found" });
+            return;
+          }
+
+          const isFriend = currentUser.following.includes(receiverId) && targetUser.following.includes(userId);
+          if (!isFriend) {
+            socket.emit("error_message", { message: "You can only message friends (mutual followers)" });
+            return;
+          }
+        }
+
         const newMessage = new Message({
           senderId: userId,
           receiverId,
@@ -78,12 +108,21 @@ export const initSocket = (server: any) => {
       }
     });
 
-    socket.on("typing", (data) => {
+    socket.on("typing", async (data) => {
       const { receiverId, groupId, isTyping } = data;
+      
+      // Optional: Add friendship check for typing too to avoid leaking status
       if (groupId) {
         socket.to(groupId).emit("typing_update", { userId, isTyping, groupId });
       } else if (receiverId) {
-        socket.to(receiverId).emit("typing_update", { userId, isTyping });
+        // Only emit typing if they are friends
+        const currentUser = await User.findById(userId);
+        const targetUser = await User.findById(receiverId);
+        const isFriend = currentUser?.following.includes(receiverId) && targetUser?.following.includes(userId);
+        
+        if (isFriend) {
+          socket.to(receiverId).emit("typing_update", { userId, isTyping });
+        }
       }
     });
 
@@ -94,3 +133,4 @@ export const initSocket = (server: any) => {
 
   return io;
 };
+

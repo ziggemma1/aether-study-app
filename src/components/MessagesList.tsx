@@ -10,7 +10,7 @@ interface MessagesListProps {
 }
 
 export default function MessagesList({ className }: MessagesListProps) {
-  const { messages, user, groups, typingUsers } = useAppContext();
+  const { messages, user, groups, typingUsers, allProfiles } = useAppContext();
   const [selectedChat, setSelectedChat] = useState<{ id: string, type: 'private' | 'group', name: string, avatar: string } | null>(null);
 
   // Derive contacts from messages and groups
@@ -38,14 +38,18 @@ export default function MessagesList({ className }: MessagesListProps) {
     messages.filter(m => !m.groupId).forEach(m => {
       const otherId = m.senderId === user.id ? m.receiverId : m.senderId;
       if (!contactMap.has(otherId) && otherId) {
+        const otherProfile = allProfiles.find(p => p.id === otherId);
+        const isFriend = user?.following?.includes(otherId) && otherProfile?.following?.includes(user.id);
+        
         contactMap.set(otherId, {
           id: otherId,
-          name: m.senderName || 'User',
-          avatar: m.senderAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherId}`,
+          name: m.senderName || otherProfile?.name || 'User',
+          avatar: m.senderAvatar || otherProfile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherId}`,
           type: 'private',
           lastMsg: m.content,
           isTyping: !!typingUsers[otherId],
-          timestamp: m.createdAt
+          timestamp: m.createdAt,
+          isFriend
         });
       }
     });
@@ -126,12 +130,17 @@ export default function MessagesList({ className }: MessagesListProps) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-text-main mb-0.5 truncate">{chat.name}</p>
-                  <p className={cn(
-                    "text-xs truncate",
-                    chat.isTyping ? "text-primary italic font-medium" : "text-text-muted"
-                  )}>
-                    {chat.isTyping ? "typing..." : chat.lastMsg}
-                  </p>
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    {chat.type === 'private' && !chat.isFriend && (
+                      <span className="shrink-0 text-[8px] bg-surface-alt text-text-muted px-1 rounded uppercase font-bold">Not Friend</span>
+                    )}
+                    <p className={cn(
+                      "text-xs truncate",
+                      chat.isTyping ? "text-primary italic font-medium" : "text-text-muted"
+                    )}>
+                      {chat.isTyping ? "typing..." : chat.lastMsg}
+                    </p>
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">

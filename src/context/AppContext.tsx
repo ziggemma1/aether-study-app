@@ -99,14 +99,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const sendMessage = useCallback((content: string, receiverId?: string, groupId?: string) => {
-    const socket = getSocket("temp"); // Handled by cookie
+    const socket = getSocket(); // Handled by cookie
     if (socket) {
       socket.emit("send_message", { content, receiverId, groupId });
     }
   }, []);
 
   const setTyping = useCallback((isTyping: boolean, receiverId?: string, groupId?: string) => {
-    const socket = getSocket("temp");
+    const socket = getSocket();
     if (socket) {
       socket.emit("typing", { isTyping, receiverId, groupId });
     }
@@ -114,7 +114,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (user) {
-      const socket = getSocket("temp");
+      const socket = getSocket();
       if (socket) {
         socket.on("new_message", (message: Message) => {
           setMessages(prev => [...prev, { ...message, id: message.id || (message as any)._id }]);
