@@ -155,8 +155,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         showToast(`Friend request ${status}`, 'success');
         if (status === 'accepted') {
           // Re-fetch user data to update friend counts/following
-          fetchUserData();
+          await fetchUserData();
+          await fetchAppData();
         }
+
       }
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Failed to respond to friend request', 'error');
@@ -195,6 +197,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...prev,
             [data.groupId || data.userId]: data.isTyping
           }));
+        });
+
+        socket.on("error_message", (data: { message: string }) => {
+          showToast(data.message, 'error');
         });
 
         // Join rooms for user groups

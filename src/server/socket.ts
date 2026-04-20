@@ -8,10 +8,14 @@ export const initSocket = (server: any) => {
   const io = new Server(server, {
     cors: {
       origin: process.env.NODE_ENV === "production" 
-        ? ["https://ais-pre-ucscs5qurjgdfp2tmh76g3-315565043915.europe-west1.run.app"] 
+        ? [
+            "https://ais-pre-ucscs5qurjgdfp2tmh76g3-315565043915.europe-west1.run.app",
+            "https://ais-dev-ucscs5qurjgdfp2tmh76g3-315565043915.europe-west1.run.app"
+          ] 
         : true,
       credentials: true
     }
+
   });
 
   io.use((socket, next) => {
@@ -79,6 +83,7 @@ export const initSocket = (server: any) => {
 
           const isFriend = currentUser.following.includes(receiverId) && targetUser.following.includes(userId);
           if (!isFriend) {
+            console.warn(`Messaging blocked: User ${userId} is not mutual friends with ${receiverId}`);
             socket.emit("error_message", { message: "You can only message friends (mutual followers)" });
             return;
           }
@@ -95,8 +100,9 @@ export const initSocket = (server: any) => {
         
         const messageToSend = {
           ...newMessage.toObject(),
-          id: newMessage._id
+          id: newMessage._id.toString()
         };
+
 
         if (groupId) {
           io.to(groupId).emit("new_message", messageToSend);

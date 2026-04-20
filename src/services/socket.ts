@@ -8,8 +8,10 @@ export const getSocket = (token?: string) => {
     socket = io(origin, {
       auth: token ? { token } : undefined,
       autoConnect: true,
-      reconnection: true
+      reconnection: true,
+      transports: ['websocket'] // Force websocket to avoid poll errors
     });
+
     
     socket.on("connect", () => {
       console.log("Connected to real-time server");

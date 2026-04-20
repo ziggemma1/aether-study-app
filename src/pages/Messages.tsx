@@ -165,6 +165,11 @@ export default function Messages() {
            (m.senderId === selectedChat.id && m.receiverId === user?.id);
   }).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeMessages]);
+
   return (
     <div className="h-[calc(100vh-140px)] sm:h-[calc(100vh-120px)] flex gap-4 sm:gap-6 animate-in fade-in duration-500">
       {/* Sidebar - Contacts & Tabs */}
@@ -368,7 +373,9 @@ export default function Messages() {
                   </div>
                 ))
               )}
+              <div ref={messagesEndRef} />
             </div>
+
 
             {/* Input Area */}
             <div className="p-4 sm:p-6 border-t border-border">
