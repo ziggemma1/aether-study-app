@@ -184,11 +184,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const socket = getSocket();
       if (socket) {
         socket.on("new_message", (message: Message) => {
-          setMessages(prev => [...prev, { ...message, id: message.id || (message as any)._id }]);
+          setMessages(prev => {
+            const msgId = message.id || (message as any)._id;
+            // Prevent duplicate message renders
+            if (prev.some(m => m.id === msgId || (m as any)._id === msgId)) return prev;
+            return [...prev, { ...message, id: msgId }];
+          });
           
           // Show toast if not current recipient (simple logic for now)
           if (message.senderId !== user.id) {
-            showToast(`New message from ${message.senderId}`, 'success');
+            showToast(`New message`, 'success');
           }
         });
 

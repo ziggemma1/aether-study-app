@@ -103,14 +103,20 @@ export const initSocket = (server: any) => {
           id: newMessage._id.toString()
         };
 
+        console.log(`Message saved. Emitting to ${groupId ? "Group:" + groupId : "Users:" + userId + "," + receiverId}`);
 
         if (groupId) {
           io.to(groupId).emit("new_message", messageToSend);
         } else if (receiverId) {
-          io.to(receiverId).to(userId).emit("new_message", messageToSend);
+          socket.emit("new_message", messageToSend); // Emit directly to the sending socket
+          if (receiverId !== userId) {
+            io.to(receiverId).emit("new_message", messageToSend);
+            io.to(userId).emit("new_message", messageToSend); // Emit to other tabs of sender
+          }
         }
       } catch (err) {
         console.error("Error sending message:", err);
+        socket.emit("error_message", { message: "Internal server error occurred while sending message." });
       }
     });
 

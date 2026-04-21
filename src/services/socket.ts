@@ -9,8 +9,10 @@ export const getSocket = (token?: string) => {
       auth: token ? { token } : undefined,
       autoConnect: true,
       reconnection: true,
-      transports: ['websocket'] // Force websocket to avoid poll errors
+      transports: ['polling', 'websocket'], // Allow fallback to polling
+      withCredentials: true
     });
+
 
     
     socket.on("connect", () => {
