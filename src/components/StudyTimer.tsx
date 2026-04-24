@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Clock, Play, Pause, Save, Volume2, VolumeX, Headphones } from 'lucide-react';
+import { Clock, Play, Pause, Save, Volume2, Headphones, ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface StudyTimerProps {
   materialId?: string;
@@ -14,6 +15,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(true);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const secondsRef = useRef(0);
   const startTimeRef = useRef<Date>(new Date());
@@ -44,7 +46,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
         
         const plainText = readContent
           .replace(/[#*`_]/g, '')
-          .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
           .replace(/\n/g, ' ')
           .replace(/\s+/g, ' ')
           .trim();
@@ -138,52 +140,90 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   }, []);
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 sm:bottom-8 sm:right-8">
-      <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary">
-            <Clock size={20} className={isActive ? "animate-pulse" : ""} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('focus_time')}</span>
-            <span className="text-lg font-mono font-bold text-white">{formatTime(seconds)}</span>
-          </div>
-        </div>
+    <div className="fixed bottom-[140px] right-4 z-[60] lg:bottom-8 lg:right-8 transition-transform hover:-translate-y-1">
+      <motion.div 
+        layout
+        className="bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1.5 sm:p-3 shadow-2xl flex flex-col items-center relative overflow-hidden ring-1 ring-white/5 w-[52px] sm:w-[88px]"
+      >
+        {/* Glow effect */}
+        {isActive && (
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/20 via-transparent to-transparent pointer-events-none" />
+        )}
         
-        <div className="flex items-center gap-2 border-l border-white/10 pl-4">
-          {readContent && (
-            <button 
-              onClick={toggleAudio}
-              className={cn(
-                "p-2 rounded-lg transition-all",
-                isPlayingAudio ? "bg-primary/20 text-primary scale-110" : "hover:bg-white/5 text-slate-400"
-              )}
-              title={isPlayingAudio ? "Pause Reading" : "Read Notes Aloud"}
+        {/* Time Display Toggle Button */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex flex-col items-center justify-center bg-black/50 rounded-full w-10 h-10 sm:w-16 sm:h-16 border border-white/10 shadow-inner relative z-10 transition-colors hover:bg-white/5 active:scale-95"
+        >
+          <Clock className={cn("text-primary sm:mb-0.5 w-[10px] h-[10px] sm:w-3.5 sm:h-3.5", isActive ? "animate-pulse" : "opacity-30")} />
+          <span className="text-[10px] sm:text-sm font-mono font-semibold text-white tracking-tight leading-none mt-0.5 sm:mt-0">
+            {formatTime(seconds)}
+          </span>
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute -bottom-1"
+          >
+            <ChevronDown className="text-white/40 mb-1 w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          </motion.div>
+        </button>
+        
+        {/* Exandable Controls */}
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="flex flex-col items-center gap-2 sm:gap-3 relative z-10 w-full overflow-hidden"
             >
-              {isPlayingAudio ? <Volume2 size={20} className="animate-pulse" /> : <Headphones size={20} />}
-            </button>
+              <div className="w-6 sm:w-8 h-[1px] bg-white/10 mt-2 sm:mt-3" />
+
+              {readContent && (
+                <button 
+                  onClick={toggleAudio}
+                  className={cn(
+                    "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all flex items-center justify-center relative",
+                    isPlayingAudio 
+                      ? "bg-primary text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]" 
+                      : "bg-white/5 hover:bg-white/10 text-slate-300"
+                  )}
+                  title={isPlayingAudio ? "Pause Reading" : "Read Notes Aloud"}
+                >
+                  {isPlayingAudio ? <Volume2 className="animate-pulse w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" /> : <Headphones className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" />}
+                </button>
+              )}
+
+              <button 
+                onClick={() => setIsActive(!isActive)}
+                className={cn(
+                  "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all flex items-center justify-center border border-white/5",
+                  isActive ? "bg-white/10 text-white hover:bg-white/20" : "bg-primary/20 text-primary hover:bg-primary/30"
+                )}
+                title={isActive ? "Pause Timer" : "Start Timer"}
+              >
+                {isActive ? <Pause className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" /> : <Play className="ml-0.5 sm:ml-1 w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" />}
+              </button>
+              
+              <button 
+                onClick={() => {
+                  saveSession();
+                  if (seconds >= 10) showToast('Session saved!');
+                  setSeconds(0);
+                  startTimeRef.current = new Date();
+                }}
+                disabled={seconds < 10}
+                className="w-8 h-8 sm:w-12 sm:h-12 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-full transition-all disabled:opacity-30 disabled:hover:bg-emerald-500/20 disabled:hover:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-lg mb-1"
+                title="Save Session"
+              >
+                <Save className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" />
+              </button>
+            </motion.div>
           )}
-          <button 
-            onClick={() => setIsActive(!isActive)}
-            className="p-2 hover:bg-white/5 rounded-lg text-white transition-colors"
-          >
-            {isActive ? <Pause size={20} /> : <Play size={20} />}
-          </button>
-          <button 
-            onClick={() => {
-              saveSession();
-              showToast('Session saved!');
-              setSeconds(0);
-              startTimeRef.current = new Date();
-            }}
-            disabled={seconds < 10}
-            className="p-2 hover:bg-white/5 rounded-lg text-primary transition-colors disabled:opacity-30"
-            title="Save Session"
-          >
-            <Save size={20} />
-          </button>
-        </div>
-      </div>
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 };
+
