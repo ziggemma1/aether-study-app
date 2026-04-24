@@ -96,6 +96,21 @@
     @apply border border-border text-text-muted px-6 py-2.5 rounded-full font-semibold transition-all hover:bg-slate-50 active:scale-[0.98];
   }
 
+  html.is-landing-page,
+  body.is-landing-page {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100dvh !important;
+  }
+  
+  .is-landing-page #root {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -105,18 +120,37 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    width: 2px;
-    height: 2px;
+    width: 6px;
+    height: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-border/50 rounded-full hover:bg-primary/50 transition-colors;
+    @apply bg-border/80 rounded-full hover:bg-primary/80 transition-colors;
   }
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+  
+  /* Make sure landing page has visible scrollbar for laptop users */
+  html.is-landing-page::-webkit-scrollbar,
+  body.is-landing-page::-webkit-scrollbar {
+    width: 8px;
+  }
+  html.is-landing-page::-webkit-scrollbar-track,
+  body.is-landing-page::-webkit-scrollbar-track {
+    background: var(--background);
+  }
+  html.is-landing-page::-webkit-scrollbar-thumb,
+  body.is-landing-page::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  html.is-landing-page::-webkit-scrollbar-thumb:hover,
+  body.is-landing-page::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
   }
 }
 

@@ -11,11 +11,19 @@ export default function LandingPage() {
   const [isScrolled, setIsScrolled] = React.useState(false);
 
   React.useEffect(() => {
+    document.documentElement.classList.add('is-landing-page');
+    document.body.classList.add('is-landing-page');
+    
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.documentElement.classList.remove('is-landing-page');
+      document.body.classList.remove('is-landing-page');
+    };
   }, []);
 
   const features = [
