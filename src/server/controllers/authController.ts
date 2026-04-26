@@ -13,7 +13,11 @@ const getJwtSecret = () => {
 };
 
 export const getGoogleAuthUrl = (req: Request, res: Response) => {
-  const redirectUri = (process.env.APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')) + '/api/auth/google-callback';
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+  const redirectUri = baseUrl.replace(/\/$/, '') + '/api/auth/google-callback';
+  
   const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, redirectUri);
   const url = client.generateAuthUrl({
     access_type: 'offline',
@@ -28,7 +32,12 @@ export const googleCallback = async (req: Request, res: Response) => {
     if (!code) {
       return res.status(400).send('No code provided');
     }
-    const redirectUri = (process.env.APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')) + '/api/auth/google-callback';
+    
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+    const redirectUri = baseUrl.replace(/\/$/, '') + '/api/auth/google-callback';
+    
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, redirectUri);
     const { tokens } = await client.getToken(code as string);
     const ticket = await client.verifyIdToken({

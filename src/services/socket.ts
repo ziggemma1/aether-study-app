@@ -9,7 +9,7 @@ export const getSocket = (token?: string) => {
       auth: token ? { token } : undefined,
       autoConnect: true,
       reconnection: true,
-      transports: ['polling', 'websocket'], // Allow fallback to polling
+      transports: ['websocket'], // Force websocket
       withCredentials: true
     });
 
@@ -20,12 +20,12 @@ export const getSocket = (token?: string) => {
     });
 
     socket.on("connect_error", (err: any) => {
-      console.error("Socket connection error:", err.message);
-      if (err.description) {
-        console.error("Error Description:", err.description);
-      }
-      if (err.context) {
-        console.error("Error Context:", err.context);
+      if (err.message === "xhr poll error" || err.message === "websocket error") {
+         console.warn("Socket connection failed (likely environment restriction e.g. Vercel). Real-time features disabled.");
+      } else {
+         console.error("Socket connection error:", err.message);
+         if (err.description) console.error("Error Description:", err.description);
+         if (err.context) console.error("Error Context:", err.context);
       }
     });
   }
