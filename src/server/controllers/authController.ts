@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
+import { OAuth2Client } from 'google-auth-library';
 
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
@@ -9,6 +10,101 @@ const getJwtSecret = () => {
     throw new Error('JWT_SECRET is not defined');
   }
   return secret;
+};
+
+export const getGoogleAuthUrl = (req: Request, res: Response) => {
+  const redirectUri = (process.env.APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')) + '/api/auth/google-callback';
+  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, redirectUri);
+  const url = client.generateAuthUrl({
+    access_type: 'offline',
+    scope: ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
+  });
+  res.json({ url });
+};
+
+export const googleCallback = async (req: Request, res: Response) => {
+  try {
+    const { code } = req.query;
+    if (!code) {
+      return res.status(400).send('No code provided');
+    }
+    const redirectUri = (process.env.APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')) + '/api/auth/google-callback';
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, redirectUri);
+    const { tokens } = await client.getToken(code as string);
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token!,
+      audience: process.env.GOOGLE_CLIENT_ID!
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      throw new Error('No user payload found in Google token');
+    }
+
+    const { email, name, picture } = payload;
+    const normalizedEmail = email.toLowerCase();
+    
+    let user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      user = new User({
+        name: name || payload.given_name || 'Student',
+        email: normalizedEmail,
+        password: Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8), // random password
+        avatar: picture,
+        country: '',
+        language: 'English (US)'
+      });
+      await user.save();
+    }
+
+    const token = jwt.sign({ id: user._id }, getJwtSecret(), { expiresIn: '7d' });
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.send(`
+      <html>
+        <body>
+          <script>
+            // 1. Try to communicate via window.opener
+            if (window.opener) {
+              window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+            }
+            
+            // 2. Fallback: use localStorage to notify other tabs on the same origin
+            try {
+              localStorage.setItem('oauth_success', Date.now().toString());
+              setTimeout(() => {
+                localStorage.removeItem('oauth_success');
+              }, 1000);
+            } catch (e) {
+              console.error('localStorage access denied', e);
+            }
+
+            // 3. Try to close the popup
+            window.close();
+
+            // 4. If window did not close (e.g. browser blocked it), redirect to dashboard
+            setTimeout(() => {
+              if (!window.closed) {
+                 window.location.href = '/dashboard';
+              }
+            }, 1000);
+          </script>
+          <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+            <h2>Authentication successful!</h2>
+            <p>You can close this window to continue to your dashboard.</p>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (error: any) {
+    console.error('Google callback error:', error);
+    res.status(500).send('Authentication failed');
+  }
 };
 
 export const register = async (req: Request, res: Response) => {

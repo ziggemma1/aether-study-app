@@ -74,8 +74,75 @@ export default function SignupPage() {
   };
 
   const handleSocialSignup = async (provider: 'google' | 'github') => {
-    setError('Social login is currently unavailable with the custom backend.');
+    if (provider !== 'google') {
+      setError('Social signup is currently unavailable for this provider.');
+      return;
+    }
+
+    try {
+      const response = await api.get('/auth/google-url');
+      const { url } = response.data;
+      
+      const authWindow = window.open(
+        url,
+        'oauth_popup',
+        'width=600,height=700'
+      );
+
+      if (!authWindow) {
+        setError(
+          <div className="flex flex-col gap-1">
+            <span className="font-bold">Popup Blocked</span>
+            <span className="text-xs opacity-80">Please allow popups for this site to connect your Google account.</span>
+          </div>
+        );
+      }
+    } catch (err: any) {
+      console.error('OAuth URL fetch error:', err);
+      setError('Failed to initiate Google authentication. ' + (err.response?.data?.message || err.message));
+    }
   };
+
+  React.useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      // Validate origin is from AI Studio preview or localhost
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('webcontainer.io')) {
+        return;
+      }
+      
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        try {
+          const response = await api.get('/auth/me');
+          setUser(response.data);
+          navigate('/dashboard');
+        } catch (err) {
+          console.error("Failed to fetch user after OAuth success:", err);
+          setError("Failed to verify user session after Google login.");
+        }
+      }
+    };
+
+    const handleStorage = async (event: StorageEvent) => {
+      if (event.key === 'oauth_success') {
+        try {
+          const response = await api.get('/auth/me');
+          setUser(response.data);
+          navigate('/dashboard');
+        } catch (err) {
+          console.error("Failed to fetch user after OAuth success via storage:", err);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    window.addEventListener('storage', handleStorage);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
 
   React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -257,18 +324,12 @@ export default function SignupPage() {
             <div className="flex-grow h-px bg-white/10"></div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <button 
               onClick={() => handleSocialSignup('google')}
               className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors"
             >
               <Chrome size={20} /> <span className="text-sm font-bold">Google</span>
-            </button>
-            <button 
-              onClick={() => handleSocialSignup('github')}
-              className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors"
-            >
-              <Github size={20} /> <span className="text-sm font-bold">GitHub</span>
             </button>
           </div>
         </div>

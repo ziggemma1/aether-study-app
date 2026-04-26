@@ -19,8 +19,14 @@ export const getSocket = (token?: string) => {
       console.log("Connected to real-time server");
     });
 
-    socket.on("connect_error", (err) => {
+    socket.on("connect_error", (err: any) => {
       console.error("Socket connection error:", err.message);
+      if (err.description) {
+        console.error("Error Description:", err.description);
+      }
+      if (err.context) {
+        console.error("Error Context:", err.context);
+      }
     });
   }
   return socket;

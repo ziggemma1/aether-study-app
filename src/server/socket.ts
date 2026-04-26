@@ -7,12 +7,9 @@ import jwt from "jsonwebtoken";
 export const initSocket = (server: any) => {
   const io = new Server(server, {
     cors: {
-      origin: process.env.NODE_ENV === "production" 
-        ? [
-            "https://ais-pre-ucscs5qurjgdfp2tmh76g3-315565043915.europe-west1.run.app",
-            "https://ais-dev-ucscs5qurjgdfp2tmh76g3-315565043915.europe-west1.run.app"
-          ] 
-        : true,
+      origin: function (origin, callback) {
+        callback(null, true);
+      },
       credentials: true
     }
 

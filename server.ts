@@ -65,12 +65,9 @@ async function startServer() {
   
   // CORS Configuration (Strict)
   app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? [
-          'https://ais-pre-ucscs5qurjgdfp2tmh76g3-315565043915.europe-west1.run.app',
-          'https://ais-dev-ucscs5qurjgdfp2tmh76g3-315565043915.europe-west1.run.app'
-        ] 
-      : true,
+    origin: function (origin, callback) {
+      callback(null, true);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
