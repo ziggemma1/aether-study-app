@@ -83,20 +83,8 @@ export default function SignupPage() {
       const response = await api.get('/auth/google-url');
       const { url } = response.data;
       
-      const authWindow = window.open(
-        url,
-        'oauth_popup',
-        'width=600,height=700'
-      );
-
-      if (!authWindow) {
-        setError(
-          <div className="flex flex-col gap-1">
-            <span className="font-bold">Popup Blocked</span>
-            <span className="text-xs opacity-80">Please allow popups for this site to connect your Google account.</span>
-          </div>
-        );
-      }
+      // Use top-level redirect instead of popup
+      window.location.href = url;
     } catch (err: any) {
       console.error('OAuth URL fetch error:', err);
       setError('Failed to initiate Google authentication. ' + (err.response?.data?.message || err.message));

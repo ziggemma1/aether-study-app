@@ -75,42 +75,7 @@ export const googleCallback = async (req: Request, res: Response) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    res.send(`
-      <html>
-        <body>
-          <script>
-            // 1. Try to communicate via window.opener
-            if (window.opener) {
-              window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
-            }
-            
-            // 2. Fallback: use localStorage to notify other tabs on the same origin
-            try {
-              localStorage.setItem('oauth_success', Date.now().toString());
-              setTimeout(() => {
-                localStorage.removeItem('oauth_success');
-              }, 1000);
-            } catch (e) {
-              console.error('localStorage access denied', e);
-            }
-
-            // 3. Try to close the popup
-            window.close();
-
-            // 4. If window did not close (e.g. browser blocked it), redirect to dashboard
-            setTimeout(() => {
-              if (!window.closed) {
-                 window.location.href = '/dashboard';
-              }
-            }, 1000);
-          </script>
-          <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-            <h2>Authentication successful!</h2>
-            <p>You can close this window to continue to your dashboard.</p>
-          </div>
-        </body>
-      </html>
-    `);
+    res.redirect('/dashboard');
   } catch (error: any) {
     console.error('Google callback error:', error);
     res.status(500).send('Authentication failed');
