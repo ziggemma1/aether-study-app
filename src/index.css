@@ -102,13 +102,17 @@
     overflow-x: hidden !important;
     height: auto !important;
     min-height: 100dvh !important;
+    position: relative !important;
+    touch-action: pan-y !important;
   }
   
   .is-landing-page #root {
     height: auto !important;
     min-height: 100dvh !important;
-    overflow-y: auto !important;
+    overflow-y: visible !important;
     overflow-x: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .no-scrollbar::-webkit-scrollbar {

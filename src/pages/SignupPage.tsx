@@ -104,6 +104,9 @@ export default function SignupPage() {
   };
 
   React.useEffect(() => {
+    document.documentElement.classList.add('is-landing-page');
+    document.body.classList.add('is-landing-page');
+
     const handleMessage = async (event: MessageEvent) => {
       // Validate origin is from AI Studio preview or localhost
       const origin = event.origin;
@@ -139,6 +142,8 @@ export default function SignupPage() {
     window.addEventListener('storage', handleStorage);
     
     return () => {
+      document.documentElement.classList.remove('is-landing-page');
+      document.body.classList.remove('is-landing-page');
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('storage', handleStorage);
     };
@@ -159,7 +164,7 @@ export default function SignupPage() {
   }, [mouseX, mouseY]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-20 relative overflow-x-hidden">
       {/* Blurred Light Cursor Follower */}
       <motion.div
         className="fixed top-0 left-0 w-48 h-48 bg-primary/10 rounded-full pointer-events-none z-[100] blur-[60px]"
