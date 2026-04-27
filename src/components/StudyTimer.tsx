@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Clock, Play, Pause, Save, Volume2, Headphones, ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../services/api';
@@ -16,6 +16,12 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   const [isActive, setIsActive] = useState(true);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>(
+    localStorage.getItem('study_voice_uri') || ''
+  );
+
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const secondsRef = useRef(0);
   const startTimeRef = useRef<Date>(new Date());
@@ -26,17 +32,69 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   }, [seconds]);
 
   useEffect(() => {
+    const loadVoices = () => {
+      setVoices(window.speechSynthesis.getVoices());
+    };
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
     return () => {
       window.speechSynthesis.cancel();
     };
   }, []);
 
-  const toggleAudio = () => {
+  const langMap: Record<string, string> = useMemo(() => ({
+    'English (US)': 'en-US',
+    'English (UK)': 'en-GB',
+    'Indonesia': 'id-ID'
+  }), []);
+
+  const selectedLangCode = useMemo(() => {
+    return user?.language ? langMap[user.language] || 'en-US' : 'en-US';
+  }, [user?.language, langMap]);
+
+  const relevantVoices = useMemo(() => {
+    const baseLang = selectedLangCode.split('-')[0];
+    const matchLang = voices.filter(v => v.lang.startsWith(baseLang));
+    // If no voices match the language, just return all voices
+    return matchLang.length > 0 ? matchLang : voices;
+  }, [voices, selectedLangCode]);
+
+  const AETHER_NAMES = ['Nova', 'Aura', 'Cosmos', 'Atlas', 'Echo', 'Luna', 'Orion', 'Stella'];
+  
+  const voiceOptions = useMemo(() => {
+    return relevantVoices.slice(0, 8).map((v, i) => ({
+      uri: v.voiceURI,
+      name: AETHER_NAMES[i] || `Voice ${i + 1}`,
+      original: v
+    }));
+  }, [relevantVoices]);
+
+  const currentVoiceIndex = Math.max(0, voiceOptions.findIndex(v => v.uri === selectedVoiceURI));
+
+  const cycleVoice = () => {
+    if (voiceOptions.length <= 1) return;
+    const nextIndex = (currentVoiceIndex + 1) % voiceOptions.length;
+    const nextURI = voiceOptions[nextIndex].uri;
+    setSelectedVoiceURI(nextURI);
+    localStorage.setItem('study_voice_uri', nextURI);
     if (isPlayingAudio) {
+       window.speechSynthesis.cancel();
+       setIsPlayingAudio(false);
+       setTimeout(() => toggleAudio(true), 100);
+    }
+  };
+
+  const toggleAudio = (forcePlay?: boolean) => {
+    const shouldPlay = forcePlay !== undefined ? forcePlay : !isPlayingAudio;
+    
+    if (!shouldPlay) {
       window.speechSynthesis.pause();
+      // sometimes pause doesn't fully stop in some browsers, so cancel is safer for "stop"
+      window.speechSynthesis.cancel();
       setIsPlayingAudio(false);
     } else {
-      if (window.speechSynthesis.paused) {
+      if (window.speechSynthesis.paused && isPlayingAudio) {
         window.speechSynthesis.resume();
         setIsPlayingAudio(true);
       } else {
@@ -54,17 +112,15 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
         // Chunk by sentences to prevent Chrome TTS timeout limit on long text
         const chunks = plainText.match(/[^.!?]+[.!?]+/g) || [plainText];
         
-        const langMap: Record<string, string> = {
-          'English (US)': 'en-US',
-          'English (UK)': 'en-GB',
-          'Indonesia': 'id-ID'
-        };
-        const selectedLang = user?.language ? langMap[user.language] || 'en-US' : 'en-US';
+        const selectedVoice = voices.find(v => v.voiceURI === selectedVoiceURI);
 
         chunks.forEach((chunkText, idx) => {
           if (!chunkText.trim()) return;
           const u = new SpeechSynthesisUtterance(chunkText.trim());
-          u.lang = selectedLang;
+          u.lang = selectedLangCode;
+          if (selectedVoice) {
+            u.voice = selectedVoice;
+          }
           
           if (idx === chunks.length - 1) {
             u.onend = () => setIsPlayingAudio(false);
@@ -83,7 +139,8 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   useEffect(() => {
     if (isPlayingAudio && readContent) {
       window.speechSynthesis.cancel();
-      toggleAudio();
+      setIsPlayingAudio(false);
+      setTimeout(() => toggleAudio(true), 50);
     }
   }, [readContent]);
 
@@ -181,18 +238,32 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
               <div className="w-6 sm:w-8 h-[1px] bg-white/10 mt-2 sm:mt-3" />
 
               {readContent && (
-                <button 
-                  onClick={toggleAudio}
-                  className={cn(
-                    "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all flex items-center justify-center relative",
-                    isPlayingAudio 
-                      ? "bg-primary text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]" 
-                      : "bg-white/5 hover:bg-white/10 text-slate-300"
+                <div className="flex flex-col items-center gap-1 w-full px-1">
+                  <button 
+                    onClick={() => toggleAudio()}
+                    className={cn(
+                      "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all flex items-center justify-center relative mx-auto",
+                      isPlayingAudio 
+                        ? "bg-primary text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]" 
+                        : "bg-white/5 hover:bg-white/10 text-slate-300"
+                    )}
+                    title={isPlayingAudio ? "Pause Reading" : "Read Notes Aloud"}
+                  >
+                    {isPlayingAudio ? <Volume2 className="animate-pulse w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" /> : <Headphones className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" />}
+                  </button>
+                  
+                  {voiceOptions.length > 1 && (
+                    <button
+                      onClick={cycleVoice}
+                      className="mt-2 sm:mt-2.5 bg-white/10 hover:bg-white/20 active:bg-white/5 border border-white/10 outline-none text-white rounded-full py-1.5 px-2 sm:px-3 cursor-pointer focus:ring-1 focus:ring-primary/50 text-center transition-all w-full max-w-[100px] flex items-center justify-center gap-1 shadow-sm backdrop-blur-sm truncate"
+                      title="Tap to change Voice"
+                    >
+                      <span className="text-[10px] sm:text-xs font-semibold min-w-0 truncate tracking-wide text-white drop-shadow-md">
+                        {voiceOptions[currentVoiceIndex]?.name || 'Auto'}
+                      </span>
+                    </button>
                   )}
-                  title={isPlayingAudio ? "Pause Reading" : "Read Notes Aloud"}
-                >
-                  {isPlayingAudio ? <Volume2 className="animate-pulse w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" /> : <Headphones className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" />}
-                </button>
+                </div>
               )}
 
               <button 
