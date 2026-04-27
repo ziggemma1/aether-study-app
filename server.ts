@@ -14,6 +14,7 @@ import quizRoutes from "./src/server/routes/quizRoutes.js";
 import messageRoutes from "./src/server/routes/messageRoutes.js";
 import userRoutes from "./src/server/routes/userRoutes.js";
 import groupRoutes from "./src/server/routes/groupRoutes.js";
+import roomRoutes from "./src/server/routes/roomRoutes.js";
 import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
 import { createServer } from "http";
 import { initSocket } from "./src/server/socket.js";
@@ -135,6 +136,7 @@ async function startServer() {
   app.use("/api/messages", checkDbConnection, messageRoutes);
   app.use("/api/users", checkDbConnection, userRoutes);
   app.use("/api/groups", checkDbConnection, groupRoutes);
+  app.use("/api/rooms", checkDbConnection, roomRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {

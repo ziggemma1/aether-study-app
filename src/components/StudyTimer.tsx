@@ -5,6 +5,8 @@ import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { getSocket } from '../services/socket';
+
 interface StudyTimerProps {
   materialId?: string;
   title: string;
@@ -36,19 +38,54 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const secondsRef = useRef(0);
   const startTimeRef = useRef<Date>(new Date());
-  const { setStudySessions, showToast, user, t } = useAppContext();
+  const { setStudySessions, showToast, user, t, setUser } = useAppContext();
+  const socketRef = useRef<any>(null);
   
   useEffect(() => {
     secondsRef.current = seconds;
-  }, [seconds]);
+    // Sync with room if materialId starts with "room"
+    if (isActive && socketRef.current && materialId?.startsWith('room')) {
+      socketRef.current.emit("sync_pomodoro", { 
+        roomId: materialId.replace('room:', ''), 
+        timeLeft: seconds, 
+        isPaused: !isActive 
+      });
+    }
+  }, [seconds, isActive, materialId]);
+
+  useEffect(() => {
+    socketRef.current = getSocket();
+    const socket = socketRef.current;
+    
+    if (socket && materialId?.startsWith('room')) {
+      socket.on("timer_sync", (data: { userId: string, timeLeft: number, isPaused: boolean }) => {
+        // Only update if we are not the one who sent it (socket.io usually doesn't send back to self anyway)
+        // But for "live rooms" we might want to follow a host or just see highwater marks
+        // For now, we'll just let it be independent per user but visible in participants list if we wanted
+      });
+    }
+
+    return () => {
+      if (socket) socket.off("timer_sync");
+    };
+  }, [materialId]);
 
   // Deep Focus visibilitychange listener
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.hidden && deepFocus && isActive) {
         setIsActive(false);
         showToast("Deep Focus failed! You left the app during a session.", "error");
-        // In a real app, subtract points: api.post('/users/subtract-points', { amount: 50 })
+        
+        try {
+          const res = await api.post('/users/penalize', { amount: 50 });
+          if (setUser && user) {
+             setUser({ ...user, aetherPoints: res.data.aetherPoints });
+          }
+        } catch (e) {
+          console.error("Failed to apply penalty", e);
+        }
+
         if (ambientTrack.url && audioRef.current) {
           audioRef.current.pause();
         }

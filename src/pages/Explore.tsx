@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Compass, Search, Download, Star, Filter, Heart, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
