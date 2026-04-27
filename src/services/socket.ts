@@ -20,7 +20,7 @@ export const getSocket = (token?: string) => {
     });
 
     socket.on("connect_error", (err: any) => {
-      if (err.message === "xhr poll error" || err.message === "websocket error") {
+      if (err.message === "xhr poll error" || err.message === "websocket error" || err.message === "timeout") {
          console.warn("Socket connection failed (likely environment restriction e.g. Vercel). Real-time features disabled.");
       } else {
          console.error("Socket connection error:", err.message);
