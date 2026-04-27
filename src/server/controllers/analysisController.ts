@@ -1,6 +1,27 @@
 import { Request, Response } from 'express';
 import { analyzeStudyMaterial } from '../../services/geminiService.js';
 import { generateDetailedNotes } from '../../services/openRouterService.js';
+import { YoutubeTranscript } from 'youtube-transcript';
+
+export const getYoutubeTranscript = async (req: Request, res: Response) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ message: 'URL is required' });
+
+    console.log(`Fetching YouTube transcript for: ${url}`);
+    const transcript = await YoutubeTranscript.fetchTranscript(url);
+    
+    // Combine texts
+    const content = transcript.map(t => t.text).join(' ');
+    res.json({ content });
+  } catch (error: any) {
+    console.error('YouTube transcript error:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch YouTube transcript. Ensure the video has closed captions enabled.',
+      error: error.message 
+    });
+  }
+};
 
 export const analyzeMaterial = async (req: Request, res: Response) => {
   try {

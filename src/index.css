@@ -112,6 +112,18 @@
   }
 }
 
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+}
+
 html, body {
   @apply bg-background text-text-main font-sans antialiased transition-colors duration-200;
   background-image: linear-gradient(180deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%);

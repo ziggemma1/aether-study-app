@@ -234,6 +234,13 @@ export default function MaterialDetail() {
                 <span className="font-bold">Take AI Quiz</span>
               </Link>
               <Link
+                to={`/flashcards/${material.id}`}
+                className="flex items-center gap-3 w-full p-4 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
+              >
+                <Sparkles size={20} className="text-secondary" />
+                <span className="font-bold">Generate AI Flashcards</span>
+              </Link>
+              <Link
                 to={`/plans/create?materialId=${material.id}`}
                 className="flex items-center gap-3 w-full p-4 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
               >

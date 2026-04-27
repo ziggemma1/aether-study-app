@@ -26,6 +26,7 @@ import CurriculumLibrary from './pages/CurriculumLibrary';
 import QuizInterface from './pages/QuizInterface';
 import DetailedNotes from './pages/DetailedNotes';
 import FindFriends from './pages/FindFriends';
+import Flashcards from './pages/Flashcards';
 
 export default function App() {
 
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/library" element={<Library />} />
             <Route path="/library/:id" element={<MaterialDetail />} />
             <Route path="/materials/:id/notes" element={<DetailedNotes />} />
+            <Route path="/flashcards/:id" element={<Flashcards />} />
             <Route path="/upload" element={<UploadMaterial />} />
             <Route path="/curriculum" element={<CurriculumLibrary />} />
             <Route path="/messages" element={<Messages />} />

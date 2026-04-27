@@ -43,7 +43,16 @@ export default function UploadMaterial() {
       let finalContent = materialContent || '';
       
       if (materialType === 'youtube' && url) {
-        finalContent = `YouTube Video URL: ${url}`;
+        try {
+          const res = await api.post('/materials/youtube-transcript', { url });
+          finalContent = res.data.content;
+          materialTitle = materialTitle || 'YouTube Transcript Summarized';
+        } catch (err: any) {
+          console.warn("Failed getting transcript:", err);
+          showToast(err.response?.data?.message || 'Failed to fetch YouTube transcript. The video might not have closed captions enabled.', 'error');
+          setIsUploading(false);
+          return;
+        }
       }
       
       if (materialType === 'audio' && !finalContent) {

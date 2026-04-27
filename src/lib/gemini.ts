@@ -151,6 +151,110 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
   throw lastError || new Error("All Gemini models failed for analysis");
 };
 
+export const simplifyContentELI5 = async (content: string, language: string = "English (US)"): Promise<string> => {
+  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
+  
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const response = await withRetry(() => ai.models.generateContent({
+        model,
+        contents: `Please explain the following text as if I am 5 years old. Make it extremely simple, use analogies, and keep it brief.\n\nText to explain:\n${content}`,
+        config: {
+          systemInstruction: `Explain like I'm 5 (ELI5). STRICT REQUIREMENT: Output MUST be in ${langPrompt}. Respond with only the simplified markdown text.`
+        }
+      }));
+      
+      if (response.text) return response.text;
+    } catch (error) {
+      console.warn(`Model ${model} failed for ELI5 processing:`, error);
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("All Gemini models failed for ELI5 processing");
+};
+
+export const chatWithTutorOnClient = async (materialTitle: string, materialContent: string, chatHistory: { role: 'user' | 'model'; parts: { text: string }[] }[], userMessage: string, language: string = "English (US)"): Promise<string> => {
+  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
+
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const chatModel = ai.models; // we can use generateContent with history
+      const systemInstruction = `You are a helpful Interactive AI Tutor. You know exactly what the user is studying. Material Title: ${materialTitle}. Here is the material content to refer to: ${materialContent.substring(0, 10000)}. STRICT REQUIREMENT: Output MUST be in ${langPrompt}. Be conversational, concise, and educational.`;
+
+      const contents = [
+        ...chatHistory,
+        { role: 'user', parts: [{ text: userMessage }] }
+      ] as any[];
+
+      const response = await withRetry(() => chatModel.generateContent({
+        model,
+        contents,
+        config: { systemInstruction }
+      }));
+      
+      const text = response.text;
+      if (!text) throw new Error("Tutor chat failed");
+      return text;
+    } catch (error) {
+      console.warn(`Model ${model} failed for tutor chat:`, error);
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("All Gemini models failed for tutor chat");
+};
+
+export const generateFlashcardsOnClient = async (content: string, language: string = "English (US)"): Promise<{ question: string; answer: string }[]> => {
+  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
+
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const response = await withRetry(() => ai.models.generateContent({
+        model,
+        contents: `Extract the most important key terms and concepts from this material, and create 10 flashcards.\n\nMaterial:\n${content.substring(0, 10000)}`,
+        config: {
+          systemInstruction: `You are an expert tutor. Create flashcards. Output exactly a JSON array of objects with "question" and "answer" properties. STRICT REQUIREMENT: Output MUST be in ${langPrompt}.`,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                answer: { type: Type.STRING }
+              },
+              required: ["question", "answer"]
+            }
+          }
+        }
+      }));
+      
+      let text = response.text;
+      if (!text) throw new Error("Gemini flashcards failed: No text returned");
+      
+      // Clean up markdown block if present
+      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      
+      return JSON.parse(text);
+    } catch (error) {
+      console.warn(`Model ${model} failed for flashcards:`, error);
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("All Gemini models failed for flashcards processing");
+};
+
 export const generateTopicSectionOnClient = async (content: string, title: string, topic: string, language: string = "English (US)"): Promise<NoteSection> => {
   if (!apiKey) throw new Error("GEMINI_API_KEY missing");
   

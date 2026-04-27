@@ -1,11 +1,13 @@
 import express from 'express';
 import { getMaterials, createMaterial, deleteMaterial, deleteMaterials, updateMaterial } from '../controllers/materialController.js';
-import { analyzeMaterial, generateChapters } from '../controllers/analysisController.js';
+import { analyzeMaterial, generateChapters, getYoutubeTranscript } from '../controllers/analysisController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.use(protect);
+
+router.post('/youtube-transcript', getYoutubeTranscript);
 
 router.get('/', getMaterials);
 router.post('/', createMaterial);

@@ -5,10 +5,11 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, Sparkles, Download, Share2, FileText, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { StudyTimer } from '../components/StudyTimer';
+import { TutorChat } from '../components/TutorChat';
 import api from '../services/api';
 import { cn } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
-import { analyzeStudyMaterialOnClient, generateVisualAidOnClient, generateTopicSectionOnClient } from '../lib/gemini';
+import { analyzeStudyMaterialOnClient, generateVisualAidOnClient, generateTopicSectionOnClient, simplifyContentELI5 } from '../lib/gemini';
 
 export default function DetailedNotes() {
   const { id } = useParams();
@@ -19,6 +20,33 @@ export default function DetailedNotes() {
   const [currentPage, setCurrentPage] = React.useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  
+  const [isELI5, setIsELI5] = React.useState(false);
+  const [eli5Content, setEli5Content] = React.useState<{ [pageId: number]: string }>({});
+  const [isLoadingELI5, setIsLoadingELI5] = React.useState(false);
+
+  const handleToggleELI5 = async (pageContent: string, pageIndex: number) => {
+    if (isELI5) {
+      setIsELI5(false);
+      return;
+    }
+    
+    if (eli5Content[pageIndex]) {
+      setIsELI5(true);
+      return;
+    }
+
+    setIsLoadingELI5(true);
+    try {
+      const simplified = await simplifyContentELI5(pageContent, user?.language);
+      setEli5Content(prev => ({ ...prev, [pageIndex]: simplified }));
+      setIsELI5(true);
+    } catch (err: any) {
+      showToast('Failed to simplify content: ' + err.message, 'error');
+    } finally {
+      setIsLoadingELI5(false);
+    }
+  };
 
   if (isLoading && !material) {
     return (
@@ -125,6 +153,7 @@ export default function DetailedNotes() {
   const handleNext = () => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
+      setIsELI5(false);
       window.scrollTo(0, 0);
     }
   };
@@ -132,6 +161,7 @@ export default function DetailedNotes() {
   const handlePrev = () => {
     if (currentPage > 0) {
       setCurrentPage(prev => prev - 1);
+      setIsELI5(false);
       window.scrollTo(0, 0);
     }
   };
@@ -234,10 +264,26 @@ export default function DetailedNotes() {
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-accent opacity-50" />
                 
                 <div className="space-y-10">
-                  <header className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Sparkles size={14} className="text-accent animate-pulse" />
-                      <span className="text-xs font-bold text-accent uppercase tracking-widest">{t('enhanced_insight_chapter', { count: currentPage + 1 })}</span>
+                  <header className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={14} className="text-accent animate-pulse" />
+                        <span className="text-xs font-bold text-accent uppercase tracking-widest">{t('enhanced_insight_chapter', { count: currentPage + 1 })}</span>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleToggleELI5(sections[currentPage].content, currentPage)}
+                        disabled={isLoadingELI5}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border",
+                          isELI5 
+                            ? "bg-accent/20 border-accent/50 text-accent" 
+                            : "bg-surface border-border text-text-muted hover:border-accent/30 hover:text-accent"
+                        )}
+                      >
+                        {isLoadingELI5 ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                        {isELI5 ? 'Reading ELI5' : 'ELI5'}
+                      </button>
                     </div>
                     <h2 className="text-3xl sm:text-4xl font-extrabold text-text-main tracking-tight leading-none italic decoration-primary/30 underline decoration-4 underline-offset-8">
                       {sections[currentPage].heading}
@@ -267,7 +313,11 @@ export default function DetailedNotes() {
                   )}
 
                   <div className="markdown-body text-text-main selection:bg-primary/30">
-                    <ReactMarkdown>{sections[currentPage].content}</ReactMarkdown>
+                    <ReactMarkdown>
+                      {isELI5 && eli5Content[currentPage] 
+                        ? eli5Content[currentPage] 
+                        : sections[currentPage].content}
+                    </ReactMarkdown>
                   </div>
 
                   {/* Page Navigation Controls inside the card */}
@@ -360,6 +410,11 @@ export default function DetailedNotes() {
         materialId={material.id} 
         title={material.title} 
         readContent={sections.length > 0 ? sections[currentPage].content : material.detailedNotes}
+      />
+
+      <TutorChat 
+        materialTitle={material.title}
+        materialContent={sections.length > 0 ? sections[currentPage].content : (material.detailedNotes || material.content || "")}
       />
 
       {/* Delete Confirmation Modal */}
