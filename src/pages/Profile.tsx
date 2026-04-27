@@ -23,6 +23,7 @@ export default function Profile() {
     user, 
     t, 
     materials, 
+    studySessions,
     achievements, 
     sendFriendRequest 
   } = useAppContext();
@@ -84,6 +85,44 @@ export default function Profile() {
     
     return synthetic;
   }, [user, materials]);
+
+  // Heatmap Data (Last 120 days)
+  const heatmapDays = React.useMemo(() => {
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const sessionMinutesByDate: Record<string, number> = {};
+    if (studySessions) {
+      studySessions.forEach(s => {
+        if (!s.startTime || !s.durationMinutes) return;
+        const d = new Date(s.startTime);
+        d.setHours(0, 0, 0, 0);
+        const dateStr = d.toISOString();
+        sessionMinutesByDate[dateStr] = (sessionMinutesByDate[dateStr] || 0) + s.durationMinutes;
+      });
+    }
+
+    for (let i = 119; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString();
+      const minutes = sessionMinutesByDate[dateStr] || 0;
+      
+      let intensity = 0;
+      if (minutes > 0 && minutes < 30) intensity = 1;
+      else if (minutes >= 30 && minutes < 60) intensity = 2;
+      else if (minutes >= 60 && minutes < 120) intensity = 3;
+      else if (minutes >= 120) intensity = 4;
+
+      days.push({
+        date: d,
+        minutes,
+        intensity
+      });
+    }
+    return days;
+  }, [studySessions]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 sm:space-y-10 animate-in fade-in duration-700 pb-24 sm:pb-20 p-3 sm:p-0">
@@ -181,6 +220,45 @@ export default function Profile() {
 
         {/* Right Column - Activity & Achievements */}
         <div className="lg:col-span-8 space-y-6 sm:space-y-8">
+          {/* Pomodoro Analytics Heatmap */}
+          <div className="glass-card p-6 sm:p-8">
+            <h3 className="text-sm sm:text-xl font-bold mb-6 text-text-main flex items-center gap-2 sm:gap-3">
+              <Calendar size={18} className="text-blue-500 sm:hidden" />
+              <Calendar size={24} className="text-blue-500 hidden sm:block" />
+              Focus Contributions
+            </h3>
+            
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-1 sm:gap-1.5 overflow-x-auto custom-scrollbar pb-2">
+                <div className="grid grid-rows-7 grid-flow-col gap-1 sm:gap-1.5">
+                  {heatmapDays.map((day, i) => (
+                    <div 
+                      key={i}
+                      className={cn(
+                        "w-3 h-3 sm:w-4 sm:h-4 rounded-sm transition-all duration-300",
+                        day.intensity === 0 && "bg-surface border border-border/50",
+                        day.intensity === 1 && "bg-primary/30",
+                        day.intensity === 2 && "bg-primary/60",
+                        day.intensity === 3 && "bg-primary/80",
+                        day.intensity === 4 && "bg-primary shadow-[0_0_8px_rgba(139,92,246,0.5)]",
+                      )}
+                      title={`${day.date.toDateString()}: ${day.minutes} mins`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end items-center gap-1.5 text-[10px] sm:text-xs text-text-muted mt-2">
+                <span>Less</span>
+                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-sm bg-surface border border-border/50" />
+                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-sm bg-primary/30" />
+                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-sm bg-primary/60" />
+                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-sm bg-primary/80" />
+                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-sm bg-primary" />
+                <span>More</span>
+              </div>
+            </div>
+          </div>
+
           {/* Learning Progress */}
           <div className="glass-card p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6 sm:mb-8">

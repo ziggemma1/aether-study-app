@@ -17,7 +17,7 @@ export default function BottomNav() {
     { icon: Home, path: '/dashboard', label: 'Home' },
     { icon: Workflow, path: '/plans', label: 'Plans' },
     { icon: Plus, path: '/upload', isAction: true },
-    { icon: Users, path: '/community', label: 'Community' },
+    { icon: Users, path: '/leaderboard', label: 'Leaderboard' },
     { icon: User, path: '/profile', label: 'Profile' },
   ];
 

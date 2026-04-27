@@ -100,3 +100,71 @@ export const deleteMaterials = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const getPublicMaterials = async (req: Request, res: Response) => {
+  try {
+    const materials = await Material.find({ isPublic: true })
+      .populate('userId', 'name avatar')
+      .sort({ likes: -1, createdAt: -1 });
+    res.json(materials);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const cloneMaterial = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).userId;
+
+    const originalMaterial = await Material.findById(id);
+    if (!originalMaterial) {
+      return res.status(404).json({ message: "Original material not found" });
+    }
+
+    // Create a copy for the user
+    const clonedMaterial = new Material({
+      ...originalMaterial.toObject(),
+      _id: new mongoose.Types.ObjectId(),
+      userId,
+      isPublic: false, // cloned material is private by default for the cloner
+      likes: 0,
+      downloads: 0,
+      createdAt: new Date()
+    });
+
+    await clonedMaterial.save();
+
+    // Increment original material's download count
+    originalMaterial.downloads += 1;
+    await originalMaterial.save();
+
+    res.status(201).json(clonedMaterial);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const togglePublicStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).userId;
+
+    const material = await Material.findOne({ _id: id, userId });
+    if (!material) {
+      return res.status(404).json({ message: "Material not found or unauthorized" });
+    }
+
+    material.isPublic = !material.isPublic;
+    if (material.isPublic && !material.authorName) {
+      const user = await req.app.get('cache')?.User?.findById?.(userId) 
+        || await mongoose.model('User').findById(userId);
+      material.authorName = user?.name || "Unknown Author";
+    }
+
+    await material.save();
+    res.json(material);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

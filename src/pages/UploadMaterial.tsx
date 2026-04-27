@@ -29,6 +29,75 @@ export default function UploadMaterial() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const ocrInputRef = React.useRef<HTMLInputElement>(null);
 
+  // Audio Note Dictation State
+  const [isRecording, setIsRecording] = React.useState(false);
+  const [dictationText, setDictationText] = React.useState('');
+  const recognitionRef = React.useRef<any>(null);
+
+  React.useEffect(() => {
+    // Initialize Speech Recognition
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        
+        recognitionRef.current.onresult = (event: any) => {
+          let currentTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          // We just append interim/final. For simplicity just rewrite with full mapped
+          // Actually, 'continuous' concatenates differently depending on browser.
+          // Let's manually concatenate final results, and show interim.
+        };
+        // A better approach for continuous appending
+        let finalTranscript = '';
+        recognitionRef.current.onresult = (event: any) => {
+          let interimTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript + ' ';
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+          setDictationText(finalTranscript + interimTranscript);
+        };
+        
+        recognitionRef.current.onerror = (event: any) => {
+          console.warn("Speech recognition error:", event.error);
+          setIsRecording(false);
+        };
+        recognitionRef.current.onend = () => {
+          setIsRecording(false);
+        };
+      }
+    }
+  }, []);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      if (!recognitionRef.current) {
+        showToast("Speech recognition is not supported in this browser.", 'error');
+        return;
+      }
+      setDictationText(''); // reset
+      try {
+        recognitionRef.current.start();
+        setIsRecording(true);
+      } catch (err: any) {
+        console.warn('Speech recognition start failed', err);
+        showToast('Speech recognition could not be started', 'error');
+        setIsRecording(false);
+      }
+    }
+  };
+
   const handleUpload = async (materialTitle: string, materialType: string, materialContent?: string) => {
     if (!user) {
       showToast('Please log in to upload materials.', 'error');
@@ -479,14 +548,44 @@ export default function UploadMaterial() {
             )}
 
             {activeTab === 'voice' && (
-              <div className="text-center py-8 sm:py-12">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 cursor-pointer hover:scale-105 transition-transform border border-red-100">
-                  <Mic size={28} className="sm:hidden" />
-                  <Mic size={40} className="hidden sm:block" />
+              <div className="space-y-4 sm:space-y-6">
+                <div className="text-center py-6 sm:py-8 bg-surface/50 rounded-xl sm:rounded-2xl border border-border">
+                  <div 
+                    onClick={toggleRecording}
+                    className={cn(
+                      "w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 cursor-pointer hover:scale-105 transition-all shadow-lg border-4",
+                      isRecording ? "bg-red-500/20 text-red-500 border-red-500 shadow-red-500/50 animate-pulse" : "bg-surface-alt text-text-muted border-border"
+                    )}
+                  >
+                    <Mic size={28} className="sm:hidden" />
+                    <Mic size={40} className="hidden sm:block" />
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">
+                    {isRecording ? "Recording Notes..." : "Dictate Audio Notes"}
+                  </h3>
+                  <p className="text-[10px] sm:text-sm text-text-muted">
+                    {isRecording ? "Tap to stop." : "Talk out loud to synthesize your thoughts."}
+                  </p>
                 </div>
-                <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">Record Session</h3>
-                <p className="text-[10px] sm:text-sm text-text-muted mb-6 sm:mb-8">Record your lecture or discussion.</p>
-                <button onClick={() => handleUpload('Voice Note', 'audio')} className="btn-primary py-2 sm:py-3 text-xs sm:text-sm">Start Recording</button>
+                
+                {dictationText && (
+                  <div className="space-y-4">
+                    <label className="block text-[10px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">Transcribed Text</label>
+                    <textarea
+                      rows={6}
+                      value={dictationText}
+                      onChange={(e) => setDictationText(e.target.value)}
+                      className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-secondary/30 bg-surface/80 text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-secondary outline-none resize-y"
+                    />
+                    <button 
+                      onClick={() => handleUpload('Audio Dictation Notes', 'audio', dictationText)} 
+                      disabled={isRecording || !dictationText}
+                      className="w-full box-border btn-primary py-2 sm:py-3 text-xs sm:text-sm disabled:opacity-50"
+                    >
+                      Process & Analyze Notes
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>

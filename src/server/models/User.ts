@@ -44,6 +44,12 @@ const userSchema = new mongoose.Schema({
     day: { type: String },
     hours: { type: Number }
   }],
+  aetherPoints: { type: Number, default: 0 },
+  freezeTokens: { type: Number, default: 0 },
+  themeUnlocked: [{ type: String }],
+  lastActiveDate: { type: Date },
+  lastStreakResetDate: { type: Date },
+  optedInLeaderboard: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 

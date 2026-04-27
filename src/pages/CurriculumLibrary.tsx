@@ -10,6 +10,8 @@ type Country = keyof typeof curriculumData;
 type Exam = string;
 type Subject = string;
 
+import { SkillTreeView } from '../components/SkillTreeView';
+
 export default function CurriculumLibrary() {
   const navigate = useNavigate();
   const { t } = useAppContext();
@@ -113,29 +115,11 @@ export default function CurriculumLibrary() {
               <p className="text-text-muted">{t('generating_study_materials_desc')}</p>
             </div>
           ) : selectedSubject ? (
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold flex items-center gap-2 mb-6 text-text-main">
-                {t('available_chapters_for')} {selectedSubject}
-              </h3>
-              <div className="grid grid-cols-1 gap-4">
-                {topics.map((topic: any) => (
-                  <motion.button
-                    key={topic.id}
-                    whileHover={{ x: 4 }}
-                    onClick={() => handleTopicSelect(topic)}
-                    className="glass-card p-6 text-left flex items-center justify-between group hover:border-primary/50 transition-all"
-                  >
-                    <div>
-                      <h4 className="font-bold text-lg group-hover:text-primary transition-colors text-text-main">{topic.chapter}</h4>
-                      <p className="text-sm text-text-muted mt-1 line-clamp-1">{topic.content}</p>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-text-muted group-hover:bg-primary group-hover:text-white transition-all border border-border">
-                      <ChevronRight size={20} />
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
-            </div>
+            <SkillTreeView 
+              subject={selectedSubject} 
+              topics={topics} 
+              onTopicSelect={handleTopicSelect} 
+            />
           ) : (
             <div className="glass-card p-12 text-center flex flex-col items-center justify-center min-h-[400px] border-dashed">
               <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center text-text-muted mb-6 border border-border">

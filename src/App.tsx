@@ -27,6 +27,10 @@ import QuizInterface from './pages/QuizInterface';
 import DetailedNotes from './pages/DetailedNotes';
 import FindFriends from './pages/FindFriends';
 import Flashcards from './pages/Flashcards';
+import Shop from './pages/Shop';
+import Leaderboard from './pages/Leaderboard';
+import LiveRooms from './pages/LiveRooms';
+import Explore from './pages/Explore';
 
 export default function App() {
 
@@ -48,6 +52,10 @@ export default function App() {
             <Route path="/flashcards/:id" element={<Flashcards />} />
             <Route path="/upload" element={<UploadMaterial />} />
             <Route path="/curriculum" element={<CurriculumLibrary />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/rooms" element={<LiveRooms />} />
+            <Route path="/explore" element={<Explore />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/plans" element={<ReadingPlanGenerator />} />

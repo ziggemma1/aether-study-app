@@ -53,6 +53,33 @@ export const initSocket = (server: any) => {
     // Join personal room for 1-on-1 messages
     socket.join(userId);
 
+    // LIVE ROOMS LOGIC
+    socket.on("join_live_room", async (roomId) => {
+      socket.join(`live_room:${roomId}`);
+      const user = await User.findById(userId).select('name avatar');
+      io.to(`live_room:${roomId}`).emit("user_joined_room", { 
+        roomId, 
+        user: { id: userId, name: user?.name, avatar: user?.avatar } 
+      });
+      console.log(`User ${userId} joined live room: ${roomId}`);
+    });
+
+    socket.on("leave_live_room", (roomId) => {
+      socket.leave(`live_room:${roomId}`);
+      io.to(`live_room:${roomId}`).emit("user_left_room", { userId, roomId });
+    });
+
+    socket.on("sync_pomodoro", (data) => {
+      const { roomId, timeLeft, isPaused } = data;
+      // Broadcast timer state to others in room
+      socket.to(`live_room:${roomId}`).emit("timer_sync", { userId, timeLeft, isPaused });
+    });
+
+    socket.on("send_nudge", ({ targetUserId }) => {
+      io.to(targetUserId).emit("received_nudge", { fromUserId: userId });
+    });
+    // END LIVE ROOMS LOGIC
+
     socket.on("join_group", (groupId) => {
       socket.join(groupId);
       console.log(`User ${userId} joined group: ${groupId}`);

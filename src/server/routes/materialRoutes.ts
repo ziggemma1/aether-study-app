@@ -1,11 +1,24 @@
 import express from 'express';
-import { getMaterials, createMaterial, deleteMaterial, deleteMaterials, updateMaterial } from '../controllers/materialController.js';
+import { 
+  getMaterials, 
+  createMaterial, 
+  deleteMaterial, 
+  deleteMaterials, 
+  updateMaterial, 
+  getPublicMaterials, 
+  cloneMaterial, 
+  togglePublicStatus 
+} from '../controllers/materialController.js';
 import { analyzeMaterial, generateChapters, getYoutubeTranscript } from '../controllers/analysisController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.use(protect);
+
+router.get('/public', getPublicMaterials);
+router.post('/clone/:id', cloneMaterial);
+router.post('/toggle-public/:id', togglePublicStatus);
 
 router.post('/youtube-transcript', getYoutubeTranscript);
 

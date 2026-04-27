@@ -26,7 +26,9 @@ import {
   Video,
   Brain,
   FileBadge,
-  Headphones
+  Headphones,
+  Compass,
+  Radio
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -96,6 +98,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           hasSubItems: true,
           subItems: librarySubItems
         },
+        { icon: Compass, label: 'Explore Notes', path: '/explore' },
         { icon: FileText, label: t('study_plans'), path: '/plans' },
         { icon: Calendar, label: t('calendar'), path: '/calendar' },
       ]
@@ -103,7 +106,9 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     {
       title: 'Social & Account',
       items: [
-        { icon: Users, label: 'Community', path: '/community' },
+        { icon: Radio, label: 'Live Rooms', path: '/rooms' },
+        { icon: Users, label: 'Leaderboard', path: '/leaderboard' },
+        { icon: Award, label: 'Aether Shop', path: '/shop' },
         { icon: MessageSquare, label: t('messages'), path: '/messages' },
         { icon: User, label: t('profile'), path: '/profile' },
         { icon: CreditCard, label: t('subscription'), path: '/subscription' },

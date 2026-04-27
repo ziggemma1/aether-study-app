@@ -10,7 +10,9 @@ import {
   CheckCircle2, 
   Award, 
   Users2,
-  Clock
+  Clock,
+  Compass,
+  Radio
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -177,7 +179,7 @@ export default function Dashboard() {
               longestStreak={user?.longestStreak && user.longestStreak > (user?.streak || 0) ? user.longestStreak : (user?.streak || 0)} 
             />
           </Link>
-          <Link to="/community" className="block">
+          <Link to="/leaderboard" className="block">
             <RankingCard 
               rank={globalRank} 
               total={allProfiles.length || 1250}
@@ -291,6 +293,40 @@ export default function Dashboard() {
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-secondary group-hover:bg-secondary/5 transition-all shrink-0">
                   <ArrowRight size={14} className="text-text-muted group-hover:text-secondary group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+            </Link>
+
+            <Link to="/explore" className="glass-card p-4 sm:p-6 group hover:border-emerald-500/50 transition-all relative overflow-hidden flex-1 flex items-center">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+              <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full">
+                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-emerald-500/10 rounded-xl sm:rounded-2xl flex items-center justify-center text-emerald-500 shrink-0">
+                  <Compass size={20} className="sm:hidden" />
+                  <Compass size={28} className="hidden sm:block" />
+                </div>
+                <div className="flex-grow">
+                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">Explore Notes</h3>
+                  <p className="text-xs text-text-muted max-w-md leading-tight">Find community notes.</p>
+                </div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-emerald-500 group-hover:bg-emerald-500/5 transition-all shrink-0">
+                  <ArrowRight size={14} className="text-text-muted group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
+            </Link>
+
+            <Link to="/rooms" className="glass-card p-4 sm:p-6 group hover:border-red-500/50 transition-all relative overflow-hidden flex-1 flex items-center">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+              <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full">
+                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-red-500/10 rounded-xl sm:rounded-2xl flex items-center justify-center text-red-500 shrink-0">
+                  <Radio size={20} className="sm:hidden" />
+                  <Radio size={28} className="hidden sm:block" />
+                </div>
+                <div className="flex-grow">
+                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">Live Rooms</h3>
+                  <p className="text-xs text-text-muted max-w-md leading-tight">Study with friends globally.</p>
+                </div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-red-500 group-hover:bg-red-500/5 transition-all shrink-0">
+                  <ArrowRight size={14} className="text-text-muted group-hover:text-red-500 group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
             </Link>

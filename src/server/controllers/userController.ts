@@ -203,12 +203,70 @@ export const updateProfile = async (req: Request, res: Response) => {
       location: user.location,
       handle: user.handle,
       points: user.points,
+      aetherPoints: user.aetherPoints,
+      freezeTokens: user.freezeTokens,
+      optedInLeaderboard: user.optedInLeaderboard,
       followersCount: user.followersCount,
       friendsCount: user.friendsCount,
       following: user.following || [],
       achievements: user.achievements
     });
 
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const toggleLeaderboardOptIn = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById((req as any).userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.optedInLeaderboard = !user.optedInLeaderboard;
+    await user.save();
+    res.json({ optedInLeaderboard: user.optedInLeaderboard });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const purchaseShopItem = async (req: Request, res: Response) => {
+  try {
+    const { cost, itemName, isFreeze } = req.body;
+    const user = await User.findById((req as any).userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.aetherPoints < cost) {
+      return res.status(400).json({ message: "Insufficient Aether Points" });
+    }
+
+    user.aetherPoints -= cost;
+    if (isFreeze) {
+      user.freezeTokens += 1;
+    } else {
+      user.themeUnlocked.push(itemName);
+    }
+
+    await user.save();
+    res.json({ 
+      aetherPoints: user.aetherPoints, 
+      freezeTokens: user.freezeTokens,
+      themeUnlocked: user.themeUnlocked 
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const penalizePoints = async (req: Request, res: Response) => {
+  try {
+    const { amount } = req.body;
+    const user = await User.findById((req as any).userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.aetherPoints = Math.max(0, user.aetherPoints - (amount || 50));
+    await user.save();
+    res.json({ aetherPoints: user.aetherPoints });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

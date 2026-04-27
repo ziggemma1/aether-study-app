@@ -28,6 +28,12 @@ export interface User {
   friendsCount: number;
   following?: string[];
   achievements: Achievement[];
+  aetherPoints?: number;
+  freezeTokens?: number;
+  themeUnlocked?: string[];
+  lastActiveDate?: string;
+  lastStreakResetDate?: string;
+  optedInLeaderboard?: boolean;
 }
 
 export interface FriendRequest {
