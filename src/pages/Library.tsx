@@ -147,67 +147,73 @@ export default function Library() {
             layout
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ y: -4 }}
             className={cn(
-              "relative glass-card p-4 sm:p-6 transition-all group overflow-hidden border-2",
-              isSelected ? "border-primary shadow-lg shadow-primary/20" : "border-border/40 hover:border-primary/50"
+              "relative glass-card p-4 sm:p-5 transition-all group overflow-hidden border-border border-b-4",
+              isSelected ? "border-primary shadow-lg shadow-primary/20 border-b-primary/80 bg-primary/5" : "hover:border-primary/50"
             )}
           >
+            {/* Index Number - Technical Feel */}
+            <div className="absolute -top-2 -left-2 text-4xl font-black text-text-main opacity-[0.03] select-none">
+              {(materials.indexOf(material) + 1).toString().padStart(2, '0')}
+            </div>
+
             {/* Action Bar */}
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 flex items-center gap-2">
               <button
                 onClick={(e) => handleTogglePublic(e, material.id)}
                 className={cn(
-                  "w-8 h-8 rounded-lg border flex items-center justify-center transition-all backdrop-blur-sm",
+                  "w-7 h-7 rounded-lg border flex items-center justify-center transition-all backdrop-blur-sm",
                   isPublic 
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-sm shadow-emerald-500/10" 
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-sm" 
                     : "bg-surface/50 border-border/50 text-text-muted hover:text-primary hover:border-primary/30"
                 )}
-                title={isPublic ? "Publicly Shared" : "Private (Tap to Share)"}
               >
-                <Globe size={14} />
+                <Globe size={12} />
               </button>
 
               <button
                 onClick={(e) => toggleSelection(e, material.id)}
                 className={cn(
-                  "w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-all",
-                  isSelected ? "bg-primary border-primary text-white" : "bg-surface/50 border-border group-hover:border-primary/50 hover:bg-surface"
+                  "w-7 h-7 rounded-lg border flex items-center justify-center transition-all",
+                  isSelected ? "bg-primary border-primary text-white" : "bg-surface/50 border-border group-hover:border-primary/30 hover:bg-surface"
                 )}
               >
-                {isSelected && <Check size={14} strokeWidth={3} />}
-                {!isSelected && <span className="sr-only">Select</span>}
+                {isSelected ? <Check size={12} strokeWidth={3} /> : <div className="w-1.5 h-1.5 rounded-full bg-border group-hover:bg-primary/50" />}
               </button>
             </div>
 
-            <Link to={`/library/${material.id}`} className="block relative z-0 mt-4">
-              <div className="flex items-start justify-between mb-4 sm:mb-6 pr-6 sm:pr-8">
-                <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all transform group-hover:rotate-6">
-                  <Icon size={24} />
+            <Link to={`/library/${material.id}`} className="block relative z-0 mt-2">
+              <div className="flex items-center gap-4 mb-5">
+                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-inner border border-primary/20">
+                  <Icon size={22} />
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-bold text-text-muted">{material.uploadDate}</span>
-                  {isPublic && <span className="text-[9px] font-black uppercase text-emerald-500 mt-1 tracking-tighter">Community Sync</span>}
+                <div>
+                  <h3 className="text-sm sm:text-base font-black line-clamp-1 text-text-main pr-8 group-hover:text-primary transition-colors tracking-tight">
+                    {material.title}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[9px] font-black uppercase text-text-muted tracking-widest">{material.uploadDate}</span>
+                    {isPublic && <span className="w-1 h-1 rounded-full bg-emerald-500" />}
+                    {isPublic && <span className="text-[9px] font-black uppercase text-emerald-500 tracking-tighter">Live</span>}
+                  </div>
                 </div>
               </div>
               
-              <h3 className="text-sm sm:text-lg font-black mb-1 sm:mb-2 line-clamp-1 text-text-main pr-6 sm:pr-8 group-hover:text-primary transition-colors">
-                {material.title}
-              </h3>
-              <p className="text-xs sm:text-sm text-text-muted mb-6 sm:mb-8 line-clamp-2 leading-relaxed opacity-80">
+              <p className="text-xs text-text-muted mb-6 line-clamp-2 leading-relaxed opacity-80 min-h-[32px]">
                 {material.summary}
               </p>
               
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase text-text-muted tracking-widest">Mastery</span>
-                  <span className="text-xs font-black text-primary">{material.progress}%</span>
+              <div className="pt-4 border-t border-dashed border-border/60">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[9px] font-black uppercase text-text-muted tracking-[0.2em]">Mastery</span>
+                  <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-sm">{material.progress}%</span>
                 </div>
-                <div className="h-1.5 bg-surface-alt rounded-full overflow-hidden border border-border/50">
+                <div className="h-1 bg-surface-alt rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${material.progress}%` }}
-                    className="h-full bg-gradient-to-r from-primary to-secondary"
+                    className="h-full bg-primary"
                   />
                 </div>
               </div>

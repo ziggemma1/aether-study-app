@@ -36,10 +36,9 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden">
+    <div className="min-h-screen relative overflow-x-hidden bg-transparent">
       {/* Moving Background */}
       <GeometricBackground className="z-0" />
-
 
       <div className="relative z-10">
         {/* Navigation */}

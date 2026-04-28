@@ -41,52 +41,50 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.98 }}
-      className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
+      className="glass-card p-4 sm:p-5 flex flex-col w-full aspect-square max-w-[165px] sm:max-w-[210px] mx-auto group cursor-pointer border-border shadow-soft relative overflow-hidden"
     >
-      <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[10px] sm:text-xs font-medium text-text-muted">{t('avg_quiz_score')}</p>
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary opacity-80" />
+      
+      <div className="flex justify-between items-start mb-1">
+        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('avg_quiz_score')}</p>
       </div>
       
-      <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">{Math.round(score)}%</span>
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none">{Math.round(score)}%</span>
         {trend !== 0 && (
           <span className={cn(
-            "flex items-center text-[10px] sm:text-[11px] font-medium px-1.5 py-0.5 rounded-md",
-            trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+            "text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-sm ml-auto",
+            trend > 0 ? "text-emerald-400 bg-emerald-500/20" : "text-rose-400 bg-rose-500/20"
           )}>
-            {trend > 0 ? '+' : ''}{trend}% {trend > 0 ? <TrendingUp size={6} className="sm:ml-0.5" /> : <ChevronDown size={6} className="sm:ml-0.5" />}
+            {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
         )}
       </div>
 
-      <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
-
-      <div className="space-y-2 sm:space-y-4 mt-auto">
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs sm:text-sm font-medium text-text-muted">
-            <span>{t('highest')}</span>
-            <span className="text-text-main font-semibold">{highest}%</span>
+      <div className="flex-1 flex flex-col justify-end space-y-3 mt-4 sm:mt-6">
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70">
+            <span>Peak</span>
+            <span className="text-primary font-black">{highest}%</span>
           </div>
-          <div className="h-2.5 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
+          <div className="h-1.5 sm:h-2 bg-white/5 rounded-full overflow-hidden border border-white/10">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${highest}%` }}
-              className="h-full bg-primary rounded-md" 
-              style={stripeStyle}
+              className="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.4)]" 
             />
           </div>
         </div>
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs sm:text-sm font-medium text-text-muted">
-            <span>{t('lowest')}</span>
-            <span className="text-text-main font-semibold">{lowest}%</span>
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70">
+            <span>Floor</span>
+            <span className="text-orange-500 font-black">{lowest}%</span>
           </div>
-          <div className="h-2.5 sm:h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
+          <div className="h-1.5 sm:h-2 bg-white/5 rounded-full overflow-hidden border border-white/10">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${lowest}%` }}
-              className="h-full bg-orange-500 rounded-md" 
-              style={stripeStyle}
+              className="h-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]" 
             />
           </div>
         </div>
@@ -104,58 +102,81 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
     ? `${hours}h ${minutes > 0 ? `${minutes}m` : ''}` 
     : `${minutes}m`;
 
+  const maxHours = Math.max(...weeklyData.map(d => d.hours), 0.1);
+  const todayIndex = new Date().getDay();
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
   return (
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.98 }}
-      className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
+      className="glass-card p-4 sm:p-5 flex flex-col w-full aspect-square max-w-[165px] sm:max-w-[210px] mx-auto group cursor-pointer border-border shadow-soft relative overflow-hidden"
     >
-      <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[10px] sm:text-xs font-medium text-text-muted">{t('total_time')}</p>
+      {/* Matching the orange/red gradient from the streak card */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 opacity-80" />
+      
+      <div className="flex justify-between items-start mb-1">
+        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('total_time')}</p>
       </div>
 
-      <div className="flex items-center gap-1 mb-1 sm:mb-2 text-nowrap">
-        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight shrink-0">{displayTime}</span>
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="text-2xl sm:text-3xl font-black text-white tracking-tighter leading-none shrink-0">{displayTime}</span>
         {trend !== 0 && (
           <span className={cn(
-            "flex items-center text-[10px] sm:text-[11px] font-medium px-1.5 py-0.5 rounded-md shrink-0 ml-auto",
-            trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+            "text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-sm ml-auto shadow-sm",
+            trend > 0 ? "text-emerald-400 bg-emerald-500/30" : "text-rose-400 bg-rose-500/30"
           )}>
-            {trend > 0 ? '+' : ''}{trend}%
+            {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
         )}
       </div>
 
-      <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
-
-      <div className="flex justify-between text-[10px] sm:text-xs font-medium text-text-muted mb-1 sm:mb-2">
-        <span>{t('this_week')}</span>
-        <span className="text-text-main font-semibold">
-          {weeklyData.reduce((acc, curr) => acc + curr.hours, 0) < 1 
-            ? `${Math.round(weeklyData.reduce((acc, curr) => acc + curr.hours, 0) * 60)}M`
-            : `${Math.floor(weeklyData.reduce((acc, curr) => acc + curr.hours, 0))}H`}
-        </span>
-      </div>
-
-      <div className="h-12 sm:h-20 w-full mt-auto">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <BarChart data={weeklyData}>
-            <Bar dataKey="hours" radius={[2, 2, 0, 0]}>
-              {weeklyData.map((entry, index) => {
-                const isToday = new Date().getDay() === (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(entry.day));
-                return (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={isToday ? 'var(--primary)' : 'var(--border)'} 
-                    fillOpacity={isToday ? 1 : 0.2}
-                    style={isToday ? stripeStyle : {}}
-                    className="transition-all duration-300"
+      <div className="flex-1 flex flex-col justify-end mt-4 sm:mt-6">
+        <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-[0.1em] text-white/80 mb-3">
+          <span>Focus Metrics</span>
+          <span className="text-orange-400 font-black">{weeklyData.reduce((acc, curr) => acc + curr.hours, 0).toFixed(1)}h</span>
+        </div>
+        
+        <div className="flex justify-between items-end gap-1.5 h-16 sm:h-24">
+          {weeklyData.map((d, i) => {
+            const isToday = dayNames.indexOf(d.day) === todayIndex;
+            const heightPercent = (d.hours / maxHours) * 100;
+            const hasData = d.hours > 0;
+            
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group/bar">
+                <span className={cn(
+                  "text-[8px] font-black uppercase leading-none mb-1 transition-colors",
+                  isToday ? "text-orange-400 font-black" : "text-white/30"
+                )}>
+                  {d.day[0]}
+                </span>
+                
+                <div className="relative w-full flex items-end justify-center h-full">
+                  {hasData && (
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-sm font-black whitespace-nowrap z-10 shadow-lg border border-orange-400/20">
+                      {d.hours}h
+                    </div>
+                  )}
+                  
+                  <motion.div 
+                    initial={{ height: 0 }}
+                    animate={{ height: hasData ? `${Math.max(heightPercent, 12)}%` : '8%' }}
+                    className={cn(
+                      "w-full rounded-sm transition-all duration-500",
+                      hasData 
+                        ? cn(
+                            "bg-orange-500 border border-orange-400/20 shadow-[0_0_10px_rgba(249,115,22,0.2)]",
+                            isToday && "ring-1 ring-orange-400 ring-offset-1 ring-offset-zinc-900 shadow-[0_0_15px_rgba(249,115,22,0.4)]"
+                          )
+                        : "bg-white/5 border border-white/10 group-hover/bar:bg-white/10"
+                    )}
                   />
-                );
-              })}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </motion.div>
   );
@@ -174,11 +195,10 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
     }
   });
 
-  // Dynamically calculate true current streak based on real data
+  // Calculate real current streak
   let realCurrentStreak = 0;
   const today = new Date();
   
-  // Calculate backwards. Stop when a day is entirely missed. (Forgive today if they haven't studied yet, but studied yesterday).
   for (let i = 0; i < 365; i++) {
     const d = new Date();
     d.setDate(today.getDate() - i);
@@ -187,29 +207,23 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
     if (studiedDates.has(dateStr)) {
       realCurrentStreak++;
     } else if (i === 0) {
-      // It's today, they might just study later today. We don't break the streak yet.
+      // today potentially okay
     } else {
-      break; // The streak is broken
+      break;
     }
   }
 
-  // Use the calculated real streak if it's higher than the static user property, or if user property is 0
   const finalCurrentStreak = Math.max(currentStreak, realCurrentStreak);
   const finalLongestStreak = Math.max(longestStreak, finalCurrentStreak);
 
-  // Real life functional day generation based on the actual calendar week
   const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const todayIndex = today.getDay();
   
-  // Get the last 5 days strictly wrapping around standard calendar indices
   const displayDays = Array.from({ length: 5 }, (_, i) => {
     const historicalIndex = (todayIndex - 4 + i + 7) % 7;
-    
     const dateToCheck = new Date();
     dateToCheck.setDate(today.getDate() - (4 - i));
     const dateStr = dateToCheck.getFullYear() + '-' + String(dateToCheck.getMonth() + 1).padStart(2, '0') + '-' + String(dateToCheck.getDate()).padStart(2, '0');
-
-    // Make active if the user explicitly studied on this day, OR if the generic fallback logic applies
     const isActive = studiedDates.has(dateStr) || ((4 - i) < finalCurrentStreak && studiedDates.size === 0);
 
     return {
@@ -222,35 +236,34 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.98 }}
-      className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
+      className="glass-card p-4 sm:p-5 flex flex-col w-full aspect-square max-w-[165px] sm:max-w-[210px] mx-auto group cursor-pointer border-border shadow-soft relative overflow-hidden"
     >
-      <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[10px] sm:text-xs font-medium text-text-muted">{t('weekly_streak')}</p>
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 opacity-80" />
+      
+      <div className="flex justify-between items-start mb-1">
+        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('weekly_streak')}</p>
       </div>
 
-      <div className="flex items-center gap-1 mb-1 sm:mb-2">
-        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight">{finalCurrentStreak} {t('days_label')}</span>
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none">{finalCurrentStreak}</span>
+        <span className="text-[10px] sm:text-[11px] font-black text-orange-400 uppercase tracking-widest ml-1">{t('days_label')}</span>
       </div>
 
-      <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
-
-      <div className="flex justify-between text-[10px] sm:text-xs font-medium text-text-muted mb-2 sm:mb-4">
-        <span>{t('longest')}</span>
-        <span className="text-text-main font-semibold">{finalLongestStreak}d</span>
-      </div>
-
-      <div className="overflow-hidden flex-grow flex items-end">
-        <div className="grid grid-cols-5 gap-1 sm:gap-2 w-full">
+      <div className="flex-1 flex flex-col justify-end mt-4 sm:mt-6">
+        <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70 mb-2">
+          <span>Records</span>
+          <span className="text-orange-400 font-black">PB: {finalLongestStreak}d</span>
+        </div>
+        <div className="flex justify-between items-end gap-1.5 h-10 sm:h-12">
           {displayDays.map((day, i) => (
-            <div key={i} className="flex flex-col items-center gap-1 sm:gap-1.5">
+            <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+              <span className="text-[8px] font-black text-text-muted opacity-60 leading-none">{day.label}</span>
               <div className={cn(
-                "w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-semibold transition-all shadow-sm ring-1 ring-inset",
+                "w-full rounded-sm transition-all duration-500",
                 day.active 
-                  ? "bg-primary text-white ring-primary shadow-primary/20" 
-                  : "bg-surface-alt/50 text-text-muted ring-border/50"
-              )}>
-                {day.label}
-              </div>
+                  ? "bg-orange-500 h-full border border-orange-600/20 shadow-[0_0_10px_rgba(249,115,22,0.2)]" 
+                  : "bg-surface-alt h-1.5 border border-border/50"
+              )} />
             </div>
           ))}
         </div>
@@ -265,61 +278,50 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
     <motion.div 
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.98 }}
-      className="glass-card p-3 sm:p-5 flex flex-col w-full aspect-square max-w-[160px] sm:max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
+      className="glass-card p-4 sm:p-5 flex flex-col w-full aspect-square max-w-[165px] sm:max-w-[210px] mx-auto group cursor-pointer border-border shadow-soft relative overflow-hidden"
     >
-      <div className="flex justify-between items-start mb-0.5">
-        <p className="text-[10px] sm:text-xs font-medium text-text-muted">{t('global_rank')}</p>
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-primary opacity-80" />
+      
+      <div className="flex justify-between items-start mb-1">
+        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('global_rank')}</p>
       </div>
 
-      <div className="flex items-baseline gap-1 mb-1 sm:mb-2 text-nowrap">
-        <span className="text-xl sm:text-3xl font-semibold text-text-main tracking-tight shrink-0">#{rank}</span>
-        <span className="text-[10px] sm:text-[11px] text-text-muted font-medium truncate">{t('of_label')} {total}</span>
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none">#{rank}</span>
+        <span className="text-[10px] sm:text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-auto">Top 2%</span>
       </div>
 
-      <div className="border-t border-dashed border-border/40 my-2 sm:my-3" />
-
-      <p className="text-[10px] sm:text-xs font-medium text-text-muted mb-2 sm:mb-3 uppercase tracking-tighter">{t('top_local')}</p>
-
-      <div className="overflow-y-auto custom-scrollbar pr-1 -mr-1 flex-grow">
-        <div className="space-y-1.5 sm:space-y-2.5">
+      <div className="flex-1 flex flex-col justify-end mt-4 sm:mt-6 overflow-hidden">
+        <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70 mb-2">
+          <span>Rivals Leaderboard</span>
+        </div>
+        <div className="space-y-2 overflow-y-auto custom-scrollbar max-h-[110px] pr-1.5 -mr-1">
           {topLearnersData.map((learner, i) => {
             const isMe = learner.id === user?.id;
-            const isFollowing = user?.following?.includes(learner.id || '');
             return (
-              <div key={i} className="flex items-center gap-1.5 sm:gap-2.5">
-                <div className="relative shrink-0">
+              <div key={i} className={cn(
+                "flex items-center gap-2 p-1.5 rounded-lg border leading-none transition-colors",
+                isMe ? "bg-primary/20 border-primary/40 shadow-[0_0_10px_rgba(var(--primary-rgb),0.15)]" : "bg-surface-alt/50 border-border/50"
+              )}>
+                <span className={cn(
+                  "text-[9px] font-black w-4 text-center shrink-0",
+                  i < 3 ? "text-emerald-400" : "text-text-muted"
+                )}>#{i + 1}</span>
+                <div className="w-5 h-5 rounded-full bg-surface border border-border overflow-hidden flex items-center justify-center text-[8px] font-black shrink-0 shadow-inner">
                   {learner.avatar ? (
-                    <img src={learner.avatar} alt={learner.name} className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-border/20 object-cover" />
+                    <img src={learner.avatar} alt={learner.name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] sm:text-xs font-bold text-primary border border-primary/20">
-                      {learner.name ? learner.name.charAt(0) : 'U'}
-                    </div>
-                  )}
-                  {i === 0 && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-orange-500 rounded-full flex items-center justify-center text-[7px] sm:text-[9px] text-white border border-white">
-                      ★
-                    </div>
+                    <span className="opacity-70 text-[7px]">{learner.name.charAt(0)}</span>
                   )}
                 </div>
-                <span className="text-[11px] sm:text-sm font-medium text-text-main truncate flex-grow min-w-0">{learner.name}</span>
-                {learner.id && !isMe && (
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault(); // prevent triggering the card's link
-                      api.post(`/user/follow/${learner.id}`).then(res => {
-                        window.location.reload(); // simple way to refresh data for demo
-                      }).catch(console.error);
-                    }}
-                    className={cn(
-                      "px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border transition-colors shrink-0",
-                      isFollowing 
-                        ? "bg-transparent border-primary/50 text-text-muted" 
-                        : "bg-primary/20 border-primary/30 text-primary hover:bg-primary/30"
-                    )}
-                  >
-                    {isFollowing ? t('following') : t('follow')}
-                  </button>
-                )}
+                <span className={cn(
+                  "text-[10px] font-bold truncate flex-1",
+                  isMe ? "text-text-main shadow-sm" : "text-text-main/80"
+                )}>{learner.name}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                   <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                   <span className="text-[7px] font-black text-text-muted bg-surface/80 px-1 py-0.5 rounded-sm uppercase border border-border/30">Lv {20 - i}</span>
+                </div>
               </div>
             );
           })}

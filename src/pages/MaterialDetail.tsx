@@ -93,7 +93,6 @@ export default function MaterialDetail() {
 
   return (
     <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24 relative">
-      <div className="atmosphere-bg" />
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

@@ -138,11 +138,11 @@
   }
   
   .btn-primary {
-    @apply bg-gradient-to-br from-primary to-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold tracking-tight shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50;
+    @apply bg-primary text-white px-8 py-3.5 rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] sm:text-xs shadow-[0_8px_30px_rgb(139,92,246,0.3)] transition-all hover:bg-primary/90 hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 border-b-4 border-indigo-900/30;
   }
 
   .btn-secondary {
-    @apply bg-transparent border border-white/20 text-text-main px-6 py-2.5 rounded-full font-semibold transition-all hover:bg-white hover:text-background active:scale-[0.98];
+    @apply bg-surface/50 backdrop-blur-md border border-border text-text-main px-6 py-2.5 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all hover:bg-surface active:scale-[0.98] border-b-2;
   }
 
   .btn-outline {

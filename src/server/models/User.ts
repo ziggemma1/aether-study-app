@@ -49,7 +49,7 @@ const userSchema = new mongoose.Schema({
   themeUnlocked: [{ type: String }],
   lastActiveDate: { type: Date },
   lastStreakResetDate: { type: Date },
-  optedInLeaderboard: { type: Boolean, default: false },
+  optedInLeaderboard: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
 });
 

@@ -152,7 +152,7 @@ export default function SignupPage() {
   }, [mouseX, mouseY]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-20 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-20 relative overflow-x-hidden bg-transparent">
       {/* Blurred Light Cursor Follower */}
       <motion.div
         className="fixed top-0 left-0 w-48 h-48 bg-primary/10 rounded-full pointer-events-none z-[100] blur-[60px]"
@@ -177,8 +177,6 @@ export default function SignupPage() {
         }}
       />
 
-      {/* Moving Background */}
-      <GeometricBackground className="z-0" />
       <Link 
         to="/" 
         className="absolute top-8 left-8 p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-primary hover:border-primary transition-all shadow-xl group"

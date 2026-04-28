@@ -8,7 +8,7 @@ interface AppContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   materials: Material[];
-  setMaterials: (materials: Material[]) => void;
+  setMaterials: React.Dispatch<React.SetStateAction<Material[]>>;
   savedPlans: SavedPlan[];
   setSavedPlans: React.Dispatch<React.SetStateAction<SavedPlan[]>>;
   messages: Message[];
@@ -41,6 +41,7 @@ interface AppContextType {
   toggleFollow: (targetUserId: string) => Promise<void>;
   sendFriendRequest: (receiverId: string) => Promise<void>;
   respondToFriendRequest: (requestId: string, status: 'accepted' | 'declined') => Promise<void>;
+  updateMaterialInContext: (updatedMaterial: Material) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -325,6 +326,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     initialize();
   }, [initialize]);
 
+  const updateMaterialInContext = (updatedMaterial: Material) => {
+    setMaterials(prev => prev.map(m => m.id === updatedMaterial.id ? updatedMaterial : m));
+  };
+
   return (
     <AppContext.Provider value={{ 
       user, 
@@ -362,7 +367,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setTyping,
       toggleFollow,
       sendFriendRequest,
-      respondToFriendRequest
+      respondToFriendRequest,
+      updateMaterialInContext
     }}>
       {children}
     </AppContext.Provider>

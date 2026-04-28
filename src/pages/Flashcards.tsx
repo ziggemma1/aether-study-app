@@ -101,6 +101,15 @@ export default function Flashcards() {
     }
   };
 
+  const handleDragEnd = (_: any, info: any) => {
+    const swipeThreshold = 100;
+    if (info.offset.x < -swipeThreshold) {
+      reviewAgain();
+    } else if (info.offset.x > swipeThreshold) {
+      markKnown();
+    }
+  };
+
   const reviewAgain = async () => {
     setDirection(-1);
     setIsFlipped(false);
@@ -115,7 +124,7 @@ export default function Flashcards() {
       });
       setDirection(0);
     }, 200);
-    showToast("We'll review this again shortly", "info");
+    showToast("We'll review this again shortly", "success");
   };
 
   const markKnown = async () => {
@@ -219,18 +228,23 @@ export default function Flashcards() {
               animate={{ rotateY: isFlipped ? 180 : 0 }}
               transition={{ duration: 0.6, type: "spring", damping: 20 }}
               className={cn(
-                'absolute inset-0 backface-hidden w-full h-full p-8 flex flex-col items-center justify-center text-center glass-card border-b-8 border-primary rounded-[40px] shadow-2xl bg-surface/90 transition-colors',
+                'absolute inset-0 backface-hidden w-full h-full p-8 flex flex-col items-center justify-center text-center glass-card border-b-8 border-primary rounded-[40px] shadow-2xl bg-surface/90 transition-colors overflow-hidden',
                 isFlipped && 'pointer-events-none'
               )}
             >
-              <div className="mb-4 w-12 h-1 bg-primary/20 rounded-full" />
-              <div className="flex-1 w-full flex items-center justify-center overflow-y-auto custom-scrollbar px-2">
-                <h2 className="text-2xl sm:text-3xl font-black text-text-main leading-tight tracking-tight">
-                  {activeCard.question}
-                </h2>
-              </div>
-              <div className="mt-8 py-3 px-6 bg-primary/10 rounded-2xl text-[10px] text-primary font-black tracking-widest uppercase flex items-center gap-2">
-                <RefreshCw size={14} className="animate-spin-slow" /> Tap to reveal
+              {/* Subtle Texture/Pattern Background */}
+              <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+              
+              <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                <div className="mb-6 w-16 h-1.5 bg-primary/30 rounded-full" />
+                <div className="flex-1 w-full flex items-center justify-center px-2">
+                  <h2 className="text-2xl sm:text-4xl font-black text-text-main leading-[1.1] tracking-tighter">
+                    {activeCard.question}
+                  </h2>
+                </div>
+                <div className="mt-8 py-3 px-8 bg-primary/10 rounded-full text-[10px] text-primary font-black tracking-[0.2em] uppercase flex items-center gap-3 border border-primary/20 backdrop-blur-sm group-hover:scale-105 transition-transform">
+                  <RefreshCw size={14} className="animate-spin-slow" /> Tap to reveal
+                </div>
               </div>
             </motion.div>
 
@@ -240,23 +254,30 @@ export default function Flashcards() {
               animate={{ rotateY: isFlipped ? 0 : 180 }}
               transition={{ duration: 0.6, type: "spring", damping: 20 }}
               className={cn(
-                'absolute inset-0 backface-hidden w-full h-full p-8 flex flex-col items-center justify-center text-center glass-card border-b-8 border-secondary rounded-[40px] shadow-2xl bg-surface/95 transition-colors',
+                'absolute inset-0 backface-hidden w-full h-full p-8 flex flex-col items-center justify-center text-center glass-card border-b-8 border-emerald-500 rounded-[40px] shadow-2xl bg-surface/95 transition-colors overflow-hidden',
                 !isFlipped && 'pointer-events-none'
               )}
               style={{ rotateY: 180 }}
             >
-              <div className="mb-4 w-12 h-1 bg-secondary/20 rounded-full" />
-              <div className="flex-1 w-full flex items-center justify-center overflow-y-auto custom-scrollbar px-2">
-                <p className="text-lg sm:text-xl font-bold text-text-main leading-relaxed">
-                  {activeCard.answer}
-                </p>
-              </div>
-              <div className="mt-8 flex gap-4 w-full">
-                <div className="flex-1 py-3 bg-rose-500/10 rounded-2xl text-[10px] text-rose-500 font-black tracking-widest uppercase flex items-center justify-center gap-2 border border-rose-500/20">
-                  <ArrowLeft size={14} /> Swipe Left
+              <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+              
+              <div className="relative z-10 flex flex-col items-center justify-center h-full w-full">
+                <div className="mb-6 w-16 h-1.5 bg-emerald-500/30 rounded-full" />
+                <div className="flex-1 w-full flex items-center justify-center px-2">
+                  <div className="text-lg sm:text-2xl font-medium text-text-main leading-relaxed italic font-serif">
+                    {activeCard.answer}
+                  </div>
                 </div>
-                <div className="flex-1 py-3 bg-emerald-500/10 rounded-2xl text-[10px] text-emerald-500 font-black tracking-widest uppercase flex items-center justify-center gap-2 border border-emerald-500/20">
-                  Swipe Right <ArrowRight size={14} />
+                
+                <div className="mt-8 grid grid-cols-2 gap-4 w-full">
+                  <div className="py-4 bg-rose-500 text-white rounded-2xl text-[10px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-rose-500/20 active:scale-95 transition-transform">
+                    <X size={18} />
+                    <span>Still Learning</span>
+                  </div>
+                  <div className="py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform">
+                    <Check size={18} />
+                    <span>Got it!</span>
+                  </div>
                 </div>
               </div>
             </motion.div>

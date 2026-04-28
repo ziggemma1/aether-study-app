@@ -1,7 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { cn } from '../lib/utils';
 
 export default function InteractiveBackground() {
+  const location = useLocation();
+  const isLandingPage = location.pathname === '/';
+  
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -28,45 +33,30 @@ export default function InteractiveBackground() {
   const translateX2 = useTransform(smoothX, [ -0.4, 0.4 ], [ 20, -20 ]);
   const translateY2 = useTransform(smoothY, [ -0.4, 0.4 ], [ 20, -20 ]);
 
+  if (isLandingPage) return null;
+
   return (
-    <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden bg-[#0a0c14]">
-      {/* Optimized Texture Overlay */}
+    <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden bg-background">
+      {/* Texture Overlay */}
       <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay will-change-transform" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")' }} />
 
-      {/* Primary Deep Glow (Purple) - Optimized blur and will-change */}
+      {/* The "Note Page" Gradient Effect (atmosphere-bg) */}
+      <div className="atmosphere-bg scale-110" />
+
+      {/* Interactive Glow Layers for extra depth */}
       <motion.div 
         style={{ x: translateX1, y: translateY1 }}
-        className="absolute top-[-20%] left-[-10%] w-[80%] h-[80%] opacity-25 will-change-transform"
+        className="absolute top-[-10%] left-[-5%] w-[60%] h-[60%] opacity-20 will-change-transform"
       >
-        <div className="w-full h-full bg-primary/30 rounded-full blur-[100px]" />
+        <div className="w-full h-full bg-primary/20 rounded-full blur-[120px]" />
       </motion.div>
 
-      {/* Secondary Glow (Indigo/Blue) */}
       <motion.div 
         style={{ x: translateX2, y: translateY2 }}
-        className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] opacity-15 will-change-transform"
+        className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] opacity-15 will-change-transform"
       >
-        <div className="w-full h-full bg-indigo-500/20 rounded-full blur-[80px]" />
+        <div className="w-full h-full bg-secondary/20 rounded-full blur-[100px]" />
       </motion.div>
-
-      {/* Accent Glow (Teal/Green) - Simplified constant animation */}
-      <motion.div 
-        animate={{ 
-          x: [0, 15, -15, 0],
-          y: [0, -15, 15, 0],
-        }}
-        transition={{ 
-          duration: 20, 
-          repeat: Infinity,
-          ease: "linear"
-        }}
-        className="absolute top-[30%] right-[20%] w-[40%] h-[40%] opacity-5 will-change-transform"
-      >
-        <div className="w-full h-full bg-accent/15 rounded-full blur-[60px]" />
-      </motion.div>
-
-      {/* Global Vignette */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c14] via-transparent to-transparent opacity-60" />
     </div>
   );
 }

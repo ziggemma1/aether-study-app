@@ -55,7 +55,10 @@ export default function Dashboard() {
     : [];
 
   const topLearners = Array.isArray(allProfiles) 
-    ? allProfiles.slice(0, 6).map((p, i) => {
+    ? allProfiles
+        .filter(p => p.optedInLeaderboard || (user && (p._id === user.id || p.id === user.id)))
+        .slice(0, 15)
+        .map((p, i) => {
         const pId = p._id || p.id;
         const isMe = pId === user?.id;
         return {
@@ -127,7 +130,11 @@ export default function Dashboard() {
     ? Math.min(...quizResults.map(r => r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0))
     : (user?.lowestQuizScore || 0);
 
-  const myRankIndex = Array.isArray(allProfiles) ? allProfiles.findIndex(p => (p._id || p.id) === user?.id) : -1;
+  const filteredProfiles = Array.isArray(allProfiles) 
+    ? allProfiles.filter(p => p.optedInLeaderboard || (user && (p._id === user.id || p.id === user.id)))
+    : [];
+
+  const myRankIndex = filteredProfiles.findIndex(p => (p._id || p.id) === user?.id);
   const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
 
   return (
@@ -227,25 +234,27 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">{t('recent_activity')}</h2>
             </div>
-            <div className="glass-card p-4 space-y-3 h-[calc(100%-2rem)]">
-              {recentSessions.length > 0 ? (
-                recentSessions.map((session, idx) => (
-                  <div key={session.id || idx} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-border">
-                    <div className="w-8 h-8 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center">
-                      <Clock size={16} />
+            <div className="glass-card p-4 h-[calc(100%-2rem)] flex flex-col overflow-hidden">
+              <div className="space-y-3 overflow-y-auto no-scrollbar pr-1">
+                {recentSessions.length > 0 ? (
+                  recentSessions.map((session, idx) => (
+                    <div key={session.id || idx} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-border hover:border-primary/30 transition-colors">
+                      <div className="w-8 h-8 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center shrink-0">
+                        <Clock size={16} />
+                      </div>
+                      <div className="flex-grow min-w-0">
+                        <h4 className="text-xs font-bold text-text-main truncate">{session.title}</h4>
+                        <p className="text-[10px] text-text-muted">{session.durationMinutes} {t('mins')} • {new Date(session.startTime).toLocaleDateString()}</p>
+                      </div>
                     </div>
-                    <div className="flex-grow min-w-0">
-                      <h4 className="text-xs font-bold text-text-main truncate">{session.title}</h4>
-                      <p className="text-xs text-text-muted">{session.durationMinutes} {t('mins')} • {new Date(session.startTime).toLocaleDateString()}</p>
-                    </div>
+                  ))
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 py-12">
+                    <Clock size={32} className="text-text-muted mb-2 opacity-20" />
+                    <p className="text-xs text-text-muted">{t('no_recent_activity')}</p>
                   </div>
-                ))
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                  <Clock size={32} className="text-text-muted mb-2 opacity-20" />
-                  <p className="text-xs text-text-muted">{t('no_recent_activity')}</p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -262,71 +271,64 @@ export default function Dashboard() {
         {/* Quick Tools - Right (8 cols) */}
         <div className="lg:col-span-8 flex flex-col gap-3">
           <h2 className="text-sm font-bold text-text-main uppercase tracking-wider">{t('quick_tools')}</h2>
-          <div className="flex flex-col gap-3 sm:gap-4 h-auto sm:h-[420px]">
-            <Link to="/upload" className="glass-card p-4 sm:p-6 group hover:border-primary/50 transition-all relative overflow-hidden flex-1 flex items-center">
+          
+          {/* Mobile Action Pad (High Density) */}
+          <div className="grid grid-cols-2 sm:hidden gap-3">
+            {[
+              { to: "/upload", icon: Camera, color: "primary", label: t('snap_scan') },
+              { to: "/curriculum", icon: BookOpen, color: "secondary", label: t('curriculum_library') },
+              { to: "/explore", icon: Compass, color: "emerald-500", label: "Explore" },
+              { to: "/rooms", icon: Radio, color: "red-500", label: "Live Rooms" }
+            ].map((tool, i) => (
+              <Link 
+                key={i} 
+                to={tool.to}
+                className="glass-card p-5 flex flex-col items-center justify-center text-center gap-3 active:scale-95 transition-transform border-border/40"
+              >
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl flex items-center justify-center",
+                  tool.color === 'primary' ? "bg-primary/10 text-primary" : 
+                  tool.color === 'secondary' ? "bg-secondary/10 text-secondary" : 
+                  tool.color === 'emerald-500' ? "bg-emerald-500/10 text-emerald-500" : 
+                  "bg-red-500/10 text-red-500"
+                )}>
+                  <tool.icon size={24} />
+                </div>
+                <span className="text-[11px] font-black uppercase tracking-tight text-text-main">{tool.label}</span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop Layout (Original) */}
+          <div className="hidden sm:flex sm:flex-col gap-4 h-[420px]">
+            <Link to="/upload" className="glass-card p-6 group hover:border-primary/50 transition-all relative overflow-hidden flex-1 flex items-center">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
-              <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full">
-                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-primary/10 rounded-xl sm:rounded-2xl flex items-center justify-center text-primary shrink-0">
-                  <Camera size={20} className="sm:hidden" />
-                  <Camera size={28} className="hidden sm:block" />
+              <div className="flex items-center gap-6 relative z-10 w-full">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shrink-0">
+                  <Camera size={28} />
                 </div>
                 <div className="flex-grow">
-                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">{t('snap_scan')}</h3>
-                  <p className="text-xs text-text-muted max-w-md leading-tight">{t('snap_scan_desc')}</p>
+                  <h3 className="text-xl font-bold text-text-main mb-0.5">{t('snap_scan')}</h3>
+                  <p className="text-sm text-text-muted max-w-md leading-tight">{t('snap_scan_desc')}</p>
                 </div>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all shrink-0">
+                <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all shrink-0">
                   <ArrowRight size={14} className="text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
             </Link>
 
-            <Link to="/curriculum" className="glass-card p-4 sm:p-6 group hover:border-secondary/50 transition-all relative overflow-hidden flex-1 flex items-center">
+            <Link to="/curriculum" className="glass-card p-6 group hover:border-secondary/50 transition-all relative overflow-hidden flex-1 flex items-center">
               <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
-              <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full">
-                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-secondary/10 rounded-xl sm:rounded-2xl flex items-center justify-center text-secondary shrink-0">
-                  <BookOpen size={20} className="sm:hidden" />
-                  <BookOpen size={28} className="hidden sm:block" />
+              <div className="flex items-center gap-6 relative z-10 w-full">
+                <div className="w-16 h-16 bg-secondary/10 rounded-2xl flex items-center justify-center text-secondary shrink-0">
+                  <BookOpen size={28} />
                 </div>
                 <div className="flex-grow">
-                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">{t('curriculum_library')}</h3>
-                  <p className="text-xs text-text-muted max-w-md leading-tight">{t('curriculum_library_desc')}</p>
+                  <h3 className="text-xl font-bold text-text-main mb-0.5">{t('curriculum_library')}</h3>
+                  <p className="text-sm text-text-muted max-w-md leading-tight">{t('curriculum_library_desc')}</p>
                 </div>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-secondary group-hover:bg-secondary/5 transition-all shrink-0">
+                <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center group-hover:border-secondary group-hover:bg-secondary/5 transition-all shrink-0">
                   <ArrowRight size={14} className="text-text-muted group-hover:text-secondary group-hover:translate-x-1 transition-all" />
-                </div>
-              </div>
-            </Link>
-
-            <Link to="/explore" className="glass-card p-4 sm:p-6 group hover:border-emerald-500/50 transition-all relative overflow-hidden flex-1 flex items-center">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
-              <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full">
-                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-emerald-500/10 rounded-xl sm:rounded-2xl flex items-center justify-center text-emerald-500 shrink-0">
-                  <Compass size={20} className="sm:hidden" />
-                  <Compass size={28} className="hidden sm:block" />
-                </div>
-                <div className="flex-grow">
-                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">Explore Notes</h3>
-                  <p className="text-xs text-text-muted max-w-md leading-tight">Find community notes.</p>
-                </div>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-emerald-500 group-hover:bg-emerald-500/5 transition-all shrink-0">
-                  <ArrowRight size={14} className="text-text-muted group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
-                </div>
-              </div>
-            </Link>
-
-            <Link to="/rooms" className="glass-card p-4 sm:p-6 group hover:border-red-500/50 transition-all relative overflow-hidden flex-1 flex items-center">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
-              <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full">
-                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-red-500/10 rounded-xl sm:rounded-2xl flex items-center justify-center text-red-500 shrink-0">
-                  <Radio size={20} className="sm:hidden" />
-                  <Radio size={28} className="hidden sm:block" />
-                </div>
-                <div className="flex-grow">
-                  <h3 className="text-sm sm:text-xl font-bold text-text-main mb-0.5">Live Rooms</h3>
-                  <p className="text-xs text-text-muted max-w-md leading-tight">Study with friends globally.</p>
-                </div>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center group-hover:border-red-500 group-hover:bg-red-500/5 transition-all shrink-0">
-                  <ArrowRight size={14} className="text-text-muted group-hover:text-red-500 group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
             </Link>

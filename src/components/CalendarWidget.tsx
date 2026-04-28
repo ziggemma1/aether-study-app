@@ -184,16 +184,19 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
       </div>
 
       {/* Calendar Grid */}
-      <div className="flex-grow flex flex-col">
-        <div className="grid grid-cols-7 mb-2 sm:mb-4">
+      <div className="flex-grow flex flex-col overflow-y-auto no-scrollbar pr-0.5">
+        <div className="grid grid-cols-7 mb-2 sm:mb-4 shrink-0">
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-            <span key={i} className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">
+            <span key={i} className={cn(
+              "text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-center transition-colors",
+              (i === 0 || i === 6) ? "text-primary/60" : "text-text-muted"
+            )}>
               {day}
             </span>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-px bg-transparent rounded-xl sm:rounded-2xl overflow-hidden border border-border/20 relative">
+        <div className="grid grid-cols-7 gap-px bg-transparent rounded-xl sm:rounded-2xl overflow-hidden border border-border/20 relative shrink-0">
             {calendarDays.map((day, idx) => {
               const dateKey = format(day, 'yyyy-MM-dd');
               const data = dayData[dateKey];
