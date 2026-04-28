@@ -7,7 +7,8 @@ import {
   updateMaterial, 
   getPublicMaterials, 
   cloneMaterial, 
-  togglePublicStatus 
+  togglePublicStatus,
+  reviewFlashcard 
 } from '../controllers/materialController.js';
 import { analyzeMaterial, generateChapters, getYoutubeTranscript } from '../controllers/analysisController.js';
 import { protect } from '../middleware/authMiddleware.js';
@@ -19,6 +20,7 @@ router.use(protect);
 router.get('/public', getPublicMaterials);
 router.post('/clone/:id', cloneMaterial);
 router.post('/:id/toggle-public', togglePublicStatus);
+router.post('/:id/flashcards/:cardId/review', reviewFlashcard);
 
 router.post('/youtube-transcript', getYoutubeTranscript);
 

@@ -167,7 +167,14 @@ export default function UploadMaterial() {
         detailedNotes: analysis.detailedNotes,
         noteSections: analysis.noteSections,
         visualAidUrl: analysis.visualAidUrl,
-        suggestedQuizQuestions: analysis.suggestedQuizQuestions
+        suggestedQuizQuestions: analysis.suggestedQuizQuestions,
+        flashcards: analysis.recommendedFlashcards?.map((c: any) => ({
+          ...c,
+          interval: 0,
+          repetitions: 0,
+          easeFactor: 2.5,
+          nextReview: new Date()
+        }))
       });
 
       console.log('Material saved successfully:', response.data);

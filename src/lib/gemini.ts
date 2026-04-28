@@ -106,7 +106,8 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
           2. keyTopics (5-8 strings)
           3. realLifeApplications (3-5 strings)
           4. simpleDetailedNotes: Create a standard accurately detailed note using Markdown. This should be about 400% longer than the summary. Use headings, lists, and examples.
-          5. suggestedQuizQuestions (5 MCQs)`,
+          5. suggestedQuizQuestions (15-20 challenging MCQs)
+          6. recommendedFlashcards (15 key term flashcards)`,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -127,9 +128,20 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
                   },
                   required: ["question", "options", "correctAnswer", "explanation"]
                 }
+              },
+              recommendedFlashcards: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    answer: { type: Type.STRING }
+                  },
+                  required: ["question", "answer"]
+                }
               }
             },
-            required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
+            required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions", "recommendedFlashcards"]
           }
         }
       }));

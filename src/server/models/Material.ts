@@ -14,6 +14,15 @@ const materialSchema = new mongoose.Schema({
     correctAnswer: { type: Number },
     explanation: { type: String }
   }],
+  flashcards: [{
+    question: { type: String },
+    answer: { type: String },
+    interval: { type: Number, default: 0 },
+    easeFactor: { type: Number, default: 2.5 },
+    repetitions: { type: Number, default: 0 },
+    nextReview: { type: Date, default: Date.now },
+    masteryLevel: { type: Number, default: 0 } // 0-100
+  }],
   detailedNotes: { type: String },
   noteSections: [{
     heading: { type: String },

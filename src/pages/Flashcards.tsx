@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,16 +6,17 @@ import { ArrowLeft, Loader2, RefreshCw, X, Check, ArrowRight } from 'lucide-reac
 import { cn } from '../lib/utils';
 import { generateFlashcardsOnClient } from '../lib/gemini';
 import { useMotionValue, useTransform } from 'framer-motion';
+import api from '../services/api';
+import { Flashcard } from '../types';
 
 export default function Flashcards() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { materials, user, showToast } = useAppContext();
+  const { materials, user, showToast, updateMaterialInContext } = useAppContext();
   const material = materials.find((m) => m.id === id);
 
-  const [cards, setCards] = useState<{ question: string; answer: string }[]>([]);
+  const [cards, setCards] = useState<Flashcard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [direction, setDirection] = useState(0);
 
@@ -34,40 +35,79 @@ export default function Flashcards() {
     x.set(0);
   }, [cards, x]);
 
-  useEffect(() => {
-    if (!material) {
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchCards = async () => {
-      try {
+  const fetchOrGenerateCards = useCallback(async () => {
+    if (!material) return;
+    
+    try {
+      if (material.flashcards && material.flashcards.length > 0) {
+        // Filter cards starting from those due today OR never reviewed
+        const now = new Date();
+        const dueCards = material.flashcards.filter(card => {
+          if (!card.nextReview) return true;
+          return new Date(card.nextReview) <= now;
+        });
+        
+        // If everything is studied, maybe just show them all in randomized order for "practice"
+        const sessionCards = dueCards.length > 0 ? dueCards : [...material.flashcards].sort(() => Math.random() - 0.5);
+        
+        setCards(sessionCards);
+        setTotalInitial(sessionCards.length);
+      } else {
+        // Generate and SAVE
         const textToProcess = material.content || material.summary || material.title;
         const generatedCards = await generateFlashcardsOnClient(textToProcess, user?.language);
-        setCards(generatedCards);
-        setTotalInitial(generatedCards.length);
-      } catch (error: any) {
-        showToast('Failed to generate flashcards: ' + error.message, 'error');
-      } finally {
-        setIsLoading(false);
+        
+        // Save to backend
+        const res = await api.put(`/materials/${material.id}`, {
+          flashcards: generatedCards.map(c => ({
+            ...c,
+            interval: 0,
+            repetitions: 0,
+            easeFactor: 2.5,
+            nextReview: new Date()
+          }))
+        });
+        
+        updateMaterialInContext(res.data);
+        setCards(res.data.flashcards);
+        setTotalInitial(res.data.flashcards.length);
       }
-    };
+    } catch (error: any) {
+      showToast('Failed to prepare flashcards: ' + error.message, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [material, user?.language, showToast, updateMaterialInContext]);
 
-    fetchCards();
-  }, [material, user?.language, showToast]);
+  useEffect(() => {
+    if (isLoading && material) {
+      fetchOrGenerateCards();
+    } else if (!material) {
+      setIsLoading(false);
+    }
+  }, [material, isLoading, fetchOrGenerateCards]);
 
-  const handleDragEnd = (event: any, info: any) => {
-    const swipeThreshold = 100;
-    if (info.offset.x < -swipeThreshold) {
-      reviewAgain();
-    } else if (info.offset.x > swipeThreshold) {
-      markKnown();
+  const handleReview = async (quality: number) => {
+    const currentCard = cards[0];
+    if (!currentCard || !currentCard._id || !material) return;
+
+    try {
+      const res = await api.post(`/materials/${material.id}/flashcards/${currentCard._id}/review`, { quality });
+      // update context with new card data
+      const updatedFlashcards = material.flashcards?.map(f => f._id === currentCard._id ? res.data.card : f);
+      updateMaterialInContext({ ...material, flashcards: updatedFlashcards });
+    } catch (err) {
+      console.error("Failed to save review", err);
     }
   };
 
-  const reviewAgain = () => {
+  const reviewAgain = async () => {
     setDirection(-1);
     setIsFlipped(false);
+    
+    // Save "Again" (quality 0)
+    await handleReview(0);
+
     setTimeout(() => {
       setCards(prev => {
         const [current, ...rest] = prev;
@@ -75,13 +115,16 @@ export default function Flashcards() {
       });
       setDirection(0);
     }, 200);
-    showToast("Reviewing again later", "info");
+    showToast("We'll review this again shortly", "info");
   };
 
-  const markKnown = () => {
+  const markKnown = async () => {
     setDirection(1);
     setCompletedCount(prev => prev + 1);
     setIsFlipped(false);
+    
+    // Save "Good" (quality 5)
+    await handleReview(5);
     
     setTimeout(() => {
       if (cards.length > 1) {

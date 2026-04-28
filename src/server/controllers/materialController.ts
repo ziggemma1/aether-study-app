@@ -169,3 +169,51 @@ export const togglePublicStatus = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const reviewFlashcard = async (req: Request, res: Response) => {
+  try {
+    const { id, cardId } = req.params;
+    const { quality } = req.body; // 0-5 scale
+    const userId = (req as any).userId;
+
+    const material = await Material.findOne({ _id: id, userId });
+    if (!material) {
+      return res.status(404).json({ message: "Material not found or unauthorized" });
+    }
+
+    const card = (material as any).flashcards.id(cardId);
+    if (!card) {
+      return res.status(404).json({ message: "Flashcard not found" });
+    }
+
+    // SM-2 SRS Algorithm
+    let { interval, repetitions, easeFactor } = card;
+
+    if (quality >= 3) {
+      if (repetitions === 0) {
+        interval = 1;
+      } else if (repetitions === 1) {
+        interval = 6;
+      } else {
+        interval = Math.round(interval * easeFactor);
+      }
+      repetitions += 1;
+    } else {
+      repetitions = 0;
+      interval = 1;
+    }
+
+    easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+    if (easeFactor < 1.3) easeFactor = 1.3;
+
+    card.interval = interval;
+    card.repetitions = repetitions;
+    card.easeFactor = easeFactor;
+    card.nextReview = new Date(Date.now() + interval * 24 * 60 * 60 * 1000);
+
+    await material.save();
+    res.json({ message: "Review recorded", card });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

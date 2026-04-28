@@ -52,6 +52,16 @@ export interface NoteSection {
   imageUrl?: string;
 }
 
+export interface Flashcard {
+  _id?: string;
+  question: string;
+  answer: string;
+  interval: number;
+  easeFactor: number;
+  repetitions: number;
+  nextReview: string;
+}
+
 export interface Material {
   id: string;
   title: string;
@@ -61,11 +71,13 @@ export interface Material {
   keyTopics: string[];
   realLifeApplications?: string[];
   suggestedQuizQuestions?: Question[];
+  flashcards?: Flashcard[];
   detailedNotes?: string;
   noteSections?: NoteSection[];
   visualAidUrl?: string;
   progress: number;
   content?: string;
+  isPublic?: boolean;
 }
 
 export interface ReadingPlan {
