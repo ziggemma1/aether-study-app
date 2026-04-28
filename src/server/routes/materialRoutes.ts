@@ -18,7 +18,7 @@ router.use(protect);
 
 router.get('/public', getPublicMaterials);
 router.post('/clone/:id', cloneMaterial);
-router.post('/toggle-public/:id', togglePublicStatus);
+router.post('/:id/toggle-public', togglePublicStatus);
 
 router.post('/youtube-transcript', getYoutubeTranscript);
 

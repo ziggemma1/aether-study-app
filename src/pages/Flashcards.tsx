@@ -26,6 +26,14 @@ export default function Flashcards() {
   const checkOpacity = useTransform(x, [50, 150], [0, 1]);
   const crossOpacity = useTransform(x, [-150, -50], [1, 0]);
 
+  const [completedCount, setCompletedCount] = useState(0);
+  const [totalInitial, setTotalInitial] = useState(0);
+
+  // Reset x and direction for each new card
+  useEffect(() => {
+    x.set(0);
+  }, [cards, x]);
+
   useEffect(() => {
     if (!material) {
       setIsLoading(false);
@@ -37,6 +45,7 @@ export default function Flashcards() {
         const textToProcess = material.content || material.summary || material.title;
         const generatedCards = await generateFlashcardsOnClient(textToProcess, user?.language);
         setCards(generatedCards);
+        setTotalInitial(generatedCards.length);
       } catch (error: any) {
         showToast('Failed to generate flashcards: ' + error.message, 'error');
       } finally {
@@ -50,23 +59,39 @@ export default function Flashcards() {
   const handleDragEnd = (event: any, info: any) => {
     const swipeThreshold = 100;
     if (info.offset.x < -swipeThreshold) {
-      // Swipe Left = Review again
-      nextCard(-1);
+      reviewAgain();
     } else if (info.offset.x > swipeThreshold) {
-      // Swipe Right = Knew it
-      nextCard(1);
+      markKnown();
     }
   };
 
-  const nextCard = (dir: number) => {
-    setDirection(dir);
-    if (currentIndex < cards.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-      setIsFlipped(false);
-    } else {
-      showToast("Session complete! You've reviewed all cards.", "success");
-      navigate(-1);
-    }
+  const reviewAgain = () => {
+    setDirection(-1);
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCards(prev => {
+        const [current, ...rest] = prev;
+        return [...rest, current];
+      });
+      setDirection(0);
+    }, 200);
+    showToast("Reviewing again later", "info");
+  };
+
+  const markKnown = () => {
+    setDirection(1);
+    setCompletedCount(prev => prev + 1);
+    setIsFlipped(false);
+    
+    setTimeout(() => {
+      if (cards.length > 1) {
+        setCards(prev => prev.slice(1));
+        setDirection(0);
+      } else {
+        showToast("Session complete! You've mastered all cards.", "success");
+        navigate(-1);
+      }
+    }, 200);
   };
 
   const handleFlip = () => {
@@ -91,43 +116,44 @@ export default function Flashcards() {
     );
   }
 
-  const activeCard = cards[currentIndex];
+  const activeCard = cards[0];
 
   return (
-    <div className="p-4 md:p-8 lg:p-12 max-w-xl mx-auto h-full flex flex-col pt-16 overflow-hidden">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 max-w-xl mx-auto flex flex-col pt-2 overflow-y-visible">
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors text-sm font-medium"
+          className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors text-sm font-medium p-2"
         >
           <ArrowLeft size={18} /> Back
         </button>
         <div className="flex flex-col items-end">
-          <span className="text-[10px] font-black uppercase text-primary tracking-widest mb-1">Progress</span>
+          <span className="text-[10px] font-black uppercase text-primary tracking-widest mb-0.5">Progress</span>
           <span className="text-xs font-bold text-text-muted">
-            {currentIndex + 1} / {cards.length}
+            {completedCount} / {totalInitial} Mastered
           </span>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center relative perspective-1000 w-full min-h-[450px]">
+      <div className="relative perspective-1000 w-full flex items-center justify-center min-h-[400px] mb-8">
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentIndex}
+            key={activeCard.question}
             style={{ x, rotate, opacity }}
-            className="w-full absolute inset-0 preserve-3d cursor-grab active:cursor-grabbing"
+            className="w-full max-w-[320px] h-[400px] relative preserve-3d cursor-grab active:cursor-grabbing"
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.7}
             onDragEnd={handleDragEnd}
-            initial={{ opacity: 0, scale: 0.8, x: direction * 200 }}
+            initial={{ opacity: 0, scale: 0.9, x: direction * 300 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ 
               opacity: 0, 
-              scale: 0.5, 
-              x: x.get() === 0 ? (direction * -200) : (x.get() > 0 ? 500 : -500),
+              scale: 0.8, 
+              x: x.get() === 0 ? (direction * 500) : (x.get() > 0 ? 500 : -500),
               rotate: x.get() > 0 ? 45 : -45
             }}
-            transition={{ type: "spring", damping: 20, stiffness: 100 }}
+            transition={{ type: "spring", damping: 25, stiffness: 150 }}
             onClick={handleFlip}
           >
             {/* Swipe Indicators */}
@@ -197,21 +223,27 @@ export default function Flashcards() {
 
       {/* Control Instruction Bar */}
       <div className="mt-12 flex items-center justify-between px-4">
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2 border border-rose-500/20">
+        <button 
+          onClick={reviewAgain}
+          className="flex flex-col items-center group active:scale-95 transition-transform"
+        >
+          <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2 border border-rose-500/20 group-hover:bg-rose-500 group-hover:text-white transition-all">
             <X size={20} />
           </div>
           <span className="text-[10px] font-black uppercase text-text-muted tracking-tighter">Review</span>
-        </div>
+        </button>
 
-        <div className="h-0.5 flex-1 mx-8 bg-gradient-to-r from-rose-500/20 via-transparent to-emerald-500/20 rounded-full" />
+        <div className="h-0.5 flex-1 mx-8 bg-gradient-to-r from-rose-500/20 via-transparent to-emerald-500/20 rounded-full opacity-30" />
 
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-2 border border-emerald-500/20">
+        <button 
+          onClick={markKnown}
+          className="flex flex-col items-center group active:scale-95 transition-transform"
+        >
+          <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-2 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
             <Check size={20} />
           </div>
           <span className="text-[10px] font-black uppercase text-text-muted tracking-tighter">I Know This</span>
-        </div>
+        </button>
       </div>
     </div>
   );

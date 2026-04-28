@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { Material } from '../models/Material.js';
 
 export const getMaterials = async (req: Request, res: Response) => {

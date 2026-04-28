@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { Search, Filter, Grid, List, FileText, Youtube, BookOpen, Mic, ChevronRight, Check, Calendar as CalendarIcon, CheckCircle2, Layers, Loader2, Headphones } from 'lucide-react';
+import { Search, Filter, Grid, List, FileText, Youtube, BookOpen, Mic, ChevronRight, Check, Calendar as CalendarIcon, CheckCircle2, Layers, Loader2, Headphones, Globe } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Material } from '../types';
@@ -122,11 +122,25 @@ export default function Library() {
     }
   };
 
+  const handleTogglePublic = async (e: React.MouseEvent, materialId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const res = await api.post(`/materials/${materialId}/toggle-public`);
+      setMaterials(materials.map(m => m.id === materialId ? { ...m, isPublic: res.data.isPublic } : m));
+      showToast(res.data.isPublic ? 'Material is now public! 🌏' : 'Material is now private. 🔒');
+    } catch (err) {
+      showToast('Failed to change visibility', 'error');
+    }
+  };
+
   const renderMaterialGrid = (items: Material[]) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {items.map((material) => {
         const Icon = getTypeIcon(material.type);
         const isSelected = selectedMaterials.includes(material.id);
+        const isPublic = material.isPublic;
+
         return (
           <motion.div
             key={material.id}
@@ -139,35 +153,63 @@ export default function Library() {
               isSelected ? "border-primary shadow-lg shadow-primary/20" : "border-border/40 hover:border-primary/50"
             )}
           >
-            <button
-              onClick={(e) => toggleSelection(e, material.id)}
-              className={cn(
-                "absolute top-3 right-3 sm:top-4 sm:right-4 z-10 w-5 h-5 sm:w-6 sm:h-6 rounded-md border-2 flex items-center justify-center transition-all",
-                isSelected ? "bg-primary border-primary text-white" : "bg-surface border-text-muted/30 group-hover:border-primary/50"
-              )}
-            >
-              {isSelected && <Check size={12} className="sm:hidden" strokeWidth={3} />}
-              {isSelected && <Check size={14} className="hidden sm:block" strokeWidth={3} />}
-            </button>
+            {/* Action Bar */}
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 flex items-center gap-2">
+              <button
+                onClick={(e) => handleTogglePublic(e, material.id)}
+                className={cn(
+                  "w-8 h-8 rounded-lg border flex items-center justify-center transition-all backdrop-blur-sm",
+                  isPublic 
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-sm shadow-emerald-500/10" 
+                    : "bg-surface/50 border-border/50 text-text-muted hover:text-primary hover:border-primary/30"
+                )}
+                title={isPublic ? "Publicly Shared" : "Private (Tap to Share)"}
+              >
+                <Globe size={14} />
+              </button>
 
-            <Link to={`/library/${material.id}`} className="block relative z-0">
+              <button
+                onClick={(e) => toggleSelection(e, material.id)}
+                className={cn(
+                  "w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-all",
+                  isSelected ? "bg-primary border-primary text-white" : "bg-surface/50 border-border group-hover:border-primary/50 hover:bg-surface"
+                )}
+              >
+                {isSelected && <Check size={14} strokeWidth={3} />}
+                {!isSelected && <span className="sr-only">Select</span>}
+              </button>
+            </div>
+
+            <Link to={`/library/${material.id}`} className="block relative z-0 mt-4">
               <div className="flex items-start justify-between mb-4 sm:mb-6 pr-6 sm:pr-8">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/5 rounded-lg sm:rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                  <Icon size={20} className="sm:hidden" />
-                  <Icon size={24} className="hidden sm:block" />
+                <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all transform group-hover:rotate-6">
+                  <Icon size={24} />
                 </div>
-                <span className="text-[10px] sm:text-xs font-bold text-text-muted">{material.uploadDate}</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-bold text-text-muted">{material.uploadDate}</span>
+                  {isPublic && <span className="text-[9px] font-black uppercase text-emerald-500 mt-1 tracking-tighter">Community Sync</span>}
+                </div>
               </div>
-              <h3 className="text-sm sm:text-lg font-bold mb-1 sm:mb-2 line-clamp-1 text-text-main pr-6 sm:pr-8">{material.title}</h3>
-              <p className="text-xs sm:text-sm text-text-muted mb-4 sm:mb-6 line-clamp-2 leading-tight">{material.summary}</p>
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex-grow h-1 sm:h-1.5 bg-surface rounded-full overflow-hidden border border-border">
-                  <div
-                    className="h-full bg-secondary"
-                    style={{ width: `${material.progress}%` }}
+              
+              <h3 className="text-sm sm:text-lg font-black mb-1 sm:mb-2 line-clamp-1 text-text-main pr-6 sm:pr-8 group-hover:text-primary transition-colors">
+                {material.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-text-muted mb-6 sm:mb-8 line-clamp-2 leading-relaxed opacity-80">
+                {material.summary}
+              </p>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-text-muted tracking-widest">Mastery</span>
+                  <span className="text-xs font-black text-primary">{material.progress}%</span>
+                </div>
+                <div className="h-1.5 bg-surface-alt rounded-full overflow-hidden border border-border/50">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${material.progress}%` }}
+                    className="h-full bg-gradient-to-r from-primary to-secondary"
                   />
                 </div>
-                <span className="text-xs font-bold text-text-muted">{material.progress}%</span>
               </div>
             </Link>
           </motion.div>
