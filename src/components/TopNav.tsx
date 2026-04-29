@@ -33,8 +33,8 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
         className={cn(
           "flex items-center justify-between pointer-events-auto transition-all duration-500 ease-in-out",
           scrolled 
-            ? "mt-2 w-full max-w-[1400px] px-4 py-2 bg-surface/80 backdrop-blur-xl border border-border shadow-lg rounded-full" 
-            : "mt-0 w-full px-6 py-4 bg-surface border-b border-border rounded-none shadow-none"
+            ? "mt-2 w-full max-w-[1400px] px-4 py-2 bg-surface/60 backdrop-blur-2xl border border-border shadow-lg rounded-full" 
+            : "mt-0 w-full px-6 py-4 bg-surface/60 border-b border-border rounded-none shadow-none"
         )}
       >
         <div className="flex items-center gap-4">

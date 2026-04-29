@@ -10,24 +10,8 @@ import { Database, ArrowRight, Loader2, Sparkles, WifiOff, CheckCircle2, AlertCi
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AppLayout() {
-  const { theme, dbError, isLoading, user, toast } = useAppContext();
+  const { theme, timeTheme, dbError, isLoading, user, toast } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-  const [timeTheme, setTimeTheme] = React.useState('');
-
-  // Determine time-of-day theme
-  React.useEffect(() => {
-    const updateTheme = () => {
-      const hour = new Date().getHours();
-      if (hour >= 6 && hour < 12) setTimeTheme('theme-morning');
-      else if (hour >= 12 && hour < 18) setTimeTheme('theme-day');
-      else if (hour >= 18 && hour < 22) setTimeTheme('theme-sunset');
-      else setTimeTheme('theme-night');
-    };
-
-    updateTheme();
-    const interval = setInterval(updateTheme, 60000); // Check every minute
-    return () => clearInterval(interval);
-  }, []);
 
   // Critical loading should only block if there's no user in cache/state
   const isCriticalLoading = (isLoading && !user);

@@ -30,6 +30,7 @@ interface AppContextType {
   dbError: string | null;
   setDbError: (error: string | null) => void;
   theme: 'light' | 'dark';
+  timeTheme: string;
   toggleTheme: () => void;
   signOut: () => Promise<void>;
   showToast: (text: string, type?: 'success' | 'error') => void;
@@ -61,6 +62,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [timeTheme, setTimeTheme] = useState('');
+
+  // Determine time-of-day theme
+  useEffect(() => {
+    const updateTheme = () => {
+      const hour = new Date().getHours();
+      if (hour >= 6 && hour < 12) setTimeTheme('theme-morning');
+      else if (hour >= 12 && hour < 18) setTimeTheme('theme-day');
+      else if (hour >= 18 && hour < 22) setTimeTheme('theme-sunset');
+      else setTimeTheme('theme-night');
+    };
+
+    updateTheme();
+    const interval = setInterval(updateTheme, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, []);
+
   const [toast, setToast] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
 
@@ -357,6 +375,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dbError,
       setDbError,
       theme,
+      timeTheme,
       toggleTheme,
       signOut,
       showToast,
