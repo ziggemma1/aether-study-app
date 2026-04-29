@@ -75,9 +75,30 @@ export default function LiveRooms() {
           if (data.roomId === activeRoomId) {
             setParticipants(prev => {
               if (prev.find(p => p.id === data.user.id)) return prev;
-              return [...prev, data.user];
+              const isMe = data.user.id === (user?.id || (user as any)?._id);
+              return [...prev, { ...data.user, isMe }];
             });
-            showToast(`${data.user.name} joined the room!`);
+            if (data.user.id !== (user?.id || (user as any)?._id)) {
+              showToast(`${data.user.name} joined the room!`);
+            }
+          }
+        });
+
+        socket.on("room_participants", (data: { roomId: string, participants: RoomParticipant[] }) => {
+          if (data.roomId === activeRoomId) {
+             setParticipants(prev => {
+               const myId = user?.id || (user as any)?._id;
+               const newParticipants = data.participants.map(p => ({
+                 ...p,
+                 isMe: p.id === myId
+               }));
+               // Merge with previous to not lose local states if any
+               const prevIds = new Set(prev.map(p => p.id));
+               newParticipants.forEach(p => {
+                 if (!prevIds.has(p.id)) prev.push(p);
+               });
+               return [...newParticipants]; // using server's master list
+             });
           }
         });
 
@@ -94,6 +115,7 @@ export default function LiveRooms() {
 
         return () => {
           socket.off("user_joined_room");
+          socket.off("room_participants");
           socket.off("user_left_room");
           socket.off("received_nudge");
         };

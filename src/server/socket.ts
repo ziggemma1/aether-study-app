@@ -57,6 +57,25 @@ export const initSocket = (server: any) => {
     socket.on("join_live_room", async (roomId) => {
       socket.join(`live_room:${roomId}`);
       const user = await User.findById(userId).select('name avatar');
+      
+      const clients = io.sockets.adapter.rooms.get(`live_room:${roomId}`);
+      const participants = [];
+      if (clients) {
+        for (const clientId of clients) {
+          const clientSocket = io.sockets.sockets.get(clientId);
+          if (clientSocket && (clientSocket as any).userId) {
+            const clientUserId = (clientSocket as any).userId;
+            const pUser = await User.findById(clientUserId).select('name avatar');
+            if (pUser) {
+              participants.push({ id: clientUserId, name: pUser.name, avatar: pUser.avatar });
+            }
+          }
+        }
+      }
+      
+      const uniqueParticipants = Array.from(new Map(participants.map(p => [p.id.toString(), p])).values());
+      socket.emit("room_participants", { roomId, participants: uniqueParticipants });
+
       io.to(`live_room:${roomId}`).emit("user_joined_room", { 
         roomId, 
         user: { id: userId, name: user?.name, avatar: user?.avatar } 

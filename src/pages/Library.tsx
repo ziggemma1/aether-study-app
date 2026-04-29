@@ -6,9 +6,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Material } from '../types';
 import api from '../services/api';
+import { MaterialCardSkeleton, MaterialListSkeleton } from '../components/ui/Skeleton';
 
 export default function Library() {
-  const { materials, savedPlans, setMaterials, showToast, t } = useAppContext();
+  const { materials, savedPlans, setMaterials, showToast, t, isLoading } = useAppContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialFilter = searchParams.get('filter');
@@ -363,7 +364,17 @@ export default function Library() {
             </div>
           </div>
 
-          {filteredStandardMaterials.length > 0 ? (
+          {isLoading ? (
+            viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => <MaterialCardSkeleton key={i} />)}
+              </div>
+            ) : (
+               <div className="space-y-4">
+                 {[1, 2, 3, 4, 5, 6].map(i => <MaterialListSkeleton key={i} />)}
+               </div>
+            )
+          ) : filteredStandardMaterials.length > 0 ? (
             viewMode === 'grid' ? renderMaterialGrid(filteredStandardMaterials) : renderMaterialList(filteredStandardMaterials)
           ) : (
             <div className="text-center py-24">
@@ -379,7 +390,17 @@ export default function Library() {
 
       {activeTab === 'unified' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-          {filteredUnifiedMaterials.length > 0 ? (
+          {isLoading ? (
+            viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {[1, 2, 3].map(i => <MaterialCardSkeleton key={i} />)}
+              </div>
+            ) : (
+               <div className="space-y-4">
+                 {[1, 2, 3].map(i => <MaterialListSkeleton key={i} />)}
+               </div>
+            )
+          ) : filteredUnifiedMaterials.length > 0 ? (
             viewMode === 'grid' ? renderMaterialGrid(filteredUnifiedMaterials) : renderMaterialList(filteredUnifiedMaterials)
           ) : (
             <div className="glass-card p-12 flex flex-col items-center justify-center text-center border-dashed border-2 border-border/30">
@@ -397,7 +418,24 @@ export default function Library() {
 
       {activeTab === 'plans' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-          {savedPlans.length > 0 ? (
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="glass-card p-6 h-[180px] flex flex-col justify-between">
+                  <div className="flex justify-between items-start mb-4">
+                     <Skeleton className="w-10 h-10 rounded-xl" />
+                     <Skeleton className="w-16 h-3" />
+                  </div>
+                  <Skeleton className="h-6 w-3/4 mb-4" />
+                  <div className="flex items-center gap-4 mb-4">
+                     <Skeleton className="flex-grow h-1.5 rounded-full" />
+                     <Skeleton className="w-6 h-4" />
+                  </div>
+                  <Skeleton className="w-full h-10 rounded-xl" />
+                </div>
+              ))}
+            </div>
+          ) : savedPlans.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {savedPlans.map(p => (
                 <div key={p.id} className="glass-card p-6 border-border/40 hover:border-primary/30 transition-all group">

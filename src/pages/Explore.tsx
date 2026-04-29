@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import api from '../services/api';
+import { ExploreCardSkeleton } from '../components/ui/Skeleton';
 
 export default function Explore() {
   const { showToast, setMaterials } = useAppContext();
@@ -72,9 +73,10 @@ export default function Explore() {
       </header>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 size={40} className="text-primary animate-spin mb-4" />
-          <p className="text-text-muted">Exploring the Aether for top notes...</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+             <ExploreCardSkeleton key={i} />
+          ))}
         </div>
       ) : filteredNotes.length === 0 ? (
         <div className="text-center py-20">
