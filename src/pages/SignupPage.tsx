@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, Github, Chrome, ArrowLeft } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
 import { authApi } from '../services/api';
@@ -16,7 +16,7 @@ export default function SignupPage() {
   const [formData, setFormData] = React.useState({ name: '', email: '', password: '' });
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
-  const navigate = React.useNavigate();
+  const navigate = useNavigate();
   const { refreshUser } = useAppContext();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
