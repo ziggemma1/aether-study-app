@@ -1,0 +1,34 @@
+/app/applet
+├── AGENTS.md
+├── README.md
+├── api_restored
+├── dist
+├── find_src
+├── find_src_no_main
+├── index.html
+├── metadata.json
+├── node_modules
+├── package-lock.json
+├── package.json
+├── public
+├── repo_all
+├── repo_all_2
+├── repo_fresh
+├── repo_src
+├── repo_src_main
+├── repo_src_tiged
+├── restore
+├── restore_123
+├── restore_tiged
+├── server.ts
+├── src
+├── src_broken
+├── temp_src
+├── test_import
+├── test_sha
+├── tsconfig.json
+├── vercel.json
+└── vite.config.ts
+
+directory: 20 file: 10
+

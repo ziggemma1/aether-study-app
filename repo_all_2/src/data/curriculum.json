@@ -1,0 +1,36 @@
+{
+  "Nigeria": {
+    "WAEC/JAMB": {
+      "Mathematics": [
+        { "id": "math_1", "chapter": "Number Bases", "content": "Number bases involve representing numbers using different digits. Base 10 is the standard decimal system. Binary (Base 2), Octal (Base 8), and Hexadecimal (Base 16) are common in computing. Conversion between bases is a key skill." },
+        { "id": "math_2", "chapter": "Fractions and Decimals", "content": "Fractions represent parts of a whole. Decimals are another way to represent fractions using powers of 10. Operations include addition, subtraction, multiplication, and division of fractions and decimals." },
+        { "id": "math_3", "chapter": "Indices and Logarithms", "content": "Indices (exponents) represent repeated multiplication. Logarithms are the inverse of indices. Rules include multiplication, division, and power rules for both indices and logarithms." }
+      ],
+      "English": [
+        { "id": "eng_1", "chapter": "Parts of Speech", "content": "Nouns, pronouns, verbs, adjectives, adverbs, prepositions, conjunctions, and interjections are the building blocks of sentences." },
+        { "id": "eng_2", "chapter": "Tenses", "content": "Past, present, and future tenses describe when an action occurs. Perfect and continuous aspects add more detail to the timing." }
+      ]
+    }
+  },
+  "USA": {
+    "SAT/AP": {
+      "Math": [
+        { "id": "sat_math_1", "chapter": "Heart of Algebra", "content": "Linear equations, systems of linear equations, and linear functions in context." },
+        { "id": "sat_math_2", "chapter": "Problem Solving and Data Analysis", "content": "Ratios, percentages, proportional reasoning, and analyzing data from tables and graphs." }
+      ],
+      "Reading": [
+        { "id": "sat_read_1", "chapter": "Evidence-Based Reading", "content": "Analyzing passages from literature, history, social studies, and science to find evidence for answers." }
+      ]
+    }
+  },
+  "Indonesia": {
+    "UTBK/UN": {
+      "Matematika": [
+        { "id": "indo_math_1", "chapter": "Eksponen dan Logaritma", "content": "Sifat-sifat eksponen dan logaritma serta penyelesaian persamaan eksponen dan logaritma." }
+      ],
+      "Bahasa Indonesia": [
+        { "id": "indo_bi_1", "chapter": "Teks Eksposisi", "content": "Struktur dan ciri kebahasaan teks eksposisi yang bertujuan untuk meyakinkan pembaca." }
+      ]
+    }
+  }
+}

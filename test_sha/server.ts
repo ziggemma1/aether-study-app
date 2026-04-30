@@ -7,17 +7,17 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
-import authRoutes from "./server_backend/routes/authRoutes.js";
-import materialRoutes from "./server_backend/routes/materialRoutes.js";
-import sessionRoutes from "./server_backend/routes/sessionRoutes.js";
-import quizRoutes from "./server_backend/routes/quizRoutes.js";
-import messageRoutes from "./server_backend/routes/messageRoutes.js";
-import userRoutes from "./server_backend/routes/userRoutes.js";
-import groupRoutes from "./server_backend/routes/groupRoutes.js";
-import roomRoutes from "./server_backend/routes/roomRoutes.js";
-import { checkDbConnection } from "./server_backend/middleware/dbMiddleware.js";
+import authRoutes from "./src/server/routes/authRoutes.js";
+import materialRoutes from "./src/server/routes/materialRoutes.js";
+import sessionRoutes from "./src/server/routes/sessionRoutes.js";
+import quizRoutes from "./src/server/routes/quizRoutes.js";
+import messageRoutes from "./src/server/routes/messageRoutes.js";
+import userRoutes from "./src/server/routes/userRoutes.js";
+import groupRoutes from "./src/server/routes/groupRoutes.js";
+import roomRoutes from "./src/server/routes/roomRoutes.js";
+import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
 import { createServer } from "http";
-import { initSocket } from "./server_backend/socket.js";
+import { initSocket } from "./src/server/socket.js";
 
 dotenv.config();
 
@@ -167,5 +167,4 @@ async function startServer() {
   return app;
 }
 
-const appPromise = startServer();
-export default appPromise;
+export const appPromise = startServer();

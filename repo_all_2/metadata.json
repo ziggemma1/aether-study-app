@@ -1,0 +1,7 @@
+{
+  "name": "Aether Study",
+  "description": "AI-powered study assistant for summarizing materials, creating reading plans, and generating quizzes.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

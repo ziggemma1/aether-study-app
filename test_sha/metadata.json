@@ -1,0 +1,5 @@
+{
+  "name": "Aether Study",
+  "description": "AI-powered personalized study roadmaps and collaborative learning platform.",
+  "requestFramePermissions": ["geolocation", "microphone"]
+}
