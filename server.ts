@@ -141,8 +141,9 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
     try {
-      // @ts-ignore
-      const { createServer: createViteServer } = await import("vite");
+      // Hide from Vercel's file tracer
+      const dynamicImport = new Function('modulePath', 'return import(modulePath)');
+      const { createServer: createViteServer } = await dynamicImport("vite");
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: "spa",
