@@ -81,22 +81,22 @@ async function startServer() {
       console.error("❌ CRITICAL ERROR: Your MONGODB_URI contains placeholder text like '<db_password>'.");
       console.error("👉 ACTION REQUIRED: Please replace '<db_password>' with your actual MongoDB database password in your environment variables.");
     } else {
-      const connectWithRetry = async (retries = 10) => {
+      const connectWithRetry = async (retries = process.env.VERCEL ? 1 : 10) => {
         try {
           await mongoose.connect(MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000,
-            connectTimeoutMS: 5000,
+            serverSelectionTimeoutMS: process.env.VERCEL ? 3000 : 5000,
+            connectTimeoutMS: process.env.VERCEL ? 3000 : 5000,
           });
           console.log("✅ Connected to MongoDB successfully");
         } catch (err: any) {
           if (retries > 0) {
-            const delay = 5000;
+            const delay = 2000;
             console.warn(`❌ MongoDB connection failed: ${err.message}. Retrying in ${delay}ms... (${retries} retries left)`);
             await new Promise(resolve => setTimeout(resolve, delay));
             return connectWithRetry(retries - 1);
           } else {
             console.error("❌ FATAL: MongoDB connection error after all retries:", err.message);
-            throw err;
+            // Don't throw the error so the app can still be returned and handle requests (it will return 500 DB not connected)
           }
         }
       };
@@ -141,6 +141,7 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
     try {
+      // @ts-ignore
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
         server: { middlewareMode: true },
