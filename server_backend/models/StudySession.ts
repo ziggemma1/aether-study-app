@@ -8,5 +8,5 @@ const studySessionSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-const  = mongoose.models. || mongoose.model('', );
-export default ;
+const StudySession = mongoose.models.StudySession || mongoose.model('StudySession', studySessionSchema);
+export default StudySession;
