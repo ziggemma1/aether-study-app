@@ -28,11 +28,21 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await authApi.login(formData);
+      const response = await authApi.login(formData);
       await refreshUser();
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      if (err.response?.status === 503) {
+        setError(err.response.data.message || 'Server is starting up or database is disconnected. Please try again in 5 seconds.');
+      } else if (err.response?.status === 404) {
+        setError('User not found. Please check your email or sign up.');
+      } else if (err.response?.status === 400) {
+        setError(err.response.data.message || 'Invalid email or password.');
+      } else if (!err.response) {
+        setError('Network error. Please check your internet connection or Vercel server logs.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
