@@ -41,7 +41,7 @@ export default function LoginPage() {
       } else if (!err.response) {
         setError('Network error. Please check your internet connection or Vercel server logs.');
       } else {
-        setError('An unexpected error occurred. Please try again.');
+        setError(err.response.data?.message || 'An unexpected error occurred. Please try again.');
       }
     } finally {
       setLoading(false);

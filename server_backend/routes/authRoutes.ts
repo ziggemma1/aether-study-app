@@ -18,7 +18,7 @@ router.post('/register', async (req, res) => {
     res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
     res.status(201).json({ user: { id: user._id, name, email }, token });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: `Registration error: ${error instanceof Error ? error.message : 'Unknown'}` });
   }
 });
 
@@ -36,7 +36,7 @@ router.post('/login', async (req, res) => {
     res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
     res.json({ user: { id: user._id, name: user.name, email: user.email }, token });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: `Login error: ${error instanceof Error ? error.message : 'Unknown'}` });
   }
 });
 
