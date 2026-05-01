@@ -5,41 +5,41 @@ const api = axios.create({
   withCredentials: true,
 });
 
-export const authApi = {
-  login: (credentials: any) => api.post('/auth/login', credentials),
-  register: (data: any) => api.post('/auth/register', data),
-  logout: () => api.post('/auth/logout'),
-  getMe: () => api.get('/auth/me'),
-  getGoogleUrl: () => api.get('/auth/google'),
-};
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+// Automatic retry for Network Errors (server still booting or slow network)
+if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+  const retryCount = originalRequest._retryCount || 0;
+  if (retryCount < 100) { // Extreme persistence
+    originalRequest._retryCount = retryCount + 1;
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    return api(originalRequest);
+  }
+}
 
-export const materialApi = {
-  getAll: () => api.get('/materials'),
-  getPublic: () => api.get('/materials/public'),
-  create: (data: any) => api.post('/materials', data),
-  update: (id: string, data: any) => api.patch(`/materials/${id}`, data),
-  delete: (id: string) => api.delete(`/materials/${id}`),
-  togglePublic: (id: string) => api.patch(`/materials/${id}/public`),
-  clone: (id: string) => api.post(`/materials/${id}/clone`),
-};
-
-export const userApi = {
-  getProfiles: () => api.get('/users/profiles'),
-  updateProfile: (data: any) => api.patch('/users/profile', data),
-  sendFriendRequest: (receiverId: string) => api.post('/users/friend-request', { receiverId }),
-  getFriendRequests: () => api.get('/users/friend-requests'),
-  respondToFriendRequest: (requestId: string, status: 'accepted' | 'declined') => 
-    api.post('/users/friend-request/respond', { requestId, status }),
-};
-
-export const sessionApi = {
-  getAll: () => api.get('/sessions'),
-  create: (data: any) => api.post('/sessions', data),
-};
-
-export const quizApi = {
-  getAll: () => api.get('/quizzes'),
-  create: (data: any) => api.post('/quizzes', data),
-};
+if (error.response?.status === 503 && error.response?.data?.message?.includes('Database')) {
+  window.dispatchEvent(new CustomEvent('app:db-error', { detail: error.response.data }));
+  
+  // If it's a 503 from DB, retry many times to cover cold start or slow provisioning
+  const dbRetryCount = originalRequest._dbRetryCount || 0;
+  if (dbRetryCount < 100) {
+    originalRequest._dbRetryCount = dbRetryCount + 1;
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    return api(originalRequest);
+  }
+}
+    if (error.response?.status === 401) {
+      // Clear user data and redirect to login if unauthorized
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

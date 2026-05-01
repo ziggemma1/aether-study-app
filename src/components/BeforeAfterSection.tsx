@@ -39,12 +39,12 @@ type Option = 'slider' | 'stats' | 'timeline';
 // --- Helper Components ---
 
 const SectionHeader = ({ eyebrow, title, subtitle }: { eyebrow: string; title: string; subtitle: string }) => (
-  <div className="text-center mb-16 px-4">
+  <div className="text-center mb-10 sm:mb-16 px-4">
     <motion.span 
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="inline-block text-sm font-bold tracking-wider text-primary uppercase mb-4"
+      className="inline-block text-[10px] sm:text-sm font-bold tracking-wider text-primary uppercase mb-2 sm:mb-4"
     >
       {eyebrow}
     </motion.span>
@@ -53,7 +53,7 @@ const SectionHeader = ({ eyebrow, title, subtitle }: { eyebrow: string; title: s
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: 0.1 }}
-      className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight"
+      className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-6 tracking-tight"
     >
       {title}
     </motion.h2>
@@ -62,7 +62,7 @@ const SectionHeader = ({ eyebrow, title, subtitle }: { eyebrow: string; title: s
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: 0.2 }}
-      className="text-lg text-slate-400 max-w-2xl mx-auto"
+      className="text-xs sm:text-lg text-slate-400 max-w-2xl mx-auto"
     >
       {subtitle}
     </motion.p>
@@ -216,7 +216,7 @@ const BeforeAfterSlider = () => {
     <div className="max-w-5xl mx-auto px-4">
       <div 
         ref={containerRef}
-        className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden shadow-2xl cursor-ew-resize select-none border border-white/10"
+        className="relative aspect-[4/5] sm:aspect-[16/9] w-full rounded-2xl overflow-hidden shadow-2xl cursor-ew-resize select-none border border-white/10"
         onMouseMove={handleMouseMove}
         onTouchMove={handleTouchMove}
       >
@@ -225,80 +225,87 @@ const BeforeAfterSlider = () => {
           <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_center,transparent_0%,#000_100%)]" />
           
           {/* Chaotic Mockup Content */}
-          <div className="absolute inset-0 p-8 opacity-40 grayscale overflow-hidden">
-            {/* Scattered Tabs */}
-            <div className="flex gap-1 mb-8">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div key={i} className="h-6 w-20 bg-white/5 border border-white/10 rounded-t-lg flex items-center px-2 gap-1">
-                  <div className="w-2 h-2 rounded-full bg-rose-500/30" />
-                  <div className="h-1 w-10 bg-white/10 rounded" />
+          <div className="absolute inset-0 p-4 sm:p-8 opacity-40 grayscale overflow-hidden">
+            {/* Scattered Tabs - Simplified for Mobile */}
+            <div className="flex gap-1 mb-4 sm:mb-8 overflow-hidden">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-4 sm:h-6 w-16 sm:w-20 bg-white/5 border border-white/10 rounded-t-lg flex items-center px-1 sm:px-2 gap-1">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-rose-500/30" />
+                  <div className="h-1 w-8 sm:w-10 bg-white/10 rounded" />
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               {/* Scattered Files */}
               <motion.div 
-                animate={{ rotate: -5, x: -10, y: 10 }}
-                className="glass-card bg-white/5 border-white/10 p-4 h-32 flex flex-col gap-2 relative"
+                animate={{ rotate: -5, x: -5, y: 5 }}
+                className="glass-card bg-white/5 border-white/10 p-3 sm:p-4 h-24 sm:h-32 flex flex-col gap-1.5 sm:gap-2 relative"
               >
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">!</div>
-                <FileText size={16} className="text-rose-400" />
-                <div className="text-[10px] text-rose-400 font-bold uppercase">Final_v2_FINAL.pdf</div>
-                <div className="h-1.5 w-full bg-rose-400/20 rounded" />
-                <div className="h-1.5 w-2/3 bg-rose-400/20 rounded" />
+                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 sm:w-6 sm:h-6 bg-rose-500 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[10px] font-bold">!</div>
+                <FileText size={14} className="text-rose-400 sm:hidden" />
+                <FileText size={16} className="text-rose-400 hidden sm:block" />
+                <div className="text-[8px] sm:text-[10px] text-rose-400 font-bold uppercase truncate">Final_v2.pdf</div>
+                <div className="h-1 w-full bg-rose-400/20 rounded" />
+                <div className="h-1 w-2/3 bg-rose-400/20 rounded" />
               </motion.div>
 
               <motion.div 
-                animate={{ rotate: 3, x: 20, y: -5 }}
-                className="glass-card bg-white/5 border-white/10 p-4 h-40 flex flex-col gap-2 mt-8"
+                animate={{ rotate: 3, x: 10, y: -3 }}
+                className="glass-card bg-white/5 border-white/10 p-3 sm:p-4 h-32 sm:h-40 flex flex-col gap-1.5 sm:gap-2 mt-4 sm:mt-8"
               >
-                <Youtube size={16} className="text-rose-400" />
-                <div className="text-[10px] text-rose-400 font-bold uppercase">Lecture_10_Part_2</div>
+                <Youtube size={14} className="text-rose-400 sm:hidden" />
+                <Youtube size={16} className="text-rose-400 hidden sm:block" />
+                <div className="text-[8px] sm:text-[10px] text-rose-400 font-bold uppercase truncate">Lecture_10</div>
                 <div className="aspect-video bg-rose-400/10 rounded flex items-center justify-center">
-                  <XCircle size={20} className="text-rose-400/30" />
+                  <XCircle size={16} className="text-rose-400/30 sm:hidden" />
+                  <XCircle size={20} className="text-rose-400/30 hidden sm:block" />
                 </div>
-                <div className="h-1.5 w-full bg-rose-400/20 rounded" />
+                <div className="h-1 w-full bg-rose-400/20 rounded" />
               </motion.div>
 
               <motion.div 
-                animate={{ rotate: -2, x: 5, y: 15 }}
-                className="glass-card bg-white/5 border-white/10 p-4 h-24 flex flex-col gap-2"
+                animate={{ rotate: -2, x: 3, y: 8 }}
+                className="glass-card bg-white/5 border-white/10 p-3 sm:p-4 h-20 sm:h-24 flex flex-col gap-1.5 sm:gap-2"
               >
-                <MessageSquare size={16} className="text-rose-400" />
-                <div className="text-[10px] text-rose-400 font-bold uppercase">Scientific Article</div>
-                <div className="h-1.5 w-1/2 bg-rose-400/20 rounded" />
+                <MessageSquare size={14} className="text-rose-400 sm:hidden" />
+                <MessageSquare size={16} className="text-rose-400 hidden sm:block" />
+                <div className="text-[8px] sm:text-[10px] text-rose-400 font-bold uppercase truncate">Article</div>
+                <div className="h-1 w-1/2 bg-rose-400/20 rounded" />
               </motion.div>
 
               <motion.div 
-                animate={{ rotate: 8, x: -15, y: -10 }}
-                className="glass-card bg-white/5 border-white/10 p-4 h-32 flex flex-col gap-2"
+                animate={{ rotate: 8, x: -8, y: -5 }}
+                className="glass-card bg-white/5 border-white/10 p-3 sm:p-4 h-24 sm:h-32 flex flex-col gap-1.5 sm:gap-2"
               >
-                <CloudOff size={16} className="text-rose-400" />
-                <div className="text-[10px] text-rose-400 font-bold uppercase">Broken_Link.txt</div>
-                <div className="h-1.5 w-full bg-rose-400/20 rounded" />
-                <div className="h-1.5 w-full bg-rose-400/20 rounded" />
+                <CloudOff size={14} className="text-rose-400 sm:hidden" />
+                <CloudOff size={16} className="text-rose-400 hidden sm:block" />
+                <div className="text-[8px] sm:text-[10px] text-rose-400 font-bold uppercase truncate">Broken.txt</div>
+                <div className="h-1 w-full bg-rose-400/20 rounded" />
+                <div className="h-1 w-full bg-rose-400/20 rounded" />
               </motion.div>
             </div>
 
             {/* Floating Error Badges */}
-            <div className="absolute bottom-12 right-12 flex flex-col gap-2">
-              <div className="bg-rose-500/20 text-rose-400 text-[10px] font-bold px-3 py-1 rounded-full border border-rose-500/30 flex items-center gap-2">
-                <AlertCircle size={10} /> MISSING 3 FILES
+            <div className="absolute bottom-6 sm:bottom-12 right-6 sm:right-12 flex flex-col gap-1.5 sm:gap-2">
+              <div className="bg-rose-500/20 text-rose-400 text-[8px] sm:text-[10px] font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-rose-500/30 flex items-center gap-1.5 sm:gap-2">
+                <AlertCircle size={8} className="sm:hidden" />
+                <AlertCircle size={10} className="hidden sm:block" /> MISSING FILES
               </div>
-              <div className="bg-rose-500/20 text-rose-400 text-[10px] font-bold px-3 py-1 rounded-full border border-rose-500/30 flex items-center gap-2">
-                <History size={10} /> 4 HOURS WASTED
+              <div className="bg-rose-500/20 text-rose-400 text-[8px] sm:text-[10px] font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-rose-500/30 flex items-center gap-1.5 sm:gap-2">
+                <History size={8} className="sm:hidden" />
+                <History size={10} className="hidden sm:block" /> HOURS WASTED
               </div>
             </div>
           </div>
 
           {/* Before Labels */}
-          <div className="absolute left-8 top-8 z-10">
+          <div className="absolute left-4 sm:left-8 top-4 sm:top-8 z-10">
             <motion.div 
               key={beforeText}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/5 backdrop-blur-md border border-white/10 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-xl"
+              className="bg-white/5 backdrop-blur-md border border-white/10 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-medium shadow-xl"
             >
               {beforeText}
             </motion.div>
@@ -311,10 +318,10 @@ const BeforeAfterSlider = () => {
           style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
         >
           {/* Organized Mockup Content */}
-          <div className="absolute inset-0 p-8">
-            <div className="grid grid-cols-12 gap-4 h-full">
-              {/* Sidebar */}
-              <div className="col-span-3 space-y-4">
+          <div className="absolute inset-0 p-4 sm:p-8">
+            <div className="grid grid-cols-12 gap-3 sm:gap-4 h-full">
+              {/* Sidebar - Hidden on Mobile Slider for Clarity */}
+              <div className="hidden sm:block col-span-3 space-y-4">
                 <div className="glass-card p-4 h-full bg-white/10 border-white/20">
                   <div className="flex items-center gap-2 mb-6">
                     <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
@@ -334,49 +341,53 @@ const BeforeAfterSlider = () => {
               </div>
 
               {/* Main Content */}
-              <div className="col-span-9 space-y-4">
+              <div className="col-span-12 sm:col-span-9 space-y-3 sm:space-y-4">
                 {/* Header Card */}
-                <div className="glass-card p-6 bg-white/10 border-white/20 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                      <Sparkles size={24} className="text-emerald-400" />
+                <div className="glass-card p-4 sm:p-6 bg-white/10 border-white/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                      <Sparkles size={20} className="text-emerald-400 sm:hidden" />
+                      <Sparkles size={24} className="text-emerald-400 hidden sm:block" />
                     </div>
                     <div>
-                      <div className="text-white font-bold text-lg">Biology 101: AI Summary</div>
-                      <div className="text-emerald-400/80 text-xs font-medium flex items-center gap-1">
-                        <CheckCircle2 size={12} /> Ready to study • 12 key concepts identified
+                      <div className="text-white font-bold text-sm sm:text-lg">Biology 101: Summary</div>
+                      <div className="text-emerald-400/80 text-[8px] sm:text-xs font-medium flex items-center gap-1">
+                        <CheckCircle2 size={10} className="sm:hidden" />
+                        <CheckCircle2 size={12} className="hidden sm:block" /> Ready to study
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/10 text-[10px] text-white/60 font-bold">GENETICS</div>
-                    <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/10 text-[10px] text-white/60 font-bold">EVOLUTION</div>
+                  <div className="flex gap-1.5 sm:gap-2">
+                    <div className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/5 rounded-md sm:rounded-lg border border-white/10 text-[8px] sm:text-[10px] text-white/60 font-bold">GENETICS</div>
+                    <div className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/5 rounded-md sm:rounded-lg border border-white/10 text-[8px] sm:text-[10px] text-white/60 font-bold">EVOLUTION</div>
                   </div>
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="glass-card p-4 bg-white/10 border-white/20">
-                    <div className="flex justify-between items-start mb-4">
-                      <Calendar size={16} className="text-primary" />
-                      <span className="text-[10px] font-bold text-white/40 uppercase">Next Session</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="glass-card p-3 sm:p-4 bg-white/10 border-white/20">
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <Calendar size={14} className="text-primary sm:hidden" />
+                      <Calendar size={16} className="text-primary hidden sm:block" />
+                      <span className="text-[8px] sm:text-[10px] font-bold text-white/40 uppercase">Session</span>
                     </div>
-                    <div className="text-white font-bold text-sm mb-1">Cell Division</div>
-                    <div className="text-white/40 text-[10px]">Today, 4:00 PM</div>
+                    <div className="text-white font-bold text-xs sm:text-sm mb-0.5 sm:mb-1">Cell Division</div>
+                    <div className="text-white/40 text-[8px] sm:text-[10px]">Today, 4:00 PM</div>
                   </div>
 
-                  <div className="glass-card p-4 bg-white/10 border-white/20">
-                    <div className="flex justify-between items-start mb-4">
-                      <Trophy size={16} className="text-accent" />
-                      <span className="text-[10px] font-bold text-white/40 uppercase">Quiz Score</span>
+                  <div className="glass-card p-3 sm:p-4 bg-white/10 border-white/20">
+                    <div className="flex justify-between items-start mb-2 sm:mb-4">
+                      <Trophy size={14} className="text-accent sm:hidden" />
+                      <Trophy size={16} className="text-accent hidden sm:block" />
+                      <span className="text-[8px] sm:text-[10px] font-bold text-white/40 uppercase">Mastery</span>
                     </div>
-                    <div className="text-white font-bold text-sm mb-1">92% Mastery</div>
-                    <div className="h-1.5 w-full bg-white/10 rounded mt-2 overflow-hidden">
+                    <div className="text-white font-bold text-xs sm:text-sm mb-0.5 sm:mb-1">92% Score</div>
+                    <div className="h-1 sm:h-1.5 w-full bg-white/10 rounded mt-1.5 sm:mt-2 overflow-hidden">
                       <div className="h-full bg-accent w-[92%]" />
                     </div>
                   </div>
 
-                  <div className="glass-card p-4 bg-white/10 border-white/20">
+                  <div className="glass-card p-3 sm:p-4 bg-white/10 border-white/20 hidden sm:block">
                     <div className="flex justify-between items-start mb-4">
                       <Zap size={16} className="text-emerald-400" />
                       <span className="text-[10px] font-bold text-white/40 uppercase">Retention</span>
@@ -390,12 +401,12 @@ const BeforeAfterSlider = () => {
           </div>
 
           {/* After Labels */}
-          <div className="absolute left-8 top-8 z-10">
+          <div className="absolute left-4 sm:left-8 top-4 sm:top-8 z-10">
             <motion.div 
               key={afterText}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-xl"
+              className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-medium shadow-xl"
             >
               {afterText}
             </motion.div>
@@ -407,34 +418,37 @@ const BeforeAfterSlider = () => {
           className="absolute top-0 bottom-0 w-1 bg-white/50 z-20 shadow-[0_0_15px_rgba(255,255,255,0.3)]"
           style={{ left: `${sliderPos}%` }}
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3 sm:gap-4">
             {/* Dynamic Label */}
             <motion.div 
               initial={false}
               animate={{ 
-                backgroundColor: sliderPos > 50 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(225, 29, 72, 0.8)',
+                backgroundColor: sliderPos > 50 ? 'rgba(16, 185, 129, 0.9)' : 'rgba(225, 29, 72, 0.9)',
                 scale: [1, 1.05, 1]
               }}
-              className="px-4 py-1.5 rounded-full backdrop-blur-md border border-white/20 shadow-2xl whitespace-nowrap"
+              className="px-3 py-1 sm:px-4 sm:py-1.5 rounded-full backdrop-blur-md border border-white/20 shadow-2xl whitespace-nowrap"
             >
-              <span className="text-white font-black tracking-tighter text-sm">
-                {sliderPos > 50 ? 'AFTER' : 'BEFOURE'}
+              <span className="text-white font-black tracking-tighter text-[10px] sm:text-sm">
+                {sliderPos > 50 ? 'AFTER' : 'BEFORE'}
               </span>
             </motion.div>
 
-            <div className="w-10 h-10 bg-surface rounded-full shadow-2xl flex items-center justify-center border-2 border-white/20">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-surface rounded-full shadow-2xl flex items-center justify-center border-2 border-white/20">
               <div className="flex gap-0.5 text-white">
-                <ChevronLeft size={16} />
-                <ChevronRight size={16} />
+                <ChevronLeft size={14} className="sm:hidden" />
+                <ChevronRight size={14} className="sm:hidden" />
+                <ChevronLeft size={16} className="hidden sm:block" />
+                <ChevronRight size={16} className="hidden sm:block" />
               </div>
             </div>
           </div>
         </div>
       </div>
       
-      <div className="mt-8 flex justify-center items-center gap-4 text-slate-500 text-sm italic">
-        <MousePointer2 size={16} />
-        Drag the slider to see the transformation
+      <div className="mt-6 sm:mt-8 flex justify-center items-center gap-3 sm:gap-4 text-slate-500 text-[10px] sm:text-sm italic">
+        <MousePointer2 size={14} className="sm:hidden" />
+        <MousePointer2 size={16} className="hidden sm:block" />
+        Drag to see the transformation
       </div>
     </div>
   );
@@ -694,7 +708,7 @@ export default function BeforeAfterSection() {
   ];
 
   return (
-    <section className="py-24 bg-background overflow-hidden font-['Poppins',_sans-serif]">
+    <section className="py-12 sm:py-24 bg-background overflow-hidden font-['Poppins',_sans-serif]">
       <div className="container mx-auto">
         <SectionHeader 
           eyebrow="REAL RESULTS. REAL STUDENTS."
@@ -703,21 +717,23 @@ export default function BeforeAfterSection() {
         />
 
         {/* Option Selector */}
-        <div className="flex justify-center mb-16 px-4">
+        <div className="flex justify-center mb-10 sm:mb-16 px-4">
           <div className="inline-flex p-1 bg-white/5 border border-white/10 rounded-2xl shadow-inner">
             {options.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setActiveOption(opt.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 md:px-6 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                  "flex items-center gap-1.5 sm:gap-2 px-3 md:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all",
                   activeOption === opt.id 
                     ? "bg-primary text-white shadow-lg" 
                     : "text-slate-400 hover:text-white"
                 )}
               >
-                <opt.icon size={16} />
+                <opt.icon size={14} className="sm:hidden" />
+                <opt.icon size={16} className="hidden sm:block" />
                 <span className="hidden sm:inline">{opt.label}</span>
+                <span className="sm:hidden">{opt.label.split(' ')[0]}</span>
               </button>
             ))}
           </div>

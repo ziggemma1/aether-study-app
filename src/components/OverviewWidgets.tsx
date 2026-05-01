@@ -24,41 +24,8 @@ import {
   Cell
 } from 'recharts';
 import { cn } from '../lib/utils';
-
-// --- Mock Data ---
-const weeklyTimeData = [
-  { day: 'Mon', hours: 1.5 },
-  { day: 'Tue', hours: 2.3 },
-  { day: 'Wed', hours: 1.8 },
-  { day: 'Thu', hours: 3.5 },
-  { day: 'Fri', hours: 2.0 },
-  { day: 'Sat', hours: 0.8 },
-  { day: 'Sun', hours: 0.5 },
-];
-
-const enrollmentData = [
-  { month: 'Jan', enrollments: 800, completion: 75 },
-  { month: 'Feb', enrollments: 950, completion: 78 },
-  { month: 'Mar', enrollments: 1100, completion: 82 },
-  { month: 'Apr', enrollments: 1050, completion: 80 },
-  { month: 'May', enrollments: 1200, completion: 85 },
-  { month: 'Jun', enrollments: 1150, completion: 83 },
-  { month: 'Jul', enrollments: 1350, completion: 88 },
-  { month: 'Aug', enrollments: 1250, completion: 86 },
-  { month: 'Sep', enrollments: 1400, completion: 90 },
-  { month: 'Oct', enrollments: 1300, completion: 87 },
-  { month: 'Nov', enrollments: 1500, completion: 92 },
-  { month: 'Dec', enrollments: 1450, completion: 91 },
-];
-
-const topLearners = [
-  { name: 'Brooklyn Simmons', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Brooklyn' },
-  { name: 'Annette Black', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Annette' },
-  { name: 'Guy Hawkins', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guy' },
-  { name: 'Theresa Webb', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Theresa' },
-  { name: 'Robert Fox', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Robert' },
-  { name: 'Jane Cooper', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jane' },
-];
+import { useAppContext } from '../context/AppContext';
+import api from '../services/api';
 
 // --- Styles ---
 const stripeStyle = {
@@ -68,66 +35,56 @@ const stripeStyle = {
 
 // --- Sub-components ---
 
-export function QuizScoreCard({ 
-  averageScore = 0, 
-  highestScore = 0, 
-  lowestScore = 0,
-  trend = 0
-}: { 
-  averageScore?: number, 
-  highestScore?: number, 
-  lowestScore?: number,
-  trend?: number 
-}) {
+export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }: { score?: number, trend?: number, highest?: number, lowest?: number }) {
+  const { t } = useAppContext();
   return (
     <motion.div 
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.98 }}
-      className="glass-card p-5 flex flex-col w-full aspect-square max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
+      className="glass-card p-4 sm:p-5 flex flex-col w-full aspect-square max-w-[165px] sm:max-w-[210px] mx-auto group cursor-pointer border-border shadow-soft relative overflow-hidden"
     >
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary opacity-80" />
+      
       <div className="flex justify-between items-start mb-1">
-        <p className="text-[11px] font-medium text-text-muted">Avg Quiz Score</p>
+        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('avg_quiz_score')}</p>
       </div>
       
-      <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-[22px] font-semibold text-text-main tracking-tight">{averageScore.toFixed(0)}%</span>
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none">{Math.round(score)}%</span>
         {trend !== 0 && (
-          <span className={cn("flex items-center text-[9px] font-medium px-1.5 py-0.5 rounded-md", 
-            trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+          <span className={cn(
+            "text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-sm ml-auto",
+            trend > 0 ? "text-emerald-400 bg-emerald-500/20" : "text-rose-400 bg-rose-500/20"
           )}>
-            {trend > 0 ? "+" : ""}{trend.toFixed(0)}% <ChevronDown size={8} className={cn("ml-0.5", trend > 0 && "rotate-180")} />
+            {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
         )}
       </div>
 
-      <div className="border-t border-dashed border-border/40 my-3" />
-
-      <div className="space-y-4 mt-auto">
+      <div className="flex-1 flex flex-col justify-end space-y-3 mt-4 sm:mt-6">
         <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] font-medium text-text-muted">
-            <span>Highest Score</span>
-            <span className="text-text-main">{highestScore.toFixed(2)}%</span>
+          <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70">
+            <span>Peak</span>
+            <span className="text-primary font-black">{highest}%</span>
           </div>
-          <div className="h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
+          <div className="h-1.5 sm:h-2 bg-white/5 rounded-full overflow-hidden border border-white/10">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: `${Math.max(highestScore, 5)}%` }}
-              className="h-full bg-primary rounded-md" 
-              style={stripeStyle}
+              animate={{ width: `${highest}%` }}
+              className="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.4)]" 
             />
           </div>
         </div>
         <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] font-medium text-text-muted">
-            <span>Lowest Score</span>
-            <span className="text-text-main">{lowestScore.toFixed(2)}%</span>
+          <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70">
+            <span>Floor</span>
+            <span className="text-orange-500 font-black">{lowest}%</span>
           </div>
-          <div className="h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
+          <div className="h-1.5 sm:h-2 bg-white/5 rounded-full overflow-hidden border border-white/10">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: `${Math.max(lowestScore, 5)}%` }}
-              className="h-full bg-orange-500 rounded-md" 
-              style={stripeStyle}
+              animate={{ width: `${lowest}%` }}
+              className="h-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]" 
             />
           </div>
         </div>
@@ -136,172 +93,177 @@ export function QuizScoreCard({
   );
 }
 
-export function TimeSpentCard({
-  totalHours = 0,
-  thisWeekHours = 0,
-  trend = 0,
-  weeklyData = weeklyTimeData
-}: {
-  totalHours?: number;
-  thisWeekHours?: number;
-  trend?: number;
-  weeklyData?: {day: string, hours: number}[];
-}) {
-  const formatTime = (hours: number) => {
-    const totalMins = Math.round(hours * 60);
-    const h = Math.floor(totalMins / 60);
-    const m = totalMins % 60;
-    if (h > 0) return `${h}hr ${m}min`;
-    return `${m}min`;
-  };
+export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: { totalMinutes?: number, trend?: number, weeklyData?: { day: string, hours: number }[] }) {
+  const { t } = useAppContext();
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  const displayTime = hours > 0 
+    ? `${hours}h ${minutes > 0 ? `${minutes}m` : ''}` 
+    : `${minutes}m`;
+
+  const maxHours = Math.max(...weeklyData.map(d => d.hours), 0.1);
+  const todayIndex = new Date().getDay();
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
     <motion.div 
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.98 }}
-      className="glass-card p-5 flex flex-col w-full aspect-square max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
+      className="glass-card p-4 sm:p-5 flex flex-col w-full aspect-square max-w-[165px] sm:max-w-[210px] mx-auto group cursor-pointer border-border shadow-soft relative overflow-hidden"
     >
+      {/* Matching the orange/red gradient from the streak card */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 opacity-80" />
+      
       <div className="flex justify-between items-start mb-1">
-        <p className="text-[11px] font-medium text-text-muted">Total Time Spent</p>
+        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('total_time')}</p>
       </div>
 
-      <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-[22px] font-semibold text-text-main tracking-tight">{formatTime(totalHours)}</span>
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="text-2xl sm:text-3xl font-black text-white tracking-tighter leading-none shrink-0">{displayTime}</span>
         {trend !== 0 && (
-          <span className={cn("flex items-center text-[9px] font-medium px-1.5 py-0.5 rounded-md", 
-            trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+          <span className={cn(
+            "text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-sm ml-auto shadow-sm",
+            trend > 0 ? "text-emerald-400 bg-emerald-500/30" : "text-rose-400 bg-rose-500/30"
           )}>
-            {trend > 0 ? "+" : ""}{trend.toFixed(0)}% <ChevronDown size={8} className={cn("ml-0.5", trend > 0 && "rotate-180")} />
+            {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
         )}
       </div>
 
-      <div className="border-t border-dashed border-border/40 my-3" />
-
-      <div className="flex justify-between text-[10px] font-medium text-text-muted mb-2">
-        <span>This Week</span>
-        <span className="text-text-main">{formatTime(thisWeekHours)}</span>
-      </div>
-
-      <div className="h-20 w-full mt-auto">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={weeklyData}>
-            <Bar dataKey="hours" radius={[3, 3, 0, 0]}>
-              {weeklyData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={index === new Date().getDay() - 1 ? 'var(--primary)' : 'var(--border)'} 
-                  fillOpacity={index === new Date().getDay() - 1 ? 1 : 0.2}
-                  style={index === new Date().getDay() - 1 ? stripeStyle : {}}
-                  className="transition-all duration-300"
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="flex-1 flex flex-col justify-end mt-4 sm:mt-6">
+        <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-[0.1em] text-white/80 mb-3">
+          <span>Focus Metrics</span>
+          <span className="text-orange-400 font-black">{weeklyData.reduce((acc, curr) => acc + curr.hours, 0).toFixed(1)}h</span>
+        </div>
+        
+        <div className="flex justify-between items-end gap-1.5 h-16 sm:h-24">
+          {weeklyData.map((d, i) => {
+            const isToday = dayNames.indexOf(d.day) === todayIndex;
+            const heightPercent = (d.hours / maxHours) * 100;
+            const hasData = d.hours > 0;
+            
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group/bar">
+                <span className={cn(
+                  "text-[8px] font-black uppercase leading-none mb-1 transition-colors",
+                  isToday ? "text-orange-400 font-black" : "text-white/30"
+                )}>
+                  {d.day[0]}
+                </span>
+                
+                <div className="relative w-full flex items-end justify-center h-full">
+                  {hasData && (
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-sm font-black whitespace-nowrap z-10 shadow-lg border border-orange-400/20">
+                      {d.hours}h
+                    </div>
+                  )}
+                  
+                  <motion.div 
+                    initial={{ height: 0 }}
+                    animate={{ height: hasData ? `${Math.max(heightPercent, 12)}%` : '8%' }}
+                    className={cn(
+                      "w-full rounded-sm transition-all duration-500",
+                      hasData 
+                        ? cn(
+                            "bg-orange-500 border border-orange-400/20 shadow-[0_0_10px_rgba(249,115,22,0.2)]",
+                            isToday && "ring-1 ring-orange-400 ring-offset-1 ring-offset-zinc-900 shadow-[0_0_15px_rgba(249,115,22,0.4)]"
+                          )
+                        : "bg-white/5 border border-white/10 group-hover/bar:bg-white/10"
+                    )}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </motion.div>
   );
 }
 
-export function StreakCard({
-  streak = 0,
-  longestStreak = 0,
-  history = []
-}: {
-  streak?: number;
-  longestStreak?: number;
-  history?: boolean[];
-}) {
-  const days = Array.from({length: 15}).map((_, i) => {
-    return {
-      label: (i + 1).toString().padStart(2, '0'),
-      active: history[i] || false
+export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentStreak?: number, longestStreak?: number }) {
+  const { t, studySessions } = useAppContext();
+  
+  // Create a fast lookup Set of normalized date strings where the user actually completed a session
+  const studiedDates = new Set();
+  studySessions?.forEach(session => {
+    if (session.completed && session.startTime) {
+      const d = new Date(session.startTime);
+      const normalizedString = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      studiedDates.add(normalizedString);
     }
+  });
+
+  // Calculate real current streak
+  let realCurrentStreak = 0;
+  const today = new Date();
+  
+  for (let i = 0; i < 365; i++) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    
+    if (studiedDates.has(dateStr)) {
+      realCurrentStreak++;
+    } else if (i === 0) {
+      // today potentially okay
+    } else {
+      break;
+    }
+  }
+
+  const finalCurrentStreak = Math.max(currentStreak, realCurrentStreak);
+  const finalLongestStreak = Math.max(longestStreak, finalCurrentStreak);
+
+  const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const todayIndex = today.getDay();
+  
+  const displayDays = Array.from({ length: 5 }, (_, i) => {
+    const historicalIndex = (todayIndex - 4 + i + 7) % 7;
+    const dateToCheck = new Date();
+    dateToCheck.setDate(today.getDate() - (4 - i));
+    const dateStr = dateToCheck.getFullYear() + '-' + String(dateToCheck.getMonth() + 1).padStart(2, '0') + '-' + String(dateToCheck.getDate()).padStart(2, '0');
+    const isActive = studiedDates.has(dateStr) || ((4 - i) < finalCurrentStreak && studiedDates.size === 0);
+
+    return {
+      label: daysOfWeek[historicalIndex],
+      active: isActive
+    };
   });
 
   return (
     <motion.div 
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.98 }}
-      className="glass-card p-5 flex flex-col w-full aspect-square max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
+      className="glass-card p-4 sm:p-5 flex flex-col w-full aspect-square max-w-[165px] sm:max-w-[210px] mx-auto group cursor-pointer border-border shadow-soft relative overflow-hidden"
     >
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 opacity-80" />
+      
       <div className="flex justify-between items-start mb-1">
-        <p className="text-[11px] font-medium text-text-muted">Weekly Streak</p>
-      </div>
-
-      <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-[22px] font-semibold text-text-main tracking-tight">{streak} Days</span>
-      </div>
-
-      <div className="border-t border-dashed border-border/40 my-3" />
-
-      <div className="flex justify-between text-[10px] font-medium text-text-muted mb-4">
-        <span>Longest Streak</span>
-        <span className="text-text-main">{longestStreak} days</span>
-      </div>
-
-      <div className="overflow-y-auto no-scrollbar pr-1 -mr-1 flex-grow">
-        <div className="grid grid-cols-5 gap-y-3 gap-x-1.5">
-          {days.map((day, i) => (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <div className={cn(
-                "w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-semibold transition-all shadow-sm",
-                day.active ? "bg-primary text-white" : "bg-surface-alt/30 text-text-muted border border-border/20"
-              )}>
-                {day.active ? <Check size={10} /> : day.label}
-              </div>
-              <span className="text-[8px] text-text-muted font-medium">{day.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-export function RankingCard({
-  rank = 0,
-  totalUsers = 0,
-  topUsers = []
-}: {
-  rank?: number;
-  totalUsers?: number;
-  topUsers?: {name: string, avatar?: string}[];
-}) {
-  const displayUsers = topUsers.length > 0 ? topUsers : topLearners;
-  return (
-    <motion.div 
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      whileTap={{ scale: 0.98 }}
-      className="glass-card p-5 flex flex-col w-full aspect-square max-w-[210px] mx-auto group cursor-pointer border-border/40 shadow-sm"
-    >
-      <div className="flex justify-between items-start mb-1">
-        <p className="text-[11px] font-medium text-text-muted">Global Ranking</p>
+        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('weekly_streak')}</p>
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
-        <span className="text-[22px] font-semibold text-text-main tracking-tight">#{rank > 0 ? rank : '-'}</span>
-        <span className="text-[10px] text-text-muted">of {totalUsers > 1000 ? `${(totalUsers/1000).toFixed(1)}K` : totalUsers}</span>
+        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none">{finalCurrentStreak}</span>
+        <span className="text-[10px] sm:text-[11px] font-black text-orange-400 uppercase tracking-widest ml-1">{t('days_label')}</span>
       </div>
 
-      <div className="border-t border-dashed border-border/40 my-3" />
-
-      <p className="text-[10px] font-medium text-text-muted mb-3">Top local rank</p>
-
-      <div className="overflow-y-auto no-scrollbar pr-1 -mr-1 flex-grow">
-        <div className="space-y-2.5">
-          {displayUsers.map((learner, i) => (
-            <div key={i} className="flex items-center gap-2.5">
-              <div className="relative">
-                <img src={learner.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${learner.name}`} alt={learner.name} className="w-6 h-6 rounded-full border border-border/20" />
-                {i === 0 && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-500 rounded-full flex items-center justify-center text-[5px] text-white border border-white">
-                    ★
-                  </div>
-                )}
-              </div>
-              <span className="text-[11px] font-medium text-text-main truncate">{learner.name}</span>
+      <div className="flex-1 flex flex-col justify-end mt-4 sm:mt-6">
+        <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70 mb-2">
+          <span>Records</span>
+          <span className="text-orange-400 font-black">PB: {finalLongestStreak}d</span>
+        </div>
+        <div className="flex justify-between items-end gap-1.5 h-10 sm:h-12">
+          {displayDays.map((day, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+              <span className="text-[8px] font-black text-text-muted opacity-60 leading-none">{day.label}</span>
+              <div className={cn(
+                "w-full rounded-sm transition-all duration-500",
+                day.active 
+                  ? "bg-orange-500 h-full border border-orange-600/20 shadow-[0_0_10px_rgba(249,115,22,0.2)]" 
+                  : "bg-surface-alt h-1.5 border border-border/50"
+              )} />
             </div>
           ))}
         </div>
@@ -310,83 +272,62 @@ export function RankingCard({
   );
 }
 
-export function EnrollmentChart() {
+export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { rank?: number, total?: number, topLearnersData?: { id?: string, name: string, avatar?: string }[] }) {
+  const { t, user } = useAppContext();
   return (
-    <div className="glass-card p-8 flex flex-col border-border/30 bg-white/50 dark:bg-surface/30">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h3 className="text-lg font-semibold text-text-main mb-1">Monthly Course Enrollments & Completion Rates</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-semibold text-text-main">1,250.00</span>
-            <span className="flex items-center text-[10px] font-medium text-orange-500 bg-orange-500/5 px-2 py-1 rounded-lg border border-orange-500/10">
-              13.4% <TrendingUp size={10} className="ml-0.5" />
-            </span>
-          </div>
-          <p className="text-[10px] font-medium text-text-muted uppercase tracking-widest mt-1">Avg per month</p>
-        </div>
-
-        <div className="flex items-center gap-2 bg-surface-alt/30 p-1 rounded-xl border border-border/20">
-          {['1 Year', '6 Months', '3 Months', '1 Month'].map((period, i) => (
-            <button 
-              key={i} 
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all",
-                i === 0 ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text-main"
-              )}
-            >
-              {period}
-            </button>
-          ))}
-        </div>
+    <motion.div 
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.98 }}
+      className="glass-card p-4 sm:p-5 flex flex-col w-full aspect-square max-w-[165px] sm:max-w-[210px] mx-auto group cursor-pointer border-border shadow-soft relative overflow-hidden"
+    >
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-primary opacity-80" />
+      
+      <div className="flex justify-between items-start mb-1">
+        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('global_rank')}</p>
       </div>
 
-      <div className="flex items-center justify-end gap-6 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-primary" />
-          <span className="text-[10px] font-medium text-text-muted uppercase tracking-tighter">Completion Rate (%)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-orange-500" />
-          <span className="text-[10px] font-medium text-text-muted uppercase tracking-tighter">Enrollments</span>
-        </div>
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none">#{rank}</span>
+        <span className="text-[10px] sm:text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-auto">Top 2%</span>
       </div>
 
-      <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={enrollmentData}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.1} />
-            <XAxis 
-              dataKey="month" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: 'var(--text-muted)', fontSize: 10, fontWeight: 500 }} 
-              dy={10}
-            />
-            <YAxis hide />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'var(--surface)', 
-                borderColor: 'var(--border)', 
-                borderRadius: '12px',
-                fontSize: '10px',
-                fontWeight: 500,
-                color: 'var(--text-main)',
-                border: '1px solid var(--border)'
-              }}
-              itemStyle={{ color: 'var(--text-main)' }}
-            />
-            <Bar dataKey="enrollments" fill="var(--border)" fillOpacity={0.1} radius={[4, 4, 0, 0]} barSize={40} />
-            <Line 
-              type="monotone" 
-              dataKey="completion" 
-              stroke="var(--primary)" 
-              strokeWidth={2.5} 
-              dot={{ fill: 'var(--primary)', strokeWidth: 2, r: 4, stroke: 'var(--surface)' }}
-              activeDot={{ r: 6, strokeWidth: 0 }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
+      <div className="flex-1 flex flex-col justify-end mt-4 sm:mt-6 overflow-hidden">
+        <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70 mb-2">
+          <span>Rivals Leaderboard</span>
+        </div>
+        <div className="space-y-2 overflow-y-auto custom-scrollbar max-h-[110px] pr-1.5 -mr-1">
+          {topLearnersData.map((learner, i) => {
+            const isMe = learner.id === user?.id;
+            return (
+              <div key={i} className={cn(
+                "flex items-center gap-2 p-1.5 rounded-lg border leading-none transition-colors",
+                isMe ? "bg-primary/20 border-primary/40 shadow-[0_0_10px_rgba(var(--primary-rgb),0.15)]" : "bg-surface-alt/50 border-border/50"
+              )}>
+                <span className={cn(
+                  "text-[9px] font-black w-4 text-center shrink-0",
+                  i < 3 ? "text-emerald-400" : "text-text-muted"
+                )}>#{i + 1}</span>
+                <div className="w-5 h-5 rounded-full bg-surface border border-border overflow-hidden flex items-center justify-center text-[8px] font-black shrink-0 shadow-inner">
+                  {learner.avatar ? (
+                    <img src={learner.avatar} alt={learner.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="opacity-70 text-[7px]">{learner.name.charAt(0)}</span>
+                  )}
+                </div>
+                <span className={cn(
+                  "text-[10px] font-bold truncate flex-1",
+                  isMe ? "text-text-main shadow-sm" : "text-text-main/80"
+                )}>{learner.name}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                   <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                   <span className="text-[7px] font-black text-text-muted bg-surface/80 px-1 py-0.5 rounded-sm uppercase border border-border/30">Lv {20 - i}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
+

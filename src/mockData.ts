@@ -6,8 +6,13 @@ export const MOCK_USER: User = {
   email: 'alex@example.com',
   streak: 5,
   curriculum: 'SAT',
-  language: 'English',
+  language: 'English (US)',
+  country: 'United States',
   plan: 'free',
+  points: 1250,
+  followersCount: 154,
+  friendsCount: 42,
+  achievements: [],
 };
 
 export const MOCK_MATERIALS: Material[] = [

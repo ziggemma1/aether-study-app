@@ -9,37 +9,21 @@ import BeforeAfterSection from '../components/BeforeAfterSection';
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const cursorX = useSpring(mouseX, { stiffness: 800, damping: 40 });
-  const cursorY = useSpring(mouseY, { stiffness: 800, damping: 40 });
-  const [isHovering, setIsHovering] = React.useState(false);
-
-  // Center the cursor follower (w-48 = 192px, so offset by 96px)
-  const centeredX = useTransform(cursorX, (val) => val - 96);
-  const centeredY = useTransform(cursorY, (val) => val - 96);
 
   React.useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX);
-      mouseY.set(e.clientY);
-
-      const target = e.target as HTMLElement;
-      const isInteractive = target.closest('button, a, .btn-primary, .btn-secondary, .btn-accent, .btn-outline');
-      setIsHovering(!!isInteractive);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
-
-  React.useEffect(() => {
+    document.documentElement.classList.add('is-landing-page');
+    document.body.classList.add('is-landing-page');
+    
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.documentElement.classList.remove('is-landing-page');
+      document.body.classList.remove('is-landing-page');
+    };
   }, []);
 
   const features = [
@@ -52,31 +36,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Blurred Light Cursor Follower */}
-      <motion.div
-        className="fixed top-0 left-0 w-48 h-48 bg-white/10 rounded-full pointer-events-none z-[100] blur-[60px]"
-        animate={{
-          scale: isHovering ? 1.4 : 1,
-          opacity: isHovering ? 0.6 : 0.3,
-        }}
-        style={{
-          x: centeredX,
-          y: centeredY,
-        }}
-      />
-      <motion.div
-        className="fixed top-0 left-0 w-24 h-24 bg-white/20 rounded-full pointer-events-none z-[100] blur-[30px]"
-        animate={{
-          scale: isHovering ? 1.2 : 1,
-          opacity: isHovering ? 0.7 : 0.2,
-        }}
-        style={{
-          x: useTransform(cursorX, (val) => val - 48),
-          y: useTransform(cursorY, (val) => val - 48),
-        }}
-      />
-
+    <div className="min-h-screen relative overflow-x-hidden bg-transparent">
       {/* Moving Background */}
       <GeometricBackground className="z-0" />
 
@@ -85,35 +45,35 @@ export default function LandingPage() {
         <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
           <motion.nav 
             layout
-            initial={{ y: -100 }}
+            initial={{ y: -50 }}
             animate={{ y: 0 }}
             transition={{ 
-              layout: { type: "spring", stiffness: 200, damping: 30 },
-              y: { duration: 0.5 }
+              layout: { type: "spring", stiffness: 300, damping: 30 },
+              y: { duration: 0.3 }
             }}
             className={cn(
-              "flex items-center justify-between pointer-events-auto transition-colors duration-500",
+              "flex items-center justify-between pointer-events-auto transition-all duration-300",
               isScrolled 
-                ? "mt-6 w-[90%] max-w-5xl px-8 py-3 bg-background/40 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-full" 
-                : "mt-0 w-full px-6 md:px-12 lg:px-24 py-8 bg-transparent border-transparent"
+                ? "mt-4 w-[92%] max-w-5xl px-4 py-2 bg-background/60 backdrop-blur-xl border border-white/10 shadow-lg rounded-full" 
+                : "mt-0 w-full px-4 py-4 bg-transparent border-transparent"
             )}
           >
             <motion.div 
               layout
               animate={isScrolled ? { scale: 0.95 } : { scale: 1 }}
-              className="flex items-center gap-3"
+              className="flex items-center gap-2 shrink-0"
             >
               <motion.div 
                 layout
                 animate={isScrolled ? { 
-                  y: [0, -4, 0],
+                  y: [0, -2, 0],
                   transition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
                 } : {}}
-                className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg"
+                className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center shadow-md"
               >
-                <span className="text-white font-bold text-xl">A</span>
+                <span className="text-white font-bold text-sm">A</span>
               </motion.div>
-            <motion.span layout className="text-xl font-medium text-white tracking-tight">
+            <motion.span layout className="text-base font-medium text-white tracking-tight whitespace-nowrap">
               <span className="font-bold">Aether</span> Study
             </motion.span>
             </motion.div>
@@ -123,11 +83,11 @@ export default function LandingPage() {
               <a href="#pricing" className="text-slate-400 font-medium text-sm hover:text-primary transition-colors">Pricing</a>
             </motion.div>
 
-            <motion.div layout className="flex items-center gap-4">
-              <Link to="/login" className="text-slate-400 font-semibold text-sm hover:text-primary transition-colors">Sign In</Link>
+            <motion.div layout className="flex items-center gap-3 sm:gap-4 shrink-0">
+              <Link to="/login" className="text-slate-400 font-semibold text-xs sm:text-sm hover:text-primary transition-colors whitespace-nowrap">Sign In</Link>
               <Link to="/signup" className={cn(
-                "btn-primary transition-all duration-300",
-                isScrolled ? "!py-2 !px-4 text-xs" : "!py-2.5 !px-5 text-sm"
+                "btn-primary !py-2 !px-4 sm:!py-2.5 sm:!px-5 transition-all duration-300 whitespace-nowrap",
+                isScrolled ? "text-xs" : "text-xs sm:text-sm"
               )}>
                 Get Started
               </Link>
@@ -136,11 +96,11 @@ export default function LandingPage() {
         </div>
 
         {/* Hero Section */}
-        <section className="px-6 md:px-12 lg:px-24 pt-32 pb-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
+        <section className="px-6 md:px-12 lg:px-24 pt-24 sm:pt-32 pb-12 sm:pb-24 grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center max-w-7xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
             <h1 className="text-3xl md:text-5xl font-medium mb-6 leading-[1.1] tracking-tight">
               <span className="block text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-100 via-80% to-slate-400">
@@ -170,57 +130,58 @@ export default function LandingPage() {
 
           {/* Hero Visuals */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
             className="relative"
           >
             {/* Main Card 1 */}
             <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-full max-w-[320px] bg-gradient-to-br from-[#FF55D2] to-[#FF9F68] rounded-[32px] p-8 shadow-xl relative z-20 mb-8 ml-auto"
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+              className="w-full max-w-[280px] sm:max-w-[320px] bg-gradient-to-br from-[#FF55D2] to-[#FF9F68] rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 shadow-xl relative z-20 mb-6 sm:mb-8 mx-auto lg:ml-auto"
             >
-              <div className="flex flex-col gap-1 mb-4">
-                <span className="text-white/70 text-xs font-bold uppercase tracking-wider">Concepts Mastered</span>
-                <span className="text-white text-4xl font-extrabold">1,240</span>
+              <div className="flex flex-col gap-1 mb-3 sm:mb-4">
+                <span className="text-white/70 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Concepts Mastered</span>
+                <span className="text-white text-2xl sm:text-4xl font-extrabold">1,240</span>
               </div>
-              <p className="text-white/90 text-sm">Aether helps you track exactly what you know and what you don't.</p>
+              <p className="text-white/90 text-xs sm:text-sm">Aether helps you track exactly what you know and what you don't.</p>
             </motion.div>
 
             {/* Main Card 2 */}
             <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-full max-w-[320px] bg-gradient-to-br from-primary to-violet-700 rounded-[32px] p-8 shadow-xl relative z-10 ml-auto lg:mr-8"
+              animate={{ y: [0, 6, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              className="w-full max-w-[280px] sm:max-w-[320px] bg-gradient-to-br from-primary to-violet-700 rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 shadow-xl relative z-10 mx-auto lg:ml-auto lg:mr-8"
             >
-              <div className="flex flex-col gap-1 mb-4">
-                <span className="text-white/70 text-xs font-bold uppercase tracking-wider">Study Sessions</span>
-                <span className="text-white text-4xl font-extrabold">12k+</span>
+              <div className="flex flex-col gap-1 mb-3 sm:mb-4">
+                <span className="text-white/70 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Study Sessions</span>
+                <span className="text-white text-2xl sm:text-4xl font-extrabold">12k+</span>
               </div>
-              <p className="text-white/90 text-sm">Join thousands of students optimizing their study time today.</p>
+              <p className="text-white/90 text-xs sm:text-sm">Join thousands of students optimizing their study time today.</p>
             </motion.div>
 
             {/* Floating Stats */}
-            <div className="absolute -left-8 top-1/2 -translate-y-1/2 bg-surface border border-border rounded-[24px] p-5 shadow-xl flex flex-col gap-3 min-w-[220px] z-30">
+            <div className="relative lg:absolute lg:-left-8 lg:top-1/2 lg:-translate-y-1/2 mt-6 lg:mt-0 bg-surface border border-border rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 shadow-xl flex flex-col gap-2 sm:gap-3 w-full max-w-[280px] sm:min-w-[220px] mx-auto z-30">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-primary shadow-sm">
-                  <User size={20} />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-accent rounded-lg sm:rounded-xl flex items-center justify-center text-primary shadow-sm">
+                  <User size={16} className="sm:hidden" />
+                  <User size={20} className="hidden sm:block" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Students</p>
-                  <p className="text-xl font-bold text-white">10,482</p>
+                  <p className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Students</p>
+                  <p className="text-lg sm:text-xl font-bold text-white">10,482</p>
                 </div>
               </div>
-              <p className="text-slate-500 text-[11px] font-medium">Master your courses with AI-powered insights.</p>
+              <p className="text-slate-500 text-[10px] sm:text-[11px] font-medium">Master your courses with AI-powered insights.</p>
             </div>
           </motion.div>
         </section>
 
         {/* Features Grid */}
-        <section id="features" className="py-24 px-4 md:px-8 lg:px-16 bg-surface/30">
+        <section id="features" className="py-12 sm:py-24 px-4 md:px-8 lg:px-16 bg-surface/30">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
+            <div className="text-center mb-10 sm:mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
                 <span className="text-white">Everything you need to ace your </span>
                 <span className="text-primary">exams</span>
@@ -250,9 +211,9 @@ export default function LandingPage() {
         <BeforeAfterSection />
 
         {/* Pricing */}
-        <section id="pricing" className="py-24 px-4 md:px-8 lg:px-16 bg-surface/50">
+        <section id="pricing" className="py-12 sm:py-24 px-4 md:px-8 lg:px-16 bg-surface/50">
           <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16">
+            <div className="text-center mb-10 sm:mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-neutral-500">Simple, Transparent Pricing</h2>
               <p className="text-slate-400">Choose the plan that fits your study goals.</p>
             </div>

@@ -70,7 +70,7 @@ export default function OngoingClasses() {
         </div>
       </div>
 
-      <div className="flex gap-6 overflow-x-auto pb-4 no-scrollbar">
+      <div className="flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
         {classes.map((cls) => (
           <motion.div
             key={cls.id}

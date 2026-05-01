@@ -7,17 +7,17 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
-import authRoutes from "./server_backend/routes/authRoutes.js";
-import materialRoutes from "./server_backend/routes/materialRoutes.js";
-import sessionRoutes from "./server_backend/routes/sessionRoutes.js";
-import quizRoutes from "./server_backend/routes/quizRoutes.js";
-import messageRoutes from "./server_backend/routes/messageRoutes.js";
-import userRoutes from "./server_backend/routes/userRoutes.js";
-import groupRoutes from "./server_backend/routes/groupRoutes.js";
-import roomRoutes from "./server_backend/routes/roomRoutes.js";
-import { checkDbConnection } from "./server_backend/middleware/dbMiddleware.js";
+import authRoutes from "./src/server/routes/authRoutes.js";
+import materialRoutes from "./src/server/routes/materialRoutes.js";
+import sessionRoutes from "./src/server/routes/sessionRoutes.js";
+import quizRoutes from "./src/server/routes/quizRoutes.js";
+import messageRoutes from "./src/server/routes/messageRoutes.js";
+import userRoutes from "./src/server/routes/userRoutes.js";
+import groupRoutes from "./src/server/routes/groupRoutes.js";
+import roomRoutes from "./src/server/routes/roomRoutes.js";
+import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
 import { createServer } from "http";
-import { initSocket } from "./server_backend/socket.js";
+import { initSocket } from "./src/server/socket.js";
 
 dotenv.config();
 
@@ -40,7 +40,6 @@ async function startServer() {
   app.use(mongoSanitize());
 
   // General rate limiter for all routes
-  /*
   const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
     max: 1000,
@@ -59,7 +58,6 @@ async function startServer() {
     validate: { xForwardedForHeader: false }
   });
   app.use("/api/auth", authLimiter);
-  */
 
   // Payload Limit constraints
   app.use(express.json({ limit: '5mb' })); 
@@ -83,22 +81,22 @@ async function startServer() {
       console.error("❌ CRITICAL ERROR: Your MONGODB_URI contains placeholder text like '<db_password>'.");
       console.error("👉 ACTION REQUIRED: Please replace '<db_password>' with your actual MongoDB database password in your environment variables.");
     } else {
-      const connectWithRetry = async (retries = process.env.VERCEL ? 1 : 10) => {
+      const connectWithRetry = async (retries = 10) => {
         try {
           await mongoose.connect(MONGODB_URI, {
-            serverSelectionTimeoutMS: process.env.VERCEL ? 3000 : 5000,
-            connectTimeoutMS: process.env.VERCEL ? 3000 : 5000,
+            serverSelectionTimeoutMS: 5000,
+            connectTimeoutMS: 5000,
           });
           console.log("✅ Connected to MongoDB successfully");
         } catch (err: any) {
           if (retries > 0) {
-            const delay = 2000;
+            const delay = 5000;
             console.warn(`❌ MongoDB connection failed: ${err.message}. Retrying in ${delay}ms... (${retries} retries left)`);
             await new Promise(resolve => setTimeout(resolve, delay));
             return connectWithRetry(retries - 1);
           } else {
             console.error("❌ FATAL: MongoDB connection error after all retries:", err.message);
-            // Don't throw the error so the app can still be returned and handle requests (it will return 500 DB not connected)
+            throw err;
           }
         }
       };
@@ -143,9 +141,7 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
     try {
-      // Hide from Vercel's file tracer
-      const dynamicImport = new Function('modulePath', 'return import(modulePath)');
-      const { createServer: createViteServer } = await dynamicImport("vite");
+      const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: "spa",
@@ -171,5 +167,4 @@ async function startServer() {
   return app;
 }
 
-const appPromise = startServer();
-export default appPromise;
+export const appPromise = startServer();

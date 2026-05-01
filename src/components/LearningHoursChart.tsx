@@ -43,7 +43,7 @@ export default function LearningHoursChart() {
       </div>
 
       <div className="flex-grow min-h-[200px] mb-8">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isLight ? "#E2E8F0" : "#334155"} />
             <XAxis 

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useAppContext } from '../context/AppContext';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -41,15 +42,31 @@ interface CalendarWidgetProps {
 }
 
 export default function CalendarWidget({ className }: CalendarWidgetProps) {
+  const { studySessions, t } = useAppContext();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [dayData, setDayData] = useState<Record<string, DayData>>({
-    // Mock some data
-    [format(new Date(), 'yyyy-MM-dd')]: { status: 'attended', time: '10:00 AM' },
-    [format(subMonths(new Date(), 0), 'yyyy-MM-12')]: { status: 'missed', time: '02:00 PM' },
-    [format(subMonths(new Date(), 0), 'yyyy-MM-13')]: { status: 'missed', time: '02:00 PM' },
-  });
+
+  const dayData = useMemo(() => {
+    const data: Record<string, DayData> = {};
+    if (!Array.isArray(studySessions)) return data;
+    
+    studySessions.forEach(session => {
+      const dateKey = format(new Date(session.startTime), 'yyyy-MM-dd');
+      if (!data[dateKey]) {
+        data[dateKey] = { status: 'none' };
+      }
+      
+      if (session.completed) {
+        data[dateKey].status = 'attended';
+        data[dateKey].time = format(new Date(session.startTime), 'hh:mm a');
+      } else if (new Date(session.startTime) < new Date() && data[dateKey].status !== 'attended') {
+        data[dateKey].status = 'missed';
+        data[dateKey].time = format(new Date(session.startTime), 'hh:mm a');
+      }
+    });
+    return data;
+  }, [studySessions]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -68,22 +85,6 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
     setSelectedDate(day);
   };
 
-  const updateDayStatus = (date: Date, status: DayStatus) => {
-    const dateKey = format(date, 'yyyy-MM-dd');
-    setDayData(prev => ({
-      ...prev,
-      [dateKey]: { ...prev[dateKey], status }
-    }));
-  };
-
-  const updateDayTime = (date: Date, time: string) => {
-    const dateKey = format(date, 'yyyy-MM-dd');
-    setDayData(prev => ({
-      ...prev,
-      [dateKey]: { ...prev[dateKey], time }
-    }));
-  };
-
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -99,27 +100,28 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
   };
 
   return (
-    <div className={cn("glass-card p-6 flex flex-col relative overflow-hidden border-border/30 dark:bg-surface/30 shadow-sm", className)}>
+    <div className={cn("glass-card p-4 sm:p-6 flex flex-col relative overflow-hidden border-border/30 dark:bg-surface/30 shadow-sm", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-            <CalendarIcon size={20} />
+      <div className="flex items-center justify-between mb-4 sm:mb-8">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-xl sm:rounded-2xl flex items-center justify-center text-primary">
+            <CalendarIcon size={16} className="sm:hidden" />
+            <CalendarIcon size={20} className="hidden sm:block" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-text-main leading-tight">Calendar</h2>
-            <p className="text-[10px] font-bold text-text-muted/70 uppercase tracking-wider">Date Management</p>
+            <h2 className="text-sm sm:text-lg font-bold text-text-main leading-tight">{t('calendar')}</h2>
+            <p className="text-[8px] sm:text-[10px] font-bold text-text-muted/70 uppercase tracking-wider">Management</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="relative">
             <button 
               onClick={() => setShowMonthPicker(!showMonthPicker)}
-              className="flex items-center gap-2 px-3 py-2 bg-surface-alt/40 rounded-xl text-xs font-medium text-text-main border border-border/30 hover:border-primary/20 transition-all"
+              className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 bg-surface-alt/40 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-medium text-text-main border border-border/30 hover:border-primary/20 transition-all"
             >
-              {format(currentDate, 'MMMM yyyy')}
-              <ChevronDown size={14} className={cn("transition-transform opacity-60", showMonthPicker && "rotate-180")} />
+              {format(currentDate, 'MMM yyyy')}
+              <ChevronDown size={12} className={cn("transition-transform opacity-60", showMonthPicker && "rotate-180")} />
             </button>
 
             <AnimatePresence>
@@ -182,19 +184,22 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
       </div>
 
       {/* Calendar Grid */}
-      <div className="flex-grow flex flex-col">
-        <div className="grid grid-cols-7 mb-4">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <span key={day} className="text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">
+      <div className="flex-grow flex flex-col overflow-y-auto no-scrollbar pr-0.5">
+        <div className="grid grid-cols-7 mb-2 sm:mb-4 shrink-0">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+            <span key={i} className={cn(
+              "text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-center transition-colors",
+              (i === 0 || i === 6) ? "text-primary/60" : "text-text-muted"
+            )}>
               {day}
             </span>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-px bg-transparent rounded-2xl overflow-hidden border border-border/20 relative">
-          {calendarDays.map((day, idx) => {
-            const dateKey = format(day, 'yyyy-MM-dd');
-            const data = dayData[dateKey];
+        <div className="grid grid-cols-7 gap-px bg-transparent rounded-xl sm:rounded-2xl overflow-hidden border border-border/20 relative shrink-0">
+            {calendarDays.map((day, idx) => {
+              const dateKey = format(day, 'yyyy-MM-dd');
+              const data = dayData[dateKey];
             const isSelected = selectedDate && isSameDay(day, selectedDate);
             const isCurrentMonth = isSameMonth(day, monthStart);
             
@@ -209,7 +214,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
               <div 
                 key={dateKey} 
                 className={cn(
-                  "relative aspect-square p-1 flex flex-col items-center justify-center transition-all cursor-pointer group",
+                  "relative aspect-square p-0.5 sm:p-1 flex flex-col items-center justify-center transition-all cursor-pointer group",
                   isCurrentMonth ? "bg-surface-alt/20" : "bg-surface-alt/5 opacity-30",
                   isSelected && "z-10 ring-1 ring-primary/40 ring-inset"
                 )}
@@ -219,17 +224,17 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
                 {isMissed && (
                   <>
                     {hasPrevMissed && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1/2 h-7 bg-red-400/10 z-0" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1/2 h-5 sm:h-7 bg-red-400/10 z-0" />
                     )}
                     {hasNextMissed && (
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1/2 h-7 bg-red-400/10 z-0" />
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1/2 h-5 sm:h-7 bg-red-400/10 z-0" />
                     )}
-                    <div className="absolute inset-x-1.5 top-1/2 -translate-y-1/2 h-7 bg-red-400/10 z-0 rounded-md" />
+                    <div className="absolute inset-x-1 sm:inset-x-1.5 top-1/2 -translate-y-1/2 h-5 sm:h-7 bg-red-400/10 z-0 rounded-sm sm:rounded-md" />
                   </>
                 )}
 
                 <span className={cn(
-                  "relative z-10 text-xs font-medium w-7 h-7 flex items-center justify-center rounded-full transition-all",
+                  "relative z-10 text-[10px] sm:text-xs font-medium w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full transition-all",
                   isToday(day) && !isMissed && data?.status !== 'attended' && "bg-primary text-white shadow-sm shadow-primary/20",
                   data?.status === 'attended' && "bg-green-500 text-white shadow-sm shadow-green-500/20",
                   data?.status === 'missed' && "bg-red-500 text-white shadow-sm shadow-red-500/20",
@@ -249,96 +254,61 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
         </div>
       </div>
 
-      {/* Day Editor Modal/Panel */}
+      {/* Day Details Panel (Read-only) */}
       <AnimatePresence>
         {selectedDate && (
           <motion.div 
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
-            className="absolute inset-y-0 right-0 w-72 bg-surface border-l border-border/50 shadow-xl z-40 p-6 flex flex-col"
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="absolute inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto sm:w-72 bg-surface border-t sm:border-t-0 sm:border-l border-border/50 shadow-2xl z-40 p-4 sm:p-6 flex flex-col rounded-t-3xl sm:rounded-none"
           >
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-4 sm:mb-8">
               <div>
-                <h3 className="font-bold text-text-main">{format(selectedDate, 'EEEE')}</h3>
-                <p className="text-xs text-text-muted">{format(selectedDate, 'MMMM d, yyyy')}</p>
+                <h3 className="font-bold text-sm sm:text-base text-text-main">{format(selectedDate, 'EEEE')}</h3>
+                <p className="text-[10px] sm:text-xs text-text-muted">{format(selectedDate, 'MMMM d, yyyy')}</p>
               </div>
               <button 
                 onClick={() => setSelectedDate(null)}
-                className="p-2 hover:bg-surface-alt rounded-full transition-colors text-text-muted"
+                className="p-1.5 sm:p-2 hover:bg-surface-alt rounded-full transition-colors text-text-muted"
               >
                 <X size={18} />
               </button>
             </div>
 
             <div className="space-y-6 flex-grow">
-              <div className="space-y-3">
-                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Status</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button 
-                    onClick={() => updateDayStatus(selectedDate, 'attended')}
-                    className={cn(
-                      "flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all",
-                      dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'attended'
-                        ? "bg-green-500/10 border-green-500/40 text-green-600"
-                        : "bg-surface-alt/50 border-border/50 text-text-muted hover:border-green-500/30"
-                    )}
-                  >
-                    <CheckCircle2 size={18} />
-                    <span className="text-[10px] font-bold">Attended</span>
-                  </button>
-                  <button 
-                    onClick={() => updateDayStatus(selectedDate, 'missed')}
-                    className={cn(
-                      "flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all",
-                      dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'missed'
-                        ? "bg-red-500/10 border-red-500/40 text-red-600"
-                        : "bg-surface-alt/50 border-border/50 text-text-muted hover:border-red-500/30"
-                    )}
-                  >
-                    <AlertCircle size={18} />
-                    <span className="text-[10px] font-bold">Missed</span>
-                  </button>
-                  <button 
-                    onClick={() => updateDayStatus(selectedDate, 'none')}
-                    className={cn(
-                      "flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all",
-                      !dayData[format(selectedDate, 'yyyy-MM-dd')]?.status || dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'none'
-                        ? "bg-surface-alt/50 border-primary/40 text-primary"
-                        : "bg-surface-alt/50 border-border/50 text-text-muted hover:border-primary/30"
-                    )}
-                  >
-                    <X size={18} />
-                    <span className="text-[10px] font-bold">Clear</span>
-                  </button>
+              <div className="p-4 rounded-2xl bg-surface-alt/30 border border-border/50">
+                <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">{t('status')}</p>
+                <div className="flex items-center gap-3">
+                  {dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'attended' ? (
+                    <div className="flex items-center gap-2 text-green-500 font-bold text-sm">
+                      <CheckCircle2 size={18} /> {t('attended')}
+                    </div>
+                  ) : dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'missed' ? (
+                    <div className="flex items-center gap-2 text-red-500 font-bold text-sm">
+                      <AlertCircle size={18} /> {t('missed')}
+                    </div>
+                  ) : (
+                    <div className="text-text-muted text-sm font-medium italic">{t('no_session_recorded')}</div>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Set Time</label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-                  <input 
-                    type="time" 
-                    value={dayData[format(selectedDate, 'yyyy-MM-dd')]?.time || ''}
-                    onChange={(e) => updateDayTime(selectedDate, e.target.value)}
-                    className="w-full bg-surface-alt/30 border border-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-text-main focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  />
+              {dayData[format(selectedDate, 'yyyy-MM-dd')]?.time && (
+                <div className="p-4 rounded-2xl bg-surface-alt/30 border border-border/50">
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">{t('time')}</p>
+                  <div className="flex items-center gap-2 text-text-main font-bold text-sm">
+                    <Clock size={18} /> {dayData[format(selectedDate, 'yyyy-MM-dd')]?.time}
+                  </div>
                 </div>
-              </div>
-
-              <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                <p className="text-[10px] text-primary font-bold leading-relaxed">
-                  Tip: Consecutive missed days will be automatically linked with a red connection to highlight gaps in your schedule.
-                </p>
-              </div>
+              )}
             </div>
 
             <button 
               onClick={() => setSelectedDate(null)}
-              className="w-full btn-primary py-3 text-sm"
+              className="w-full btn-primary py-3 text-sm mt-4"
             >
-              Save Changes
+              Close
             </button>
           </motion.div>
         )}

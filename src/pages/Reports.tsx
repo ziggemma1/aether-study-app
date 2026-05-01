@@ -46,37 +46,95 @@ const performanceData = [
   { name: 'Incorrect', value: 160, color: '#EF4444', lightColor: '#DC2626' },
 ];
 
-// Mock data for subject breakdown
-const subjectData = [
-  { subject: 'Mathematics', score: 92, fullMark: 100 },
-  { subject: 'Physics', score: 85, fullMark: 100 },
-  { subject: 'Chemistry', score: 78, fullMark: 100 },
-  { subject: 'Biology', score: 88, fullMark: 100 },
-  { subject: 'English', score: 95, fullMark: 100 },
-];
 
 import { useAppContext } from '../context/AppContext';
 
 export default function Reports() {
-  const { theme } = useAppContext();
+  const { theme, quizResults, user, studySessions, materials, allProfiles, t } = useAppContext();
   const isLight = theme === 'light';
+
+  // Safe arrays
+  const safeMaterials = Array.isArray(materials) ? materials : [];
+  const safeQuizResults = Array.isArray(quizResults) ? quizResults : [];
+  const safeStudySessions = Array.isArray(studySessions) ? studySessions : [];
+  const safeAllProfiles = Array.isArray(allProfiles) ? allProfiles : [];
+
+  // Subject breakdown (derived from materials and quiz results)
+  const subjectData = safeMaterials.map(m => {
+    const materialQuizzes = safeQuizResults.filter(r => r.quizId === m.id);
+    const avgScore = materialQuizzes.length > 0
+      ? Math.round(materialQuizzes.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions), 0) / materialQuizzes.length * 100)
+      : 0;
+    return {
+      subject: m.title,
+      score: avgScore,
+      fullMark: 100
+    };
+  }).slice(0, 5);
+
+  const timeTrend = user?.timeTrend || 12;
+  const quizTrend = user?.quizTrend || 4.2;
+
+  // Calculate real stats
+  const calculatedStudyMins = safeStudySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+  const fallbackMins = (user?.totalStudyTime || 0) * 60;
+  const totalStudyMinutes = calculatedStudyMins > 0 ? calculatedStudyMins : fallbackMins; 
+  
+  const displayHours = Math.floor(totalStudyMinutes / 60);
+  const displayMinutes = totalStudyMinutes % 60;
+  const formattedTimeSpent = displayHours > 0 
+    ? `${displayHours}h ${displayMinutes > 0 ? `${displayMinutes}m` : ''}` 
+    : `${displayMinutes}m`;
+
+  // Calculate Average Percentage Score instead of raw points
+  const avgScorePercentage = safeQuizResults.length > 0 
+    ? Math.round(
+        safeQuizResults.reduce((acc, curr) => {
+          const p = curr.totalQuestions > 0 ? (curr.score / curr.totalQuestions) * 100 : 0;
+          return acc + p;
+        }, 0) / safeQuizResults.length
+      ) 
+    : 0;
+
+  const totalPoints = safeQuizResults.reduce((acc, curr) => acc + (curr.score * 10), 0);
+
+  // Global Ranking calculation based on streaks (allProfiles is already sorted by streak DESC from backend)
+  const myRankIndex = safeAllProfiles.findIndex(p => p.id === user?.id);
+  const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
+  
+  // Accuracy breakdown
+  const totalCorrect = safeQuizResults.reduce((acc, curr) => acc + curr.score, 0);
+  const totalQuestions = safeQuizResults.reduce((acc, curr) => acc + curr.totalQuestions, 0);
+  const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+
+  const performanceData = [
+    { name: 'Correct', value: totalCorrect, color: '#10B981', lightColor: '#059669' },
+    { name: 'Incorrect', value: totalQuestions - totalCorrect > 0 ? totalQuestions - totalCorrect : 0, color: '#EF4444', lightColor: '#DC2626' },
+  ];
+
+  // Growth data (last 7 quizzes) using percentage
+  const growthData = safeQuizResults.slice(0, 7).reverse().map(r => ({
+    month: new Date(r.date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+    score: r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0,
+    avg: 75 // Platform average mock
+  }));
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-text-main tracking-tight mb-2">Performance Reports</h1>
-          <p className="text-text-muted text-sm">Detailed analysis of your learning journey and growth.</p>
+          <h1 className="text-3xl font-bold text-text-main tracking-tight mb-2">{t('performance_reports')}</h1>
+          <p className="text-text-muted text-sm">{t('reports_desc')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2.5 bg-surface-alt/50 hover:bg-surface-alt text-text-main text-xs font-bold rounded-xl border border-border transition-all">
             <Calendar size={16} />
-            Last 6 Months
+            6 {t('months')}
           </button>
           <button className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 transition-all">
             <Download size={16} />
-            Export PDF
+            {t('export')}
           </button>
         </div>
       </div>
@@ -85,36 +143,36 @@ export default function Reports() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           icon={Clock} 
-          label="Time on Platform" 
-          value="124h 30m" 
-          trend="+12% from last month" 
-          trendUp={true}
+          label={t('time_on_platform')} 
+          value={formattedTimeSpent} 
+          trend={`${timeTrend > 0 ? '+' : ''}${timeTrend}% ${t('from_last_week')}`} 
+          trendUp={timeTrend >= 0}
           color={isLight ? "text-blue-600" : "text-blue-400"}
           bg={isLight ? "bg-blue-100" : "bg-blue-400/10"}
         />
         <StatCard 
           icon={TrendingUp} 
-          label="Overall Growth" 
-          value="24.5%" 
-          trend="+4.2% this week" 
-          trendUp={true}
+          label={t('overall_growth')} 
+          value={`${accuracy}%`} 
+          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% ${t('this_week')}`} 
+          trendUp={quizTrend >= 0}
           color={isLight ? "text-emerald-600" : "text-emerald-400"}
           bg={isLight ? "bg-emerald-100" : "bg-emerald-400/10"}
         />
         <StatCard 
           icon={Target} 
-          label="Average Score" 
-          value="88.4" 
-          trend="-1.2% from yesterday" 
-          trendUp={false}
+          label={t('avg_quiz_score')} 
+          value={`${avgScorePercentage}%`} 
+          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% ${t('from_last_quiz')}`} 
+          trendUp={quizTrend >= 0}
           color={isLight ? "text-orange-600" : "text-orange-400"}
           bg={isLight ? "bg-orange-100" : "bg-orange-400/10"}
         />
         <StatCard 
           icon={Award} 
-          label="Total Points" 
-          value="12,840" 
-          trend="+850 today" 
+          label={t('global_rank')} 
+          value={`#${globalRank.toLocaleString()}`} 
+          trend={t('top_5_percent')} 
           trendUp={true}
           color={isLight ? "text-purple-600" : "text-purple-400"}
           bg={isLight ? "bg-purple-100" : "bg-purple-400/10"}
@@ -127,90 +185,97 @@ export default function Reports() {
         <div className="lg:col-span-8 glass-card p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-xl font-bold text-text-main">Growth Over Time</h2>
-              <p className="text-xs text-text-muted mt-1">Your score progression vs platform average</p>
+              <h2 className="text-xl font-bold text-text-main">{t('growth_over_time')}</h2>
+              <p className="text-xs text-text-muted mt-1">{t('growth_over_time_desc') || 'Your score progression vs platform average'}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-primary" />
-                <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Your Score</span>
+                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Your Score</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-slate-600" />
-                <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Avg. Student</span>
+                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Avg. Student</span>
               </div>
             </div>
           </div>
           
           <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={growthData}>
-                <defs>
-                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#E2E8F0" : "#1E293B"} vertical={false} />
-                <XAxis 
-                  dataKey="month" 
-                  stroke={isLight ? "#64748B" : "#94A3B8"} 
-                  fontSize={12} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  dy={10}
-                />
-                <YAxis 
-                  stroke={isLight ? "#64748B" : "#94A3B8"} 
-                  fontSize={12} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(value) => `${value}%`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: isLight ? '#FFFFFF' : '#0F172A', 
-                    borderColor: isLight ? '#E2E8F0' : '#1E293B', 
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    color: isLight ? '#0F172A' : '#fff'
-                  }}
-                  itemStyle={{ color: isLight ? '#0F172A' : '#fff' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="score" 
-                  stroke="#8B5CF6" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorScore)" 
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="avg" 
-                  stroke={isLight ? "#94A3B8" : "#475569"} 
-                  strokeWidth={2} 
-                  strokeDasharray="5 5"
-                  dot={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {growthData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <AreaChart data={growthData}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#E2E8F0" : "#1E293B"} vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke={isLight ? "#64748B" : "#94A3B8"} 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    dy={10}
+                  />
+                  <YAxis 
+                    stroke={isLight ? "#64748B" : "#94A3B8"} 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickFormatter={(value) => `${value}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: isLight ? '#FFFFFF' : '#0F172A', 
+                      borderColor: isLight ? '#E2E8F0' : '#1E293B', 
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      color: isLight ? '#0F172A' : '#fff'
+                    }}
+                    itemStyle={{ color: isLight ? '#0F172A' : '#fff' }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="#8B5CF6" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorScore)" 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="avg" 
+                    stroke={isLight ? "#94A3B8" : "#475569"} 
+                    strokeWidth={2} 
+                    strokeDasharray="5 5"
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-text-muted">
+                <TrendingUp size={48} className="mb-4 opacity-20" />
+                <p>Complete more quizzes to see your growth chart.</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Wins vs Losses Chart */}
         <div className="lg:col-span-4 glass-card p-8 flex flex-col">
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-text-main">Accuracy Breakdown</h2>
-            <p className="text-xs text-text-muted mt-1">Correct vs Incorrect answers</p>
+            <h2 className="text-xl font-bold text-text-main">{t('accuracy_breakdown')}</h2>
+            <p className="text-xs text-text-muted mt-1">{t('accuracy_breakdown_desc') || 'Correct vs Incorrect answers'}</p>
           </div>
           
           <div className="flex-grow flex items-center justify-center relative">
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-bold text-text-main">84%</span>
-              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Accuracy</span>
+              <span className="text-3xl font-bold text-text-main">{accuracy}%</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-widest">Accuracy</span>
             </div>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={250} minWidth={0}>
               <PieChart>
                 <Pie
                   data={performanceData}
@@ -257,8 +322,8 @@ export default function Reports() {
         <div className="lg:col-span-12 glass-card p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-xl font-bold text-text-main">Subject Proficiency</h2>
-              <p className="text-xs text-text-muted mt-1">Detailed performance across all enrolled subjects</p>
+              <h2 className="text-xl font-bold text-text-main">{t('subject_proficiency')}</h2>
+              <p className="text-xs text-text-muted mt-1">{t('subject_proficiency_desc') || 'Detailed performance across all enrolled subjects'}</p>
             </div>
             <button className="p-2.5 bg-surface/50 text-text-muted hover:text-text-main rounded-xl border border-border transition-all">
               <Filter size={18} />

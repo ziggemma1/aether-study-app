@@ -1,19 +1,34 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MOCK_QUIZ_QUESTIONS } from '../mockData';
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy } from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy, Sparkles, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { StudyTimer } from '../components/StudyTimer';
+
+import api from '../services/api';
 
 export default function QuizInterface() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { materials, setQuizResults, isLoading } = useAppContext();
   const [currentQuestion, setCurrentQuestion] = React.useState(0);
   const [selectedAnswers, setSelectedAnswers] = React.useState<number[]>([]);
   const [isFinished, setIsFinished] = React.useState(false);
   const [score, setScore] = React.useState(0);
 
-  const questions = MOCK_QUIZ_QUESTIONS;
+  const material = materials.find(m => m.id === id);
+
+  if (isLoading && !material) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+        <p className="text-text-muted font-medium">Preparing quiz...</p>
+      </div>
+    );
+  }
+
+  const questions = material?.suggestedQuizQuestions || [];
 
   const handleAnswer = (optionIdx: number) => {
     const newAnswers = [...selectedAnswers];
@@ -35,39 +50,60 @@ export default function QuizInterface() {
     }
   };
 
-  const finishQuiz = () => {
+  const finishQuiz = async () => {
     let correct = 0;
     selectedAnswers.forEach((answer, idx) => {
       if (answer === questions[idx].correctAnswer) {
         correct++;
       }
     });
+
+    try {
+      const response = await api.post('/quizzes', {
+        quizId: id,
+        score: correct,
+        totalQuestions: questions.length,
+        answers: selectedAnswers,
+        date: new Date().toISOString()
+      });
+      
+      const newResult = {
+        ...response.data,
+        id: response.data._id || response.data.id
+      };
+      
+      setQuizResults(prev => [...prev, newResult]);
+    } catch (err) {
+      console.error('Failed to save quiz result', err);
+    }
+
     setScore(correct);
     setIsFinished(true);
   };
 
   if (isFinished) {
     return (
-      <div className="p-4 md:p-8 lg:p-12 max-w-2xl mx-auto text-center">
+      <div className="p-4 sm:p-8 max-w-2xl mx-auto text-center">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="glass-card p-12"
+          className="glass-card p-6 sm:p-12"
         >
-          <div className="w-24 h-24 bg-secondary/10 text-secondary rounded-full flex items-center justify-center mx-auto mb-8">
-            <Trophy size={48} />
+          <div className="w-16 h-16 sm:w-24 sm:h-24 bg-secondary/10 text-secondary rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-8">
+            <Trophy size={32} className="sm:hidden" />
+            <Trophy size={48} className="hidden sm:block" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">Quiz Completed!</h1>
-          <p className="text-gray-600 mb-8">You scored {score} out of {questions.length}</p>
+          <h1 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">Quiz Completed!</h1>
+          <p className="text-[10px] sm:text-sm text-gray-600 mb-6 sm:mb-8">You scored {score} out of {questions.length}</p>
           
-          <div className="text-6xl font-bold text-primary mb-12">
+          <div className="text-4xl sm:text-6xl font-bold text-primary mb-8 sm:mb-12">
             {Math.round((score / questions.length) * 100)}%
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-full btn-primary"
+              className="w-full py-2.5 sm:py-3 bg-primary text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-lg shadow-primary/20"
             >
               Back to Dashboard
             </button>
@@ -77,7 +113,7 @@ export default function QuizInterface() {
                 setCurrentQuestion(0);
                 setSelectedAnswers([]);
               }}
-              className="w-full btn-outline"
+              className="w-full py-2.5 sm:py-3 border border-border text-text-main text-xs sm:text-sm font-bold rounded-xl transition-all hover:bg-surface"
             >
               Retake Quiz
             </button>
@@ -87,63 +123,79 @@ export default function QuizInterface() {
     );
   }
 
+  if (questions.length === 0) {
+    return (
+      <div className="p-12 text-center">
+        <h2 className="text-2xl font-bold mb-4 text-text-main">No quiz questions available for this material</h2>
+        <button onClick={() => navigate(-1)} className="btn-primary">Go Back</button>
+      </div>
+    );
+  }
+
   const question = questions[currentQuestion];
+  const questionText = question?.text || (question as any)?.question;
 
   return (
-    <div className="p-4 md:p-8 lg:p-12 max-w-3xl mx-auto">
-      <header className="mb-12 flex items-center justify-between">
+    <div className="p-4 sm:p-8 max-w-3xl mx-auto">
+      <header className="mb-6 sm:mb-12 flex items-center justify-between">
         <div>
-          <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Question {currentQuestion + 1} of {questions.length}</span>
-          <div className="w-48 h-2 bg-gray-100 rounded-full mt-2 overflow-hidden">
+          <span className="text-[10px] sm:text-sm font-bold text-text-muted uppercase tracking-wider">Question {currentQuestion + 1} of {questions.length}</span>
+          <div className="w-32 sm:w-48 h-1.5 sm:h-2 bg-white/10 rounded-full mt-1.5 sm:mt-2 overflow-hidden">
             <div
               className="h-full bg-secondary transition-all duration-300"
               style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
             />
           </div>
         </div>
-        <div className="flex items-center gap-2 text-primary font-bold">
-          <Clock size={20} />
-          <span>14:59</span>
+        <div className="flex items-center gap-1.5 sm:gap-2 text-primary font-bold text-xs sm:text-base">
+          <Clock size={16} className="sm:hidden" />
+          <Clock size={20} className="hidden sm:block" />
+          <span>Session Start</span>
         </div>
       </header>
 
       <AnimatePresence mode="wait">
         <motion.div
           key={currentQuestion}
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          className="glass-card p-8 md:p-12"
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="glass-card p-5 sm:p-12 relative overflow-hidden"
         >
-          <h2 className="text-2xl font-bold mb-12 leading-relaxed">
-            {question.text}
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Sparkles size={120} />
+          </div>
+
+          <h2 className="text-lg sm:text-2xl font-bold mb-6 sm:mb-12 leading-relaxed relative z-10">
+            {questionText}
           </h2>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {question.options.map((option, idx) => (
               <button
                 key={idx}
                 onClick={() => handleAnswer(idx)}
                 className={cn(
-                  "w-full p-6 rounded-2xl border-2 text-left transition-all flex items-center justify-between group",
+                  "w-full p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 text-left transition-all flex items-center justify-between group",
                   selectedAnswers[currentQuestion] === idx
                     ? "border-primary bg-primary/5 shadow-md"
                     : "border-gray-100 hover:border-primary/30 hover:bg-gray-50"
                 )}
               >
                 <span className={cn(
-                  "font-medium",
+                  "text-xs sm:text-base font-medium",
                   selectedAnswers[currentQuestion] === idx ? "text-primary" : "text-gray-600"
                 )}>
                   {option}
                 </span>
                 <div className={cn(
-                  "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                  "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-colors",
                   selectedAnswers[currentQuestion] === idx
                     ? "border-primary bg-primary"
                     : "border-gray-200 group-hover:border-primary/30"
                 )}>
-                  {selectedAnswers[currentQuestion] === idx && <div className="w-2 h-2 bg-white rounded-full" />}
+                  {selectedAnswers[currentQuestion] === idx && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />}
                 </div>
               </button>
             ))}
@@ -151,22 +203,27 @@ export default function QuizInterface() {
         </motion.div>
       </AnimatePresence>
 
-      <footer className="mt-12 flex items-center justify-between">
+      <footer className="mt-6 sm:mt-12 flex items-center justify-between">
         <button
           onClick={prevQuestion}
           disabled={currentQuestion === 0}
-          className="flex items-center gap-2 text-gray-500 hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed font-bold"
+          className="flex items-center gap-1.5 sm:gap-2 text-gray-500 hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed font-bold text-xs sm:text-base"
         >
-          <ChevronLeft size={20} /> Previous
+          <ChevronLeft size={16} className="sm:hidden" />
+          <ChevronLeft size={20} className="hidden sm:block" /> Previous
         </button>
         <button
           onClick={nextQuestion}
           disabled={selectedAnswers[currentQuestion] === undefined}
-          className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 sm:px-6 sm:py-3 bg-primary text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-1.5 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {currentQuestion === questions.length - 1 ? 'Finish Quiz' : 'Next Question'} <ChevronRight size={20} />
+          {currentQuestion === questions.length - 1 ? 'Finish' : 'Next'} 
+          <ChevronRight size={16} className="sm:hidden" />
+          <ChevronRight size={20} className="hidden sm:block" />
         </button>
       </footer>
+      
+      <StudyTimer title="Quiz Session" />
     </div>
   );
 }

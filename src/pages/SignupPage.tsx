@@ -1,49 +1,143 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Github, Chrome, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, ArrowRight, Github, Chrome, ArrowLeft, Loader2, Eye, EyeOff, Globe } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
-import { authApi } from '../services/api';
+import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
 
+const countries = [
+  { name: 'China', flag: '🇨🇳', lang: 'Chinese' },
+  { name: 'India', flag: '🇮🇳', lang: 'English (UK)' },
+  { name: 'Indonesia', flag: '🇮🇩', lang: 'Indonesia' },
+  { name: 'Philippines', flag: '🇵🇭', lang: 'English (US)' },
+  { name: 'United States', flag: '🇺🇸', lang: 'English (US)' },
+  { name: 'United Kingdom', flag: '🇬🇧', lang: 'English (UK)' },
+  { name: 'Malaysia', flag: '🇲🇾', lang: 'English (US)' },
+  { name: 'Singapore', flag: '🇸🇬', lang: 'English (US)' },
+  { name: 'Nigeria', flag: '🇳🇬', lang: 'English (US)' },
+];
+
 export default function SignupPage() {
+  const navigate = useNavigate();
+  const { setUser } = useAppContext();
+  const [fullName, setFullName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [country, setCountry] = React.useState('');
+  const [language, setLanguage] = React.useState('English (US)');
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<React.ReactNode | null>(null);
+
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
   const cursorX = useSpring(mouseX, { stiffness: 800, damping: 40 });
   const cursorY = useSpring(mouseY, { stiffness: 800, damping: 40 });
   const [isHovering, setIsHovering] = React.useState(false);
-  const [formData, setFormData] = React.useState({ name: '', email: '', password: '' });
-  const [error, setError] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
-  const navigate = useNavigate();
-  const { refreshUser } = useAppContext();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      await authApi.register(formData);
-      await refreshUser();
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Center the cursor follower (w-48 = 192px, so offset by 96px)
   const centeredX = useTransform(cursorX, (val) => val - 96);
   const centeredY = useTransform(cursorY, (val) => val - 96);
 
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address format.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.post('/auth/register', { 
+        name: fullName, 
+        email, 
+        password,
+        country,
+        language
+      });
+      setUser(response.data.user);
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      const status = err.response?.status;
+      const message = err.response?.data?.message || err.message || 'Failed to sign up';
+      setError(status ? `Error ${status}: ${message}` : message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialSignup = async (provider: 'google' | 'github') => {
+    if (provider !== 'google') {
+      setError('Social signup is currently unavailable for this provider.');
+      return;
+    }
+
+    try {
+      const response = await api.get('/auth/google-url');
+      const { url } = response.data;
+      
+      // Use top-level redirect instead of popup
+      window.location.href = url;
+    } catch (err: any) {
+      console.error('OAuth URL fetch error:', err);
+      setError('Failed to initiate Google authentication. ' + (err.response?.data?.message || err.message));
+    }
+  };
+
   React.useEffect(() => {
-    console.log("SignupPage Loaded - Version 3");
+    document.documentElement.classList.add('is-landing-page');
+    document.body.classList.add('is-landing-page');
+
+    const handleMessage = async (event: MessageEvent) => {
+      // Validate origin is from AI Studio preview or localhost
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('webcontainer.io')) {
+        return;
+      }
+      
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        try {
+          const response = await api.get('/auth/me');
+          setUser(response.data);
+          navigate('/dashboard');
+        } catch (err) {
+          console.error("Failed to fetch user after OAuth success:", err);
+          setError("Failed to verify user session after Google login.");
+        }
+      }
+    };
+
+    const handleStorage = async (event: StorageEvent) => {
+      if (event.key === 'oauth_success') {
+        try {
+          const response = await api.get('/auth/me');
+          setUser(response.data);
+          navigate('/dashboard');
+        } catch (err) {
+          console.error("Failed to fetch user after OAuth success via storage:", err);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    window.addEventListener('storage', handleStorage);
+    
+    return () => {
+      document.documentElement.classList.remove('is-landing-page');
+      document.body.classList.remove('is-landing-page');
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
+  React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
@@ -58,7 +152,7 @@ export default function SignupPage() {
   }, [mouseX, mouseY]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-20 relative overflow-x-hidden bg-transparent">
       {/* Blurred Light Cursor Follower */}
       <motion.div
         className="fixed top-0 left-0 w-48 h-48 bg-primary/10 rounded-full pointer-events-none z-[100] blur-[60px]"
@@ -83,8 +177,6 @@ export default function SignupPage() {
         }}
       />
 
-      {/* Moving Background */}
-      <GeometricBackground className="z-0" />
       <Link 
         to="/" 
         className="absolute top-8 left-8 p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-primary hover:border-primary transition-all shadow-xl group"
@@ -110,23 +202,23 @@ export default function SignupPage() {
         </div>
 
         <div className="glass-card p-8 bg-slate-950/40 backdrop-blur-2xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
-                {error}
-              </div>
-            )}
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
+              {error}
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={handleSignup}>
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
-                <User size={16} /> Full Name
+                <UserIcon size={16} /> Full Name
               </label>
               <input
                 type="text"
-                name="name"
-                required
-                value={formData.name}
-                onChange={handleChange}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 placeholder="John Doe"
+                required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
@@ -136,11 +228,10 @@ export default function SignupPage() {
               </label>
               <input
                 type="email"
-                name="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
+                required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
@@ -148,24 +239,73 @@ export default function SignupPage() {
               <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
                 <Lock size={16} /> Password
               </label>
-              <input
-                type="password"
-                name="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
-            <div className="pt-4">
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <Globe size={16} /> Country
+              </label>
+              <select
+                value={country}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCountry(val);
+                  const selected = countries.find(c => c.name === val);
+                  if (selected) {
+                    if (['India', 'Indonesia', 'China'].includes(selected.name)) {
+                      setLanguage(selected.lang);
+                    } else {
+                      setLanguage('English (US)');
+                    }
+                  }
+                }}
+                required
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white outline-none focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer"
+              >
+                <option value="" disabled className="bg-slate-900">Select your country</option>
+                {countries.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
+                  <option key={c.name} value={c.name} className="bg-slate-900 text-white">
+                    {c.flag} {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="pt-4 space-y-4">
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Creating Account...' : 'Create Account'} <ArrowRight size={18} />
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <>Create Account <ArrowRight size={18} /></>}
               </button>
+              
+              {loading && (
+                <button 
+                  type="button"
+                  onClick={() => setLoading(false)}
+                  className="w-full py-2 text-xs font-bold text-slate-500 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           </form>
 
@@ -175,12 +315,12 @@ export default function SignupPage() {
             <div className="flex-grow h-px bg-white/10"></div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors">
+          <div className="grid grid-cols-1 gap-4">
+            <button 
+              onClick={() => handleSocialSignup('google')}
+              className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors"
+            >
               <Chrome size={20} /> <span className="text-sm font-bold">Google</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors">
-              <Github size={20} /> <span className="text-sm font-bold">GitHub</span>
             </button>
           </div>
         </div>

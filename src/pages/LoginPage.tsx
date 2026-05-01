@@ -1,60 +1,124 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Github, Chrome, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Github, Chrome, ArrowLeft, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { GeometricBackground } from '../components/ui/geometric-background';
-import { authApi } from '../services/api';
+import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const { setUser } = useAppContext();
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<React.ReactNode | null>(null);
+
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
   const cursorX = useSpring(mouseX, { stiffness: 800, damping: 40 });
   const cursorY = useSpring(mouseY, { stiffness: 800, damping: 40 });
   const [isHovering, setIsHovering] = React.useState(false);
-  const [formData, setFormData] = React.useState({ email: '', password: '' });
-  const [error, setError] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
-  const navigate = useNavigate();
-  const { refreshUser } = useAppContext();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  // Center the cursor follower (w-48 = 192px, so offset by 96px)
+  const centeredX = useTransform(cursorX, (val) => val - 96);
+  const centeredY = useTransform(cursorY, (val) => val - 96);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError(null);
+
     try {
-      const response = await authApi.login(formData);
-      await refreshUser();
+      const response = await api.post('/auth/login', { email, password });
+      setUser(response.data.user);
       navigate('/dashboard');
     } catch (err: any) {
-      if (err.response?.status === 503) {
-        setError(err.response.data.message || 'Server is starting up or database is disconnected. Please try again in 5 seconds.');
-      } else if (err.response?.status === 404) {
-        setError('User not found. Please check your email or sign up.');
-      } else if (err.response?.status === 400) {
-        setError(err.response.data.message || 'Invalid email or password.');
-      } else if (!err.response) {
-        setError('Network error. Please check your internet connection or Vercel server logs.');
+      console.error('Login error:', err);
+      if (err.message === 'Network Error') {
+        setError(
+          <div className="flex flex-col gap-1">
+            <span className="font-bold">Initialization loading...</span>
+            <span className="text-xs opacity-80">This normally takes 30-60 seconds on the first boot. Please wait and try again.</span>
+          </div>
+        );
       } else {
-        const errorMsg = err.response.data?.message || err.response.statusText || 'An unexpected error occurred.';
-        setError(`${errorMsg} (Code: ${err.response.status})`);
+        const status = err.response?.status;
+        const message = err.response?.data?.message || err.message || 'Failed to log in';
+        setError(status ? `Error ${status}: ${message}` : message);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Center the cursor follower (w-48 = 192px, so offset by 96px)
-  const centeredX = useTransform(cursorX, (val) => val - 96);
-  const centeredY = useTransform(cursorY, (val) => val - 96);
+  const handleSocialLogin = async (provider: 'google' | 'github') => {
+    if (provider !== 'google') {
+      setError('Social login is currently unavailable for this provider.');
+      return;
+    }
+
+    try {
+      const response = await api.get('/auth/google-url');
+      const { url } = response.data;
+      
+      // Use top-level redirect instead of popup to bypass Strict WAF / Code 99 issues
+      window.location.href = url;
+    } catch (err: any) {
+      console.error('OAuth URL fetch error:', err);
+      setError('Failed to initiate Google authentication. ' + (err.response?.data?.message || err.message));
+    }
+  };
 
   React.useEffect(() => {
-    console.log("LoginPage Loaded - Version 3");
+    document.documentElement.classList.add('is-landing-page');
+    document.body.classList.add('is-landing-page');
+
+    const handleMessage = async (event: MessageEvent) => {
+      // Validate origin is from AI Studio preview or localhost
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('webcontainer.io')) {
+        return;
+      }
+      
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        try {
+          const response = await api.get('/auth/me');
+          setUser(response.data);
+          navigate('/dashboard');
+        } catch (err) {
+          console.error("Failed to fetch user after OAuth success:", err);
+          setError("Failed to verify user session after Google login.");
+        }
+      }
+    };
+
+    const handleStorage = async (event: StorageEvent) => {
+      if (event.key === 'oauth_success') {
+        try {
+          const response = await api.get('/auth/me');
+          setUser(response.data);
+          navigate('/dashboard');
+        } catch (err) {
+          console.error("Failed to fetch user after OAuth success via storage:", err);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    window.addEventListener('storage', handleStorage);
+    
+    return () => {
+      document.documentElement.classList.remove('is-landing-page');
+      document.body.classList.remove('is-landing-page');
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
+  React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
@@ -69,7 +133,7 @@ export default function LoginPage() {
   }, [mouseX, mouseY]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-20 relative overflow-x-hidden bg-transparent">
       {/* Blurred Light Cursor Follower */}
       <motion.div
         className="fixed top-0 left-0 w-48 h-48 bg-primary/10 rounded-full pointer-events-none z-[100] blur-[60px]"
@@ -94,8 +158,6 @@ export default function LoginPage() {
         }}
       />
 
-      {/* Moving Background */}
-      <GeometricBackground className="z-0" />
       <Link 
         to="/" 
         className="absolute top-8 left-8 p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-primary hover:border-primary transition-all shadow-xl group"
@@ -121,23 +183,26 @@ export default function LoginPage() {
         </div>
 
         <div className="glass-card p-8 bg-slate-950/40 backdrop-blur-2xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
-                {error}
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} />
+                <span>{error}</span>
               </div>
-            )}
+            </div>
+          )}
+
+          <form className="space-y-6" onSubmit={handleLogin}>
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
                 <Mail size={16} /> Email Address
               </label>
               <input
                 type="email"
-                name="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
+                required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
@@ -148,23 +213,43 @@ export default function LoginPage() {
                 </label>
                 <Link to="/reset-password" title="Reset Password" className="text-xs text-primary font-bold hover:underline">Forgot?</Link>
               </div>
-              <input
-                type="password"
-                name="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? 'Logging In...' : 'Log In'} <ArrowRight size={18} />
-            </button>
+            <div className="space-y-4">
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <>Log In <ArrowRight size={18} /></>}
+              </button>
+              
+              {loading && (
+                <button 
+                  type="button"
+                  onClick={() => setLoading(false)}
+                  className="w-full py-2 text-xs font-bold text-slate-500 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
 
           <div className="flex items-center gap-4 my-8">
@@ -173,12 +258,12 @@ export default function LoginPage() {
             <div className="flex-grow h-px bg-white/10"></div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors">
+          <div className="grid grid-cols-1 gap-4">
+            <button 
+              onClick={() => handleSocialLogin('google')}
+              className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors"
+            >
               <Chrome size={20} /> <span className="text-sm font-bold">Google</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors">
-              <Github size={20} /> <span className="text-sm font-bold">GitHub</span>
             </button>
           </div>
         </div>
