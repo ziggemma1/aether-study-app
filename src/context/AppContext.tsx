@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, Material, SavedPlan } from '../types';
-import { MOCK_MATERIALS } from '../mockData';
-import { authApi } from '../services/api';
+import { authApi, materialApi } from '../services/api';
 
 interface AppContextType {
   user: User | null;
@@ -15,13 +14,14 @@ interface AppContextType {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   refreshUser: () => Promise<void>;
+  refreshMaterials: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null); 
-  const [materials, setMaterials] = useState<Material[]>(MOCK_MATERIALS);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -30,12 +30,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  const refreshMaterials = async () => {
+    try {
+      const response = await materialApi.getAll();
+      setMaterials(response.data);
+    } catch (error) {
+      console.error('Failed to fetch materials', error);
+      setMaterials([]);
+    }
+  };
+
   const refreshUser = async () => {
     try {
       const response = await authApi.getMe();
-      setUser(response.data);
+      setUser(response.data.user);
+      await refreshMaterials();
     } catch (error) {
       setUser(null);
+      setMaterials([]);
     } finally {
       setIsLoading(false);
     }
@@ -51,6 +63,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     root.classList.add(theme);
   }, [theme]);
 
+  // When user signs in, load materials
+  useEffect(() => {
+    if (user) {
+      refreshMaterials();
+    }
+  }, [user]);
+
   return (
     <AppContext.Provider value={{ 
       user, 
@@ -63,7 +82,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsLoading,
       theme,
       toggleTheme,
-      refreshUser
+      refreshUser,
+      refreshMaterials
     }}>
       {children}
     </AppContext.Provider>

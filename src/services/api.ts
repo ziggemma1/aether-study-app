@@ -32,4 +32,14 @@ export const userApi = {
     api.post('/users/friend-request/respond', { requestId, status }),
 };
 
+export const sessionApi = {
+  getAll: () => api.get('/sessions'),
+  create: (data: any) => api.post('/sessions', data),
+};
+
+export const quizApi = {
+  getAll: () => api.get('/quizzes'),
+  create: (data: any) => api.post('/quizzes', data),
+};
+
 export default api;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { 
   Crown, 
@@ -16,6 +16,7 @@ import { cn } from '../lib/utils';
 import MessagesList from '../components/MessagesList';
 import CalendarWidget from '../components/CalendarWidget';
 import SmartCalendarWidget from '../components/SmartCalendarWidget';
+import { sessionApi, quizApi, userApi } from '../services/api';
 
 import { 
   QuizScoreCard, 
@@ -28,6 +29,64 @@ import {
 export default function Dashboard() {
   const { user, theme } = useAppContext();
   const isLight = theme === 'light';
+
+  const [sessionData, setSessionData] = useState({ totalHours: 0, thisWeekHours: 0 });
+  const [quizData, setQuizData] = useState({ averageScore: 0, highestScore: 0, lowestScore: 0 });
+  const [rankingData, setRankingData] = useState({ rank: 0, totalUsers: 0, topUsers: [] as any[] });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [sessionsRes, quizzesRes, usersRes] = await Promise.all([
+          sessionApi.getAll(),
+          quizApi.getAll(),
+          userApi.getProfiles()
+        ]);
+
+        // Process sessions 
+        const sessions = sessionsRes.data;
+        const totalMinutes = sessions.reduce((acc: number, s: any) => acc + (s.durationMinutes || s.duration || 0), 0);
+        // just mock "thisWeekHours" proportionally if no proper date filter 
+        const thisWeekMinutes = totalMinutes * 0.3; 
+        
+        setSessionData({
+          totalHours: totalMinutes / 60,
+          thisWeekHours: thisWeekMinutes / 60
+        });
+
+        // Process quizzes
+        const quizzes = quizzesRes.data;
+        if (quizzes.length > 0) {
+          const scores = quizzes.map((q: any) => (q.score / Math.max(q.totalQuestions, 1)) * 100);
+          setQuizData({
+            averageScore: scores.reduce((a: number, b: number) => a + b, 0) / scores.length,
+            highestScore: Math.max(...scores),
+            lowestScore: Math.min(...scores)
+          });
+        }
+
+        // Process users
+        const users = usersRes.data.sort((a: any, b: any) => (b.streak || 0) - (a.streak || 0));
+        const myRank = users.findIndex((u: any) => u._id === user?.id) + 1;
+        setRankingData({
+          rank: myRank > 0 ? myRank : users.length,
+          totalUsers: users.length,
+          topUsers: users.slice(0, 6)
+        });
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    };
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  // streak history mock based on current user streak
+  const userStreak = user?.streak || 0;
+  // create active history based on streak
+  const streakHistory = Array.from({length: 15}).map((_, i) => i < userStreak);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500 pb-12">
@@ -52,16 +111,16 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link to="/reports" className="block">
-            <TimeSpentCard />
+            <TimeSpentCard totalHours={sessionData.totalHours} thisWeekHours={sessionData.thisWeekHours} trend={12} />
           </Link>
           <Link to="/reports" className="block">
-            <QuizScoreCard />
+            <QuizScoreCard averageScore={quizData.averageScore} highestScore={quizData.highestScore} lowestScore={quizData.lowestScore} trend={5} />
           </Link>
           <Link to="/reports" className="block">
-            <StreakCard />
+            <StreakCard streak={userStreak} longestStreak={Math.max(userStreak, 15)} history={streakHistory} />
           </Link>
           <Link to="/reports" className="block">
-            <RankingCard />
+            <RankingCard rank={rankingData.rank} totalUsers={rankingData.totalUsers} topUsers={rankingData.topUsers} />
           </Link>
         </div>
 

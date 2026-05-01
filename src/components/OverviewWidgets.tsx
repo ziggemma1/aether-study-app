@@ -68,7 +68,17 @@ const stripeStyle = {
 
 // --- Sub-components ---
 
-export function QuizScoreCard() {
+export function QuizScoreCard({ 
+  averageScore = 0, 
+  highestScore = 0, 
+  lowestScore = 0,
+  trend = 0
+}: { 
+  averageScore?: number, 
+  highestScore?: number, 
+  lowestScore?: number,
+  trend?: number 
+}) {
   return (
     <motion.div 
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
@@ -80,10 +90,14 @@ export function QuizScoreCard() {
       </div>
       
       <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-2xl font-semibold text-text-main tracking-tight">82%</span>
-        <span className="flex items-center text-[9px] font-medium text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded-md">
-          -10% <ChevronDown size={8} className="ml-0.5" />
-        </span>
+        <span className="text-2xl font-semibold text-text-main tracking-tight">{averageScore.toFixed(0)}%</span>
+        {trend !== 0 && (
+          <span className={cn("flex items-center text-[9px] font-medium px-1.5 py-0.5 rounded-md", 
+            trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+          )}>
+            {trend > 0 ? "+" : ""}{trend.toFixed(0)}% <ChevronDown size={8} className={cn("ml-0.5", trend > 0 && "rotate-180")} />
+          </span>
+        )}
       </div>
 
       <div className="border-t border-dashed border-border/40 my-3" />
@@ -92,12 +106,12 @@ export function QuizScoreCard() {
         <div className="space-y-1.5">
           <div className="flex justify-between text-[10px] font-medium text-text-muted">
             <span>Highest Score</span>
-            <span className="text-text-main">92.50%</span>
+            <span className="text-text-main">{highestScore.toFixed(2)}%</span>
           </div>
           <div className="h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: "92.5%" }}
+              animate={{ width: `${Math.max(highestScore, 5)}%` }}
               className="h-full bg-primary rounded-md" 
               style={stripeStyle}
             />
@@ -106,12 +120,12 @@ export function QuizScoreCard() {
         <div className="space-y-1.5">
           <div className="flex justify-between text-[10px] font-medium text-text-muted">
             <span>Lowest Score</span>
-            <span className="text-text-main">64.25%</span>
+            <span className="text-text-main">{lowestScore.toFixed(2)}%</span>
           </div>
           <div className="h-3 bg-surface-alt/30 rounded-md overflow-hidden relative">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: "64.25%" }}
+              animate={{ width: `${Math.max(lowestScore, 5)}%` }}
               className="h-full bg-orange-500 rounded-md" 
               style={stripeStyle}
             />
@@ -122,7 +136,17 @@ export function QuizScoreCard() {
   );
 }
 
-export function TimeSpentCard() {
+export function TimeSpentCard({
+  totalHours = 0,
+  thisWeekHours = 0,
+  trend = 0,
+  weeklyData = weeklyTimeData
+}: {
+  totalHours?: number;
+  thisWeekHours?: number;
+  trend?: number;
+  weeklyData?: {day: string, hours: number}[];
+}) {
   return (
     <motion.div 
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
@@ -134,29 +158,33 @@ export function TimeSpentCard() {
       </div>
 
       <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-2xl font-semibold text-text-main tracking-tight">12 Hours</span>
-        <span className="flex items-center text-[9px] font-medium text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded-md">
-          -12.00% <ChevronDown size={8} className="ml-0.5" />
-        </span>
+        <span className="text-2xl font-semibold text-text-main tracking-tight">{totalHours.toFixed(1)} Hours</span>
+        {trend !== 0 && (
+          <span className={cn("flex items-center text-[9px] font-medium px-1.5 py-0.5 rounded-md", 
+            trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+          )}>
+            {trend > 0 ? "+" : ""}{trend.toFixed(0)}% <ChevronDown size={8} className={cn("ml-0.5", trend > 0 && "rotate-180")} />
+          </span>
+        )}
       </div>
 
       <div className="border-t border-dashed border-border/40 my-3" />
 
       <div className="flex justify-between text-[10px] font-medium text-text-muted mb-2">
         <span>This Week</span>
-        <span className="text-text-main">9.5H</span>
+        <span className="text-text-main">{thisWeekHours.toFixed(1)}H</span>
       </div>
 
       <div className="h-20 w-full mt-auto">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={weeklyTimeData}>
+          <BarChart data={weeklyData}>
             <Bar dataKey="hours" radius={[3, 3, 0, 0]}>
-              {weeklyTimeData.map((entry, index) => (
+              {weeklyData.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={index === 3 ? 'var(--primary)' : 'var(--border)'} 
-                  fillOpacity={index === 3 ? 1 : 0.2}
-                  style={index === 3 ? stripeStyle : {}}
+                  fill={index === new Date().getDay() - 1 ? 'var(--primary)' : 'var(--border)'} 
+                  fillOpacity={index === new Date().getDay() - 1 ? 1 : 0.2}
+                  style={index === new Date().getDay() - 1 ? stripeStyle : {}}
                   className="transition-all duration-300"
                 />
               ))}
@@ -168,12 +196,21 @@ export function TimeSpentCard() {
   );
 }
 
-export function StreakCard() {
-  const days = [
-    { label: '01', active: true }, { label: '02', active: true }, { label: '03', active: true }, { label: '04', active: true }, { label: '05', active: true },
-    { label: '06', active: false }, { label: '07', active: false }, { label: '08', active: false }, { label: '09', active: false }, { label: '10', active: false },
-    { label: '11', active: false }, { label: '12', active: false }, { label: '13', active: false }, { label: '14', active: false }, { label: '15', active: false },
-  ];
+export function StreakCard({
+  streak = 0,
+  longestStreak = 0,
+  history = []
+}: {
+  streak?: number;
+  longestStreak?: number;
+  history?: boolean[];
+}) {
+  const days = Array.from({length: 15}).map((_, i) => {
+    return {
+      label: (i + 1).toString().padStart(2, '0'),
+      active: history[i] || false
+    }
+  });
 
   return (
     <motion.div 
@@ -186,14 +223,14 @@ export function StreakCard() {
       </div>
 
       <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-2xl font-semibold text-text-main tracking-tight">5 Days</span>
+        <span className="text-2xl font-semibold text-text-main tracking-tight">{streak} Days</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-3" />
 
       <div className="flex justify-between text-[10px] font-medium text-text-muted mb-4">
         <span>Longest Streak</span>
-        <span className="text-text-main">15 days</span>
+        <span className="text-text-main">{longestStreak} days</span>
       </div>
 
       <div className="overflow-y-auto no-scrollbar pr-1 -mr-1 flex-grow">
@@ -215,7 +252,16 @@ export function StreakCard() {
   );
 }
 
-export function RankingCard() {
+export function RankingCard({
+  rank = 0,
+  totalUsers = 0,
+  topUsers = []
+}: {
+  rank?: number;
+  totalUsers?: number;
+  topUsers?: {name: string, avatar?: string}[];
+}) {
+  const displayUsers = topUsers.length > 0 ? topUsers : topLearners;
   return (
     <motion.div 
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
@@ -227,8 +273,8 @@ export function RankingCard() {
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
-        <span className="text-2xl font-semibold text-text-main tracking-tight">#15</span>
-        <span className="text-[10px] text-text-muted">of 23K</span>
+        <span className="text-2xl font-semibold text-text-main tracking-tight">#{rank > 0 ? rank : '-'}</span>
+        <span className="text-[10px] text-text-muted">of {totalUsers > 1000 ? `${(totalUsers/1000).toFixed(1)}K` : totalUsers}</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-3" />
@@ -237,10 +283,10 @@ export function RankingCard() {
 
       <div className="overflow-y-auto no-scrollbar pr-1 -mr-1 flex-grow">
         <div className="space-y-2.5">
-          {topLearners.map((learner, i) => (
+          {displayUsers.map((learner, i) => (
             <div key={i} className="flex items-center gap-2.5">
               <div className="relative">
-                <img src={learner.avatar} alt={learner.name} className="w-6 h-6 rounded-full border border-border/20" />
+                <img src={learner.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${learner.name}`} alt={learner.name} className="w-6 h-6 rounded-full border border-border/20" />
                 {i === 0 && (
                   <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-500 rounded-full flex items-center justify-center text-[5px] text-white border border-white">
                     ★
