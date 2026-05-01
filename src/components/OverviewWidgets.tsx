@@ -50,7 +50,7 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
       </div>
       
       <div className="flex items-baseline gap-1 mb-2">
-        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none">{Math.round(score)}%</span>
+        <span className="text-xl sm:text-3xl font-extrabold text-white tracking-tighter leading-none">{Math.round(score)}%</span>
         {trend !== 0 && (
           <span className={cn(
             "text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-sm ml-auto",
@@ -120,7 +120,7 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
-        <span className="text-2xl sm:text-3xl font-black text-white tracking-tighter leading-none shrink-0">{displayTime}</span>
+        <span className="text-xl sm:text-2xl font-extrabold text-white tracking-tighter leading-none shrink-0">{displayTime}</span>
         {trend !== 0 && (
           <span className={cn(
             "text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-sm ml-auto shadow-sm",
@@ -137,7 +137,7 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
           <span className="text-orange-400 font-black">{weeklyData.reduce((acc, curr) => acc + curr.hours, 0).toFixed(1)}h</span>
         </div>
         
-        <div className="flex justify-between items-end gap-1.5 h-16 sm:h-24">
+        <div className="flex justify-between items-end gap-1.5 h-12 sm:h-20">
           {weeklyData.map((d, i) => {
             const isToday = dayNames.indexOf(d.day) === todayIndex;
             const heightPercent = (d.hours / maxHours) * 100;
@@ -245,7 +245,7 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
-        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none">{finalCurrentStreak}</span>
+        <span className="text-xl sm:text-3xl font-extrabold text-white tracking-tighter leading-none">{finalCurrentStreak}</span>
         <span className="text-[10px] sm:text-[11px] font-black text-orange-400 uppercase tracking-widest ml-1">{t('days_label')}</span>
       </div>
 
@@ -287,11 +287,14 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
-        <span className="text-2xl sm:text-4xl font-black text-white tracking-tighter leading-none">#{rank}</span>
+        <div className="flex flex-col">
+          <span className="text-xl sm:text-3xl font-extrabold text-white tracking-tighter leading-none">#{rank}</span>
+          <span className="text-[9px] font-medium text-white/50 tracking-tight mt-0.5 whitespace-nowrap">of {total.toLocaleString()} learners</span>
+        </div>
         <span className="text-[10px] sm:text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-auto">Top 2%</span>
       </div>
 
-      <div className="flex-1 flex flex-col justify-end mt-4 sm:mt-6 overflow-hidden">
+      <div className="flex-1 flex flex-col justify-end mt-2 sm:mt-4 overflow-hidden">
         <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70 mb-2">
           <span>Rivals Leaderboard</span>
         </div>

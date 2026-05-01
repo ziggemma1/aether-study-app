@@ -6,7 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Material } from '../types';
 import api from '../services/api';
-import { MaterialCardSkeleton, MaterialListSkeleton } from '../components/ui/Skeleton';
+import { Skeleton, MaterialCardSkeleton, MaterialListSkeleton } from '../components/ui/Skeleton';
 
 export default function Library() {
   const { materials, savedPlans, setMaterials, showToast, t, isLoading } = useAppContext();
