@@ -18,6 +18,7 @@ router.post('/register', async (req, res) => {
     res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
     res.status(201).json({ user: { id: user._id, name, email }, token });
   } catch (error) {
+    console.error('Registration Error:', error);
     res.status(500).json({ message: `Registration error: ${error instanceof Error ? error.message : 'Unknown'}` });
   }
 });
@@ -25,17 +26,30 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(`Login attempt for: ${email}`);
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      console.log(`User not found: ${email}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
     
-    if (!user.password) return res.status(400).json({ message: 'Please log in with Google, or reset your password.' });
+    if (!user.password) {
+      console.log(`User has no password (OAuth likely): ${email}`);
+      return res.status(400).json({ message: 'Please log in with Google, or reset your password.' });
+    }
+    
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!isMatch) {
+      console.log(`Invalid password for: ${email}`);
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
     
+    console.log(`Login successful for: ${email}`);
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
     res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none' });
     res.json({ user: { id: user._id, name: user.name, email: user.email }, token });
   } catch (error) {
+    console.error('Login Error details:', error);
     res.status(500).json({ message: `Login error: ${error instanceof Error ? error.message : 'Unknown'}` });
   }
 });

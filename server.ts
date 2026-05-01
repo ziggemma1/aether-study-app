@@ -40,6 +40,7 @@ async function startServer() {
   app.use(mongoSanitize());
 
   // General rate limiter for all routes
+  /*
   const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
     max: 1000,
@@ -58,6 +59,7 @@ async function startServer() {
     validate: { xForwardedForHeader: false }
   });
   app.use("/api/auth", authLimiter);
+  */
 
   // Payload Limit constraints
   app.use(express.json({ limit: '5mb' })); 

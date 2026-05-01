@@ -7,4 +7,4 @@ const roomSchema = new mongoose.Schema({
   active: { type: Boolean, default: true },
 }, { timestamps: true });
 
-export const Room = mongoose.model('Room', roomSchema);
+export const Room = mongoose.models.Room || mongoose.model('Room', roomSchema);

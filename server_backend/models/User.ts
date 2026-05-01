@@ -11,4 +11,5 @@ const userSchema = new mongoose.Schema({
   plan: { type: String, enum: ['free', 'pro'], default: 'free' }
 });
 
-export default mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+export default User;

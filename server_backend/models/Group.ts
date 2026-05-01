@@ -8,4 +8,4 @@ const groupSchema = new mongoose.Schema({
   avatar: { type: String, default: '' },
 }, { timestamps: true });
 
-export const Group = mongoose.model('Group', groupSchema);
+export const Group = mongoose.models.Group || mongoose.model('Group', groupSchema);

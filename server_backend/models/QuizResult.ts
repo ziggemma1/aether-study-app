@@ -8,4 +8,5 @@ const quizResultSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-export default mongoose.model('QuizResult', quizResultSchema);
+const  = mongoose.models. || mongoose.model('', );
+export default ;

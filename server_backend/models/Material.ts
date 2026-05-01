@@ -12,4 +12,5 @@ const materialSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 
-export default mongoose.model('Material', materialSchema);
+const Material = mongoose.models.Material || mongoose.model('Material', materialSchema);
+export default Material;
