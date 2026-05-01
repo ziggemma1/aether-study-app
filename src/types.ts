@@ -1,5 +1,6 @@
 export interface User {
   id: string;
+  _id?: string;
   name: string;
   email: string;
   avatar?: string;
@@ -11,6 +12,7 @@ export interface User {
 
 export interface Material {
   id: string;
+  _id?: string;
   title: string;
   type: 'pdf' | 'youtube' | 'article' | 'audio' | 'unified';
   uploadDate: string;

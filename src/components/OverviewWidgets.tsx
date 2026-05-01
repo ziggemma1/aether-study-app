@@ -90,7 +90,7 @@ export function QuizScoreCard({
       </div>
       
       <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-2xl font-semibold text-text-main tracking-tight">{averageScore.toFixed(0)}%</span>
+        <span className="text-[22px] font-semibold text-text-main tracking-tight">{averageScore.toFixed(0)}%</span>
         {trend !== 0 && (
           <span className={cn("flex items-center text-[9px] font-medium px-1.5 py-0.5 rounded-md", 
             trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
@@ -147,6 +147,14 @@ export function TimeSpentCard({
   trend?: number;
   weeklyData?: {day: string, hours: number}[];
 }) {
+  const formatTime = (hours: number) => {
+    const totalMins = Math.round(hours * 60);
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    if (h > 0) return `${h}hr ${m}min`;
+    return `${m}min`;
+  };
+
   return (
     <motion.div 
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
@@ -158,7 +166,7 @@ export function TimeSpentCard({
       </div>
 
       <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-2xl font-semibold text-text-main tracking-tight">{totalHours.toFixed(1)} Hours</span>
+        <span className="text-[22px] font-semibold text-text-main tracking-tight">{formatTime(totalHours)}</span>
         {trend !== 0 && (
           <span className={cn("flex items-center text-[9px] font-medium px-1.5 py-0.5 rounded-md", 
             trend > 0 ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
@@ -172,7 +180,7 @@ export function TimeSpentCard({
 
       <div className="flex justify-between text-[10px] font-medium text-text-muted mb-2">
         <span>This Week</span>
-        <span className="text-text-main">{thisWeekHours.toFixed(1)}H</span>
+        <span className="text-text-main">{formatTime(thisWeekHours)}</span>
       </div>
 
       <div className="h-20 w-full mt-auto">
@@ -223,7 +231,7 @@ export function StreakCard({
       </div>
 
       <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-2xl font-semibold text-text-main tracking-tight">{streak} Days</span>
+        <span className="text-[22px] font-semibold text-text-main tracking-tight">{streak} Days</span>
       </div>
 
       <div className="border-t border-dashed border-border/40 my-3" />
@@ -273,7 +281,7 @@ export function RankingCard({
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
-        <span className="text-2xl font-semibold text-text-main tracking-tight">#{rank > 0 ? rank : '-'}</span>
+        <span className="text-[22px] font-semibold text-text-main tracking-tight">#{rank > 0 ? rank : '-'}</span>
         <span className="text-[10px] text-text-muted">of {totalUsers > 1000 ? `${(totalUsers/1000).toFixed(1)}K` : totalUsers}</span>
       </div>
 

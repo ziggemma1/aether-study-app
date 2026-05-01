@@ -4,6 +4,8 @@ import { Upload, Youtube, BookOpen, Mic, X, CheckCircle2, Loader2, Camera, Image
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { extractTextFromImage } from '../services/OCRService';
+import { materialApi } from '../services/api';
+import { useAppContext } from '../context/AppContext';
 
 export default function UploadMaterial() {
   const navigate = useNavigate();
@@ -15,18 +17,50 @@ export default function UploadMaterial() {
   const [isOcrProcessing, setIsOcrProcessing] = React.useState(false);
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
 
-  const handleUpload = () => {
+  const [linkInput, setLinkInput] = React.useState('');
+  const [contentInput, setContentInput] = React.useState('');
+  const { refreshMaterials } = useAppContext();
+
+  const handleUpload = async () => {
     setIsUploading(true);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setIsUploading(false);
-        setIsSuccess(true);
-      }
-    }, 300);
+    let title = 'Uploaded Material';
+    let summary = 'A generated summary of the material goes here.';
+    let content = '';
+
+    if (activeTab === 'ocr') {
+      title = 'Scanned Notes';
+      content = ocrText;
+      summary = 'Summary of scanned notes.';
+    } else if (activeTab === 'youtube') {
+      title = 'YouTube Video';
+      content = linkInput;
+      summary = 'Summary of YouTube video.';
+    } else if (activeTab === 'article') {
+      title = 'Saved Article';
+      content = contentInput;
+      summary = 'Summary of the provided article.';
+    } else if (activeTab === 'voice') {
+      title = 'Voice Recording';
+      summary = 'Transcription and summary of voice recording.';
+    }
+
+    try {
+      await materialApi.create({
+        title,
+        type: activeTab === 'ocr' ? 'article' : (activeTab === 'file' ? 'pdf' : activeTab),
+        content,
+        summary,
+        keyTopics: ['AI Extracted Topic 1', 'AI Extracted Topic 2'],
+        public: false
+      });
+      await refreshMaterials();
+    } catch (e) {
+      console.error(e);
+      alert('Failed to upload material');
+    }
+
+    setIsUploading(false);
+    setIsSuccess(true);
   };
 
   const handleOcrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,6 +234,8 @@ export default function UploadMaterial() {
                   <label className="block text-sm font-bold mb-2 text-text-main">YouTube Video URL</label>
                   <input
                     type="text"
+                    value={linkInput}
+                    onChange={(e) => setLinkInput(e.target.value)}
                     placeholder="https://youtube.com/watch?v=..."
                     className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none placeholder:text-text-muted"
                   />
@@ -214,6 +250,8 @@ export default function UploadMaterial() {
                   <label className="block text-sm font-bold mb-2 text-text-main">Article URL or Text</label>
                   <textarea
                     rows={6}
+                    value={contentInput}
+                    onChange={(e) => setContentInput(e.target.value)}
                     placeholder="Paste the article URL or content here..."
                     className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none resize-none placeholder:text-text-muted"
                   />

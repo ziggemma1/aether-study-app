@@ -59,7 +59,7 @@ export default function Library() {
   const handleMergeMaterials = () => {
     if (selectedMaterials.length < 2) return;
     
-    const relatedMaterials = materials.filter(m => selectedMaterials.includes(m.id));
+    const relatedMaterials = materials.filter(m => selectedMaterials.includes(m._id || m.id));
     const combinedTopics = Array.from(new Set(relatedMaterials.flatMap(m => m.keyTopics)));
     
     const newMaterial: Material = {
@@ -79,12 +79,13 @@ export default function Library() {
 
   const renderMaterialGrid = (items: Material[]) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {items.map((material) => {
+      {items.map((material, idx) => {
         const Icon = getTypeIcon(material.type);
-        const isSelected = selectedMaterials.includes(material.id);
+        const mKey = material._id || material.id || `material-${idx}`;
+        const isSelected = selectedMaterials.includes(mKey);
         return (
           <motion.div
-            key={material.id}
+            key={mKey}
             layout
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -95,7 +96,7 @@ export default function Library() {
             )}
           >
             <button
-              onClick={(e) => toggleSelection(e, material.id)}
+              onClick={(e) => toggleSelection(e, mKey)}
               className={cn(
                 "absolute top-4 right-4 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all",
                 isSelected ? "bg-primary border-primary text-white" : "bg-surface border-text-muted/30 group-hover:border-primary/50"
@@ -104,7 +105,7 @@ export default function Library() {
               {isSelected && <Check size={14} strokeWidth={3} />}
             </button>
 
-            <Link to={`/material/${material.id}`} className="block relative z-0">
+            <Link to={`/material/${mKey}`} className="block relative z-0">
               <div className="flex items-start justify-between mb-6 pr-8">
                 <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                   <Icon size={24} />
@@ -131,12 +132,13 @@ export default function Library() {
 
   const renderMaterialList = (items: Material[]) => (
     <div className="space-y-4">
-      {items.map((material) => {
+      {items.map((material, idx) => {
         const Icon = getTypeIcon(material.type);
-        const isSelected = selectedMaterials.includes(material.id);
+        const mKey = material._id || material.id || `material-list-${idx}`;
+        const isSelected = selectedMaterials.includes(mKey);
         return (
           <motion.div
-            key={material.id}
+            key={mKey}
             layout
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -147,7 +149,7 @@ export default function Library() {
           >
             <div className="flex items-center gap-4">
               <button
-                onClick={(e) => toggleSelection(e, material.id)}
+                onClick={(e) => toggleSelection(e, mKey)}
                 className={cn(
                   "w-6 h-6 shrink-0 rounded-md border-2 flex items-center justify-center transition-all",
                   isSelected ? "bg-primary border-primary text-white" : "bg-surface border-text-muted/30 hover:border-primary/50"
@@ -155,7 +157,7 @@ export default function Library() {
               >
                 {isSelected && <Check size={14} strokeWidth={3} />}
               </button>
-              <Link to={`/material/${material.id}`} className="flex items-center gap-6 flex-grow">
+              <Link to={`/material/${mKey}`} className="flex items-center gap-6 flex-grow">
                 <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary shrink-0">
                   <Icon size={20} />
                 </div>
@@ -299,8 +301,10 @@ export default function Library() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
           {savedPlans.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {savedPlans.map(p => (
-                <div key={p.id} className="glass-card p-6 border-border/40 hover:border-primary/30 transition-all group">
+              {savedPlans.map((p, idx) => {
+                const pKey = (p as any)._id || p.id || `plan-${idx}`;
+                return (
+                <div key={pKey} className="glass-card p-6 border-border/40 hover:border-primary/30 transition-all group">
                   <div className="flex justify-between items-start mb-4">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", p.progress === 100 ? "bg-green-500/10 text-green-500" : "bg-primary/10 text-primary")}>
                       {p.progress === 100 ? <CheckCircle2 size={20} /> : <CalendarIcon size={20} />}
@@ -321,7 +325,7 @@ export default function Library() {
                     View Plan Directory
                   </button>
                 </div>
-              ))}
+              )})}
             </div>
           ) : (
             <div className="glass-card p-12 flex flex-col items-center justify-center text-center border-dashed border-2 border-border/30">
