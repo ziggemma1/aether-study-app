@@ -72,13 +72,75 @@ export const initSocket = (server: any) => {
     socket.join(userId);
 
     // LIVE ROOMS LOGIC
+    const broadcastRoomParticipants = async (roomId: string) => {
+      const roomName = `live_room:${roomId}`;
+      const sockets = await io.in(roomName).fetchSockets();
+      const participantsMap = new Map();
+      
+      for (const s of sockets) {
+        const pUserId = s.data.userId ? String(s.data.userId) : null;
+        if (!pUserId) continue;
+        
+        let pUser = s.data.user;
+        if (!pUser) {
+          try {
+            const dbUser = await User.findById(pUserId).select('name avatar');
+            if (dbUser) {
+              pUser = {
+                id: dbUser._id.toString(),
+                name: dbUser.name,
+                avatar: dbUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${dbUser.name || pUserId}`
+              };
+              s.data.user = pUser;
+            } else {
+              // Fallback for user not found in DB
+              pUser = {
+                id: pUserId,
+                name: `Learner ${pUserId.slice(-4)}`,
+                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${pUserId}`
+              };
+              s.data.user = pUser;
+            }
+          } catch (err) {
+            console.error(`Error fetching user ${pUserId}:`, err);
+            continue;
+          }
+        }
+        
+        if (pUser) {
+          // If the user has multiple sockets, we only want to show them once in the list for others
+          // but we might want to store all sockets if we needed to track specific device states
+          participantsMap.set(pUser.id, {
+            ...pUser,
+            socketId: s.id // Add socketId for debugging if needed
+          });
+        }
+      }
+      
+      const participants = Array.from(participantsMap.values());
+      console.log(`Broadcasting ${participants.length} participants for room ${roomId}:`, participants.map(p => p.name));
+      
+      // Update room active count in DB
+      try {
+        await Room.findByIdAndUpdate(roomId, { 
+          activeCount: participants.length,
+          participants: participants.map(p => p.id)
+        });
+      } catch (dbErr) {
+        console.error("DB Room Update Error:", dbErr);
+      }
+      
+      io.to(roomName).emit("room_participants", { roomId, participants });
+      return participants;
+    };
+
     socket.on("join_live_room", async (roomId) => {
       try {
         const roomName = `live_room:${roomId}`;
         activeLiveRoomId = roomId;
         await socket.join(roomName);
         
-        // Ensure user data is present
+        // Ensure user data is present for this socket
         if (!socket.data.user) {
           const user = await User.findById(userId).select('name avatar');
           if (user) {
@@ -90,57 +152,13 @@ export const initSocket = (server: any) => {
           }
         }
         
-        const user = socket.data.user;
-        
-        // Fetch all sockets in this room to get current participants
-        const sockets = await io.in(roomName).fetchSockets();
-        const participantsMap = new Map();
-        
-        for (const s of sockets) {
-          const pUserId = s.data.userId;
-          if (!pUserId) continue;
-          
-          let pUser = s.data.user;
-          if (!pUser) {
-            try {
-              const dbUser = await User.findById(pUserId).select('name avatar');
-              if (dbUser) {
-                pUser = {
-                  id: dbUser._id.toString(),
-                  name: dbUser.name,
-                  avatar: dbUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${dbUser.name || pUserId}`
-                };
-                s.data.user = pUser;
-              }
-            } catch (err) {
-              console.error(`Error fetching user ${pUserId}:`, err);
-            }
-          }
-          
-          if (pUser) {
-            participantsMap.set(pUser.id, pUser);
-          }
-        }
-        
-        const participants = Array.from(participantsMap.values());
-        
-        // Update room active count in DB
-        try {
-          await Room.findByIdAndUpdate(roomId, { 
-            activeCount: participants.length,
-            $addToSet: { participants: String(userId) } 
-          });
-        } catch (dbErr) {
-          console.error("DB Room Update Error:", dbErr);
-        }
-        
-        // Send current list to EVERYONE in the room to ensure perfect sync
-        io.to(roomName).emit("room_participants", { roomId, participants });
+        const participants = await broadcastRoomParticipants(roomId);
   
         // Also notify about the specific join for the toast
+        const user = socket.data.user || { id: String(userId), name: "Learner", avatar: "" };
         socket.to(roomName).emit("user_joined_room", { 
           roomId, 
-          user: pUserFallback(user, userId)
+          user
         });
         
         console.log(`User ${userId} joined live room: ${roomId}. Total: ${participants.length}`);
@@ -149,12 +167,6 @@ export const initSocket = (server: any) => {
       }
     });
 
-    function pUserFallback(u: any, uid: string) {
-      if (u) return u;
-      return { id: uid, name: "Learner", avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${uid}` };
-    }
-
-
     socket.on("leave_live_room", async (roomId) => {
       try {
         const roomName = `live_room:${roomId}`;
@@ -162,14 +174,10 @@ export const initSocket = (server: any) => {
         activeLiveRoomId = null;
         
         // Notify others
-        io.to(roomName).emit("user_left_room", { userId, roomId });
+        io.to(roomName).emit("user_left_room", { userId: String(userId), roomId });
         
-        // Update room active count in DB
-        const sockets = await io.in(roomName).fetchSockets();
-        await Room.findByIdAndUpdate(roomId, { 
-          activeCount: sockets.length,
-          $pull: { participants: userId }
-        });
+        // Refresh list for others
+        await broadcastRoomParticipants(roomId);
       } catch (err) {
         console.error("Leave room error:", err);
       }
@@ -273,15 +281,11 @@ export const initSocket = (server: any) => {
       if (activeLiveRoomId) {
         const roomId = activeLiveRoomId;
         const roomName = `live_room:${roomId}`;
-        io.to(roomName).emit("user_left_room", { userId, roomId });
+        io.to(roomName).emit("user_left_room", { userId: String(userId), roomId });
         
-        // Update count
+        // Update count and re-broadcast
         try {
-          const sockets = await io.in(roomName).fetchSockets();
-          await Room.findByIdAndUpdate(roomId, { 
-            activeCount: sockets.length,
-            $pull: { participants: userId }
-          });
+          await broadcastRoomParticipants(roomId);
         } catch (err) {
           console.error("Disconnect room update error:", err);
         }

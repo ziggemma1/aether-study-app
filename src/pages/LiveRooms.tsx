@@ -45,6 +45,11 @@ export default function LiveRooms() {
   
   const socketRef = useRef<any>(null);
   const activeRoomIdRef = useRef<string | null>(null);
+  const userRef = useRef<any>(null);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     activeRoomIdRef.current = activeRoomId;
@@ -99,30 +104,40 @@ export default function LiveRooms() {
         const handleUserJoined = (data: { user: RoomParticipant, roomId: string }) => {
           console.log("User joined room event received:", data.user);
           const incomingId = String(data.user.id || (data.user as any)._id);
+          const currentUserId = String(userRef.current?.id || (userRef.current as any)?._id || '');
+          const pName = data.user.name || 'Anonymous';
           
+          const normalizedUser: RoomParticipant = {
+            ...data.user,
+            id: incomingId,
+            name: pName,
+            avatar: data.user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${pName}-${incomingId}`,
+            isMe: incomingId === currentUserId
+          };
+
           setParticipants(prev => {
             if (prev.find(p => String(p.id) === incomingId)) return prev;
-            const myId = String(user?.id || (user as any)?._id);
-            const isMe = incomingId === myId;
-            return [...prev, { ...data.user, id: incomingId, isMe }];
+            return [...prev, normalizedUser];
           });
           
-          const myId = String(user?.id || (user as any)?._id);
-          if (incomingId !== myId) {
-            showToast(`${data.user.name} joined the room!`);
+          if (incomingId !== currentUserId) {
+            showToast(`${pName} joined the room!`);
           }
         };
 
         const handleRoomParticipants = (data: { roomId: string, participants: RoomParticipant[] }) => {
           console.log("Received participants list:", data.participants);
-          const myId = String(user?.id || (user as any)?._id);
+          const currentUserId = String(userRef.current?.id || (userRef.current as any)?._id || '');
           
           const normalized: RoomParticipant[] = data.participants.map(p => {
             const pId = String(p.id || (p as any)._id);
+            const pName = p.name || 'Anonymous';
             return {
               ...p,
               id: pId,
-              isMe: pId === myId
+              name: pName,
+              avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${pName}-${pId}`,
+              isMe: pId === currentUserId
             };
           });
           
