@@ -112,11 +112,14 @@ export default function LiveRooms() {
             id: incomingId,
             name: pName,
             avatar: data.user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${pName}-${incomingId}`,
+            instanceId: (data.user as any).instanceId,
             isMe: incomingId === currentUserId
           };
 
           setParticipants(prev => {
-            if (prev.find(p => String(p.id) === incomingId)) return prev;
+            const instanceId = normalizedUser.instanceId;
+            if (instanceId && prev.find(p => (p as any).instanceId === instanceId)) return prev;
+            if (!instanceId && prev.find(p => String(p.id) === incomingId)) return prev;
             return [...prev, normalizedUser];
           });
           
@@ -137,7 +140,8 @@ export default function LiveRooms() {
               id: pId,
               name: pName,
               avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${pName}-${pId}`,
-              isMe: pId === currentUserId
+              isMe: pId === currentUserId,
+              instanceId: (p as any).instanceId
             };
           });
           
@@ -363,7 +367,7 @@ export default function LiveRooms() {
                  <AnimatePresence>
                    {participants.map((p, idx) => (
                      <motion.div 
-                       key={p.id}
+                       key={(p as any).instanceId || p.id}
                        initial={{ opacity: 0, scale: 0.8 }}
                        animate={{ opacity: 1, scale: 1 }}
                        exit={{ opacity: 0, scale: 0.8 }}
@@ -416,7 +420,7 @@ export default function LiveRooms() {
            <div className="p-4 bg-black/40 backdrop-blur-xl border-t border-white/5 flex items-center justify-between relative z-10">
               <div className="flex -space-x-2">
                 {participants.slice(0, 5).map(p => (
-                  <img key={p.id} src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-8 h-8 rounded-full border-2 border-slate-900" title={p.name} />
+                  <img key={(p as any).instanceId || p.id} src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-8 h-8 rounded-full border-2 border-slate-900" title={p.name} />
                 ))}
                 {participants.length > 5 && <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-bold text-white">+{participants.length - 5}</div>}
               </div>

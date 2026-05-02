@@ -108,11 +108,12 @@ export const initSocket = (server: any) => {
         }
         
         if (pUser) {
-          // If the user has multiple sockets, we only want to show them once in the list for others
-          // but we might want to store all sockets if we needed to track specific device states
-          participantsMap.set(pUser.id, {
+          // Use instance ID (socket.id) to ensure we see every connection
+          // This helps verify multi-tab testing works and ensures everyone is seen
+          const instanceId = s.id;
+          participantsMap.set(instanceId, {
             ...pUser,
-            socketId: s.id // Add socketId for debugging if needed
+            instanceId: instanceId
           });
         }
       }
@@ -122,9 +123,11 @@ export const initSocket = (server: any) => {
       
       // Update room active count in DB
       try {
+        // Unique user IDs for the DB participants list
+        const uniqueUserIds = Array.from(new Set(participants.map(p => p.id)));
         await Room.findByIdAndUpdate(roomId, { 
           activeCount: participants.length,
-          participants: participants.map(p => p.id)
+          participants: uniqueUserIds
         });
       } catch (dbErr) {
         console.error("DB Room Update Error:", dbErr);
