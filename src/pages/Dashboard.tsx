@@ -73,7 +73,7 @@ export default function Dashboard() {
   // Data Tracking Calculations (mirrored from Reports)
   const calculatedStudyMins = Array.isArray(studySessions) ? studySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0) : 0;
   // If the user hasn't tracked any active study sessions natively, fall back to parsing their base user profile object
-  const fallbackMins = (user?.totalStudyTime || 0) * 60;
+  const fallbackMins = (user?.totalStudyTime || 0);
   const totalStudyMinutes = calculatedStudyMins > 0 ? calculatedStudyMins : fallbackMins; 
   
   // Real life dynamic active week processing for the bar chart

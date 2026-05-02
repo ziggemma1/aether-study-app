@@ -8,6 +8,10 @@ export const getSocket = (token?: string) => {
     socket.disconnect().connect();
   }
 
+  if (socket && !socket.connected) {
+    socket.connect();
+  }
+
   if (!socket) {
     const origin = window.location.origin;
     

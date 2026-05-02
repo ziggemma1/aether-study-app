@@ -37,9 +37,14 @@ export const createResult = async (req: Request, res: Response) => {
       const lowest = Math.min(...results.map(r => r.score || 0));
 
       await User.findByIdAndUpdate(userId, {
-        avgQuizScore: avgScore,
-        highestQuizScore: highest,
-        lowestQuizScore: lowest
+        $set: {
+          avgQuizScore: avgScore,
+          highestQuizScore: highest,
+          lowestQuizScore: lowest
+        },
+        $inc: {
+          aetherPoints: (req.body.score || 0) * 10
+        }
       });
     }
 

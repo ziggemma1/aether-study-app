@@ -77,7 +77,7 @@ export default function Reports() {
 
   // Calculate real stats
   const calculatedStudyMins = safeStudySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
-  const fallbackMins = (user?.totalStudyTime || 0) * 60;
+  const fallbackMins = (user?.totalStudyTime || 0);
   const totalStudyMinutes = calculatedStudyMins > 0 ? calculatedStudyMins : fallbackMins; 
   
   const displayHours = Math.floor(totalStudyMinutes / 60);
@@ -98,8 +98,8 @@ export default function Reports() {
 
   const totalPoints = safeQuizResults.reduce((acc, curr) => acc + (curr.score * 10), 0);
 
-  // Global Ranking calculation based on streaks (allProfiles is already sorted by streak DESC from backend)
-  const myRankIndex = safeAllProfiles.findIndex(p => p.id === user?.id);
+  const filteredProfiles = safeAllProfiles.filter(p => p.optedInLeaderboard || (user && (p.id === user.id || (p as any)._id === user.id)));
+  const myRankIndex = filteredProfiles.findIndex(p => p.id === user?.id || (p as any)._id === user?.id);
   const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
   
   // Accuracy breakdown
