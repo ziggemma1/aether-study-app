@@ -77,12 +77,14 @@ export const initSocket = (server: any) => {
       const sockets = await io.in(roomName).fetchSockets();
       const participantsMap = new Map();
       
+      console.log(`Checking participants for room ${roomName}. Found ${sockets.length} sockets.`);
+      
       for (const s of sockets) {
         const pUserId = s.data.userId ? String(s.data.userId) : null;
-        if (!pUserId) continue;
+        // Even if pUserId is missing, we should probably try to identify the socket
         
         let pUser = s.data.user;
-        if (!pUser) {
+        if (!pUser && pUserId) {
           try {
             const dbUser = await User.findById(pUserId).select('name avatar');
             if (dbUser) {
@@ -93,7 +95,6 @@ export const initSocket = (server: any) => {
               };
               s.data.user = pUser;
             } else {
-              // Fallback for user not found in DB
               pUser = {
                 id: pUserId,
                 name: `Learner ${pUserId.slice(-4)}`,
@@ -103,17 +104,24 @@ export const initSocket = (server: any) => {
             }
           } catch (err) {
             console.error(`Error fetching user ${pUserId}:`, err);
-            continue;
           }
         }
         
         if (pUser) {
-          // Use instance ID (socket.id) to ensure we see every connection
-          // This helps verify multi-tab testing works and ensures everyone is seen
+          // Use instance ID (socket.id) as the key to allow multiple connections from the same user
           const instanceId = s.id;
           participantsMap.set(instanceId, {
             ...pUser,
             instanceId: instanceId
+          });
+        } else {
+          // Last resort fallback for unidentifiable but connected socket
+          const instanceId = s.id;
+          participantsMap.set(instanceId, {
+            id: `anon-${instanceId.slice(-4)}`,
+            name: "Learner",
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${instanceId}`,
+            instanceId
           });
         }
       }
@@ -123,8 +131,7 @@ export const initSocket = (server: any) => {
       
       // Update room active count in DB
       try {
-        // Unique user IDs for the DB participants list
-        const uniqueUserIds = Array.from(new Set(participants.map(p => p.id)));
+        const uniqueUserIds = Array.from(new Set(participants.filter(p => !p.id.startsWith('anon-')).map(p => p.id)));
         await Room.findByIdAndUpdate(roomId, { 
           activeCount: participants.length,
           participants: uniqueUserIds
@@ -158,7 +165,12 @@ export const initSocket = (server: any) => {
         const participants = await broadcastRoomParticipants(roomId);
   
         // Also notify about the specific join for the toast
-        const user = socket.data.user || { id: String(userId), name: "Learner", avatar: "" };
+        // IMPORTANT: Include instanceId (socket.id) to distinguish between connections of same user
+        const user = {
+          ...(socket.data.user || { id: String(userId), name: "Learner", avatar: "" }),
+          instanceId: socket.id
+        };
+        
         socket.to(roomName).emit("user_joined_room", { 
           roomId, 
           user
@@ -177,7 +189,11 @@ export const initSocket = (server: any) => {
         activeLiveRoomId = null;
         
         // Notify others
-        io.to(roomName).emit("user_left_room", { userId: String(userId), roomId });
+        io.to(roomName).emit("user_left_room", { 
+          userId: String(userId), 
+          roomId,
+          instanceId: socket.id 
+        });
         
         // Refresh list for others
         await broadcastRoomParticipants(roomId);
@@ -284,7 +300,11 @@ export const initSocket = (server: any) => {
       if (activeLiveRoomId) {
         const roomId = activeLiveRoomId;
         const roomName = `live_room:${roomId}`;
-        io.to(roomName).emit("user_left_room", { userId: String(userId), roomId });
+        io.to(roomName).emit("user_left_room", { 
+          userId: String(userId), 
+          roomId,
+          instanceId: socket.id
+        });
         
         // Update count and re-broadcast
         try {

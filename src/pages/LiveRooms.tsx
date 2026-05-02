@@ -13,6 +13,7 @@ interface RoomParticipant {
   avatar: string;
   status?: string;
   isMe?: boolean;
+  instanceId?: string;
 }
 
 interface RoomData {
@@ -118,8 +119,12 @@ export default function LiveRooms() {
 
           setParticipants(prev => {
             const instanceId = normalizedUser.instanceId;
+            // If we have an instanceId, check for that exact connection
             if (instanceId && prev.find(p => (p as any).instanceId === instanceId)) return prev;
+            // If no instanceId, fallback to user ID check (less accurate)
             if (!instanceId && prev.find(p => String(p.id) === incomingId)) return prev;
+            
+            console.log(`Adding new participant connection: ${normalizedUser.name} (${normalizedUser.instanceId})`);
             return [...prev, normalizedUser];
           });
           
@@ -148,10 +153,18 @@ export default function LiveRooms() {
           setParticipants(normalized);
         };
 
-        const handleUserLeft = (data: { userId: string, roomId: string }) => {
-          console.log("User left room:", data.userId);
-          const leftId = String(data.userId);
-          setParticipants(prev => prev.filter(p => String(p.id) !== leftId && String((p as any)._id) !== leftId));
+        const handleUserLeft = (data: { userId: string, roomId: string, instanceId?: string }) => {
+          console.log("User left room:", data.userId, data.instanceId);
+          const leftUserId = String(data.userId);
+          const leftInstanceId = data.instanceId;
+          
+          setParticipants(prev => {
+            if (leftInstanceId) {
+              return prev.filter(p => (p as any).instanceId !== leftInstanceId);
+            }
+            // Fallback for broad removals (caution: hits all connections of same user)
+            return prev.filter(p => String(p.id) !== leftUserId && String((p as any)._id) !== leftUserId);
+          });
         };
 
         const handleNudge = (data: { fromUserId: string, fromUserName?: string }) => {

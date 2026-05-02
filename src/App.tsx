@@ -4,6 +4,8 @@
  */
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import posthog from 'posthog-js';
 import { AppProvider } from './context/AppContext';
 import AppLayout from './components/AppLayout';
 import LandingPage from './pages/LandingPage';
@@ -33,6 +35,15 @@ import LiveRooms from './pages/LiveRooms';
 import Explore from './pages/Explore';
 
 export default function App() {
+  useEffect(() => {
+    if (import.meta.env.VITE_POSTHOG_KEY) {
+      posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
+        api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com',
+        person_profiles: 'identified_only',
+        capture_pageview: true,
+      });
+    }
+  }, []);
 
   return (
     <AppProvider>
