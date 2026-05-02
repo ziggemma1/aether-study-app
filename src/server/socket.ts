@@ -37,7 +37,7 @@ export const initSocket = (server: any) => {
     try {
       const secret = process.env.JWT_SECRET || 'secret';
       const decoded = jwt.verify(token, secret) as any;
-      (socket as any).userId = decoded.id;
+      socket.data.userId = decoded.id; // Use official data property for cross-process access
       next();
     } catch (err) {
       console.error("Socket Auth Error:", (err as Error).message);
@@ -47,7 +47,7 @@ export const initSocket = (server: any) => {
 
 
   io.on("connection", (socket) => {
-    const userId = (socket as any).userId;
+    const userId = socket.data.userId;
     console.log(`User connected: ${userId}`);
 
     // Track active live room for this socket
@@ -59,20 +59,23 @@ export const initSocket = (server: any) => {
     // LIVE ROOMS LOGIC
     socket.on("join_live_room", async (roomId) => {
       activeLiveRoomId = roomId;
-      socket.join(`live_room:${roomId}`);
+      await socket.join(`live_room:${roomId}`);
       const user = await User.findById(userId).select('name avatar');
       
-      const clients = io.sockets.adapter.rooms.get(`live_room:${roomId}`);
+      // Use fetchSockets for distributed room member tracking
+      const sockets = await io.in(`live_room:${roomId}`).fetchSockets();
       const participants = [];
-      if (clients) {
-        for (const clientId of clients) {
-          const clientSocket = io.sockets.sockets.get(clientId);
-          if (clientSocket && (clientSocket as any).userId) {
-            const clientUserId = (clientSocket as any).userId;
-            const pUser = await User.findById(clientUserId).select('name avatar');
-            if (pUser) {
-              participants.push({ id: clientUserId.toString(), name: pUser.name, avatar: pUser.avatar });
-            }
+      
+      for (const s of sockets) {
+        const clientUserId = s.data.userId;
+        if (clientUserId) {
+          const pUser = await User.findById(clientUserId).select('name avatar');
+          if (pUser) {
+            participants.push({ 
+              id: clientUserId.toString(), 
+              name: pUser.name, 
+              avatar: pUser.avatar 
+            });
           }
         }
       }
