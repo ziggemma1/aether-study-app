@@ -92,7 +92,7 @@ export default function MaterialDetail() {
                      !material.keyTopics?.length;
 
   return (
-    <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24 relative">
+    <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24 relative bg-surface-alt rounded-[40px] md:rounded-[64px] mb-10 border border-border/10">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

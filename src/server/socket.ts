@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { Message } from "./models/Message.js";
 import { Group } from "./models/Group.js";
 import { User } from "./models/User.js";
+import Room from "./models/Room.js";
 import jwt from "jsonwebtoken";
 
 export const initSocket = (server: any) => {
@@ -58,42 +59,85 @@ export const initSocket = (server: any) => {
 
     // LIVE ROOMS LOGIC
     socket.on("join_live_room", async (roomId) => {
-      activeLiveRoomId = roomId;
-      await socket.join(`live_room:${roomId}`);
-      const user = await User.findById(userId).select('name avatar');
-      
-      // Use fetchSockets for distributed room member tracking
-      const sockets = await io.in(`live_room:${roomId}`).fetchSockets();
-      const participants = [];
-      
-      for (const s of sockets) {
-        const clientUserId = s.data.userId;
-        if (clientUserId) {
-          const pUser = await User.findById(clientUserId).select('name avatar');
+      try {
+        const roomName = `live_room:${roomId}`;
+        activeLiveRoomId = roomId;
+        await socket.join(roomName);
+        
+        let user = socket.data.user;
+        if (!user) {
+          user = await User.findById(userId).select('name avatar');
+          socket.data.user = user;
+        }
+        
+        // Fetch all sockets in this room to get current participants
+        const sockets = await io.in(roomName).fetchSockets();
+        const participantsMap = new Map();
+        
+        for (const s of sockets) {
+          const pUserId = s.data.userId;
+          if (!pUserId) continue;
+          
+          let pUser = s.data.user;
+          if (!pUser) {
+            pUser = await User.findById(pUserId).select('name avatar');
+            s.data.user = pUser;
+          }
+          
           if (pUser) {
-            participants.push({ 
-              id: clientUserId.toString(), 
-              name: pUser.name, 
-              avatar: pUser.avatar 
+            participantsMap.set(pUserId.toString(), {
+              id: pUserId.toString(),
+              name: pUser.name,
+              avatar: pUser.avatar
             });
           }
         }
+        
+        const participants = Array.from(participantsMap.values());
+        
+        // Update room active count in DB
+        try {
+          await Room.findByIdAndUpdate(roomId, { 
+            activeCount: participants.length,
+            $addToSet: { participants: userId } 
+          });
+        } catch (dbErr) {
+          console.error("DB Room Update Error:", dbErr);
+        }
+        
+        // Send current list to the new joiner
+        socket.emit("room_participants", { roomId, participants });
+  
+        // Notify others that someone joined
+        io.to(roomName).emit("user_joined_room", { 
+          roomId, 
+          user: { id: userId.toString(), name: user?.name, avatar: user?.avatar } 
+        });
+        
+        console.log(`User ${userId} joined live room: ${roomId}. Total: ${participants.length}`);
+      } catch (err) {
+        console.error("Join room error:", err);
       }
-      
-      const uniqueParticipants = Array.from(new Map(participants.map(p => [p.id, p])).values());
-      socket.emit("room_participants", { roomId, participants: uniqueParticipants });
-
-      io.to(`live_room:${roomId}`).emit("user_joined_room", { 
-        roomId, 
-        user: { id: userId.toString(), name: user?.name, avatar: user?.avatar } 
-      });
-      console.log(`User ${userId} joined live room: ${roomId}`);
     });
 
-    socket.on("leave_live_room", (roomId) => {
-      socket.leave(`live_room:${roomId}`);
-      activeLiveRoomId = null;
-      io.to(`live_room:${roomId}`).emit("user_left_room", { userId, roomId });
+    socket.on("leave_live_room", async (roomId) => {
+      try {
+        const roomName = `live_room:${roomId}`;
+        socket.leave(roomName);
+        activeLiveRoomId = null;
+        
+        // Notify others
+        io.to(roomName).emit("user_left_room", { userId, roomId });
+        
+        // Update room active count in DB
+        const sockets = await io.in(roomName).fetchSockets();
+        await Room.findByIdAndUpdate(roomId, { 
+          activeCount: sockets.length,
+          $pull: { participants: userId }
+        });
+      } catch (err) {
+        console.error("Leave room error:", err);
+      }
     });
 
     socket.on("sync_pomodoro", (data) => {
@@ -190,9 +234,22 @@ export const initSocket = (server: any) => {
       }
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       if (activeLiveRoomId) {
-        io.to(`live_room:${activeLiveRoomId}`).emit("user_left_room", { userId, roomId: activeLiveRoomId });
+        const roomId = activeLiveRoomId;
+        const roomName = `live_room:${roomId}`;
+        io.to(roomName).emit("user_left_room", { userId, roomId });
+        
+        // Update count
+        try {
+          const sockets = await io.in(roomName).fetchSockets();
+          await Room.findByIdAndUpdate(roomId, { 
+            activeCount: sockets.length,
+            $pull: { participants: userId }
+          });
+        } catch (err) {
+          console.error("Disconnect room update error:", err);
+        }
       }
       console.log(`User disconnected: ${userId}`);
     });

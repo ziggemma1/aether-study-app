@@ -3,13 +3,18 @@ import { io, Socket } from "socket.io-client";
 let socket: Socket | null = null;
 
 export const getSocket = (token?: string) => {
+  if (socket && token && (!socket.auth || (socket.auth as any).token !== token)) {
+    (socket.auth as any) = { token };
+    socket.disconnect().connect();
+  }
+
   if (!socket) {
     const origin = window.location.origin;
     socket = io(origin, {
       auth: token ? { token } : undefined,
       autoConnect: true,
       reconnection: true,
-      transports: ['websocket'], // Force websocket
+      transports: ['websocket'],
       withCredentials: true
     });
 

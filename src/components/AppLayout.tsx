@@ -3,7 +3,6 @@ import { Outlet, Link } from 'react-router-dom';
 import TopNav from './TopNav';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
-import InteractiveBackground from './InteractiveBackground';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import { Database, ArrowRight, Loader2, Sparkles, WifiOff, CheckCircle2, AlertCircle } from 'lucide-react';

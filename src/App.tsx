@@ -32,14 +32,11 @@ import Leaderboard from './pages/Leaderboard';
 import LiveRooms from './pages/LiveRooms';
 import Explore from './pages/Explore';
 
-import InteractiveBackground from './components/InteractiveBackground';
-
 export default function App() {
 
   return (
     <AppProvider>
       <Router>
-        <InteractiveBackground />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />

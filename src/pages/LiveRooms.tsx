@@ -88,31 +88,36 @@ export default function LiveRooms() {
       const socket = socketRef.current;
       if (socket) {
         const handleUserJoined = (data: { user: RoomParticipant, roomId: string }) => {
-          // Use a closure or check state more robustly. For now, if we are in a room, 
-          // we should listen to join events for that room.
+          console.log("User joined room:", data.user);
+          const incomingId = String(data.user.id || (data.user as any)._id);
+          
           setParticipants(prev => {
-            const userId = data.user.id || (data.user as any)._id;
-            if (prev.find(p => p.id === userId)) return prev;
-            const myId = user?.id || (user as any)?._id;
-            const isMe = userId === myId;
-            return [...prev, { ...data.user, id: userId, isMe }];
+            if (prev.find(p => String(p.id) === incomingId)) return prev;
+            const myId = String(user?.id || (user as any)?._id);
+            const isMe = incomingId === myId;
+            return [...prev, { ...data.user, id: incomingId, isMe }];
           });
           
-          const myId = user?.id || (user as any)?._id;
-          if (data.user.id !== myId && (data.user as any)._id !== myId) {
+          const myId = String(user?.id || (user as any)?._id);
+          if (incomingId !== myId) {
             showToast(`${data.user.name} joined the room!`);
           }
         };
 
         const handleRoomParticipants = (data: { roomId: string, participants: RoomParticipant[] }) => {
-          const myId = user?.id || (user as any)?._id;
-          const normalized: RoomParticipant[] = data.participants.map(p => ({
-            ...p,
-            id: p.id || (p as any)._id,
-            isMe: (p.id || (p as any)._id) === myId
-          }));
+          console.log("Received participants list:", data.participants);
+          const myId = String(user?.id || (user as any)?._id);
+          const normalized: RoomParticipant[] = data.participants.map(p => {
+            const pId = String(p.id || (p as any)._id);
+            return {
+              ...p,
+              id: pId,
+              isMe: pId === myId
+            };
+          });
           
           setParticipants(prev => {
+            // Merge logic: prefer normalized from server, but keep "isMe" local state if needed
             const merged = [...normalized];
             const me = prev.find(p => p.isMe);
             if (me && !merged.find(p => p.isMe)) {
@@ -123,7 +128,9 @@ export default function LiveRooms() {
         };
 
         const handleUserLeft = (data: { userId: string, roomId: string }) => {
-          setParticipants(prev => prev.filter(p => p.id !== data.userId && (p as any)._id !== data.userId));
+          console.log("User left room:", data.userId);
+          const leftId = String(data.userId);
+          setParticipants(prev => prev.filter(p => String(p.id) !== leftId && String((p as any)._id) !== leftId));
         };
 
         const handleNudge = (data: { fromUserId: string, fromUserName?: string }) => {
@@ -163,8 +170,9 @@ export default function LiveRooms() {
   const handleJoin = (roomId: string) => {
     setActiveRoomId(roomId);
     setInRoom(true);
+    const myId = String(user?.id || (user as any)?._id || 'me');
     setParticipants([{ 
-      id: user?.id || (user as any)?._id || 'me', 
+      id: myId, 
       name: user?.name || 'You', 
       avatar: user?.avatar || '', 
       isMe: true 

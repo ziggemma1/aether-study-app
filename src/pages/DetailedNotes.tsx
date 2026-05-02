@@ -185,7 +185,7 @@ export default function DetailedNotes() {
   };
 
   return (
-    <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24 relative">
+    <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto pb-24 relative bg-surface-alt rounded-[40px] md:rounded-[64px] mb-10 border border-border/10">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -260,7 +260,6 @@ export default function DetailedNotes() {
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 className="glass-card shadow-2xl p-6 sm:p-12 relative border-t-8 border-primary"
               >
-                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-accent opacity-50" />
                 
                 <div className="space-y-10">
                   <header className="space-y-4">
@@ -301,7 +300,6 @@ export default function DetailedNotes() {
                         className="w-full h-[300px] object-cover transform group-hover:scale-[1.02] transition-transform duration-1000"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-60 pointer-events-none" />
                       <div className="absolute bottom-4 left-4 right-4 bg-surface/60 backdrop-blur-xl p-3 flex items-center justify-center gap-2 border border-white/10 rounded-2xl">
                         <Sparkles size={14} className="text-secondary" />
                         <p className="text-[10px] text-white font-bold italic tracking-wide">
@@ -311,7 +309,7 @@ export default function DetailedNotes() {
                     </motion.div>
                   )}
 
-                  <div className="markdown-body text-text-main selection:bg-primary/30">
+                  <div className="markdown-body text-text-main selection:bg-primary/30 p-2 sm:p-4 bg-white/10 dark:bg-black/5 rounded-2xl">
                     <ReactMarkdown>
                       {isELI5 && eli5Content[currentPage] 
                         ? eli5Content[currentPage] 
