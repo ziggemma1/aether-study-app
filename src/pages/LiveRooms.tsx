@@ -44,6 +44,11 @@ export default function LiveRooms() {
   const [newRoom, setNewRoom] = useState({ name: '', topic: 'General' });
   
   const socketRef = useRef<any>(null);
+  const activeRoomIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    activeRoomIdRef.current = activeRoomId;
+  }, [activeRoomId]);
 
   useEffect(() => {
     fetchRooms();
@@ -82,61 +87,73 @@ export default function LiveRooms() {
       
       const socket = socketRef.current;
       if (socket) {
-        socket.on("user_joined_room", (data: { user: RoomParticipant, roomId: string }) => {
-          if (data.roomId === activeRoomId) {
+        const handleUserJoined = (data: { user: RoomParticipant, roomId: string }) => {
+          if (data.roomId === activeRoomIdRef.current) {
             setParticipants(prev => {
-              if (prev.find(p => p.id === data.user.id)) return prev;
-              const isMe = data.user.id === (user?.id || (user as any)?._id);
-              return [...prev, { ...data.user, isMe }];
+              const userId = data.user.id || (data.user as any)._id;
+              if (prev.find(p => p.id === userId)) return prev;
+              const myId = user?.id || (user as any)?._id;
+              const isMe = userId === myId;
+              return [...prev, { ...data.user, id: userId, isMe }];
             });
-            if (data.user.id !== (user?.id || (user as any)?._id)) {
+            const myId = user?.id || (user as any)?._id;
+            if (data.user.id !== myId && (data.user as any)._id !== myId) {
               showToast(`${data.user.name} joined the room!`);
             }
           }
-        });
+        };
 
-        socket.on("room_participants", (data: { roomId: string, participants: RoomParticipant[] }) => {
-          if (data.roomId === activeRoomId) {
-             setParticipants(prev => {
-               const myId = user?.id || (user as any)?._id;
-               const newParticipants = data.participants.map(p => ({
-                 ...p,
-                 isMe: p.id === myId
-               }));
-               // Merge with previous to not lose local states if any
-               const prevIds = new Set(prev.map(p => p.id));
-               newParticipants.forEach(p => {
-                 if (!prevIds.has(p.id)) prev.push(p);
-               });
-               return [...newParticipants]; // using server's master list
-             });
+        const handleRoomParticipants = (data: { roomId: string, participants: RoomParticipant[] }) => {
+          if (data.roomId === activeRoomIdRef.current) {
+             const myId = user?.id || (user as any)?._id;
+             const normalized = data.participants.map(p => ({
+               ...p,
+               id: p.id || (p as any)._id,
+               isMe: (p.id || (p as any)._id) === myId
+             }));
+             setParticipants(normalized);
           }
-        });
+        };
 
-        socket.on("user_left_room", (data: { userId: string, roomId: string }) => {
-          if (data.roomId === activeRoomId) {
-            setParticipants(prev => prev.filter(p => p.id !== data.userId));
+        const handleUserLeft = (data: { userId: string, roomId: string }) => {
+          if (data.roomId === activeRoomIdRef.current) {
+            setParticipants(prev => prev.filter(p => p.id !== data.userId && (p as any)._id !== data.userId));
           }
-        });
+        };
 
-        socket.on("received_nudge", (data: { fromUserId: string, fromUserName?: string }) => {
+        const handleNudge = (data: { fromUserId: string, fromUserName?: string }) => {
           const phrase = ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
           showToast(`${data.fromUserName || 'A friend'} nudged you! ${phrase} 🔔`, 'success');
-          // Mobile optimized: Vibrate on nudge
           if (window.navigator?.vibrate) {
             window.navigator.vibrate([200, 100, 200]);
           }
-        });
+        };
+
+        socket.on("user_joined_room", handleUserJoined);
+        socket.on("room_participants", handleRoomParticipants);
+        socket.on("user_left_room", handleUserLeft);
+        socket.on("received_nudge", handleNudge);
 
         return () => {
-          socket.off("user_joined_room");
-          socket.off("room_participants");
-          socket.off("user_left_room");
-          socket.off("received_nudge");
+          socket.off("user_joined_room", handleUserJoined);
+          socket.off("room_participants", handleRoomParticipants);
+          socket.off("user_left_room", handleUserLeft);
+          socket.off("received_nudge", handleNudge);
         };
       }
     }
-  }, [user, activeRoomId, allProfiles]);
+  }, [user]);
+
+  useEffect(() => {
+    if (activeRoomId && socketRef.current) {
+      socketRef.current.emit("join_live_room", activeRoomId);
+    }
+    return () => {
+      if (activeRoomId && socketRef.current) {
+        socketRef.current.emit("leave_live_room", activeRoomId);
+      }
+    };
+  }, [activeRoomId]);
 
   const handleJoin = (roomId: string) => {
     setActiveRoomId(roomId);
@@ -148,9 +165,6 @@ export default function LiveRooms() {
       isMe: true 
     }]);
     
-    if (socketRef.current) {
-      socketRef.current.emit("join_live_room", roomId);
-    }
     showToast('Entered Live Room!');
   };
 

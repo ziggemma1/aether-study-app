@@ -50,11 +50,15 @@ export const initSocket = (server: any) => {
     const userId = (socket as any).userId;
     console.log(`User connected: ${userId}`);
 
+    // Track active live room for this socket
+    let activeLiveRoomId: string | null = null;
+
     // Join personal room for 1-on-1 messages
     socket.join(userId);
 
     // LIVE ROOMS LOGIC
     socket.on("join_live_room", async (roomId) => {
+      activeLiveRoomId = roomId;
       socket.join(`live_room:${roomId}`);
       const user = await User.findById(userId).select('name avatar');
       
@@ -67,24 +71,25 @@ export const initSocket = (server: any) => {
             const clientUserId = (clientSocket as any).userId;
             const pUser = await User.findById(clientUserId).select('name avatar');
             if (pUser) {
-              participants.push({ id: clientUserId, name: pUser.name, avatar: pUser.avatar });
+              participants.push({ id: clientUserId.toString(), name: pUser.name, avatar: pUser.avatar });
             }
           }
         }
       }
       
-      const uniqueParticipants = Array.from(new Map(participants.map(p => [p.id.toString(), p])).values());
+      const uniqueParticipants = Array.from(new Map(participants.map(p => [p.id, p])).values());
       socket.emit("room_participants", { roomId, participants: uniqueParticipants });
 
       io.to(`live_room:${roomId}`).emit("user_joined_room", { 
         roomId, 
-        user: { id: userId, name: user?.name, avatar: user?.avatar } 
+        user: { id: userId.toString(), name: user?.name, avatar: user?.avatar } 
       });
       console.log(`User ${userId} joined live room: ${roomId}`);
     });
 
     socket.on("leave_live_room", (roomId) => {
       socket.leave(`live_room:${roomId}`);
+      activeLiveRoomId = null;
       io.to(`live_room:${roomId}`).emit("user_left_room", { userId, roomId });
     });
 
@@ -183,6 +188,9 @@ export const initSocket = (server: any) => {
     });
 
     socket.on("disconnect", () => {
+      if (activeLiveRoomId) {
+        io.to(`live_room:${activeLiveRoomId}`).emit("user_left_room", { userId, roomId: activeLiveRoomId });
+      }
       console.log(`User disconnected: ${userId}`);
     });
   });
