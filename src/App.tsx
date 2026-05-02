@@ -38,7 +38,7 @@ export default function App() {
   useEffect(() => {
     if (import.meta.env.VITE_POSTHOG_KEY) {
       posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
-        api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com',
+        api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
         person_profiles: 'identified_only',
         capture_pageview: true,
       });
