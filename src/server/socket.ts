@@ -80,17 +80,20 @@ export const initSocket = (server: any) => {
           
           let pUser = s.data.user;
           if (!pUser) {
-            pUser = await User.findById(pUserId).select('name avatar');
-            s.data.user = pUser;
+            try {
+              pUser = await User.findById(pUserId).select('name avatar');
+              s.data.user = pUser;
+            } catch (err) {
+              console.error(`Error fetching user ${pUserId}:`, err);
+            }
           }
           
-          if (pUser) {
-            participantsMap.set(pUserId.toString(), {
-              id: pUserId.toString(),
-              name: pUser.name,
-              avatar: pUser.avatar
-            });
-          }
+          const participantId = String(pUserId);
+          participantsMap.set(participantId, {
+            id: participantId,
+            name: pUser?.name || `Learner ${participantId.slice(-4)}`,
+            avatar: pUser?.avatar || ""
+          });
         }
         
         const participants = Array.from(participantsMap.values());
@@ -99,19 +102,19 @@ export const initSocket = (server: any) => {
         try {
           await Room.findByIdAndUpdate(roomId, { 
             activeCount: participants.length,
-            $addToSet: { participants: userId } 
+            $addToSet: { participants: String(userId) } 
           });
         } catch (dbErr) {
           console.error("DB Room Update Error:", dbErr);
         }
         
-        // Send current list to the new joiner
-        socket.emit("room_participants", { roomId, participants });
+        // Send current list to EVERYONE in the room to ensure perfect sync
+        io.to(roomName).emit("room_participants", { roomId, participants });
   
-        // Notify others that someone joined
-        io.to(roomName).emit("user_joined_room", { 
+        // Also notify about the specific join for the toast
+        socket.to(roomName).emit("user_joined_room", { 
           roomId, 
-          user: { id: userId.toString(), name: user?.name, avatar: user?.avatar } 
+          user: { id: String(userId), name: user?.name, avatar: user?.avatar } 
         });
         
         console.log(`User ${userId} joined live room: ${roomId}. Total: ${participants.length}`);

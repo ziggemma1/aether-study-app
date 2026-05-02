@@ -87,8 +87,17 @@ export default function LiveRooms() {
       
       const socket = socketRef.current;
       if (socket) {
+        const joinRoomIfActive = () => {
+          if (activeRoomIdRef.current) {
+            console.log("Re-joining room after connect/reconnect:", activeRoomIdRef.current);
+            socket.emit("join_live_room", activeRoomIdRef.current);
+          }
+        };
+
+        socket.on("connect", joinRoomIfActive);
+
         const handleUserJoined = (data: { user: RoomParticipant, roomId: string }) => {
-          console.log("User joined room:", data.user);
+          console.log("User joined room event received:", data.user);
           const incomingId = String(data.user.id || (data.user as any)._id);
           
           setParticipants(prev => {
@@ -107,6 +116,7 @@ export default function LiveRooms() {
         const handleRoomParticipants = (data: { roomId: string, participants: RoomParticipant[] }) => {
           console.log("Received participants list:", data.participants);
           const myId = String(user?.id || (user as any)?._id);
+          
           const normalized: RoomParticipant[] = data.participants.map(p => {
             const pId = String(p.id || (p as any)._id);
             return {
@@ -116,15 +126,7 @@ export default function LiveRooms() {
             };
           });
           
-          setParticipants(prev => {
-            // Merge logic: prefer normalized from server, but keep "isMe" local state if needed
-            const merged = [...normalized];
-            const me = prev.find(p => p.isMe);
-            if (me && !merged.find(p => p.isMe)) {
-              merged.push(me);
-            }
-            return merged;
-          });
+          setParticipants(normalized);
         };
 
         const handleUserLeft = (data: { userId: string, roomId: string }) => {
@@ -146,7 +148,13 @@ export default function LiveRooms() {
         socket.on("user_left_room", handleUserLeft);
         socket.on("received_nudge", handleNudge);
 
+        // If socket is already connected when we register listeners, join
+        if (socket.connected) {
+          joinRoomIfActive();
+        }
+
         return () => {
+          socket.off("connect", joinRoomIfActive);
           socket.off("user_joined_room", handleUserJoined);
           socket.off("room_participants", handleRoomParticipants);
           socket.off("user_left_room", handleUserLeft);
