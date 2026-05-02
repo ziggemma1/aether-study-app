@@ -191,33 +191,33 @@ export default function DetailedNotes() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
       >
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors text-sm font-medium"
+            className="flex items-center gap-1 text-text-muted hover:text-primary transition-colors text-[10px] sm:text-sm font-bold uppercase tracking-wider"
           >
-            <ArrowLeft size={18} /> {t('back_to_library')}
+            <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" /> back
           </button>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2">
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className="flex items-center gap-2 px-4 py-2 bg-accent/10 text-accent hover:bg-accent/20 rounded-xl transition-all font-bold text-[10px] sm:text-sm disabled:opacity-50 border border-accent/20"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-accent/10 text-accent hover:bg-accent/20 rounded-xl transition-all font-bold text-[9px] sm:text-sm disabled:opacity-50 border border-accent/20"
               title={t('deep_analysis_tooltip')}
             >
-              {isRegenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              <div className="flex flex-col items-start leading-none">
+              {isRegenerating ? <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" /> : <Sparkles size={14} className="sm:w-4 sm:h-4" />}
+              <div className="flex flex-col items-start leading-none text-left">
                 <span>{t('deep_analysis')}</span>
-                <span className="text-[8px] opacity-60 font-medium">{t('beta_intensive')}</span>
+                <span className="hidden sm:block text-[8px] opacity-60 font-medium">{t('beta_intensive')}</span>
               </div>
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-all font-bold text-sm"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-all font-bold text-[10px] sm:text-sm"
             >
-              <Trash2 size={18} />
-              {t('delete')}
+              <Trash2 size={14} className="sm:w-[18px] sm:h-[18px]" />
+              <span className="hidden sm:inline">{t('delete')}</span>
             </button>
           </div>
         </div>
@@ -284,7 +284,7 @@ export default function DetailedNotes() {
                         {isELI5 ? 'Reading ELI5' : 'ELI5'}
                       </button>
                     </div>
-                    <h2 className="text-3xl sm:text-4xl font-extrabold text-text-main tracking-tight leading-none italic decoration-primary/30 underline decoration-4 underline-offset-8">
+                    <h2 className="font-extrabold text-text-main tracking-tight leading-none">
                       {sections[currentPage].heading}
                     </h2>
                   </header>

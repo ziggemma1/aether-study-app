@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Clock, Play, Pause, Save, Volume2, Headphones, ChevronUp, ChevronDown, Music, ShieldAlert } from 'lucide-react';
+import { Clock, Play, Pause, Save, Volume2, Headphones, ChevronUp, ChevronDown, Music, ShieldAlert, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
@@ -15,9 +15,13 @@ interface StudyTimerProps {
 
 const AMBIENT_TRACKS = [
   { id: 'none', label: 'No ambient', url: '' },
-  { id: 'rain', label: 'Rain Focus', url: 'https://actions.google.com/sounds/v1/weather/rain_on_roof.ogg' },
-  { id: 'cafe', label: 'Cafe Chatter', url: 'https://actions.google.com/sounds/v1/crowds/restaurant_ambience.ogg' },
-  { id: 'lofi', label: 'Lofi Chill', url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' }
+  { id: 'rain', label: 'Rain Focus', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/rain.mp3' },
+  { id: 'cafe', label: 'Cafe Chatter', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/cafe.mp3' },
+  { id: 'lofi', label: 'Lofi Chill', url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' },
+  { id: 'nature', label: 'Nature Birds', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/forest.mp3' },
+  { id: 'waves', label: 'Ocean Waves', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/ocean.mp3' },
+  { id: 'white_noise', label: 'White Noise', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/white-noise.mp3' },
+  { id: 'library', label: 'Old Library', url: 'https://cdn.jsdelivr.net/gh/scottschiller/SoundManager2/demo/_mp3/rain.mp3' }
 ];
 
 export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readContent }) => {
@@ -95,9 +99,41 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [deepFocus, isActive, ambientTrack]);
 
+  const [ambientVolume, setAmbientVolume] = useState(0.3);
+  const [isSelectingAmbient, setIsSelectingAmbient] = useState(false);
+  const [isAmbientLoading, setIsAmbientLoading] = useState(false);
+
+  // Audio event listeners
+  useEffect(() => {
+    if (!audioRef.current) return;
+
+    const audio = audioRef.current;
+    const onPlaying = () => setIsAmbientLoading(false);
+    const onLoadStart = () => {
+      if (ambientTrack.url) setIsAmbientLoading(true);
+    };
+    const onError = () => {
+      setIsAmbientLoading(false);
+      if (ambientTrack.url && isActive) {
+        showToast(`Failed to load: ${ambientTrack.label}`, "error");
+      }
+    };
+
+    audio.addEventListener('playing', onPlaying);
+    audio.addEventListener('loadstart', onLoadStart);
+    audio.addEventListener('error', onError);
+
+    return () => {
+      audio.removeEventListener('playing', onPlaying);
+      audio.removeEventListener('loadstart', onLoadStart);
+      audio.removeEventListener('error', onError);
+    };
+  }, [ambientTrack, isActive]);
+
   // Handle ambient track changes
   useEffect(() => {
     if (audioRef.current) {
+      audioRef.current.volume = ambientVolume;
       if (ambientTrack.url && isActive) {
         audioRef.current.src = ambientTrack.url;
         audioRef.current.play().catch(e => console.warn("Audio playback failed (likely due to missing user interaction):", e.message));
@@ -105,24 +141,31 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
         audioRef.current.pause();
       }
     }
-  }, [ambientTrack, isActive]);
+  }, [ambientTrack, isActive, ambientVolume]);
 
   const cycleAmbient = () => {
-    const nextIdx = (AMBIENT_TRACKS.findIndex(t => t.id === ambientTrack.id) + 1) % AMBIENT_TRACKS.length;
-    setAmbientTrack(AMBIENT_TRACKS[nextIdx]);
+    setIsSelectingAmbient(!isSelectingAmbient);
+  };
+
+  const selectAmbient = (track: typeof AMBIENT_TRACKS[0]) => {
+    setAmbientTrack(track);
+    setIsSelectingAmbient(false);
+    showToast(`Track: ${track.label}`, 'success');
   };
 
   useEffect(() => {
     if (!audioRef.current) {
        audioRef.current = new Audio();
        audioRef.current.loop = true;
-       audioRef.current.volume = 0.3; // keep ambient soft
+       audioRef.current.volume = ambientVolume;
+       audioRef.current.crossOrigin = "anonymous";
     }
     return () => {
        if (audioRef.current) {
          audioRef.current.pause();
+         audioRef.current.src = "";
        }
-    }
+    };
   }, []);
 
   useEffect(() => {
@@ -300,7 +343,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   }, []);
 
   return (
-    <div className="fixed bottom-[140px] right-4 z-[60] lg:bottom-8 lg:right-8 transition-transform hover:-translate-y-1 flex gap-2 items-end">
+    <div className="fixed bottom-40 right-6 z-[60] lg:bottom-8 lg:right-8 transition-transform hover:-translate-y-1 flex gap-2 items-end">
       
       {isExpanded && (
         <motion.div 
@@ -335,7 +378,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
              </div>
           )}
 
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-3 relative">
             <button 
               onClick={cycleAmbient}
               className={cn(
@@ -344,9 +387,54 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
               )}
               title={"Ambient: " + ambientTrack.label}
             >
-              <Music className="w-4 h-4" />
+              {isAmbientLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Music className="w-4 h-4" />
+              )}
             </button>
-            <span className="text-[10px] text-white/50 w-[68px] text-center leading-tight">{ambientTrack.label}</span>
+            <span className="text-[10px] text-white/50 w-[68px] text-center leading-tight truncate">{ambientTrack.label}</span>
+
+            {isSelectingAmbient && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, x: -10 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                className="absolute right-full mr-4 bottom-0 bg-slate-900 border border-white/10 rounded-2xl p-3 shadow-2xl flex flex-col gap-3 min-w-[160px] z-[70] max-h-[400px] overflow-y-auto scrollbar-hide"
+              >
+                <div className="flex flex-col gap-1.5 border-b border-white/10 pb-3 mb-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter">Volume</span>
+                    <span className="text-[10px] font-bold text-cyan-400">{Math.round(ambientVolume * 100)}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="1" 
+                    step="0.01" 
+                    value={ambientVolume}
+                    onChange={(e) => setAmbientVolume(parseFloat(e.target.value))}
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  {AMBIENT_TRACKS.map(track => (
+                    <button
+                      key={track.id}
+                      onClick={() => selectAmbient(track)}
+                      className={cn(
+                        "text-left px-3 py-2 rounded-lg text-xs font-bold transition-all truncate",
+                        ambientTrack.id === track.id 
+                          ? "bg-cyan-500 text-white" 
+                          : "text-text-muted hover:bg-white/5 hover:text-white"
+                      )}
+                    >
+                      {track.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </div>
 
           <div className="w-8 h-[1px] bg-white/10 my-1" />
@@ -371,7 +459,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
 
       <motion.div 
         layout
-        className="bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1.5 sm:p-3 shadow-2xl flex flex-col items-center relative overflow-hidden ring-1 ring-white/5 w-[52px] sm:w-[88px]"
+        className="bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1 sm:p-3 shadow-2xl flex flex-col items-center relative overflow-hidden ring-1 ring-white/5 w-12 sm:w-[88px]"
       >
         {/* Glow effect */}
         {isActive && (

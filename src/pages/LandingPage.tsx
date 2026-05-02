@@ -118,11 +118,11 @@ export default function LandingPage() {
             <p className="text-slate-400 text-lg mb-8 max-w-lg leading-relaxed">
               Not another note-taking app. A complete AI study system that thousands of students use to replace last-minute cramming with confident mastery.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <Link to="/signup" className="btn-primary">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link to="/signup" className="btn-primary w-full sm:w-auto text-center">
                 Join 10,000+ Students
               </Link>
-              <button className="btn-secondary">
+              <button className="btn-secondary w-full sm:w-auto text-center">
                 Read Reviews
               </button>
             </div>

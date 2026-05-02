@@ -13,7 +13,8 @@ import {
   Users2,
   Clock,
   TrendingUp,
-  Edit2
+  Edit2,
+  UserPlus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -164,16 +165,17 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div className="flex gap-2 justify-center sm:justify-start">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <button 
                   onClick={() => user && sendFriendRequest(user.id)}
-                  className="btn-primary px-6 py-2 sm:px-8 sm:py-3 shadow-lg shadow-primary/20 text-xs sm:text-base"
+                  className="btn-primary w-full sm:w-auto px-6 py-2 sm:px-8 sm:py-3 shadow-lg shadow-primary/20 text-xs sm:text-base flex items-center justify-center gap-2"
                 >
-                  Add Friend
+                  <UserPlus size={16} /> Add Friend
                 </button>
-                <button className="p-2 sm:p-3 bg-surface-alt/50 border border-border rounded-xl sm:rounded-2xl text-text-main hover:bg-surface-alt transition-all">
+                <button className="w-full sm:w-auto p-2 sm:p-3 bg-surface-alt/50 border border-border rounded-xl sm:rounded-2xl text-text-main hover:bg-surface-alt transition-all flex items-center justify-center gap-2">
                   <MessageSquare size={18} className="sm:hidden" />
                   <MessageSquare size={22} className="hidden sm:block" />
+                  <span className="sm:hidden text-xs font-bold uppercase tracking-widest">Message</span>
                 </button>
               </div>
 

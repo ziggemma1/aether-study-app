@@ -59,9 +59,10 @@ export const TutorChat: React.FC<TutorChatProps> = ({ materialTitle, materialCon
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-32 right-6 w-14 h-14 bg-gradient-to-tr from-primary to-accent text-white rounded-full shadow-2xl flex items-center justify-center z-[100] border-2 border-white/20"
+            className="fixed bottom-24 right-6 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-primary to-accent text-white rounded-full shadow-2xl flex items-center justify-center z-[100] border-2 border-white/20"
           >
-            <MessageCircle size={28} />
+            <MessageCircle size={24} className="sm:hidden" />
+            <MessageCircle size={28} className="hidden sm:block" />
           </motion.button>
         )}
       </AnimatePresence>

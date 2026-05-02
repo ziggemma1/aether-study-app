@@ -286,24 +286,24 @@ export default function Library() {
           <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-2 text-text-main">{t('library')}</h1>
           <p className="text-sm sm:text-base text-text-muted">{t('library_desc')}</p>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex bg-surface rounded-lg sm:rounded-xl p-0.5 sm:p-1 shadow-sm border border-border">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex bg-surface rounded-lg sm:rounded-xl p-0.5 sm:p-1 shadow-sm border border-border w-full sm:w-auto">
             <button
               onClick={() => setViewMode('grid')}
-              className={cn("p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-colors", viewMode === 'grid' ? "bg-primary text-white" : "text-text-muted hover:text-primary")}
+              className={cn("flex-1 sm:flex-none p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-colors", viewMode === 'grid' ? "bg-primary text-white" : "text-text-muted hover:text-primary")}
             >
-              <Grid size={16} className="sm:hidden" />
+              <Grid size={16} className="sm:hidden mx-auto" />
               <Grid size={20} className="hidden sm:block" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={cn("p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-colors", viewMode === 'list' ? "bg-primary text-white" : "text-text-muted hover:text-primary")}
+              className={cn("flex-1 sm:flex-none p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-colors", viewMode === 'list' ? "bg-primary text-white" : "text-text-muted hover:text-primary")}
             >
-              <List size={16} className="sm:hidden" />
+              <List size={16} className="sm:hidden mx-auto" />
               <List size={20} className="hidden sm:block" />
             </button>
           </div>
-          <Link to="/upload" className="btn-primary py-1.5 px-4 sm:py-2 sm:px-6 text-[10px] sm:text-sm">{t('upload')}</Link>
+          <Link to="/upload" className="btn-primary py-2.5 px-4 sm:py-2 sm:px-6 text-[10px] sm:text-sm text-center w-full sm:w-auto">{t('upload')}</Link>
         </div>
       </header>
 

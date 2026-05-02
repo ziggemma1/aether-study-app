@@ -94,8 +94,9 @@ export const initSocket = (server: any) => {
       socket.to(`live_room:${roomId}`).emit("timer_sync", { userId, timeLeft, isPaused });
     });
 
-    socket.on("send_nudge", ({ targetUserId }) => {
-      io.to(targetUserId).emit("received_nudge", { fromUserId: userId });
+    socket.on("send_nudge", async ({ targetUserId }) => {
+      const sender = await User.findById(userId).select('name');
+      io.to(targetUserId).emit("received_nudge", { fromUserId: userId, fromUserName: sender?.name || 'A friend' });
     });
     // END LIVE ROOMS LOGIC
 

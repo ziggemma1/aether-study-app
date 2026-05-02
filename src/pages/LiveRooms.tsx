@@ -22,6 +22,17 @@ interface RoomData {
   activeCount: number;
 }
 
+const ENCOURAGEMENTS = [
+  "You've got this!",
+  "Stay focused, stay sharp!",
+  "Take a deep breath and keep going.",
+  "Your future self will thank you!",
+  "One task at a time. You're doing great!",
+  "Concentration is a superpower. Use it!",
+  "The grind never stops, but you're winning!",
+  "Make today count!"
+];
+
 export default function LiveRooms() {
   const { user, allProfiles, showToast } = useAppContext();
   const [inRoom, setInRoom] = useState(false);
@@ -108,9 +119,13 @@ export default function LiveRooms() {
           }
         });
 
-        socket.on("received_nudge", (data: { fromUserId: string }) => {
-          const sender = allProfiles.find(p => (p.id || p._id) === data.fromUserId);
-          showToast(`${sender?.name || 'A friend'} nudged you to study! 🔔`, 'success');
+        socket.on("received_nudge", (data: { fromUserId: string, fromUserName?: string }) => {
+          const phrase = ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
+          showToast(`${data.fromUserName || 'A friend'} nudged you! ${phrase} 🔔`, 'success');
+          // Mobile optimized: Vibrate on nudge
+          if (window.navigator?.vibrate) {
+            window.navigator.vibrate([200, 100, 200]);
+          }
         });
 
         return () => {
@@ -313,6 +328,19 @@ export default function LiveRooms() {
                        </div>
                        <span className="text-[10px] md:text-xs font-bold text-white/70">{p.name} {p.isMe ? '(You)' : ''}</span>
                        
+                       {!p.isMe && (
+                         <button 
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             sendNudge(p.id, p.name);
+                           }}
+                           className="absolute top-2 right-2 p-2 bg-white/5 hover:bg-primary/80 active:bg-primary rounded-xl transition-all text-white/40 hover:text-white border border-white/5 shadow-2xl active:scale-90 z-20"
+                           title="Nudge Friend"
+                         >
+                           <Bell size={14} className="animate-pulse" />
+                         </button>
+                       )}
+
                        <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded-lg text-[9px] font-black text-white/50 border border-white/5 flex items-center gap-1">
                           <CircleDot size={8} className="text-green-500" /> FOCUSING
                        </div>
