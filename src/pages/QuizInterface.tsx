@@ -11,7 +11,7 @@ import api from '../services/api';
 export default function QuizInterface() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { materials, setQuizResults, isLoading } = useAppContext();
+  const { materials, setQuizResults, isLoading, fetchAppData } = useAppContext();
   const [currentQuestion, setCurrentQuestion] = React.useState(0);
   const [selectedAnswers, setSelectedAnswers] = React.useState<number[]>([]);
   const [isFinished, setIsFinished] = React.useState(false);
@@ -73,6 +73,11 @@ export default function QuizInterface() {
       };
       
       setQuizResults(prev => [...prev, newResult]);
+      
+      // Refresh global app data (including leaderboard and updated quiz stats)
+      if (fetchAppData) {
+        await fetchAppData();
+      }
     } catch (err) {
       console.error('Failed to save quiz result', err);
     }

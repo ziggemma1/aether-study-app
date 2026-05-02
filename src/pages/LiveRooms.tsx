@@ -218,6 +218,12 @@ export default function LiveRooms() {
       isMe: true 
     }]);
     
+    // Explicitly emit join if socket is ready
+    if (socketRef.current?.connected) {
+      console.log("Socket connected, emitting join for room:", roomId);
+      socketRef.current.emit("join_live_room", roomId);
+    }
+    
     showToast('Entered Live Room!');
   };
 
@@ -419,7 +425,7 @@ export default function LiveRooms() {
               <div className="relative group mb-12">
                 <div className="absolute inset-x-0 -bottom-10 h-32 bg-primary/20 blur-[100px] rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
                 <div className="relative z-10">
-                  <StudyTimer materialId={activeRoomId || "room"} title="Global Pomodoro" />
+                  <StudyTimer materialId={activeRoomId ? `room:${activeRoomId}` : "room"} title="Global Pomodoro" />
                 </div>
               </div>
 

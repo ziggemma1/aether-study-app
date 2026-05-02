@@ -43,6 +43,7 @@ interface AppContextType {
   sendFriendRequest: (receiverId: string) => Promise<void>;
   respondToFriendRequest: (requestId: string, status: 'accepted' | 'declined') => Promise<void>;
   updateMaterialInContext: (updatedMaterial: Material) => void;
+  fetchAppData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -387,7 +388,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toggleFollow,
       sendFriendRequest,
       respondToFriendRequest,
-      updateMaterialInContext
+      updateMaterialInContext,
+      fetchAppData
     }}>
       {children}
     </AppContext.Provider>

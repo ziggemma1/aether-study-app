@@ -10,11 +10,19 @@ export const getSocket = (token?: string) => {
 
   if (!socket) {
     const origin = window.location.origin;
+    
+    // Try to get token from cookies if not provided
+    let finalToken = token;
+    if (!finalToken) {
+      const match = document.cookie.match(new RegExp('(^| )token=([^;]+)'));
+      if (match) finalToken = match[2];
+    }
+
     socket = io(origin, {
-      auth: token ? { token } : undefined,
+      auth: finalToken ? { token: finalToken } : undefined,
       autoConnect: true,
       reconnection: true,
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'], // Added polling as fallback
       withCredentials: true
     });
 

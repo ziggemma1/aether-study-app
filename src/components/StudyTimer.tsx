@@ -42,7 +42,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const secondsRef = useRef(0);
   const startTimeRef = useRef<Date>(new Date());
-  const { setStudySessions, showToast, user, t, setUser } = useAppContext();
+  const { setStudySessions, showToast, user, t, setUser, fetchAppData } = useAppContext();
   const socketRef = useRef<any>(null);
   
   useEffect(() => {
@@ -323,6 +323,11 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
         id: response.data._id || response.data.id
       };
       setStudySessions(prev => [...prev, newSession]);
+      
+      // Refresh global app data (including leaderboard)
+      if (fetchAppData) {
+        await fetchAppData();
+      }
       
       // Update points locally. In a real backend, the session creation might trigger this.
       if (typeof window !== 'undefined') {
