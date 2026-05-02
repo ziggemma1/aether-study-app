@@ -47,12 +47,26 @@ export const initSocket = (server: any) => {
   });
 
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     const userId = socket.data.userId;
     console.log(`User connected: ${userId}`);
 
     // Track active live room for this socket
     let activeLiveRoomId: string | null = null;
+
+    // Pre-fetch user data once for this socket session
+    try {
+      const user = await User.findById(userId).select('name avatar');
+      if (user) {
+        socket.data.user = {
+          id: user._id.toString(),
+          name: user.name,
+          avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name || userId}`
+        };
+      }
+    } catch (err) {
+      console.error("Error fetching user on connection:", err);
+    }
 
     // Join personal room for 1-on-1 messages
     socket.join(userId);
@@ -64,11 +78,19 @@ export const initSocket = (server: any) => {
         activeLiveRoomId = roomId;
         await socket.join(roomName);
         
-        let user = socket.data.user;
-        if (!user) {
-          user = await User.findById(userId).select('name avatar');
-          socket.data.user = user;
+        // Ensure user data is present
+        if (!socket.data.user) {
+          const user = await User.findById(userId).select('name avatar');
+          if (user) {
+            socket.data.user = {
+              id: user._id.toString(),
+              name: user.name,
+              avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name || userId}`
+            };
+          }
         }
+        
+        const user = socket.data.user;
         
         // Fetch all sockets in this room to get current participants
         const sockets = await io.in(roomName).fetchSockets();
@@ -81,19 +103,23 @@ export const initSocket = (server: any) => {
           let pUser = s.data.user;
           if (!pUser) {
             try {
-              pUser = await User.findById(pUserId).select('name avatar');
-              s.data.user = pUser;
+              const dbUser = await User.findById(pUserId).select('name avatar');
+              if (dbUser) {
+                pUser = {
+                  id: dbUser._id.toString(),
+                  name: dbUser.name,
+                  avatar: dbUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${dbUser.name || pUserId}`
+                };
+                s.data.user = pUser;
+              }
             } catch (err) {
               console.error(`Error fetching user ${pUserId}:`, err);
             }
           }
           
-          const participantId = String(pUserId);
-          participantsMap.set(participantId, {
-            id: participantId,
-            name: pUser?.name || `Learner ${participantId.slice(-4)}`,
-            avatar: pUser?.avatar || ""
-          });
+          if (pUser) {
+            participantsMap.set(pUser.id, pUser);
+          }
         }
         
         const participants = Array.from(participantsMap.values());
@@ -114,7 +140,7 @@ export const initSocket = (server: any) => {
         // Also notify about the specific join for the toast
         socket.to(roomName).emit("user_joined_room", { 
           roomId, 
-          user: { id: String(userId), name: user?.name, avatar: user?.avatar } 
+          user: pUserFallback(user, userId)
         });
         
         console.log(`User ${userId} joined live room: ${roomId}. Total: ${participants.length}`);
@@ -122,6 +148,12 @@ export const initSocket = (server: any) => {
         console.error("Join room error:", err);
       }
     });
+
+    function pUserFallback(u: any, uid: string) {
+      if (u) return u;
+      return { id: uid, name: "Learner", avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${uid}` };
+    }
+
 
     socket.on("leave_live_room", async (roomId) => {
       try {
