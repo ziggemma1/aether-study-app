@@ -208,6 +208,24 @@ export const initSocket = (server: any) => {
       socket.to(`live_room:${roomId}`).emit("timer_sync", { userId, timeLeft, isPaused });
     });
 
+    socket.on("send_room_message", ({ roomId, content }) => {
+      const roomName = `live_room:${roomId}`;
+      const user = socket.data.user;
+      
+      const message = {
+        id: `msg_${Date.now()}`,
+        roomId,
+        senderId: userId,
+        senderName: user?.name || "Learner",
+        senderAvatar: user?.avatar || "",
+        content,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log(`Live Room Message [${roomId}]: ${user?.name}: ${content}`);
+      io.to(roomName).emit("received_room_message", message);
+    });
+
     socket.on("send_nudge", async ({ targetUserId }) => {
       const sender = await User.findById(userId).select('name');
       io.to(targetUserId).emit("received_nudge", { fromUserId: userId, fromUserName: sender?.name || 'A friend' });

@@ -16,6 +16,16 @@ interface RoomParticipant {
   instanceId?: string;
 }
 
+interface RoomMessage {
+  id: string;
+  roomId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  content: string;
+  timestamp: string;
+}
+
 interface RoomData {
   _id: string;
   name: string;
@@ -39,6 +49,8 @@ export default function LiveRooms() {
   const [inRoom, setInRoom] = useState(false);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
+  const [messages, setMessages] = useState<RoomMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
   const [rooms, setRooms] = useState<RoomData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -175,10 +187,15 @@ export default function LiveRooms() {
           }
         };
 
+        const handleRoomMessage = (message: RoomMessage) => {
+          setMessages(prev => [...prev, message].slice(-50)); // Keep last 50
+        };
+
         socket.on("user_joined_room", handleUserJoined);
         socket.on("room_participants", handleRoomParticipants);
         socket.on("user_left_room", handleUserLeft);
         socket.on("received_nudge", handleNudge);
+        socket.on("received_room_message", handleRoomMessage);
 
         // If socket is already connected when we register listeners, join
         if (socket.connected) {
@@ -191,6 +208,7 @@ export default function LiveRooms() {
           socket.off("room_participants", handleRoomParticipants);
           socket.off("user_left_room", handleUserLeft);
           socket.off("received_nudge", handleNudge);
+          socket.off("received_room_message", handleRoomMessage);
         };
       }
     }
@@ -234,7 +252,19 @@ export default function LiveRooms() {
     setActiveRoomId(null);
     setInRoom(false);
     setParticipants([]);
+    setMessages([]);
     showToast('Left Live Room');
+  };
+
+  const sendRoomMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !activeRoomId || !socketRef.current) return;
+    
+    socketRef.current.emit("send_room_message", {
+      roomId: activeRoomId,
+      content: chatInput.trim()
+    });
+    setChatInput('');
   };
 
   const sendNudge = (targetUserId: string, name: string) => {
@@ -435,9 +465,49 @@ export default function LiveRooms() {
                 </p>
               </div>
            </div>
+
+           {/* Quick Chat Overlay */}
+           <div className="absolute bottom-20 left-6 right-6 h-48 pointer-events-none flex flex-col justify-end z-20">
+              <div className="space-y-2 overflow-y-auto no-scrollbar pointer-events-none">
+                 <AnimatePresence>
+                   {messages.map((msg) => (
+                      <motion.div 
+                        key={msg.id}
+                        initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="flex items-start gap-2 max-w-[80%]"
+                      >
+                         <img src={msg.senderAvatar} className="w-6 h-6 rounded-full border border-white/10 shrink-0" alt="" />
+                         <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-2xl rounded-tl-none border border-white/10 shadow-xl">
+                            <div className="text-[10px] font-bold text-primary mb-0.5">{msg.senderName}</div>
+                            <div className="text-xs text-white/90 leading-tight">{msg.content}</div>
+                         </div>
+                      </motion.div>
+                   ))}
+                 </AnimatePresence>
+              </div>
+           </div>
            
-           <div className="p-4 bg-black/40 backdrop-blur-xl border-t border-white/5 flex items-center justify-between relative z-10">
-              <div className="flex -space-x-2">
+           <div className="px-6 py-4 bg-black/40 backdrop-blur-xl border-t border-white/5 flex items-center gap-4 relative z-30">
+              <form onSubmit={sendRoomMessage} className="flex-1 flex gap-2">
+                 <input 
+                   type="text" 
+                   value={chatInput}
+                   onChange={e => setChatInput(e.target.value)}
+                   placeholder="Say something to the room..."
+                   className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 transition-all"
+                 />
+                 <button 
+                   type="submit"
+                   disabled={!chatInput.trim()}
+                   className="bg-primary hover:bg-primary/80 disabled:opacity-50 text-white rounded-xl px-4 py-2 text-xs font-bold transition-all active:scale-95"
+                 >
+                   Send
+                 </button>
+              </form>
+
+              <div className="hidden sm:flex -space-x-2">
                 {participants.slice(0, 5).map(p => (
                   <img key={(p as any).instanceId || p.id} src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`} className="w-8 h-8 rounded-full border-2 border-slate-900" title={p.name} />
                 ))}
