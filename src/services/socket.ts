@@ -13,11 +13,17 @@ export const getSocket = (token?: string) => {
   }
 
   if (!socket) {
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://aether-socket-server-17zk.onrender.com";
-    const origin = window.location.origin;
+    const DEFAULT_RENDER_URL = "https://aether-socket-server-17zk.onrender.com";
+    const envUrl = import.meta.env.VITE_SOCKET_URL;
     
-    // Choose which URL to use - prioritize external if provided, otherwise local origin
-    const targetUrl = import.meta.env.VITE_SOCKET_URL ? SOCKET_URL : origin;
+    // Choose target: Env var > Render Fallback (if not local) > Origin
+    let targetUrl = envUrl || DEFAULT_RENDER_URL;
+    
+    // If we're in the AI Studio preview environment and no URL is set, we use origin (local server)
+    const origin = window.location.origin;
+    if (!envUrl && (origin.includes("google-west1.run.app") || origin.includes("localhost"))) {
+      targetUrl = origin;
+    }
 
     // Try to get token from cookies if not provided
     let finalToken = token;

@@ -51,6 +51,9 @@ export default function LiveRooms() {
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [isNudged, setIsNudged] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(false);
   const [rooms, setRooms] = useState<RoomData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -105,14 +108,20 @@ export default function LiveRooms() {
       
       const socket = socketRef.current;
       if (socket) {
+        setIsConnected(socket.connected);
+
         const joinRoomIfActive = () => {
+          setIsConnected(true);
           if (activeRoomIdRef.current) {
             console.log("Re-joining room after connect/reconnect:", activeRoomIdRef.current);
             socket.emit("join_live_room", activeRoomIdRef.current);
           }
         };
 
+        const handleDisconnect = () => setIsConnected(false);
+
         socket.on("connect", joinRoomIfActive);
+        socket.on("disconnect", handleDisconnect);
 
         const handleUserJoined = (data: { user: RoomParticipant, roomId: string }) => {
           console.log("User joined room event received:", data.user);
@@ -179,6 +188,10 @@ export default function LiveRooms() {
         const handleNudge = (data: { fromUserId: string, fromUserName?: string }) => {
           const phrase = ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
           showToast(`${data.fromUserName || 'A friend'} nudged you! ${phrase} 🔔`, 'success');
+          
+          setIsNudged(true);
+          setTimeout(() => setIsNudged(false), 500);
+
           if (window.navigator?.vibrate) {
             window.navigator.vibrate([200, 100, 200]);
           }
@@ -201,6 +214,7 @@ export default function LiveRooms() {
 
         return () => {
           socket.off("connect", joinRoomIfActive);
+          socket.off("disconnect", handleDisconnect);
           socket.off("user_joined_room", handleUserJoined);
           socket.off("room_participants", handleRoomParticipants);
           socket.off("user_left_room", handleUserLeft);
@@ -383,7 +397,16 @@ export default function LiveRooms() {
           </div>
         </div>
       ) : (
-        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="glass-card min-h-[600px] flex flex-col overflow-hidden relative border-none">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }} 
+          animate={{ 
+            opacity: 1, 
+            scale: 1,
+            x: isNudged ? [0, -10, 10, -10, 10, 0] : 0
+          }} 
+          transition={{ duration: 0.5 }}
+          className="glass-card min-h-[600px] flex flex-col overflow-hidden relative border-none"
+        >
            {/* Room UI */}
            <div className="absolute inset-0 -z-10 bg-[#0f172a]" />
            <div className="absolute inset-0 opacity-40 bg-[url('https://images.unsplash.com/photo-1517842645537-4d25890771d7?auto=format&fit=crop&q=80')] bg-cover bg-center mix-blend-overlay" />
@@ -397,7 +420,7 @@ export default function LiveRooms() {
                 </div>
                 <div>
                   <h2 className="text-white font-bold text-xl">{activeRoom?.name || 'Study Room'}</h2>
-                  <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{participants.length} Active | Socket: {socketRef.current?.connected ? 'ON' : 'OFF'}</p>
+                  <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{participants.length} Active | Socket: {isConnected ? 'ON' : 'OFF'}</p>
                 </div>
               </div>
               <button 
@@ -487,6 +510,18 @@ export default function LiveRooms() {
            </div>
            
            <div className="px-6 py-4 bg-black/40 backdrop-blur-xl border-t border-white/5 flex items-center gap-4 relative z-30">
+              <button 
+                onClick={() => setShowParticipants(true)}
+                className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white/60 hover:text-white transition-all relative"
+              >
+                <Users size={20} />
+                {participants.length > 1 && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-[8px] font-bold flex items-center justify-center rounded-full text-white">
+                    {participants.length}
+                  </div>
+                )}
+              </button>
+
               <form onSubmit={sendRoomMessage} className="flex-1 flex gap-2">
                  <input 
                    type="text" 
@@ -516,6 +551,56 @@ export default function LiveRooms() {
            </div>
         </motion.div>
       )}
+
+      {/* Participants Bottom Sheet */}
+      <AnimatePresence>
+        {showParticipants && (
+          <div className="fixed inset-0 z-[60] flex items-end justify-center">
+             <motion.div 
+               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+               onClick={() => setShowParticipants(false)}
+               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+             />
+             <motion.div 
+               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+               transition={{ type: "spring", damping: 25, stiffness: 200 }}
+               className="relative bg-[#0f172a] rounded-t-[32px] w-full max-w-md p-6 border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
+             >
+                <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-6" />
+                <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+                   <Users size={20} className="text-primary" /> Active Members
+                </h3>
+                
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto no-scrollbar pb-8">
+                   {participants.map(p => (
+                     <div key={(p as any).instanceId || p.id} className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-3">
+                           <img src={p.avatar} className="w-10 h-10 rounded-full border border-white/10" alt="" />
+                           <div>
+                              <div className="text-sm font-bold text-white flex items-center gap-2">
+                                 {p.name} {p.isMe && <span className="text-[10px] text-primary font-black uppercase text-xs">(You)</span>}
+                              </div>
+                              <div className="text-[10px] text-white/40 font-bold uppercase tracking-widest flex items-center gap-1">
+                                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Focusing
+                              </div>
+                           </div>
+                        </div>
+                        
+                        {!p.isMe && (
+                           <button 
+                             onClick={() => sendNudge(p.id, p.name)}
+                             className="p-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 active:scale-90 transition-all"
+                           >
+                             <Bell size={18} />
+                           </button>
+                        )}
+                     </div>
+                   ))}
+                </div>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Create Room Modal */}
       <AnimatePresence>

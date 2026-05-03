@@ -65,6 +65,15 @@ io.on('connection', (socket) => {
     io.to(cleanRoomId).emit('received_room_message', message);
   });
 
+  socket.on('send_nudge', ({ targetUserId }) => {
+    const sender = socket.data.user;
+    console.log(`[NUDGE] From ${sender?.name} (${socket.id}) to ${targetUserId}`);
+    io.to(targetUserId).emit('received_nudge', { 
+      fromUserId: socket.id, 
+      fromUserName: sender?.name || 'A student' 
+    });
+  });
+
   socket.on('disconnect', (reason) => {
     console.log(`[DISCONN] ${socket.id} disconnected: ${reason}`);
     const roomId = socket.data.roomId;
