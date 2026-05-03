@@ -131,12 +131,8 @@ export default function LiveRooms() {
 
           setParticipants(prev => {
             const instanceId = normalizedUser.instanceId;
-            // If we have an instanceId, check for that exact connection
             if (instanceId && prev.find(p => (p as any).instanceId === instanceId)) return prev;
-            // If no instanceId, fallback to user ID check (less accurate)
             if (!instanceId && prev.find(p => String(p.id) === incomingId)) return prev;
-            
-            console.log(`Adding new participant connection: ${normalizedUser.name} (${normalizedUser.instanceId})`);
             return [...prev, normalizedUser];
           });
           
@@ -162,7 +158,9 @@ export default function LiveRooms() {
             };
           });
           
-          setParticipants(normalized);
+          if (data.roomId === activeRoomIdRef.current) {
+            setParticipants(normalized);
+          }
         };
 
         const handleUserLeft = (data: { userId: string, roomId: string, instanceId?: string }) => {
@@ -174,8 +172,7 @@ export default function LiveRooms() {
             if (leftInstanceId) {
               return prev.filter(p => (p as any).instanceId !== leftInstanceId);
             }
-            // Fallback for broad removals (caution: hits all connections of same user)
-            return prev.filter(p => String(p.id) !== leftUserId && String((p as any)._id) !== leftUserId);
+            return prev.filter(p => String(p.id) !== leftUserId);
           });
         };
 
@@ -400,7 +397,7 @@ export default function LiveRooms() {
                 </div>
                 <div>
                   <h2 className="text-white font-bold text-xl">{activeRoom?.name || 'Study Room'}</h2>
-                  <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{participants.length} Active in Room</p>
+                  <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{participants.length} Active | Socket: {socketRef.current?.connected ? 'ON' : 'OFF'}</p>
                 </div>
               </div>
               <button 

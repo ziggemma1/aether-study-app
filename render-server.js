@@ -20,34 +20,40 @@ const PORT = process.env.PORT || 4000;
 const rooms = new Map();
 
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+  console.log(`[CONN] User ${socket.id} connected`);
 
   socket.on('join_live_room', (roomId) => {
-    socket.join(roomId);
+    const cleanRoomId = String(roomId).trim();
+    console.log(`[ROOM] Socket ${socket.id} joining room: "${cleanRoomId}"`);
     
-    // Basic user object for testing
-    const user = {
-      id: socket.id,
-      name: `User ${socket.id.slice(-4)}`,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${socket.id}`
-    };
+    socket.join(cleanRoomId);
+    socket.data.roomId = cleanRoomId;
     
-    socket.data.user = user;
-    socket.data.roomId = roomId;
+    // Explicitly set test user data if not present
+    if (!socket.data.user) {
+      socket.data.user = {
+        id: socket.id,
+        name: `Student ${socket.id.slice(-4)}`,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${socket.id}`
+      };
+    }
 
-    console.log(`${user.name} joined room ${roomId}`);
-
-    // Update and broadcast room participants
-    updateRoomParticipants(roomId);
+    // Immediate confirmation
+    updateRoomParticipants(cleanRoomId);
     
-    // Broadcast join notification
-    socket.to(roomId).emit('user_joined_room', { roomId, user });
+    // Broadcast join event
+    socket.to(cleanRoomId).emit('user_joined_room', { 
+      roomId: cleanRoomId, 
+      user: socket.data.user 
+    });
   });
 
   socket.on('send_room_message', ({ roomId, content }) => {
+    const cleanRoomId = String(roomId).trim();
     const user = socket.data.user;
     const message = {
       id: `msg_${Date.now()}`,
+      roomId: cleanRoomId,
       senderId: socket.id,
       senderName: user?.name || "Anonymous",
       senderAvatar: user?.avatar || "",
@@ -55,16 +61,17 @@ io.on('connection', (socket) => {
       timestamp: new Date().toISOString()
     };
     
-    io.to(roomId).emit('received_room_message', message);
+    console.log(`[MSG] Room ${cleanRoomId}: ${message.senderName}: ${content}`);
+    io.to(cleanRoomId).emit('received_room_message', message);
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', (reason) => {
+    console.log(`[DISCONN] ${socket.id} disconnected: ${reason}`);
     const roomId = socket.data.roomId;
     if (roomId) {
       updateRoomParticipants(roomId);
       io.to(roomId).emit('user_left_room', { userId: socket.id, roomId });
     }
-    console.log('User disconnected:', socket.id);
   });
 
   async function updateRoomParticipants(roomId) {
@@ -73,9 +80,11 @@ io.on('connection', (socket) => {
       id: s.id,
       name: s.data.user?.name || "Anonymous",
       avatar: s.data.user?.avatar || "",
-      instanceId: s.id
+      instanceId: s.id,
+      isMe: false // Calculated on client
     }));
     
+    console.log(`[SYNC] Room ${roomId} has ${participants.length} active sockets`);
     io.to(roomId).emit('room_participants', { roomId, participants });
   }
 });
