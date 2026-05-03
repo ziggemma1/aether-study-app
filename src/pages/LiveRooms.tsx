@@ -173,6 +173,8 @@ export default function LiveRooms() {
         };
 
         const handleRoomParticipants = (data: { roomId: string, participants: RoomParticipant[] }) => {
+          if (data.roomId !== activeRoomIdRef.current) return;
+          
           console.log("Received participants list:", data.participants);
           const currentUserId = String(userRef.current?.id || (userRef.current as any)?._id || '');
           
@@ -189,9 +191,7 @@ export default function LiveRooms() {
             };
           });
           
-          if (data.roomId === activeRoomIdRef.current) {
-            setParticipants(normalized);
-          }
+          setParticipants(normalized);
         };
 
         const handleUserLeft = (data: { userId: string, roomId: string, instanceId?: string }) => {
@@ -234,6 +234,7 @@ export default function LiveRooms() {
         };
 
         const handleRoomMessage = (message: RoomMessage) => {
+          if (message.roomId !== activeRoomIdRef.current) return;
           setMessages(prev => [...prev, message].slice(-50)); // Keep last 50
         };
 
@@ -279,33 +280,33 @@ export default function LiveRooms() {
 
   useEffect(() => {
     if (activeRoomId && socketRef.current) {
-      socketRef.current.emit("join_live_room", activeRoomId);
+      const myInfo = user ? {
+        id: user.id || (user as any)._id,
+        name: user.name,
+        avatar: user.avatar
+      } : null;
+
+      console.log("Emitting join_live_room for:", activeRoomId, myInfo);
+      socketRef.current.emit("join_live_room", { 
+        roomId: activeRoomId, 
+        user: myInfo 
+      });
     }
     return () => {
       if (activeRoomId && socketRef.current) {
         socketRef.current.emit("leave_live_room", activeRoomId);
       }
     };
-  }, [activeRoomId]);
+  }, [activeRoomId, !!user]);
 
   const handleJoin = (roomId: string) => {
     setActiveRoomId(roomId);
     setInRoom(true);
-    const myId = String(user?.id || (user as any)?._id || 'me');
-    setParticipants([{ 
-      id: myId, 
-      name: user?.name || 'You', 
-      avatar: user?.avatar || '', 
-      isMe: true 
-    }]);
     
-    // Explicitly emit join if socket is ready
-    if (socketRef.current?.connected) {
-      console.log("Socket connected, emitting join for room:", roomId);
-      socketRef.current.emit("join_live_room", roomId);
-    }
+    // We already have a useEffect that watches activeRoomId and user, 
+    // it will handle emitting join_live_room with latest user state.
     
-    showToast('Entered Live Room!');
+    showToast('Entering Live Room...');
   };
 
   const handleLeave = () => {

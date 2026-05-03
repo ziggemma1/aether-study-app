@@ -22,21 +22,23 @@ const rooms = new Map();
 io.on('connection', (socket) => {
   console.log(`[CONN] User ${socket.id} connected`);
 
-  socket.on('join_live_room', (roomId) => {
+  socket.on('join_live_room', (data) => {
+    // Handle both old (roomId only) and new ({ roomId, user }) formats
+    const roomId = typeof data === 'string' ? data : data.roomId;
+    const clientUser = typeof data === 'object' ? data.user : null;
+    
     const cleanRoomId = String(roomId).trim();
     console.log(`[ROOM] Socket ${socket.id} joining room: "${cleanRoomId}"`);
     
     socket.join(cleanRoomId);
     socket.data.roomId = cleanRoomId;
     
-    // Explicitly set test user data if not present
-    if (!socket.data.user) {
-      socket.data.user = {
-        id: socket.id,
-        name: `Student ${socket.id.slice(-4)}`,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${socket.id}`
-      };
-    }
+    // Use client provided user data or fallback to default
+    socket.data.user = clientUser || {
+      id: socket.id,
+      name: `Student ${socket.id.slice(-4)}`,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${socket.id}`
+    };
 
     // Immediate confirmation
     updateRoomParticipants(cleanRoomId);
