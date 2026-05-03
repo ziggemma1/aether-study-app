@@ -13,8 +13,12 @@ export const getSocket = (token?: string) => {
   }
 
   if (!socket) {
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://aether-socket-server-17zk.onrender.com";
     const origin = window.location.origin;
     
+    // Choose which URL to use - prioritize external if provided, otherwise local origin
+    const targetUrl = import.meta.env.VITE_SOCKET_URL ? SOCKET_URL : origin;
+
     // Try to get token from cookies if not provided
     let finalToken = token;
     if (!finalToken) {
@@ -22,11 +26,11 @@ export const getSocket = (token?: string) => {
       if (match) finalToken = match[2];
     }
 
-    socket = io(origin, {
+    socket = io(targetUrl, {
       auth: finalToken ? { token: finalToken } : undefined,
       autoConnect: true,
       reconnection: true,
-      transports: ['websocket', 'polling'], // Added polling as fallback
+      transports: ['websocket', 'polling'],
       withCredentials: true
     });
 
