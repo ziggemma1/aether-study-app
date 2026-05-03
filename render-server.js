@@ -74,6 +74,24 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('typing', ({ roomId }) => {
+    const cleanRoomId = String(roomId).trim();
+    const user = socket.data.user;
+    socket.to(cleanRoomId).emit('user_typing', { 
+      roomId: cleanRoomId,
+      userId: socket.id,
+      userName: user?.name || "Someone" 
+    });
+  });
+
+  socket.on('stop_typing', ({ roomId }) => {
+    const cleanRoomId = String(roomId).trim();
+    socket.to(cleanRoomId).emit('user_stop_typing', { 
+      roomId: cleanRoomId,
+      userId: socket.id 
+    });
+  });
+
   socket.on('disconnect', (reason) => {
     console.log(`[DISCONN] ${socket.id} disconnected: ${reason}`);
     const roomId = socket.data.roomId;

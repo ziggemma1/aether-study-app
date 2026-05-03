@@ -54,6 +54,7 @@ export default function LiveRooms() {
   const [isConnected, setIsConnected] = useState(false);
   const [isNudged, setIsNudged] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<{[key: string]: string}>({});
   const [rooms, setRooms] = useState<RoomData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -62,6 +63,16 @@ export default function LiveRooms() {
   const socketRef = useRef<any>(null);
   const activeRoomIdRef = useRef<string | null>(null);
   const userRef = useRef<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<any>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, typingUsers]);
 
   useEffect(() => {
     userRef.current = user;
@@ -147,6 +158,17 @@ export default function LiveRooms() {
           
           if (incomingId !== currentUserId) {
             showToast(`${pName} joined the room!`);
+            // Add system message
+            const systemMsg: RoomMessage = {
+              id: `sys_${Date.now()}_join`,
+              roomId: data.roomId,
+              senderId: 'system',
+              senderName: 'System',
+              senderAvatar: '',
+              content: `${pName} joined focusing session`,
+              timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, systemMsg].slice(-50));
           }
         };
 
@@ -178,6 +200,20 @@ export default function LiveRooms() {
           const leftInstanceId = data.instanceId;
           
           setParticipants(prev => {
+            const leftUser = prev.find(p => (leftInstanceId && (p as any).instanceId === leftInstanceId) || (!leftInstanceId && String(p.id) === leftUserId));
+            if (leftUser) {
+               // Add system message
+               const systemMsg: RoomMessage = {
+                 id: `sys_${Date.now()}_leave`,
+                 roomId: data.roomId,
+                 senderId: 'system',
+                 senderName: 'System',
+                 senderAvatar: '',
+                 content: `${leftUser.name} left the session`,
+                 timestamp: new Date().toISOString()
+               };
+               setMessages(prevMsgs => [...prevMsgs, systemMsg].slice(-50));
+            }
             if (leftInstanceId) {
               return prev.filter(p => (p as any).instanceId !== leftInstanceId);
             }
@@ -201,11 +237,25 @@ export default function LiveRooms() {
           setMessages(prev => [...prev, message].slice(-50)); // Keep last 50
         };
 
+        const handleTyping = (data: { userId: string, userName: string }) => {
+          setTypingUsers(prev => ({ ...prev, [data.userId]: data.userName }));
+        };
+
+        const handleStopTyping = (data: { userId: string }) => {
+          setTypingUsers(prev => {
+            const next = { ...prev };
+            delete next[data.userId];
+            return next;
+          });
+        };
+
         socket.on("user_joined_room", handleUserJoined);
         socket.on("room_participants", handleRoomParticipants);
         socket.on("user_left_room", handleUserLeft);
         socket.on("received_nudge", handleNudge);
         socket.on("received_room_message", handleRoomMessage);
+        socket.on("user_typing", handleTyping);
+        socket.on("user_stop_typing", handleStopTyping);
 
         // If socket is already connected when we register listeners, join
         if (socket.connected) {
@@ -220,6 +270,8 @@ export default function LiveRooms() {
           socket.off("user_left_room", handleUserLeft);
           socket.off("received_nudge", handleNudge);
           socket.off("received_room_message", handleRoomMessage);
+          socket.off("user_typing", handleTyping);
+          socket.off("user_stop_typing", handleStopTyping);
         };
       }
     }
@@ -271,11 +323,25 @@ export default function LiveRooms() {
     e.preventDefault();
     if (!chatInput.trim() || !activeRoomId || !socketRef.current) return;
     
+    socketRef.current.emit("stop_typing", { roomId: activeRoomId });
     socketRef.current.emit("send_room_message", {
       roomId: activeRoomId,
       content: chatInput.trim()
     });
     setChatInput('');
+  };
+
+  const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setChatInput(e.target.value);
+    
+    if (socketRef.current && activeRoomId) {
+      socketRef.current.emit("typing", { roomId: activeRoomId });
+      
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socketRef.current.emit("stop_typing", { roomId: activeRoomId });
+      }, 2000);
+    }
   };
 
   const sendNudge = (targetUserId: string, name: string) => {
@@ -487,25 +553,81 @@ export default function LiveRooms() {
            </div>
 
            {/* Quick Chat Overlay */}
-           <div className="absolute bottom-20 left-6 right-6 h-48 pointer-events-none flex flex-col justify-end z-20">
-              <div className="space-y-2 overflow-y-auto no-scrollbar pointer-events-none">
-                 <AnimatePresence>
-                   {messages.map((msg) => (
-                      <motion.div 
-                        key={msg.id}
-                        initial={{ opacity: 0, x: -20, scale: 0.9 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        className="flex items-start gap-2 max-w-[80%]"
-                      >
-                         <img src={msg.senderAvatar} className="w-6 h-6 rounded-full border border-white/10 shrink-0" alt="" />
-                         <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-2xl rounded-tl-none border border-white/10 shadow-xl">
-                            <div className="text-[10px] font-bold text-primary mb-0.5">{msg.senderName}</div>
-                            <div className="text-xs text-white/90 leading-tight">{msg.content}</div>
-                         </div>
-                      </motion.div>
-                   ))}
+           <div className="absolute bottom-20 left-6 right-6 h-64 pointer-events-none flex flex-col justify-end z-20">
+              <div className="space-y-3 overflow-y-auto no-scrollbar pointer-events-auto p-4 mask-fade-top h-full">
+                 <AnimatePresence mode="popLayout">
+                   {messages.map((msg) => {
+                     const isMe = msg.senderId === socketRef.current?.id;
+                     const isSystem = msg.senderId === 'system';
+
+                     if (isSystem) {
+                       return (
+                         <motion.div 
+                           key={msg.id}
+                           initial={{ opacity: 0, y: 10 }}
+                           animate={{ opacity: 1, y: 0 }}
+                           className="flex justify-center my-2"
+                         >
+                           <span className="text-[10px] font-black uppercase tracking-widest text-white/20 bg-white/5 px-2 py-1 rounded-full border border-white/5">
+                             {msg.content}
+                           </span>
+                         </motion.div>
+                       );
+                     }
+
+                     return (
+                       <motion.div 
+                         key={msg.id}
+                         layout
+                         initial={{ opacity: 0, x: isMe ? 20 : -20, scale: 0.9 }}
+                         animate={{ opacity: 1, x: 0, scale: 1 }}
+                         exit={{ opacity: 0, scale: 0.8 }}
+                         className={cn(
+                           "flex items-start gap-2 max-w-[85%]",
+                           isMe ? "ml-auto flex-row-reverse" : "mr-auto"
+                         )}
+                       >
+                          <img src={msg.senderAvatar} className="w-8 h-8 rounded-full border border-white/10 shrink-0 shadow-lg" alt="" />
+                          <div className={cn(
+                            "backdrop-blur-xl px-4 py-2.5 rounded-2xl border shadow-2xl relative group",
+                            isMe 
+                             ? "bg-primary/20 border-primary/20 rounded-tr-none text-right" 
+                             : "bg-white/5 border-white/10 rounded-tl-none"
+                          )}>
+                             <div className={cn(
+                               "text-[10px] font-bold mb-1 uppercase tracking-wider",
+                               isMe ? "text-primary-light" : "text-primary"
+                             )}>
+                               {msg.senderName} 
+                               <span className="ml-2 text-white/20 font-medium lowercase">
+                                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                               </span>
+                             </div>
+                             <div className="text-sm text-white/90 leading-relaxed font-medium">
+                               {msg.content}
+                             </div>
+                          </div>
+                       </motion.div>
+                     );
+                   })}
                  </AnimatePresence>
+                 
+                 {Object.keys(typingUsers).length > 0 && (
+                   <motion.div 
+                     initial={{ opacity: 0, y: 10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     className="flex items-center gap-2 text-[10px] font-bold text-white/30 uppercase tracking-widest pl-10"
+                   >
+                      <div className="flex gap-1">
+                         <span className="w-1 h-1 bg-primary rounded-full animate-bounce" />
+                         <span className="w-1 h-1 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                         <span className="w-1 h-1 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                      </div>
+                      {Object.values(typingUsers).join(', ')} {Object.keys(typingUsers).length === 1 ? 'is' : 'are'} typing...
+                   </motion.div>
+                 )}
+                 
+                 <div ref={messagesEndRef} />
               </div>
            </div>
            
@@ -526,7 +648,7 @@ export default function LiveRooms() {
                  <input 
                    type="text" 
                    value={chatInput}
-                   onChange={e => setChatInput(e.target.value)}
+                   onChange={handleChatInputChange}
                    placeholder="Say something to the room..."
                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 transition-all"
                  />
