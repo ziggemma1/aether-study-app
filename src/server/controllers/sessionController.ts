@@ -80,11 +80,24 @@ export const updateSession = async (req: Request, res: Response) => {
 
 export const deleteSession = async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const session = await StudySession.findOneAndDelete({ 
       _id: req.params.id, 
-      userId: (req as any).userId 
+      userId: userId 
     });
+    
     if (!session) return res.status(404).json({ message: 'Session not found' });
+
+    // Revert user stats if it was a study session
+    if (session.type === 'study' && session.durationMinutes > 0) {
+      await User.findByIdAndUpdate(userId, {
+        $inc: { 
+          totalStudyTime: -session.durationMinutes,
+          aetherPoints: -(session.durationMinutes * 10)
+        }
+      });
+    }
+
     res.json({ message: 'Session deleted' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

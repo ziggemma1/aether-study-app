@@ -211,6 +211,11 @@ export const reviewFlashcard = async (req: Request, res: Response) => {
     card.easeFactor = easeFactor;
     card.nextReview = new Date(Date.now() + interval * 24 * 60 * 60 * 1000);
 
+    // Reward for reviewing (e.g., 5 Aether points per card)
+    await mongoose.model('User').findByIdAndUpdate(userId, {
+      $inc: { aetherPoints: 5 }
+    });
+
     await material.save();
     res.json({ message: "Review recorded", card });
   } catch (error: any) {

@@ -4,7 +4,7 @@ import { FriendRequest } from '../models/FriendRequest.js';
 
 export const getAllProfiles = async (req: Request, res: Response) => {
   try {
-    const users = await User.find({}).select('name avatar streak following followers followersCount friendsCount totalStudyTime optedInLeaderboard handle').sort({ totalStudyTime: -1 });
+    const users = await User.find({}).select('name avatar streak following followers followersCount friendsCount totalStudyTime aetherPoints optedInLeaderboard handle').sort({ aetherPoints: -1 });
     res.json(users);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

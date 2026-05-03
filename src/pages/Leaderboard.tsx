@@ -24,7 +24,7 @@ export default function Leaderboard() {
 
   const topLearners = Array.isArray(allProfiles) 
     ? [...allProfiles].filter(p => p.optedInLeaderboard || (user && (p._id === user.id || p.id === user.id)))
-        .sort((a, b) => (b.totalStudyTime || 0) - (a.totalStudyTime || 0))
+        .sort((a, b) => (b.aetherPoints || 0) - (a.aetherPoints || 0))
         .slice(0, 10)
     : [];
 
@@ -35,7 +35,7 @@ export default function Leaderboard() {
           <Trophy size={36} />
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-text-main mb-2">Focus Leaderboards</h1>
-        <p className="text-text-muted mb-6 max-w-md">Weekly ranking based on total study time. Compete or cheer others on!</p>
+        <p className="text-text-muted mb-6 max-w-md">Weekly ranking based on Aether Points. Compete and climb the ranks!</p>
         
         <button 
           onClick={toggleOptIn}
@@ -55,14 +55,14 @@ export default function Leaderboard() {
           <div className="glass-card p-4 overflow-hidden relative">
             <div className="flex items-center justify-between px-2 pb-4 border-b border-border text-xs font-bold text-text-muted uppercase tracking-widest">
                <span>Rank & Learner</span>
-               <span>Focus Time</span>
+               <span>Aether Points</span>
             </div>
             
             <div className="mt-4 space-y-2">
                {topLearners.map((learner, idx) => {
                  const isMe = (learner._id || learner.id) === user?.id;
                  const rank = idx + 1;
-                 const hours = Math.floor((learner.totalStudyTime || 0) / 60) || 0;
+                 const points = learner.aetherPoints || 0;
                  return (
                    <motion.div 
                      key={learner.id || idx}
@@ -92,7 +92,7 @@ export default function Leaderboard() {
                       
                       <div className="text-right">
                          <div className="flex items-center gap-1.5 text-text-main font-bold">
-                           <Clock size={14} className="text-primary hidden sm:block" /> {hours}h {(learner.totalStudyTime || 0) % 60}m
+                            <span className="text-primary tracking-tighter">⚡</span> {points.toLocaleString()}
                          </div>
                       </div>
                    </motion.div>

@@ -192,7 +192,7 @@ export default function Profile() {
                 <span className="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-widest">{t('friends')}</span>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
-                <span className="text-sm sm:text-xl font-bold text-text-main">{user?.points || 0}</span>
+                <span className="text-sm sm:text-xl font-bold text-text-main">{user?.aetherPoints || 0}</span>
                 <span className="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-widest">Points</span>
               </div>
             </div>
