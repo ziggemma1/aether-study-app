@@ -50,7 +50,7 @@ export const googleCallback = async (req: Request, res: Response) => {
     }
 
     const { email, name, picture } = payload;
-    const normalizedEmail = email.toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
     
     let user = await User.findOne({ email: normalizedEmail });
     if (!user) {
@@ -85,10 +85,16 @@ export const googleCallback = async (req: Request, res: Response) => {
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, country, language } = req.body;
-    const normalizedEmail = email.toLowerCase();
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email and password are required' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
     
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
+      console.log(`Registration failed: User ${normalizedEmail} already exists`);
       return res.status(400).json({ message: 'User already exists' });
     }
 
@@ -139,7 +145,7 @@ export const register = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Registration error:', error);
     res.status(500).json({ 
-      message: 'Registration failed', 
+      message: 'Registration failed due to an internal server error', 
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -149,19 +155,23 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    const normalizedEmail = email.toLowerCase();
 
-    console.log(`Login attempt for: ${normalizedEmail}`);
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    console.log(`Login attempt for: "${normalizedEmail}"`);
 
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
-      console.log('User not found');
+      console.log(`Login failed: User "${normalizedEmail}" not found`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     const isMatch = await (user as any).comparePassword(password);
     if (!isMatch) {
-      console.log('Password mismatch');
+      console.log(`Login failed: Password mismatch for ${normalizedEmail}`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -203,7 +213,7 @@ export const login = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Login error:', error);
     res.status(500).json({ 
-      message: 'Login failed', 
+      message: 'Login failed due to an internal server error', 
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });

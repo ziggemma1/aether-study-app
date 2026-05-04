@@ -46,7 +46,19 @@ export default function LoginPage() {
         );
       } else {
         const status = err.response?.status;
-        const message = err.response?.data?.message || err.message || 'Failed to log in';
+        const responseData = err.response?.data;
+        let message = 'Failed to log in';
+        
+        if (responseData) {
+          if (typeof responseData === 'string') {
+            message = responseData;
+          } else if (responseData.message) {
+            message = responseData.message;
+          }
+        } else {
+          message = err.message || 'Failed to log in';
+        }
+
         setError(status ? `Error ${status}: ${message}` : message);
       }
     } finally {

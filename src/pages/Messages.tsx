@@ -21,24 +21,14 @@ import { useAppContext } from '../context/AppContext';
 import api from '../services/api';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
+import { useMessaging } from '../hooks/useMessaging';
 
-
-const suggestedFriends = [
-  { id: '101', name: 'Sarah Jenkins', school: 'Lagos State University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
-  { id: '102', name: 'David Okafor', school: 'University of Ibadan', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David' },
-  { id: '103', name: 'Chinelo Obi', school: 'Covenant University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chinelo' },
-  { id: '104', name: 'Tunde Bakare', school: 'Obafemi Awolowo University', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Tunde' },
-];
 
 export default function Messages() {
   const { 
-    messages, 
     user, 
     groups, 
     setGroups, 
-    typingUsers, 
-    sendMessage, 
-    setTyping, 
     allProfiles, 
     friendRequests,
     isLoading: isLoadingProfiles 
@@ -49,73 +39,63 @@ export default function Messages() {
   const [showChatMobile, setShowChatMobile] = useState(false);
   const [input, setInput] = useState('');
 
-  // Derive final chat list combining messages, profiles and groups
+  // Persistent Messaging Hook
+  const {
+    chatMessages,
+    unreadCounts,
+    isTyping,
+    isConnected,
+    sendDM,
+    sendGroupMessage,
+    setTypingStatus
+  } = useMessaging(
+    selectedChat?.type === 'private' ? selectedChat.id : undefined,
+    selectedChat?.type === 'group' ? selectedChat.id : undefined
+  );
+
+  // Derive final chat list combining profiles and groups
   const chatList = React.useMemo(() => {
     if (!user) return [];
     
     if (activeTab === 'groups') {
       return groups.map(g => {
-        const lastMsg = messages.filter(m => m.groupId === g.id).slice(-1)[0];
         return {
           id: g.id,
           name: g.name,
           avatar: g.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${g.name}`,
           type: 'group',
-          lastMsg: lastMsg?.content || 'Group created',
-          time: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-          isTyping: !!typingUsers[g.id]
+          lastMsg: 'Study Group',
+          time: '',
+          unread: 0,
+          isTyping: false
         };
       });
     }
 
     const contactMap = new Map();
-    // 1. Process messages to find active contacts
-    messages.filter(m => !m.groupId).forEach(m => {
-      const otherId = m.senderId === user.id ? m.receiverId : m.senderId;
-      if (otherId && !contactMap.has(otherId)) {
-        const otherProfile = allProfiles.find(p => p.id === otherId);
-        const isFriend = user.following?.includes(otherId) && otherProfile?.following?.includes(user.id);
-        
-        contactMap.set(otherId, {
-          id: otherId,
-          name: m.senderName || otherProfile?.name || 'User',
-          avatar: m.senderAvatar || otherProfile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherId}`,
-          lastMsg: m.content,
-          time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          unread: m.receiverId === user.id && !m.isRead ? 1 : 0,
+    
+    // Add profiles
+    allProfiles.filter(p => p.id !== user.id).forEach(p => {
+      const isFriend = user.following?.includes(p.id) && p.following?.includes(user.id);
+      
+      // If we're on 'chats' tab, we might want to only show people we have messages with or friends
+      if (activeTab === 'friends' || (activeTab === 'chats' && isFriend)) {
+        contactMap.set(p.id, {
+          id: p.id,
+          name: p.name || 'User',
+          avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
+          lastMsg: isFriend ? 'Tap to message' : 'Follow each other to chat',
+          time: '',
+          unread: unreadCounts[p.id] || 0,
           type: 'private',
-          isTyping: !!typingUsers[otherId],
+          isTyping: false,
           isFriend
         });
       }
     });
 
-    // 2. Add profiles that aren't in active chats if search/all view
-    if (activeTab === 'friends' || contactMap.size === 0) {
-      allProfiles.filter(p => p.id !== user.id).forEach(p => {
-        if (!contactMap.has(p.id)) {
-          const isFriend = user.following?.includes(p.id) && p.following?.includes(user.id);
-          contactMap.set(p.id, {
-            id: p.id,
-            name: p.name || 'User',
-            avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
-            lastMsg: isFriend ? 'Start a conversation' : 'Follow each other to chat',
-            time: '',
-            unread: 0,
-            type: 'private',
-            isTyping: false,
-            isFriend
-          });
-        }
-      });
-    }
-
-    // Filter by friendship if in 'chats' tab (maybe show everyone you have messages with, but indicate status)
-    // Actually, user said "users should also not be able to send any message unless theyre friends"
-    // So if someone is NOT a friend, we should show it.
-    
     return Array.from(contactMap.values());
-  }, [messages, user, allProfiles, activeTab, groups, typingUsers]);
+  }, [user, allProfiles, activeTab, groups, unreadCounts]);
 
   const currentChatData = chatList.find(c => c.id === selectedChat?.id);
   const isChatBlocked = selectedChat?.type === 'private' && !currentChatData?.isFriend;
@@ -125,13 +105,13 @@ export default function Messages() {
     if (!input.trim() || !selectedChat || isChatBlocked) return;
     
     if (selectedChat.type === 'group') {
-      sendMessage(input.trim(), undefined, selectedChat.id);
+      sendGroupMessage(input.trim());
     } else {
-      sendMessage(input.trim(), selectedChat.id, undefined);
+      sendDM(input.trim());
     }
     
     setInput('');
-    setTyping(false, selectedChat.type === 'private' ? selectedChat.id : undefined, selectedChat.type === 'group' ? selectedChat.id : undefined);
+    setTypingStatus(false);
   };
 
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -158,12 +138,7 @@ export default function Messages() {
     }
   };
 
-  const activeMessages = messages.filter(m => {
-    if (!selectedChat) return false;
-    if (selectedChat.type === 'group') return m.groupId === selectedChat.id;
-    return (m.senderId === user?.id && m.receiverId === selectedChat.id) || 
-           (m.senderId === selectedChat.id && m.receiverId === user?.id);
-  }).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const activeMessages = chatMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -326,7 +301,7 @@ export default function Messages() {
                 <div>
                   <h2 className="text-sm sm:text-lg font-bold text-text-main truncate max-w-[120px] sm:max-w-none">{selectedChat.name}</h2>
                   <p className="text-[10px] sm:text-xs text-primary font-medium flex items-center gap-1">
-                    {typingUsers[selectedChat.id] ? 'typing...' : (selectedChat.type === 'group' ? 'Group Study' : (isChatBlocked ? 'Mutual friends only' : 'Active Channel'))}
+                    {isTyping ? 'typing...' : (selectedChat.type === 'group' ? 'Group Study' : (isChatBlocked ? 'Mutual friends only' : (isConnected ? 'Online' : 'Reconnecting...')))}
                   </p>
                 </div>
               </div>
@@ -350,25 +325,31 @@ export default function Messages() {
               ) : (
                 activeMessages.map((msg, idx) => (
                   <div 
-                    key={msg.id || idx}
+                    key={msg._id || idx}
                     className={cn(
-                      "flex gap-3 max-w-[85%]",
-                      msg.senderId === user?.id ? "ml-auto flex-row-reverse" : ""
+                      "flex flex-col gap-1 max-w-[85%]",
+                      msg.fromUserId === user?.id ? "ml-auto" : ""
                     )}
                   >
+                    {selectedChat.type === 'group' && msg.fromUserId !== user?.id && (
+                      <p className="text-[10px] font-bold text-primary ml-1">{msg.fromUserName || 'Member'}</p>
+                    )}
                     <div className={cn(
                       "p-3 rounded-2xl text-xs sm:text-sm shadow-sm",
-                      msg.senderId === user?.id 
+                      msg.fromUserId === user?.id 
                         ? "bg-primary text-white rounded-br-none" 
                         : "bg-surface-alt border border-border text-text-main rounded-bl-none"
                     )}>
-                      {msg.content}
-                      <p className={cn(
-                        "text-[8px] mt-1 opacity-70",
-                        msg.senderId === user?.id ? "text-right" : "text-left"
+                      {msg.text}
+                      <div className={cn(
+                        "flex items-center gap-1 mt-1 opacity-70 text-[8px]",
+                        msg.fromUserId === user?.id ? "justify-end" : "justify-start"
                       )}>
-                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                        <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {msg.fromUserId === user?.id && selectedChat.type === 'private' && (
+                          msg.isRead ? <CheckCheck size={10} className="text-secondary-light" /> : <CheckCheck size={10} />
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -394,9 +375,9 @@ export default function Messages() {
                       value={input}
                       onChange={(e) => {
                         setInput(e.target.value);
-                        setTyping(e.target.value.length > 0, selectedChat.type === 'private' ? selectedChat.id : undefined, selectedChat.type === 'group' ? selectedChat.id : undefined);
+                        setTypingStatus(e.target.value.length > 0);
                       }}
-                      onBlur={() => setTyping(false, selectedChat.type === 'private' ? selectedChat.id : undefined, selectedChat.type === 'group' ? selectedChat.id : undefined)}
+                      onBlur={() => setTypingStatus(false)}
                       placeholder="Type a message..." 
                       className="w-full bg-surface-alt/50 border border-border rounded-xl py-2.5 sm:py-3 px-4 text-xs sm:text-sm outline-none focus:border-primary/50 transition-all text-text-main"
                     />
