@@ -33,6 +33,9 @@ export default function LoginPage() {
 
     try {
       const response = await api.post('/auth/login', { email, password });
+      if (response.data.token) {
+        localStorage.setItem('auth_token', response.data.token);
+      }
       setUser(response.data.user);
       navigate('/dashboard');
     } catch (err: any) {

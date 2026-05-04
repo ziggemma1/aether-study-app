@@ -61,6 +61,9 @@ export default function SignupPage() {
         country,
         language
       });
+      if (response.data.token) {
+        localStorage.setItem('auth_token', response.data.token);
+      }
       setUser(response.data.user);
       navigate('/dashboard');
     } catch (err: any) {

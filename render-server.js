@@ -17,15 +17,25 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
 const FRONTEND_URL = process.env.FRONTEND_URL || '*';
 const PORT = process.env.PORT || 4000;
 
+if (!MONGODB_URI) {
+  console.error("FATAL: MONGODB_URI is not defined in environment variables.");
+}
+
 // Middleware for Health Check
 app.get('/health', (req, res) => {
-  res.json({ status: "ok", environment: process.env.NODE_ENV });
+  res.json({ 
+    status: "ok", 
+    mongo: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    environment: process.env.NODE_ENV 
+  });
 });
 
 // MongoDB Connection
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB Atlas for Persistent Messaging'))
-  .catch(err => console.error('MongoDB connection error:', err));
+if (MONGODB_URI) {
+  mongoose.connect(MONGODB_URI)
+    .then(() => console.log('Connected to MongoDB Atlas for Persistent Messaging'))
+    .catch(err => console.error('MongoDB connection error:', err));
+}
 
 // MongoDB Schemas
 const directMessageSchema = new mongoose.Schema({
@@ -63,7 +73,7 @@ const io = new Server(server, {
   cors: {
     origin: FRONTEND_URL,
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: FRONTEND_URL !== '*'
   },
   pingTimeout: 60000,
 });

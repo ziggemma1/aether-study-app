@@ -4,7 +4,7 @@ import { useAppContext } from '../context/AppContext';
 
 // This URL should be your Render server URL
 // Defined as VITE_SOCKET_URL in .env
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://aether-socket-server-17zk.onrender.com';
 
 export interface Message {
   _id: string;
@@ -31,19 +31,21 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
   useEffect(() => {
     if (!user) return;
 
-    // Get token from cookies
-    const match = document.cookie.match(new RegExp('(^| )token=([^;]+)'));
-    const token = match ? match[2] : null;
+    const token = localStorage.getItem('auth_token');
 
     if (!token) {
-      console.warn('Messaging: No auth token found in cookies');
+      console.warn('Messaging: No auth token found in localStorage. WebSocket connection skipped.');
       return;
     }
+
+    console.log('Messaging: Attempting to connect to', SOCKET_URL);
 
     const newSocket = io(SOCKET_URL, {
       auth: { token },
       autoConnect: true,
       reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
       transports: ['websocket', 'polling']
     });
 
@@ -52,13 +54,18 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
 
     newSocket.on('connect', () => {
       setIsConnected(true);
-      console.log('Messaging: Socket connected');
+      console.log('Messaging: Socket connected successfully to Render server');
       newSocket.emit('get-unread-counts', { userId: user.id });
     });
 
-    newSocket.on('disconnect', () => {
+    newSocket.on('connect_error', (err) => {
+      console.error('Messaging: Connection error:', err.message);
       setIsConnected(false);
-      console.log('Messaging: Socket disconnected');
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      setIsConnected(false);
+      console.log('Messaging: Socket disconnected. Reason:', reason);
     });
 
     // Listen for DMs

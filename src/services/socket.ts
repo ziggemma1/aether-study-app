@@ -25,8 +25,12 @@ export const getSocket = (token?: string) => {
       targetUrl = origin;
     }
 
-    // Try to get token from cookies if not provided
+    // Try to get token from localStorage first, then cookies
     let finalToken = token;
+    if (!finalToken) {
+      finalToken = localStorage.getItem('auth_token') || undefined;
+    }
+    
     if (!finalToken) {
       const match = document.cookie.match(new RegExp('(^| )token=([^;]+)'));
       if (match) finalToken = match[2];

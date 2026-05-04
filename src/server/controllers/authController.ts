@@ -118,6 +118,7 @@ export const register = async (req: Request, res: Response) => {
     });
 
     res.status(201).json({
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -186,6 +187,7 @@ export const login = async (req: Request, res: Response) => {
     });
 
     res.json({
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -234,6 +236,7 @@ export const getMe = async (req: Request, res: Response) => {
     
     // Transform to consistent frontend structure
     res.json({
+      token: req.cookies?.token, // Include token from cookie so SPA can have it for side-channels
       id: user._id,
       name: user.name,
       email: user.email,
