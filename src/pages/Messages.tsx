@@ -138,7 +138,9 @@ export default function Messages() {
     }
   };
 
-  const activeMessages = chatMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  const activeMessages = React.useMemo(() => {
+    return [...chatMessages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }, [chatMessages]);
 
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => {

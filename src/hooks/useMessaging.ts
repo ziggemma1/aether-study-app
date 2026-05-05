@@ -26,8 +26,16 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
   const [isConnected, setIsConnected] = useState<boolean>(false);
   
   const socketRef = useRef<Socket | null>(null);
+  const selectedUserRef = useRef<string | undefined>(selectedUserId);
+  const selectedGroupRef = useRef<string | undefined>(selectedGroupId);
+  const userRef = useRef(user);
 
-  // Initialize Socket
+  // Keep refs in sync
+  useEffect(() => { selectedUserRef.current = selectedUserId; }, [selectedUserId]);
+  useEffect(() => { selectedGroupRef.current = selectedGroupId; }, [selectedGroupId]);
+  useEffect(() => { userRef.current = user; }, [user]);
+
+  // Initialize Socket (Once per user)
   useEffect(() => {
     if (!user) return;
 
@@ -54,8 +62,16 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
 
     newSocket.on('connect', () => {
       setIsConnected(true);
-      console.log('Messaging: Socket connected successfully to Render server');
+      console.log('Messaging: Socket connected successfully');
       newSocket.emit('get-unread-counts', { userId: user.id });
+      
+      // If we already have a selection, request history/join
+      if (selectedUserRef.current) {
+        newSocket.emit('load-dm-history', { withUserId: selectedUserRef.current, currentUserId: user.id });
+      } else if (selectedGroupRef.current) {
+        newSocket.emit('join-group-chat', { groupId: selectedGroupRef.current });
+        newSocket.emit('load-group-history', { groupId: selectedGroupRef.current });
+      }
     });
 
     newSocket.on('connect_error', (err) => {
@@ -70,12 +86,25 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
 
     // Listen for DMs
     newSocket.on('receive-dm', (msg: Message) => {
-      // If we are currently chatting with this user, add to messages
-      if (selectedUserId && msg.fromUserId === selectedUserId) {
-        setChatMessages(prev => [...prev, msg]);
-        newSocket.emit('mark-dm-read', { fromUserId: selectedUserId, currentUserId: user.id });
-      } else {
-        // Increment unread count
+      const currentSelectedUser = selectedUserRef.current;
+      const currentUser = userRef.current;
+      
+      // If we are currently chatting with the other party (sender or recipient)
+      const isCurrentChat = currentSelectedUser && (msg.fromUserId === currentSelectedUser || msg.toUserId === currentSelectedUser);
+      
+      if (isCurrentChat) {
+        setChatMessages(prev => {
+          // Prevent duplicates (especially if sender gets back their own msg)
+          if (prev.find(m => m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
+        
+        // Mark as read only if we are the recipient
+        if (msg.toUserId === currentUser?.id) {
+          newSocket.emit('mark-dm-read', { fromUserId: msg.fromUserId, currentUserId: currentUser.id });
+        }
+      } else if (currentUser && msg.toUserId === currentUser.id) {
+        // Increment unread count only if we are the recipient and NOT in the chat
         setUnreadCounts(prev => ({
           ...prev,
           [msg.fromUserId]: (prev[msg.fromUserId] || 0) + 1
@@ -83,36 +112,37 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
       }
     });
 
-    newSocket.on('dm-sent', (msg: Message) => {
-      setChatMessages(prev => [...prev, msg]);
-    });
-
-    newSocket.on('dm-history', (history: Message[]) => {
-      setChatMessages(history);
+    newSocket.on('dm-history', ({ withUserId, messages }: { withUserId: string, messages: Message[] }) => {
+      if (selectedUserRef.current === withUserId) {
+        setChatMessages(messages);
+      }
     });
 
     // Listen for Group Messages
     newSocket.on('receive-group-message', (msg: Message) => {
-      if (selectedGroupId && msg.groupId === selectedGroupId) {
-        setChatMessages(prev => [...prev, msg]);
+      if (selectedGroupRef.current === msg.groupId) {
+        setChatMessages(prev => {
+          if (prev.find(m => m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
       }
     });
 
     newSocket.on('group-history', ({ groupId, messages }: { groupId: string, messages: Message[] }) => {
-      if (selectedGroupId === groupId) {
+      if (selectedGroupRef.current === groupId) {
         setChatMessages(messages);
       }
     });
 
     // Typing Indicators
     newSocket.on('user-typing', ({ fromUserId, isTyping: typing }: { fromUserId: string, isTyping: boolean }) => {
-      if (selectedUserId === fromUserId) {
+      if (selectedUserRef.current === fromUserId) {
         setIsTyping(typing);
       }
     });
 
     newSocket.on('group-typing', ({ groupId, isTyping: typing }: { groupId: string, isTyping: boolean }) => {
-      if (selectedGroupId === groupId) {
+      if (selectedGroupRef.current === groupId) {
         setIsTyping(typing);
       }
     });
@@ -125,28 +155,30 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
       newSocket.disconnect();
       socketRef.current = null;
     };
-  }, [user, selectedUserId, selectedGroupId]);
+  }, [user]);
 
-  // Load History when selection changes
+  // Selection Logic (Joining rooms/Requesting history)
   useEffect(() => {
-    if (!socket || !user) return;
+    const socket = socketRef.current;
+    if (!socket || !isConnected || !user) return;
 
     if (selectedUserId) {
       socket.emit('load-dm-history', { withUserId: selectedUserId, currentUserId: user.id });
       socket.emit('mark-dm-read', { fromUserId: selectedUserId, currentUserId: user.id });
-      // Reset local unread count
       setUnreadCounts(prev => ({ ...prev, [selectedUserId]: 0 }));
+      setChatMessages([]); // Clear while loading
     } else if (selectedGroupId) {
       socket.emit('join-group-chat', { groupId: selectedGroupId });
       socket.emit('load-group-history', { groupId: selectedGroupId });
+      setChatMessages([]); // Clear while loading
     }
 
     return () => {
-      if (selectedGroupId && socket) {
+      if (selectedGroupId) {
         socket.emit('leave-group-chat', { groupId: selectedGroupId });
       }
     };
-  }, [socket, selectedUserId, selectedGroupId, user]);
+  }, [selectedUserId, selectedGroupId, isConnected, user]);
 
   // Actions
   const sendDM = useCallback((text: string) => {

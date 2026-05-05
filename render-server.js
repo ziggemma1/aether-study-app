@@ -101,6 +101,7 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   const userId = String(socket.userId);
   onlineUsers.set(userId, socket.id);
+  socket.join(userId); // Join a room for the user ID to handle multi-tab sync
   console.log(`[CONN] User Connected: ${userId} (Socket: ${socket.id})`);
 
   // --- DM Events ---
@@ -116,23 +117,18 @@ io.on('connection', (socket) => {
       });
       await newMsg.save();
 
-      const recipientSocketId = getSocketId(toUserId);
       const payload = {
         _id: newMsg._id,
         fromUserId,
+        toUserId,
         fromUserName,
         text,
         timestamp: newMsg.timestamp,
         isRead: false
       };
 
-      // Emit to recipient if online
-      if (recipientSocketId) {
-        io.to(recipientSocketId).emit('receive-dm', payload);
-      }
-
-      // Also send back to sender for confirmation/sync
-      socket.emit('dm-sent', payload);
+      // Emit to both the sender and the recipient rooms
+      io.to(String(fromUserId)).to(String(toUserId)).emit('receive-dm', payload);
       
       console.log(`[DM] From ${fromUserId} to ${toUserId}: ${text.slice(0, 20)}...`);
     } catch (err) {
@@ -152,7 +148,7 @@ io.on('connection', (socket) => {
       .sort({ timestamp: -1 })
       .limit(50);
 
-      socket.emit('dm-history', messages.reverse());
+      socket.emit('dm-history', { withUserId, messages: messages.reverse() });
     } catch (err) {
       console.error('[ERR] load-dm-history:', err);
     }
