@@ -32,11 +32,9 @@ if (error.response?.status === 503 && error.response?.data?.message?.includes('D
   }
 }
     if (error.response?.status === 401) {
-      // Clear user data and redirect to login if unauthorized
+      // Clear user data but don't force redirect here, handle in components
       localStorage.removeItem('user');
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
-        window.location.href = '/login';
-      }
+      localStorage.removeItem('auth_token');
     }
     return Promise.reject(error);
   }

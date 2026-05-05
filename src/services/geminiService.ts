@@ -7,7 +7,7 @@ let aiClient: GoogleGenAI | null = null;
 
 const getAiClient = () => {
   if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       console.error("❌ MISSING API KEY: GEMINI_API_KEY environment variable is not set.");
       console.error("👉 If you are on Vercel, add GEMINI_API_KEY to your Project Settings > Environment Variables.");

@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
             >
               Refresh Page
             </button>
-            {process.env.NODE_ENV === 'development' && (
+            {(typeof process !== 'undefined' ? process.env.NODE_ENV : import.meta.env.MODE) === 'development' && (
               <pre className="mt-6 p-4 bg-surface-alt rounded-lg text-left text-[10px] text-red-500 overflow-auto max-h-40">
                 {this.state.error?.toString()}
               </pre>

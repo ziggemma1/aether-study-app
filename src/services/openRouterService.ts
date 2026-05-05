@@ -2,7 +2,7 @@ import axios from 'axios';
 import { NoteSection } from '../types.js';
 
 const getOpenRouterKey = () => {
-  const key = process.env.OPENROUTER_API_KEY;
+  const key = typeof process !== 'undefined' ? process.env.OPENROUTER_API_KEY : import.meta.env.VITE_OPENROUTER_API_KEY;
   if (!key || key === 'undefined' || key.length < 10) {
     console.warn('⚠️ OPENROUTER_API_KEY is missing or invalid. Detailed notes generation via OpenRouter will be skipped.');
     return null;

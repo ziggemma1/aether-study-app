@@ -2,7 +2,7 @@ import { GoogleGenAI, Modality } from "@google/genai";
 
 export async function generateSpeech(text: string): Promise<string | null> {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       console.error("GEMINI_API_KEY is missing");
       return null;

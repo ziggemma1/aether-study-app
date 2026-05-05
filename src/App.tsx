@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useEffect } from 'react';
 import posthog from 'posthog-js';
-import { AppProvider } from './context/AppContext';
+import { AppProvider, useAppContext } from './context/AppContext';
 import AppLayout from './components/AppLayout';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
@@ -34,6 +34,15 @@ import Leaderboard from './pages/Leaderboard';
 import LiveRooms from './pages/LiveRooms';
 import Explore from './pages/Explore';
 
+function ProtectedRoute() {
+  const { user, isLoading } = useAppContext();
+  
+  if (isLoading) return null; // AppLayout handles loader
+  if (!user) return <Navigate to="/login" replace />;
+  
+  return <Outlet />;
+}
+
 export default function App() {
   useEffect(() => {
     if (import.meta.env.VITE_POSTHOG_KEY) {
@@ -54,31 +63,32 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
 
-          {/* Protected Routes (Wrapped in AppLayout) */}
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/library/:id" element={<MaterialDetail />} />
-            <Route path="/materials/:id/notes" element={<DetailedNotes />} />
-            <Route path="/flashcards/:id" element={<Flashcards />} />
-            <Route path="/upload" element={<UploadMaterial />} />
-            <Route path="/curriculum" element={<CurriculumLibrary />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/rooms" element={<LiveRooms />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/plans" element={<ReadingPlanGenerator />} />
-            <Route path="/quiz/:id" element={<QuizInterface />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/achievements" element={<Achievements />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/community" element={<FindFriends />} />
-            <Route path="/settings" element={<Settings />} />
-
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/subscription" element={<SubscriptionManagement />} />
+          {/* Protected Routes (Wrapped in AppLayout and ProtectedRoute) */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/library/:id" element={<MaterialDetail />} />
+              <Route path="/materials/:id/notes" element={<DetailedNotes />} />
+              <Route path="/flashcards/:id" element={<Flashcards />} />
+              <Route path="/upload" element={<UploadMaterial />} />
+              <Route path="/curriculum" element={<CurriculumLibrary />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/rooms" element={<LiveRooms />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/plans" element={<ReadingPlanGenerator />} />
+              <Route path="/quiz/:id" element={<QuizInterface />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/achievements" element={<Achievements />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/community" element={<FindFriends />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/subscription" element={<SubscriptionManagement />} />
+            </Route>
           </Route>
 
           {/* Fallback */}
