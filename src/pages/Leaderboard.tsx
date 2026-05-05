@@ -81,7 +81,7 @@ export default function Leaderboard() {
                          )}>
                             {rank}
                          </div>
-                         <div className="w-10 h-10 rounded-full border border-border/50 shrink-0 bg-primary/10 overflow-hidden">
+                         <div className="w-10 h-10 rounded-full border border-border/50 shrink-0 bg-primary/10 overflow-hidden avatar-hover-pulse cursor-pointer">
                             {learner.avatar ? <img src={learner.avatar} className="w-full h-full object-cover" /> : null}
                          </div>
                          <div className="min-w-0">

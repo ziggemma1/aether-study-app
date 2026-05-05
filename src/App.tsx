@@ -37,7 +37,17 @@ import Explore from './pages/Explore';
 function ProtectedRoute() {
   const { user, isLoading } = useAppContext();
   
-  if (isLoading) return null; // AppLayout handles loader
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground animate-pulse font-medium">Synchronizing study session...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) return <Navigate to="/login" replace />;
   
   return <Outlet />;

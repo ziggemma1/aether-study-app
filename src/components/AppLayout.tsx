@@ -5,12 +5,28 @@ import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
-import { Database, ArrowRight, Loader2, Sparkles, WifiOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Database, ArrowRight, Loader2, Sparkles, WifiOff, CheckCircle2, AlertCircle, ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AppLayout() {
   const { theme, timeTheme, dbError, isLoading, user, toast } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [showBackToTop, setShowBackToTop] = React.useState(false);
+  const mainRef = React.useRef<HTMLElement>(null);
+
+  React.useEffect(() => {
+    const mainEl = mainRef.current;
+    if (!mainEl) return;
+    const handleScroll = () => {
+      setShowBackToTop(mainEl.scrollTop > 400);
+    };
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => mainEl.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Critical loading should only block if there's no user in cache/state
   const isCriticalLoading = (isLoading && !user);
@@ -85,10 +101,25 @@ export default function AppLayout() {
       {/* Main Content Area */}
       <div className="flex-grow min-w-0 w-full max-w-[100vw] relative z-10 lg:ml-64 flex flex-col h-full bg-transparent transition-all duration-300 ease-out overflow-x-hidden">
         <TopNav onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="min-w-0 w-full max-w-[100vw] lg:max-w-[1600px] mx-auto px-4 md:px-8 pt-24 sm:pt-32 pb-36 sm:pb-10 flex-grow overflow-y-auto overflow-x-hidden scroll-smooth custom-scrollbar select-none overscroll-contain">
+        <main ref={mainRef} className="min-w-0 w-full max-w-[100vw] lg:max-w-[1600px] mx-auto px-4 md:px-8 pt-24 sm:pt-32 pb-36 sm:pb-10 flex-grow overflow-y-auto overflow-x-hidden scroll-smooth custom-scrollbar select-none overscroll-contain">
           <Outlet />
         </main>
         <BottomNav />
+        
+        {/* Back to Top */}
+        <AnimatePresence>
+          {showBackToTop && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.5, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.5, y: 20 }}
+              onClick={scrollToTop}
+              className="fixed bottom-32 right-6 sm:bottom-12 sm:right-12 z-[1000] p-3 sm:p-4 bg-primary text-white rounded-full shadow-2xl shadow-primary/20 hover:scale-110 active:scale-95 transition-all border border-white/20"
+            >
+              <ArrowUp size={24} />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -355,15 +355,18 @@ export default function Settings() {
                           <p className="font-bold text-[10px] sm:text-sm text-text-main group-hover:text-primary transition-colors">{pref.title}</p>
                           <p className="text-[8px] sm:text-xs text-text-muted">{pref.desc}</p>
                         </div>
-                        <div className={cn(
-                          "w-10 h-5 sm:w-12 sm:h-6 rounded-full relative transition-all",
-                          pref.active ? "bg-primary" : "bg-border"
-                        )}>
-                          <div className={cn(
-                            "absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all",
-                            pref.active ? "right-0.5 sm:right-1" : "left-0.5 sm:left-1"
-                          )} />
-                        </div>
+                        <motion.div 
+                          initial={false}
+                          animate={{ backgroundColor: pref.active ? "var(--color-primary)" : "var(--color-border)" }}
+                          className="w-10 h-5 sm:w-12 sm:h-6 rounded-full relative transition-all"
+                        >
+                          <motion.div 
+                            initial={false}
+                            animate={{ x: pref.active ? (window.innerWidth < 640 ? 20 : 24) : 4 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            className="absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                          />
+                        </motion.div>
                       </div>
                     ))}
                   </div>

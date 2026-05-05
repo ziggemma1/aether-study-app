@@ -52,8 +52,10 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
       auth: { token },
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 2000,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
       transports: ['websocket', 'polling']
     });
 

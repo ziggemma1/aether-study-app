@@ -282,13 +282,37 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
     >
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-primary opacity-80" />
       
+      {/* Gold Flash Effect */}
+      <motion.div 
+        animate={{ 
+          opacity: [0, 0.3, 0],
+          x: ['-100%', '200%']
+        }}
+        transition={{ 
+          duration: 3, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          repeatDelay: 5
+        }}
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/20 to-transparent skew-x-12 pointer-events-none"
+      />
+
       <div className="flex justify-between items-start mb-1">
         <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('global_rank')}</p>
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
         <div className="flex flex-col">
-          <span className="text-xl sm:text-3xl font-extrabold text-white tracking-tighter leading-none">#{rank}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xl sm:text-3xl font-extrabold text-white tracking-tighter leading-none">#{rank}</span>
+            <motion.span 
+              initial={{ opacity: 0, x: -5 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-[10px] font-black text-emerald-400"
+            >
+              <TrendingUp size={10} className="inline mr-0.5" /> 2
+            </motion.span>
+          </div>
           <span className="text-[9px] font-medium text-white/50 tracking-tight mt-0.5 whitespace-nowrap">of {total.toLocaleString()} learners</span>
         </div>
         <span className="text-[10px] sm:text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-auto">Top 2%</span>

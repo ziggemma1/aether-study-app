@@ -70,6 +70,8 @@ export default function LiveRooms() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const [newJoinerPulse, setNewJoinerPulse] = useState(false);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, typingUsers]);
@@ -158,6 +160,8 @@ export default function LiveRooms() {
           
           if (incomingId !== currentUserId) {
             showToast(`${pName} joined the room!`);
+            setNewJoinerPulse(true);
+            setTimeout(() => setNewJoinerPulse(false), 2000);
             // Add system message
             const systemMsg: RoomMessage = {
               id: `sys_${Date.now()}_join`,
@@ -635,7 +639,10 @@ export default function LiveRooms() {
            <div className="px-6 py-4 bg-black/40 backdrop-blur-xl border-t border-white/5 flex items-center gap-4 relative z-30">
               <button 
                 onClick={() => setShowParticipants(true)}
-                className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white/60 hover:text-white transition-all relative"
+                className={cn(
+                  "p-2.5 bg-white/5 border border-white/10 rounded-xl text-white/60 hover:text-white transition-all relative",
+                  newJoinerPulse && "ring-2 ring-primary animate-pulse shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] transition-all"
+                )}
               >
                 <Users size={20} />
                 {participants.length > 1 && (

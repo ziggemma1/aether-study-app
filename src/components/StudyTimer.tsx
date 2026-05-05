@@ -14,21 +14,29 @@ interface StudyTimerProps {
 }
 
 const AMBIENT_TRACKS = [
-  { id: 'none', label: 'No ambient', url: '' },
-  { id: 'rain', label: 'Rain Focus', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/rain.mp3' },
-  { id: 'cafe', label: 'Cafe Chatter', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/cafe.mp3' },
-  { id: 'lofi', label: 'Lofi Chill', url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' },
-  { id: 'nature', label: 'Nature Birds', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/forest.mp3' },
-  { id: 'waves', label: 'Ocean Waves', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/ocean.mp3' },
-  { id: 'white_noise', label: 'White Noise', url: 'https://cdn.jsdelivr.net/gh/EgeOnat/ambient-sounds/sounds/white-noise.mp3' },
-  { id: 'library', label: 'Old Library', url: 'https://cdn.jsdelivr.net/gh/scottschiller/SoundManager2/demo/_mp3/rain.mp3' }
+  { id: 'none', label: 'Pure Silence', url: '' },
+  { id: 'lofi_1', label: 'Lo-Fi Chill', url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' },
+  { id: 'alpha', label: 'Alpha Waves', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3' },
+  { id: 'piano', label: 'Soft Piano', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
+  { id: 'synth', label: 'Cosmic Focus', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3' },
+  { id: 'rain_focus', label: 'Deep Rain', url: 'https://assets.mixkit.co/sfx/preview/mixkit-light-rain-loop-2393.mp3' },
+  { id: 'forest', label: 'Forest Wind', url: 'https://assets.mixkit.co/sfx/preview/mixkit-forest-wind-and-birds-1222.mp3' }
 ];
 
 export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readContent }) => {
   const [seconds, setSeconds] = useState(0);
-  const [isActive, setIsActive] = useState(true);
+  const [targetSeconds, setTargetSeconds] = useState(25 * 60); // Default 25 min Pomodoro
+  const [isActive, setIsActive] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const progress = useMemo(() => {
+    return Math.min(100, (seconds / targetSeconds) * 100);
+  }, [seconds, targetSeconds]);
+
+  const radius = 30;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
   
   const [deepFocus, setDeepFocus] = useState(false);
   const [ambientTrack, setAmbientTrack] = useState(AMBIENT_TRACKS[0]);
@@ -103,70 +111,107 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   const [isSelectingAmbient, setIsSelectingAmbient] = useState(false);
   const [isAmbientLoading, setIsAmbientLoading] = useState(false);
 
-  // Audio event listeners
+  // Audio event listeners & Management
   useEffect(() => {
-    if (!audioRef.current) return;
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.loop = true;
+    }
 
     const audio = audioRef.current;
-    const onPlaying = () => setIsAmbientLoading(false);
-    const onLoadStart = () => {
-      if (ambientTrack.url) setIsAmbientLoading(true);
-    };
-    const onError = () => {
+    
+    const handleCanPlay = () => {
       setIsAmbientLoading(false);
-      if (ambientTrack.url && isActive) {
-        showToast(`Failed to load: ${ambientTrack.label}`, "error");
+      // If timer is on and we are paused, start playing
+      if (isActive && ambientTrack.url && audio.paused) {
+        audio.play().catch(e => {
+          console.warn("Playback blocked or failed:", e.message);
+          // If it failed because it wasn't ready, load() will help trigger another canplay
+        });
       }
     };
 
-    audio.addEventListener('playing', onPlaying);
-    audio.addEventListener('loadstart', onLoadStart);
-    audio.addEventListener('error', onError);
+    const handlePlaying = () => setIsAmbientLoading(false);
+    
+    const handleLoadStart = () => {
+      if (ambientTrack.url) setIsAmbientLoading(true);
+    };
+
+    const handleError = (e: any) => {
+      setIsAmbientLoading(false);
+      console.error("Audio Error:", e);
+      // Some tracks might fail on mobile or due to CORS, provide clear feedback
+      if (ambientTrack.url && isActive) {
+        showToast(`Sound server unreachable. Trying next...`, "error");
+      }
+    };
+
+    audio.addEventListener('canplaythrough', handleCanPlay);
+    audio.addEventListener('playing', handlePlaying);
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('error', handleError);
+    audio.preload = "auto"; // Explicitly set preload
 
     return () => {
-      audio.removeEventListener('playing', onPlaying);
-      audio.removeEventListener('loadstart', onLoadStart);
-      audio.removeEventListener('error', onError);
+      audio.removeEventListener('canplaythrough', handleCanPlay);
+      audio.removeEventListener('playing', handlePlaying);
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('error', handleError);
     };
-  }, [ambientTrack, isActive]);
+  }, [isActive, ambientTrack.url, showToast]);
 
-  // Handle ambient track changes
+  // Handle ambient volume updates
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = ambientVolume;
-      if (ambientTrack.url && isActive) {
-        audioRef.current.src = ambientTrack.url;
-        audioRef.current.play().catch(e => console.warn("Audio playback failed (likely due to missing user interaction):", e.message));
-      } else {
-        audioRef.current.pause();
-      }
     }
-  }, [ambientTrack, isActive, ambientVolume]);
+  }, [ambientVolume]);
 
-  const cycleAmbient = () => {
-    setIsSelectingAmbient(!isSelectingAmbient);
-  };
+  // Sync audio with isActive state
+  useEffect(() => {
+    if (!audioRef.current) return;
+    const audio = audioRef.current;
+
+    if (isActive) {
+      if (ambientTrack.url) {
+        if (audio.src !== ambientTrack.url) {
+          audio.src = ambientTrack.url;
+          audio.load();
+        }
+        audio.play().catch(() => {});
+      }
+    } else {
+      audio.pause();
+    }
+  }, [isActive, ambientTrack.url]);
 
   const selectAmbient = (track: typeof AMBIENT_TRACKS[0]) => {
     setAmbientTrack(track);
     setIsSelectingAmbient(false);
-    showToast(`Track: ${track.label}`, 'success');
-  };
-
-  useEffect(() => {
-    if (!audioRef.current) {
-       audioRef.current = new Audio();
-       audioRef.current.loop = true;
-       audioRef.current.volume = ambientVolume;
-       audioRef.current.crossOrigin = "anonymous";
+    
+    if (audioRef.current) {
+      // Pause current
+      audioRef.current.pause();
+      
+      if (track.url) {
+        setIsAmbientLoading(true);
+        audioRef.current.src = track.url;
+        audioRef.current.load();
+        
+        // If timer is on, it will auto-play via the useEffect
+        // If timer is off, we can optionally play a quick 3s preview or just wait
+        if (!isActive) {
+           // Preview for 3 seconds? Or just let it be. Let's start it and then the useEffect will pause it if needed.
+           // Actually, let's just let it load.
+        }
+      } else {
+        audioRef.current.src = "";
+        setIsAmbientLoading(false);
+      }
     }
-    return () => {
-       if (audioRef.current) {
-         audioRef.current.pause();
-         audioRef.current.src = "";
-       }
-    };
-  }, []);
+    
+    showToast(`Selected: ${track.label}${!isActive && track.url ? ' (Start timer to play)' : ''}`, 'success');
+  };
 
   useEffect(() => {
     const loadVoices = () => {
@@ -270,6 +315,10 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
         setIsPlayingAudio(true);
       }
     }
+  };
+
+  const cycleAmbient = () => {
+    setIsSelectingAmbient(!isSelectingAmbient);
   };
 
   // If content changes and we're playing, restart
@@ -464,7 +513,10 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
 
       <motion.div 
         layout
-        className="bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1 sm:p-3 shadow-2xl flex flex-col items-center relative overflow-hidden ring-1 ring-white/5 w-12 sm:w-[88px]"
+        className={cn(
+          "bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1 sm:p-3 shadow-2xl flex flex-col items-center relative overflow-hidden ring-1 ring-white/5 w-14 sm:w-[88px]",
+          seconds >= targetSeconds - 5 && seconds < targetSeconds && "animate-shake"
+        )}
       >
         {/* Glow effect */}
         {isActive && (
@@ -474,16 +526,41 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
         {/* Time Display Toggle Button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex flex-col items-center justify-center bg-black/50 rounded-full w-10 h-10 sm:w-16 sm:h-16 border border-white/10 shadow-inner relative z-10 transition-colors hover:bg-white/5 active:scale-95"
+          className="flex flex-col items-center justify-center bg-black/50 rounded-full w-12 h-12 sm:w-16 sm:h-16 border border-white/10 shadow-inner relative z-10 transition-colors hover:bg-white/5 active:scale-95"
         >
-          <Clock className={cn("text-primary sm:mb-0.5 w-[10px] h-[10px] sm:w-3.5 sm:h-3.5", isActive ? "animate-pulse" : "opacity-30")} />
-          <span className="text-[10px] sm:text-sm font-mono font-semibold text-white tracking-tight leading-none mt-0.5 sm:mt-0">
+          {/* Progress Ring */}
+          <svg className="absolute inset-0 -rotate-90 w-full h-full">
+            <circle
+              cx="50%"
+              cy="50%"
+              r={radius}
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="transparent"
+              className="text-white/5"
+            />
+            <motion.circle
+              cx="50%"
+              cy="50%"
+              r={radius}
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="transparent"
+              strokeDasharray={circumference}
+              animate={{ strokeDashoffset }}
+              transition={{ duration: 1, ease: "linear" }}
+              className="text-primary"
+            />
+          </svg>
+
+          <Clock className={cn("text-primary sm:mb-0.5 w-[10px] h-[10px] sm:w-3.5 sm:h-3.5 relative z-10", isActive ? "animate-pulse" : "opacity-30")} />
+          <span className="text-[10px] sm:text-sm font-mono font-semibold text-white tracking-tight leading-none mt-0.5 sm:mt-0 relative z-10">
             {formatTime(seconds)}
           </span>
           <motion.div
             animate={{ rotate: isExpanded ? 180 : 0 }}
             transition={{ duration: 0.3 }}
-            className="absolute -bottom-1"
+            className="absolute -bottom-1 z-10"
           >
             <ChevronDown className="text-white/40 mb-1 w-3 h-3 sm:w-3.5 sm:h-3.5" />
           </motion.div>

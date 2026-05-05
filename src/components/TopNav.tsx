@@ -92,7 +92,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
                 src={user?.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Robert"} 
                 alt="Profile" 
                 className={cn(
-                  "rounded-full border border-border/50 shadow-sm group-hover:border-primary/50 transition-all object-cover",
+                  "rounded-full border border-border/50 shadow-sm group-hover:border-primary/50 transition-all object-cover avatar-hover-pulse",
                   scrolled ? "w-8 h-8" : "w-10 h-10"
                 )}
               />

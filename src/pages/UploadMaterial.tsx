@@ -17,6 +17,25 @@ export default function UploadMaterial() {
   const { user, materials, setMaterials, showToast } = useAppContext();
   const [activeTab, setActiveTab] = React.useState<'file' | 'youtube' | 'article' | 'voice' | 'ocr'>('file');
   const [isUploading, setIsUploading] = React.useState(false);
+  const [loadingPhraseIndex, setLoadingPhraseIndex] = React.useState(0);
+  const loadingPhrases = [
+    "Analyzing Context...",
+    "Extracting Key Concepts...",
+    "Synthesizing Notes...",
+    "Generating Smart Quiz...",
+    "Almost Ready..."
+  ];
+
+  React.useEffect(() => {
+    let interval: any;
+    if (isUploading) {
+      interval = setInterval(() => {
+        setLoadingPhraseIndex((prev) => (prev + 1) % loadingPhrases.length);
+      }, 2500);
+    }
+    return () => clearInterval(interval);
+  }, [isUploading]);
+
   const [uploadProgress, setUploadProgress] = React.useState(0);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [ocrText, setOcrText] = React.useState('');
@@ -381,7 +400,9 @@ export default function UploadMaterial() {
                 <Loader2 className="w-full h-full text-primary animate-spin" />
                 <Sparkles className="absolute top-0 right-0 text-accent animate-pulse" size={20} />
               </div>
-              <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4 text-text-main tracking-tight italic">Analyzing Context...</h2>
+              <h2 className="text-lg sm:text-2xl font-black mb-3 sm:mb-4 text-text-main tracking-tight italic">
+                {loadingPhrases[loadingPhraseIndex]}
+              </h2>
               <div className="max-w-[200px] sm:max-w-xs mx-auto h-2 bg-white/5 rounded-full overflow-hidden border border-white/10 shadow-inner">
                 <motion.div
                   className="h-full bg-gradient-to-r from-primary via-indigo-500 to-accent"
