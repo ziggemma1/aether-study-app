@@ -38,10 +38,12 @@ if (error.response?.status === 503 && error.response?.data?.message?.includes('D
     }
     
     if (error.response?.status === 500) {
+      const serverError = error.response?.data;
       console.error('❌ API 500 ERROR:', {
         url: error.config?.url,
-        method: error.config?.method,
-        data: error.response?.data
+        message: serverError?.message || 'No message',
+        error: serverError?.error || 'No error detail',
+        stack: serverError?.stack
       });
     }
     

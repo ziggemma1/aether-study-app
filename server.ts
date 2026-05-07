@@ -60,6 +60,13 @@ async function startServer() {
   const isVercel = !!process.env.VERCEL;
   const isProduction = process.env.NODE_ENV === "production" || isVercel;
   
+  const JWT_SECRET = process.env.JWT_SECRET;
+  if (!JWT_SECRET && isProduction) {
+    console.error("❌ CRITICAL: JWT_SECRET is missing in production!");
+  } else if (!JWT_SECRET) {
+    console.warn("⚠️ JWT_SECRET is missing. Auth will use dev fallback.");
+  }
+
   console.log(`[INIT] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} (isVercel: ${isVercel})`);
 
   // Request Logging

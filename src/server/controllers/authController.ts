@@ -81,11 +81,10 @@ export const googleCallback = async (req: Request, res: Response) => {
 
     res.redirect('/dashboard');
   } catch (error: any) {
-    console.error('[GOOGLE_CALLBACK_FATAL] Error occurred during Google callback:', error);
+    console.error('[GOOGLE_CALLBACK_FATAL] Error occurred during Google callback:', error.message);
     res.status(500).json({ 
       message: 'Authentication failed due to an internal server error', 
-      error: error.message || 'Unknown error',
-      details: typeof error === 'object' ? JSON.stringify(error) : String(error)
+      error: error.message || 'Unknown error'
     });
   }
 };
@@ -222,11 +221,10 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    console.error('[LOGIN_FATAL] Error occurred during login:', error);
+    console.error('[LOGIN_FATAL] Error occurred during login:', error.message);
     res.status(500).json({ 
       message: 'Login failed due to an internal server error', 
       error: error.message || 'Unknown error',
-      details: typeof error === 'object' ? JSON.stringify(error) : String(error),
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
@@ -274,11 +272,10 @@ export const getMe = async (req: Request, res: Response) => {
       handle: user.handle || ''
     });
   } catch (error: any) {
-    console.error('[GET_ME_FATAL] Error fetching current user:', error);
+    console.error('[GET_ME_FATAL] Error fetching current user:', error.message);
     res.status(500).json({ 
       message: 'Failed to fetch user data', 
-      error: error.message || 'Unknown error',
-      details: typeof error === 'object' ? JSON.stringify(error) : String(error)
+      error: error.message || 'Unknown error'
     });
   }
 };

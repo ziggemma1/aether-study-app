@@ -3,13 +3,18 @@ import jwt from 'jsonwebtoken';
 
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error('JWT_SECRET is not defined');
+  if (!secret) {
+    if (process.env.NODE_ENV !== 'production') {
+      return 'dev_temporary_secret_key_12345';
+    }
+    throw new Error('JWT_SECRET is not defined');
+  }
   return secret;
 };
 
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies.token;
+    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({ message: 'Not authorized, no token' });
@@ -18,7 +23,8 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     const decoded = jwt.verify(token, getJwtSecret()) as { id: string };
     (req as any).userId = decoded.id;
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'Not authorized, token failed' });
+  } catch (error: any) {
+    console.error('[AUTH_MIDDLEWARE_ERROR]', error.message);
+    res.status(401).json({ message: 'Not authorized, token failed', error: error.message });
   }
 };
