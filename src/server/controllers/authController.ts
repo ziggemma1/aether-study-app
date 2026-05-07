@@ -214,11 +214,12 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    console.error('Login error:', error);
+    console.error('[LOGIN_FATAL] Error occurred during login:', error);
     res.status(500).json({ 
       message: 'Login failed due to an internal server error', 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message || 'Unknown error',
+      details: typeof error === 'object' ? JSON.stringify(error) : String(error),
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
 };
