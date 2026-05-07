@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-
 import { useEffect } from 'react';
 import posthog from 'posthog-js';
 import { AppProvider, useAppContext } from './context/AppContext';
+import AnalyticsTracker from './components/AnalyticsTracker';
 import AppLayout from './components/AppLayout';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
@@ -53,20 +54,32 @@ function ProtectedRoute() {
   return <Outlet />;
 }
 
+let posthogInitialized = false;
+
 export default function App() {
   useEffect(() => {
-    if (import.meta.env.VITE_POSTHOG_KEY) {
-      posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
-        api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
-        person_profiles: 'identified_only',
-        capture_pageview: true,
-      });
+    if (!posthogInitialized && import.meta.env.VITE_POSTHOG_KEY) {
+      try {
+        posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
+          api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
+          person_profiles: 'identified_only',
+          capture_pageview: false, // Manual pageview tracking to prevent rate limits
+          autocapture: false,      // Disable autocapture to prevent circular refs
+          persistence: 'localStorage+cookie',
+          enable_recording_console_log: false, // Avoid console serialization issues
+          capture_performance: false,
+        });
+        posthogInitialized = true;
+      } catch (e) {
+        console.warn('PostHog initialization failed:', e);
+      }
     }
   }, []);
 
   return (
     <AppProvider>
       <Router>
+        <AnalyticsTracker />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />

@@ -154,6 +154,7 @@ export const register = async (req: Request, res: Response) => {
 };
 
 export const login = async (req: Request, res: Response) => {
+  console.log(`[LOGIN] Received login request for: ${req.body?.email}`);
   try {
     const { email, password } = req.body;
 

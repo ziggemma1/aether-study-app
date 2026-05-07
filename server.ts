@@ -26,55 +26,57 @@ async function startServer() {
   const httpServer = createServer(app);
   const PORT = 3000;
 
+  // CORS Configuration - At the very top!
+  app.use(cors({
+    origin: true, 
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+  }));
+
   // Initialize Socket.io
   initSocket(httpServer);
 
   // Trust the first proxy (e.g. Cloud Run / Nginx) to securely parse X-Forwarded-For
   app.set('trust proxy', 1);
 
-  // Security Middleware
+  // Security Middleware (Helmet must be after CORS to not interfere with preflight)
   app.use(helmet({
     contentSecurityPolicy: false, 
     crossOriginEmbedderPolicy: false,
   }));
   app.use(mongoSanitize());
 
-  // General rate limiter for all routes
-  const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 1000,
-    message: "Too many requests from this IP, please try again later.",
-    validate: { xForwardedForHeader: false }
-  });
-  app.use("/api/", globalLimiter);
+  // Detect environment
+  const isVercel = !!process.env.VERCEL;
+  const isProduction = process.env.NODE_ENV === "production" || isVercel;
+  
+  console.log(`[INIT] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} (isVercel: ${isVercel})`);
 
-  // Authentication specific rate limiter
-  const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 50, // Limit each IP to 50 login/register requests per windowMs
-    message: "Too many authentication attempts, please try again after 15 minutes",
-    standardHeaders: true, 
-    legacyHeaders: false, 
-    validate: { xForwardedForHeader: false }
+  // Request Logging
+  app.use((req, res, next) => {
+    if (process.env.NODE_ENV !== 'test') {
+      // Skip logging for common static assets and source files to reduce noise
+      const isAsset = req.url.match(/\.(js|css|png|jpg|jpeg|svg|ico|woff|woff2|tsx|ts|map)$/) || 
+                      req.url.startsWith('/@vite') || 
+                      req.url.startsWith('/src/') || 
+                      req.url.startsWith('/node_modules/');
+
+      if (!isAsset) {
+        const start = Date.now();
+        res.on('finish', () => {
+          const duration = Date.now() - start;
+          console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - ${res.statusCode} (${duration}ms)`);
+        });
+      }
+    }
+    next();
   });
-  app.use("/api/auth", authLimiter);
 
   // Payload Limit constraints
   app.use(express.json({ limit: '5mb' })); 
   app.use(express.urlencoded({ limit: '5mb', extended: true }));
   app.use(cookieParser());
-  
-  // CORS Configuration (Strict)
-  app.use(cors({
-    origin: function (origin, callback) {
-      callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-  }));
-
-  // MongoDB Connection
   const MONGODB_URI = process.env.MONGODB_URI;
   if (MONGODB_URI) {
     if (MONGODB_URI.includes('<db_password>') || MONGODB_URI.includes('<') || MONGODB_URI.includes('>')) {
@@ -125,7 +127,8 @@ async function startServer() {
     res.json({ 
       status: "ok", 
       dbConnected: mongoose.connection.readyState === 1,
-      hasUri: !!process.env.MONGODB_URI 
+      hasUri: !!process.env.MONGODB_URI,
+      env: process.env.NODE_ENV
     });
   });
 
@@ -138,8 +141,20 @@ async function startServer() {
   app.use("/api/groups", checkDbConnection, groupRoutes);
   app.use("/api/rooms", checkDbConnection, roomRoutes);
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  // Catch-all for undefined API routes to prevent them falling through to static/Vite
+  app.all("/api/*", (req, res) => {
+    console.warn(`[404] Missing API Route: ${req.method} ${req.url}`);
+    res.status(404).json({ message: "API route not found" });
+  });
+
+  if (isProduction) {
+    const distPath = path.join(process.cwd(), 'dist');
+    console.log(`[INIT] Serving static files from: ${distPath}`);
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  } else {
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
@@ -147,22 +162,15 @@ async function startServer() {
         appType: "spa",
       });
       app.use(vite.middlewares);
+      console.log(`[INIT] Vite middleware loaded in dev mode`);
     } catch (e) {
-      console.warn("Vite failed to load in dev mode:", e);
+      console.warn("[INIT] Vite failed to load in dev mode:", e);
     }
-  } else if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
   }
 
-  if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-    httpServer.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  }
+  httpServer.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server running on http://localhost:${PORT} in ${isProduction ? 'production' : 'development'} mode`);
+  });
 
   return app;
 }

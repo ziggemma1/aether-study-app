@@ -72,7 +72,7 @@ export const callOpenRouterWithFallback = async (messages: any[], modelList: str
       throw new Error('Empty response from model');
     } catch (err: any) {
       const errorData = err.response?.data?.error || err.response?.data || err.message;
-      console.warn(`Model ${model} failed:`, JSON.stringify(errorData));
+      console.warn(`Model ${model} failed:`, typeof errorData === 'object' ? 'Object error' : errorData);
       // Try next model
     }
   }
