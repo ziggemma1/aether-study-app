@@ -19,6 +19,7 @@ import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
 import { createServer } from "http";
 import { initSocket } from "./src/server/socket.js";
 
+console.log("[SERVER_STARTUP] Script loaded. Checking environment...");
 dotenv.config();
 
 // Mongoose Global Configuration
@@ -132,16 +133,13 @@ async function startServer() {
         }
       };
       
-      // In production/Vercel, we MUST wait for the connection to be established
-      // before returning the app, otherwise the serverless function may complete 
-      // while the connection is still in 'disconnected' state.
+      // In production/Vercel, we can try to connect
       if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        console.log("⏳ Awaiting MongoDB connection for production environment...");
-        try {
-          await connectWithRetry();
-        } catch (e) {
-          console.error("Failed to establish initial DB connection in production.");
-        }
+        console.log("⏳ Initializing MongoDB connection for production environment...");
+        // Don't block forever with 10 retries in a single lambda invocation
+        connectWithRetry(2).catch(err => {
+          console.warn("⚠️ Initial DB connection attempt failed in production, will retry on middleware demand.");
+        });
       } else {
         connectWithRetry();
       }
@@ -207,11 +205,22 @@ async function startServer() {
     }
   }
 
-  httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running on http://localhost:${PORT} in ${isProduction ? 'production' : 'development'} mode`);
-  });
+  // On Vercel, we don't call listen()
+  if (!isVercel) {
+    httpServer.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server running on http://localhost:${PORT} in ${isProduction ? 'production' : 'development'} mode`);
+    });
+  } else {
+    console.log(`🚀 Server initialized in serverless mode (Vercel)`);
+  }
 
   return app;
 }
 
-export const appPromise = startServer();
+const appPromise = startServer();
+export { appPromise };
+
+export default async (req: any, res: any) => {
+  const app = await appPromise;
+  return app(req, res);
+};
