@@ -69,7 +69,25 @@ export default function SignupPage() {
     } catch (err: any) {
       console.error('Signup error:', err);
       const status = err.response?.status;
-      const message = err.response?.data?.message || err.message || 'Failed to sign up';
+      const responseData = err.response?.data;
+      let message = 'Failed to sign up';
+      
+      if (responseData) {
+        if (typeof responseData === 'string') {
+          message = responseData;
+        } else {
+          message = responseData.message || 'Failed to sign up';
+          if (responseData.error) {
+            message += `: ${responseData.error}`;
+          }
+          if (responseData.hint) {
+            message += ` (Hint: ${responseData.hint})`;
+          }
+        }
+      } else {
+        message = err.message || 'Failed to sign up';
+      }
+
       setError(status ? `Error ${status}: ${message}` : message);
     } finally {
       setLoading(false);

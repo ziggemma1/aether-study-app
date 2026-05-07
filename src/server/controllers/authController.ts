@@ -156,9 +156,17 @@ export const register = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Registration error:', error);
-    res.status(500).json({ 
-      message: 'Registration failed due to an internal server error', 
+    
+    const isAuthError = error.message?.includes('authentication failed');
+    const isConnectionError = error.message?.includes('connection') || error.name === 'MongooseError';
+
+    res.status(isAuthError || isConnectionError ? 503 : 500).json({ 
+      errorId: 'AUTH_CONTROLLER_REGISTER_FATAL',
+      message: isAuthError ? 'Database Authentication Failed' : 
+               isConnectionError ? 'Database Connection Error' : 
+               'Registration failed due to an internal server error', 
       error: error.message,
+      hint: isAuthError ? 'Please check your MONGODB_URI credentials in Settings.' : undefined,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
@@ -228,18 +236,27 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[LOGIN_FATAL_ERROR_OBJECT]', error);
+    
+    // Detect specifically if it's a DB connection/auth error that escaped middleware or was buffered
+    const isAuthError = error.message?.includes('authentication failed');
+    const isConnectionError = error.message?.includes('connection') || error.name === 'MongooseError';
+    
     const errorResponse = { 
-      message: 'Login failed due to an internal server error', 
+      errorId: 'AUTH_CONTROLLER_LOGIN_FATAL',
+      message: isAuthError ? 'Database Authentication Failed' : 
+               isConnectionError ? 'Database Connection Error' : 
+               'Login failed due to an internal server error', 
       error: error.message || 'Unknown error',
       errorName: error.name,
       stack: error.stack, // Always show stack for debugging
+      hint: isAuthError ? 'Please check your MONGODB_URI credentials in Settings.' : undefined,
       debugInfo: {
         dbState: mongoose.connection.readyState,
         isDbConnected: mongoose.connection.readyState === 1
       }
     };
     console.log('[LOGIN_FATAL_RESPONSE_SENDING]', JSON.stringify(errorResponse));
-    res.status(500).json(errorResponse);
+    res.status(isAuthError || isConnectionError ? 503 : 500).json(errorResponse);
   }
 };
 

@@ -9,6 +9,7 @@ export const checkDbConnection = async (req: Request, res: Response, next: NextF
   const rawUri = process.env.MONGODB_URI;
   if (!rawUri || rawUri.trim() === '') {
     return res.status(500).json({
+      errorId: 'DB_MIDDLEWARE_MISSING_URI',
       message: 'Database Configuration Error: Missing MONGODB_URI',
       error: 'The MONGODB_URI environment variable is empty or not set.',
       hint: 'Please go to the Settings menu in AI Studio, find Environment Variables, and add MONGODB_URI with your MongoDB Atlas connection string.'
@@ -24,6 +25,7 @@ export const checkDbConnection = async (req: Request, res: Response, next: NextF
 
   if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
     return res.status(500).json({
+      errorId: 'DB_MIDDLEWARE_INVALID_SCHEME',
       message: 'Database Configuration Error: Invalid MONGODB_URI Scheme',
       error: 'The connection string must start with "mongodb://" or "mongodb+srv://".',
       hint: 'Your URI currently starts with: ' + uri.substring(0, 10) + '... (check for leading spaces or quotes in your Environment Variables)'
@@ -60,6 +62,7 @@ export const checkDbConnection = async (req: Request, res: Response, next: NextF
     }
 
     return res.status(503).json({ 
+      errorId: 'DB_MIDDLEWARE_CONN_EXCEPTION',
       message: userFriendlyMessage,
       state: mongoose.connection.readyState,
       error: error.message,
