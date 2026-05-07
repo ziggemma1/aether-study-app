@@ -8,9 +8,15 @@ import {
   generateTopicSection
 } from "../services/openRouterService";
 
-// Vite automatically injects GEMINI_API_KEY into the client build in this environment
-// We use a fallback to empty string to prevent crashes, but it should be available.
-const apiKey = (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : import.meta.env.VITE_GEMINI_API_KEY) || "";
+// Get API Key safely from either process.env (Vite define) or import.meta.env
+const getApiKey = () => {
+  if (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
+  }
+  return (import.meta.env?.VITE_GEMINI_API_KEY as string) || "";
+};
+
+const apiKey = getApiKey();
 const ai = new GoogleGenAI({ apiKey });
 
 export interface StudyMaterialAnalysis {

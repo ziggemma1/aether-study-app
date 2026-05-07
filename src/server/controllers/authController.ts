@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { OAuth2Client } from 'google-auth-library';
 
@@ -229,7 +230,10 @@ export const login = async (req: Request, res: Response) => {
       message: 'Login failed due to an internal server error', 
       error: error.message || 'Unknown error',
       errorName: error.name,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+      debugInfo: {
+        dbState: mongoose.connection.readyState
+      }
     };
     console.log('[LOGIN_FATAL_RESPONSE_SENDING]', JSON.stringify(errorResponse));
     res.status(500).json(errorResponse);
@@ -282,7 +286,12 @@ export const getMe = async (req: Request, res: Response) => {
     const errorResponse = { 
       message: 'Failed to fetch user data', 
       error: error.message || 'Unknown error',
-      errorName: error.name
+      errorName: error.name,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+      debugInfo: {
+        userId: (req as any).userId,
+        dbState: mongoose.connection.readyState
+      }
     };
     console.log('[GET_ME_FATAL_RESPONSE_SENDING]', JSON.stringify(errorResponse));
     res.status(500).json(errorResponse);

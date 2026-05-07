@@ -156,6 +156,16 @@ async function startServer() {
   app.use("/api/users", checkDbConnection, userRoutes);
   app.use("/api/groups", checkDbConnection, groupRoutes);
   app.use("/api/rooms", checkDbConnection, roomRoutes);
+  
+  // Custom Error Handling Middleware
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('❌ GLOBAL SERVER ERROR:', err);
+    res.status(500).json({
+      message: 'Internal Server Error',
+      error: err.message,
+      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+    });
+  });
 
   // Catch-all for undefined API routes to prevent them falling through to static/Vite
   app.all("/api/*", (req, res) => {
