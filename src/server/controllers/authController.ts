@@ -6,8 +6,12 @@ import { OAuth2Client } from 'google-auth-library';
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    console.error("CRITICAL ERROR: JWT_SECRET environment variable is not set. Throwing error to prevent fallback vulnerabilities.");
-    throw new Error('JWT_SECRET is not defined');
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn("⚠️ WARNING: JWT_SECRET environment variable is not set. Using a temporary fallback secret for development.");
+      return 'dev_temporary_secret_key_12345';
+    }
+    console.error("❌ CRITICAL ERROR: JWT_SECRET environment variable is not set. Throwing error to prevent security vulnerabilities in production.");
+    throw new Error('JWT_SECRET is not defined. Please set it in the environment variables via Settings menu.');
   }
   return secret;
 };
@@ -77,8 +81,12 @@ export const googleCallback = async (req: Request, res: Response) => {
 
     res.redirect('/dashboard');
   } catch (error: any) {
-    console.error('Google callback error:', error);
-    res.status(500).send('Authentication failed');
+    console.error('[GOOGLE_CALLBACK_FATAL] Error occurred during Google callback:', error);
+    res.status(500).json({ 
+      message: 'Authentication failed due to an internal server error', 
+      error: error.message || 'Unknown error',
+      details: typeof error === 'object' ? JSON.stringify(error) : String(error)
+    });
   }
 };
 
@@ -266,6 +274,11 @@ export const getMe = async (req: Request, res: Response) => {
       handle: user.handle || ''
     });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('[GET_ME_FATAL] Error fetching current user:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch user data', 
+      error: error.message || 'Unknown error',
+      details: typeof error === 'object' ? JSON.stringify(error) : String(error)
+    });
   }
 };

@@ -21,6 +21,15 @@ import { initSocket } from "./src/server/socket.js";
 
 dotenv.config();
 
+// Handle uncaught exceptions and unhandled rejections
+process.on('uncaughtException', (err) => {
+  console.error('❌ UNCAUGHT EXCEPTION:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION at:', promise, 'reason:', reason);
+});
+
 async function startServer() {
   const app = express();
   const httpServer = createServer(app);

@@ -36,6 +36,15 @@ if (error.response?.status === 503 && error.response?.data?.message?.includes('D
       localStorage.removeItem('user');
       localStorage.removeItem('auth_token');
     }
+    
+    if (error.response?.status === 500) {
+      console.error('❌ API 500 ERROR:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.response?.data
+      });
+    }
+    
     return Promise.reject(error);
   }
 );
