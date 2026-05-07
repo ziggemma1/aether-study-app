@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Loader2, RefreshCw, X, Check, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, X, Check, ArrowRight, Settings } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { generateFlashcardsOnClient } from '../lib/gemini';
 import { useMotionValue, useTransform } from 'framer-motion';
@@ -12,6 +12,7 @@ import { Flashcard } from '../types';
 export default function Flashcards() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { materials, user, showToast, updateMaterialInContext } = useAppContext();
   const material = materials.find((m) => m.id === id);
 
@@ -19,6 +20,7 @@ export default function Flashcards() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFlipped, setIsFlipped] = useState(false);
   const [direction, setDirection] = useState(0);
+  const [isGeneratingCustom, setIsGeneratingCustom] = useState(false);
 
   // Motion values for swipe effect
   const x = useMotionValue(0);
@@ -39,6 +41,28 @@ export default function Flashcards() {
     if (!material) return;
     
     try {
+      // Check if we have custom settings
+      if (location.state?.settings) {
+        setIsGeneratingCustom(true);
+        const { count } = location.state.settings;
+        const textToProcess = material.content || material.summary || material.title;
+        const generatedCards = await generateFlashcardsOnClient(textToProcess, user?.language, count);
+        
+        const newCards = generatedCards.map(c => ({
+          ...c,
+          interval: 0,
+          repetitions: 0,
+          easeFactor: 2.5,
+          nextReview: new Date().toISOString(),
+          _id: Math.random().toString(36).substr(2, 9) // Temporary ID for session
+        }));
+        
+        setCards(newCards as Flashcard[]);
+        setTotalInitial(newCards.length);
+        setIsGeneratingCustom(false);
+        return;
+      }
+
       if (material.flashcards && material.flashcards.length > 0) {
         // Filter cards starting from those due today OR never reviewed
         const now = new Date();
@@ -150,11 +174,13 @@ export default function Flashcards() {
     setIsFlipped(!isFlipped);
   };
 
-  if (isLoading) {
+  if (isLoading || isGeneratingCustom) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-        <p className="text-text-muted font-medium">Generating smart flashcards using AI...</p>
+        <p className="text-text-muted font-black uppercase tracking-[0.2em] text-[10px] animate-pulse">
+          {isGeneratingCustom ? "Crafting custom flashcards..." : "Syncing your study cards..."}
+        </p>
       </div>
     );
   }

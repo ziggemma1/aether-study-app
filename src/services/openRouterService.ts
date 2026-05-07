@@ -58,7 +58,7 @@ const fetchWithRetry = async (url: string, data: any, headers: any, retries = 3,
   }
 };
 
-const callOpenRouterWithFallback = async (messages: any[], modelList: string[], headers: any, useJson = false): Promise<any> => {
+export const callOpenRouterWithFallback = async (messages: any[], modelList: string[], headers: any, useJson = false): Promise<any> => {
   for (const model of modelList) {
     try {
       console.log(`Trying OpenRouter model: ${model}`);
@@ -236,6 +236,124 @@ export const analyzeStudyMaterialWithOpenRouter = async (content: string, title:
   const rawJson = response.content || '{}';
   const cleanJson = rawJson.replace(/```json\n?|```/g, '').trim();
   return JSON.parse(cleanJson);
+};
+
+export const generateFlashcardsWithOpenRouter = async (content: string, language: string = "English (US)", count: number = 10): Promise<{ question: string; answer: string }[]> => {
+  const apiKey = getOpenRouterKey();
+  if (!apiKey) throw new Error('OpenRouter key missing');
+
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
+
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'HTTP-Referer': SITE_URL,
+    'X-OpenRouter-Title': SITE_NAME,
+    'Content-Type': 'application/json',
+  };
+
+  const response = await callOpenRouterWithFallback(
+    [
+      {
+        role: 'system',
+        content: `Extract exactly ${count} important key terms and concepts from this material and create flashcards. 
+        STRICT REQUIREMENT: All content MUST be in ${langPrompt}.
+        Return exactly a JSON array of objects with "question" and "answer" properties.`
+      },
+      {
+        role: 'user',
+        content: `Material:\n${content.substring(0, 10000)}`
+      }
+    ],
+    MODELS.synthesis,
+    headers,
+    true
+  );
+
+  const rawJson = response.content || '[]';
+  const cleanJson = rawJson.replace(/```json\n?|```/g, '').trim();
+  return JSON.parse(cleanJson);
+};
+
+export const generateQuizQuestionsWithOpenRouter = async (
+  content: string,
+  language: string = "English (US)",
+  count: number = 10,
+  difficulty: "Easy" | "Medium" | "Hard" = "Medium",
+  complexity: "Basic" | "Standard" | "Comprehensive" = "Standard"
+): Promise<{ question: string; options: string[]; correctAnswer: number; explanation: string }[]> => {
+  const apiKey = getOpenRouterKey();
+  if (!apiKey) throw new Error('OpenRouter key missing');
+
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
+
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'HTTP-Referer': SITE_URL,
+    'X-OpenRouter-Title': SITE_NAME,
+    'Content-Type': 'application/json',
+  };
+
+  const response = await callOpenRouterWithFallback(
+    [
+      {
+        role: 'system',
+        content: `Generate exactly ${count} ${difficulty} difficulty level quiz questions with ${complexity} complexity.
+        STRICT REQUIREMENT: All content MUST be in ${langPrompt}.
+        Return exactly a JSON array of objects with: question, options (array of 4), correctAnswer (0-3 index), and explanation.`
+      },
+      {
+        role: 'user',
+        content: `Material:\n${content.substring(0, 10000)}`
+      }
+    ],
+    MODELS.synthesis,
+    headers,
+    true
+  );
+
+  const rawJson = response.content || '[]';
+  const cleanJson = rawJson.replace(/```json\n?|```/g, '').trim();
+  return JSON.parse(cleanJson);
+};
+
+export const chatWithTutorWithOpenRouter = async (
+  materialTitle: string, 
+  materialContent: string, 
+  chatHistory: { role: 'user' | 'model'; parts: { text: string }[] }[], 
+  userMessage: string, 
+  language: string = "English (US)"
+): Promise<string> => {
+  const apiKey = getOpenRouterKey();
+  if (!apiKey) throw new Error('OpenRouter key missing');
+
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
+
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'HTTP-Referer': SITE_URL,
+    'X-OpenRouter-Title': SITE_NAME,
+    'Content-Type': 'application/json',
+  };
+
+  const messages = [
+    {
+      role: 'system',
+      content: `You are a helpful Interactive AI Tutor. Material Title: ${materialTitle}. Context: ${materialContent.substring(0, 5000)}. STRICT REQUIREMENT: Output MUST be in ${langPrompt}.`
+    },
+    ...chatHistory.map(h => ({
+      role: h.role === 'model' ? 'assistant' : 'user',
+      content: h.parts.map(p => p.text).join('\n')
+    })),
+    { role: 'user', content: userMessage }
+  ];
+
+  const response = await callOpenRouterWithFallback(
+    messages,
+    MODELS.synthesis,
+    headers
+  );
+
+  return response.content;
 };
 
 export const generateStudyPlanWithOpenRouter = async (

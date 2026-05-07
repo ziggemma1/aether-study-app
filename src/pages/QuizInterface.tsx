@@ -1,40 +1,76 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy, Sparkles, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Trophy, Sparkles, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { StudyTimer } from '../components/StudyTimer';
 import { useConfetti } from '../hooks/useConfetti';
+import { generateQuizQuestionsOnClient } from '../lib/gemini';
 
 import api from '../services/api';
 
 export default function QuizInterface() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { materials, setQuizResults, isLoading, fetchAppData } = useAppContext();
+  const location = useLocation();
+  const { materials, setQuizResults, isLoading: isAppLoading, fetchAppData, user, updateMaterialInContext } = useAppContext();
   const { burstConfetti, fireConfetti } = useConfetti();
-  const [currentQuestion, setCurrentQuestion] = React.useState(0);
-  const [selectedAnswers, setSelectedAnswers] = React.useState<number[]>([]);
-  const [isFinished, setIsFinished] = React.useState(false);
-  const [score, setScore] = React.useState(0);
-  const [feedback, setFeedback] = React.useState<{ optionIdx: number; isCorrect: boolean } | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
+  const [isFinished, setIsFinished] = useState(false);
+  const [score, setScore] = useState(0);
+  const [feedback, setFeedback] = useState<{ optionIdx: number; isCorrect: boolean } | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [customQuestions, setCustomQuestions] = useState<any[]>([]);
 
   const material = materials.find(m => m.id === id);
 
-  if (isLoading && !material) {
+  useEffect(() => {
+    const generateCustomQuiz = async () => {
+      if (location.state?.settings && material) {
+        setIsGenerating(true);
+        try {
+          const { count, difficulty, complexity } = location.state.settings;
+          const textToProcess = material.content || material.summary || material.title;
+          const questions = await generateQuizQuestionsOnClient(
+            textToProcess,
+            user?.language,
+            count,
+            difficulty,
+            complexity
+          );
+          setCustomQuestions(questions);
+          
+          // Optionally save these to the material? 
+          // The user might want to keep the "suggested" ones and have "session" ones.
+          // For now, let's just use them for this session.
+        } catch (error) {
+          console.error("Failed to generate custom quiz:", error);
+        } finally {
+          setIsGenerating(false);
+        }
+      }
+    };
+
+    generateCustomQuiz();
+  }, [location.state, material, user?.language]);
+
+  if ((isAppLoading && !material) || isGenerating) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-background">
         <div className="relative">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
           <div className="absolute inset-0 bg-primary/20 blur-xl animate-pulse -z-10" />
         </div>
-        <p className="text-text-muted font-black uppercase tracking-[0.2em] text-[10px] animate-pulse">Syncing smart quiz...</p>
+        <p className="text-text-muted font-black uppercase tracking-[0.2em] text-[10px] animate-pulse">
+          {isGenerating ? "Crafting your custom AI quiz..." : "Syncing smart quiz..."}
+        </p>
       </div>
     );
   }
 
-  const questions = material?.suggestedQuizQuestions || [];
+  const questions = customQuestions.length > 0 ? customQuestions : (material?.suggestedQuizQuestions || []);
 
   const handleAnswer = (optionIdx: number) => {
     if (feedback) return; // Prevent double clicking during feedback

@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion } from 'framer-motion';
-import { BookOpen, FileText, Calendar, Sparkles, GraduationCap, ArrowLeft, Download, Share2, Volume2, Loader2, Lightbulb } from 'lucide-react';
+import { BookOpen, FileText, Calendar, Sparkles, GraduationCap, ArrowLeft, Download, Share2, Volume2, Loader2, Lightbulb, Settings, Zap, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateSpeech, playAudio } from '../services/ttsService';
 import { StudyTimer } from '../components/StudyTimer';
+import { GenerationSettingsModal } from '../components/GenerationSettingsModal';
+import { ShareModal } from '../components/ShareModal';
 import { analyzeStudyMaterial, generateVisualAid } from '../services/geminiService';
 import api from '../services/api';
 import { cn } from '../lib/utils';
+import { generateMaterialPDF } from '../lib/pdf';
 
 export default function MaterialDetail() {
   const { id } = useParams();
@@ -17,6 +20,11 @@ export default function MaterialDetail() {
   const material = materials.find(m => m.id === id);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [generationType, setGenerationType] = useState<'Quiz' | 'Flashcards'>('Quiz');
 
   if (isLoading && !material) {
     return (
@@ -35,6 +43,25 @@ export default function MaterialDetail() {
       </div>
     );
   }
+
+  const handleDownload = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    try {
+      showToast('Generating PDF...');
+      await generateMaterialPDF(material);
+      showToast('Study guide downloaded!');
+    } catch (error) {
+      console.error('Download failed:', error);
+      showToast('Failed to generate PDF download.', 'error');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    setIsShareModalOpen(true);
+  };
 
   const handleListen = async () => {
     if (isSpeaking || !material.summary) return;
@@ -87,6 +114,17 @@ export default function MaterialDetail() {
     }
   };
 
+  const handleGenerateClick = (type: 'Quiz' | 'Flashcards') => {
+    setGenerationType(type);
+    setIsSettingsOpen(true);
+  };
+
+  const handleGenerate = (settings: any) => {
+    setIsSettingsOpen(false);
+    const path = generationType === 'Quiz' ? 'quiz' : 'flashcards';
+    navigate(`/${path}/${id}`, { state: { settings } });
+  };
+
   const isFallback = material.summary?.includes('(PDF text extraction would happen here)') || 
                      material.summary?.length < 100 || 
                      !material.keyTopics?.length;
@@ -115,10 +153,19 @@ export default function MaterialDetail() {
             <h1 className="text-3xl md:text-4xl font-bold text-text-main">{material.title}</h1>
           </div>
           <div className="flex gap-3">
-            <button className="p-3 bg-surface rounded-xl shadow-sm text-text-muted hover:text-primary transition-colors border border-border">
-              <Download size={20} />
+            <button 
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="p-3 bg-surface rounded-xl shadow-sm text-text-muted hover:text-primary transition-colors border border-border disabled:opacity-50"
+              title="Download Study Guide"
+            >
+              {isDownloading ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
             </button>
-            <button className="p-3 bg-surface rounded-xl shadow-sm text-text-muted hover:text-primary transition-colors border border-border">
+            <button 
+              onClick={handleShare}
+              className="p-3 bg-surface rounded-xl shadow-sm text-text-muted hover:text-primary transition-colors border border-border"
+              title="Share Study Guide"
+            >
               <Share2 size={20} />
             </button>
           </div>
@@ -221,31 +268,88 @@ export default function MaterialDetail() {
         </div>
 
         <div className="space-y-6">
-          {/* Actions Card */}
-          <div className="glass-card p-6 bg-primary text-white">
-            <h3 className="text-lg font-bold mb-6">Study Actions</h3>
-            <div className="space-y-3">
-              <Link
-                to={`/quiz/${material.id}`}
-                className="flex items-center gap-3 w-full p-4 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
-              >
-                <GraduationCap size={20} className="text-secondary" />
-                <span className="font-bold">Take AI Quiz</span>
-              </Link>
-              <Link
-                to={`/flashcards/${material.id}`}
-                className="flex items-center gap-3 w-full p-4 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
-              >
-                <Sparkles size={20} className="text-secondary" />
-                <span className="font-bold">Generate AI Flashcards</span>
-              </Link>
-              <Link
-                to={`/plans/create?materialId=${material.id}`}
-                className="flex items-center gap-3 w-full p-4 bg-white/10 hover:bg-white/20 rounded-xl transition-colors"
-              >
-                <Calendar size={20} className="text-secondary" />
-                <span className="font-bold">Create Study Plan</span>
-              </Link>
+          {/* Study Actions Card */}
+          <div className="rounded-[24px] p-6 bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 text-white shadow-2xl border border-white/5 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-white/10 transition-colors" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                  <Zap size={16} className="text-secondary" />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white/90">Study Engine</h3>
+              </div>
+
+              <div className="space-y-3">
+                {/* AI Practice Quiz */}
+                <div className="flex gap-2">
+                  <Link
+                    to={`/quiz/${id}`}
+                    className="flex-grow flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 group/btn shadow-inner"
+                  >
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-bold text-white">AI Practice Quiz</span>
+                      <span className="text-[10px] text-white/50 font-medium">Test your knowledge</span>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={() => handleGenerateClick('Quiz')}
+                    className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 text-white/40 hover:text-white"
+                    title="Customize Quiz"
+                  >
+                    <Settings size={20} />
+                  </button>
+                </div>
+
+                {/* Smart Flashcards */}
+                <div className="flex gap-2">
+                  <Link
+                    to={`/flashcards/${id}`}
+                    className="flex-grow flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 group/btn shadow-inner"
+                  >
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-bold text-white">Smart Flashcards</span>
+                      <span className="text-[10px] text-white/50 font-medium">Spaced repetition</span>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={() => handleGenerateClick('Flashcards')}
+                    className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 text-white/40 hover:text-white"
+                    title="Customize Flashcards"
+                  >
+                    <Settings size={20} />
+                  </button>
+                </div>
+
+                {/* Create Study Plan */}
+                <Link
+                  to={`/plans/create?materialId=${id}`}
+                  className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 group/btn shadow-inner"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-indigo-400/20 flex items-center justify-center text-indigo-300 group-hover/btn:scale-110 transition-transform">
+                    <Calendar size={20} />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-bold text-white">Create Study Plan</span>
+                    <span className="text-[10px] text-white/50 font-medium">Personalized roadmap</span>
+                  </div>
+                </Link>
+
+                {/* Interactive AI Tutor */}
+                <button
+                  onClick={handleRegenerate}
+                  disabled={isRegenerating}
+                  className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 group/btn shadow-inner"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-orange-400/20 flex items-center justify-center text-orange-400 group-hover/btn:scale-110 transition-transform">
+                    {isRegenerating ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-bold text-white">Regenerate Insights</span>
+                    <span className="text-[10px] text-white/50 font-medium">Update smart analysis</span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -268,6 +372,22 @@ export default function MaterialDetail() {
       </motion.div>
       
       <StudyTimer materialId={material.id} title={material.title} />
+
+      <GenerationSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        type={generationType}
+        onGenerate={handleGenerate}
+      />
+
+      {material && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          title={material.title}
+          url={window.location.href}
+        />
+      )}
     </div>
   );
 }

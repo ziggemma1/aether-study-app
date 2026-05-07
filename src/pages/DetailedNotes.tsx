@@ -10,6 +10,8 @@ import api from '../services/api';
 import { cn } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import { analyzeStudyMaterialOnClient, generateVisualAidOnClient, generateTopicSectionOnClient, simplifyContentELI5 } from '../lib/gemini';
+import { generateMaterialPDF } from '../lib/pdf';
+import { ShareModal } from '../components/ShareModal';
 
 export default function DetailedNotes() {
   const { id } = useParams();
@@ -20,8 +22,30 @@ export default function DetailedNotes() {
   const [currentPage, setCurrentPage] = React.useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [isSharing, setIsSharing] = React.useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
   
   const [isELI5, setIsELI5] = React.useState(false);
+
+  const handleDownload = async () => {
+    if (isDownloading || !material) return;
+    setIsDownloading(true);
+    try {
+      showToast('Generating PDF study guide...');
+      await generateMaterialPDF(material);
+      showToast('Study guide downloaded!');
+    } catch (error) {
+      console.error('Download failed:', error);
+      showToast('Failed to generate PDF.', 'error');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+  const handleShare = async () => {
+    setIsShareModalOpen(true);
+  };
+
   const [eli5Content, setEli5Content] = React.useState<{ [pageId: number]: string }>({});
   const [isLoadingELI5, setIsLoadingELI5] = React.useState(false);
 
@@ -394,10 +418,18 @@ export default function DetailedNotes() {
         </div>
 
         <div className="mt-12 flex justify-center gap-4">
-          <button className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-xs font-bold text-text-main hover:border-primary transition-all">
-            <Download size={16} /> {t('download')}
+          <button 
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-xs font-bold text-text-main hover:border-primary transition-all disabled:opacity-50"
+          >
+            {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {isDownloading ? 'Generating...' : t('download')}
           </button>
-          <button className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-xs font-bold text-text-main hover:border-primary transition-all">
+          <button 
+            onClick={handleShare}
+            className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-xs font-bold text-text-main hover:border-primary transition-all"
+          >
             <Share2 size={16} /> {t('share')}
           </button>
         </div>
@@ -458,6 +490,15 @@ export default function DetailedNotes() {
           </div>
         )}
       </AnimatePresence>
+
+      {material && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          title={material.title}
+          url={window.location.href}
+        />
+      )}
     </div>
   );
 }

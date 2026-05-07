@@ -1,5 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NoteSection } from "../types";
+import { 
+  analyzeStudyMaterialWithOpenRouter, 
+  generateFlashcardsWithOpenRouter, 
+  generateQuizQuestionsWithOpenRouter, 
+  chatWithTutorWithOpenRouter,
+  generateTopicSection
+} from "../services/openRouterService";
 
 // Vite automatically injects GEMINI_API_KEY into the client build in this environment
 // We use a fallback to empty string to prevent crashes, but it should be available.
@@ -50,7 +57,7 @@ export const generateVisualAidOnClient = async (prompt: string): Promise<string>
   }
   
   // Try multiple image generations models if one fails
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
   
   for (const model of models) {
     try {
@@ -85,7 +92,7 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
   // Try primary rapid flash model
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
   let lastError = null;
 
   for (const model of models) {
@@ -160,14 +167,28 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
       lastError = error;
     }
   }
-  throw lastError || new Error("All Gemini models failed for analysis");
+
+  // Fallback to OpenRouter
+  try {
+    console.log("Gemini failed, falling back to OpenRouter for analysis...");
+    const result = await analyzeStudyMaterialWithOpenRouter(content, title);
+    return {
+      ...result,
+      detailedNotes: result.simpleDetailedNotes,
+      noteSections: []
+    };
+  } catch (orcError) {
+    console.error("OpenRouter fallback also failed for analysis:", orcError);
+  }
+
+  throw lastError || new Error("All AI models (Gemini & OpenRouter) failed for analysis");
 };
 
 export const simplifyContentELI5 = async (content: string, language: string = "English (US)"): Promise<string> => {
   if (!apiKey) throw new Error("GEMINI_API_KEY missing");
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
   
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
   let lastError = null;
 
   for (const model of models) {
@@ -193,7 +214,7 @@ export const chatWithTutorOnClient = async (materialTitle: string, materialConte
   if (!apiKey) throw new Error("GEMINI_API_KEY missing");
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
   let lastError = null;
 
   for (const model of models) {
@@ -220,23 +241,36 @@ export const chatWithTutorOnClient = async (materialTitle: string, materialConte
       lastError = error;
     }
   }
-  throw lastError || new Error("All Gemini models failed for tutor chat");
+
+  // Fallback to OpenRouter
+  try {
+    console.log("Gemini failed, falling back to OpenRouter for tutor chat...");
+    return await chatWithTutorWithOpenRouter(materialTitle, materialContent, chatHistory, userMessage, language);
+  } catch (orcError) {
+    console.error("OpenRouter fallback also failed for tutor chat:", orcError);
+  }
+
+  throw lastError || new Error("All AI models (Gemini & OpenRouter) failed for tutor chat");
 };
 
-export const generateFlashcardsOnClient = async (content: string, language: string = "English (US)"): Promise<{ question: string; answer: string }[]> => {
+export const generateFlashcardsOnClient = async (
+  content: string, 
+  language: string = "English (US)",
+  count: number = 10
+): Promise<{ question: string; answer: string }[]> => {
   if (!apiKey) throw new Error("GEMINI_API_KEY missing");
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
   let lastError = null;
 
   for (const model of models) {
     try {
       const response = await withRetry(() => ai.models.generateContent({
         model,
-        contents: `Extract the most important key terms and concepts from this material, and create 10 flashcards.\n\nMaterial:\n${content.substring(0, 10000)}`,
+        contents: `Extract exactly ${count} important key terms and concepts from this material and create flashcards.\n\nMaterial:\n${content.substring(0, 10000)}`,
         config: {
-          systemInstruction: `You are an expert tutor. Create flashcards. Output exactly a JSON array of objects with "question" and "answer" properties. STRICT REQUIREMENT: Output MUST be in ${langPrompt}.`,
+          systemInstruction: `You are an expert tutor. Create exactly ${count} flashcards. Output exactly a JSON array of objects with "question" and "answer" properties. STRICT REQUIREMENT: Output MUST be in ${langPrompt}.`,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.ARRAY,
@@ -264,7 +298,79 @@ export const generateFlashcardsOnClient = async (content: string, language: stri
       lastError = error;
     }
   }
-  throw lastError || new Error("All Gemini models failed for flashcards processing");
+
+  // Fallback to OpenRouter
+  try {
+    console.log("Gemini failed, falling back to OpenRouter for flashcards...");
+    return await generateFlashcardsWithOpenRouter(content, language, count);
+  } catch (orcError) {
+    console.error("OpenRouter fallback also failed for flashcards:", orcError);
+  }
+
+  throw lastError || new Error("All AI models (Gemini & OpenRouter) failed for flashcards processing");
+};
+
+export const generateQuizQuestionsOnClient = async (
+  content: string,
+  language: string = "English (US)",
+  count: number = 10,
+  difficulty: "Easy" | "Medium" | "Hard" = "Medium",
+  complexity: "Basic" | "Standard" | "Comprehensive" = "Standard"
+): Promise<{ question: string; options: string[]; correctAnswer: number; explanation: string }[]> => {
+  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
+
+  const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const response = await withRetry(() => ai.models.generateContent({
+        model,
+        contents: `Generate exactly ${count} ${difficulty} difficulty level quiz questions with ${complexity} complexity based on this material.\n\nMaterial:\n${content.substring(0, 10000)}`,
+        config: {
+          systemInstruction: `You are an expert examiner. Create exactly ${count} multiple choice questions. 
+          Difficulty: ${difficulty}. 
+          Complexity: ${complexity}.
+          STRICT REQUIREMENT: All content MUST be in ${langPrompt}.
+          Return exactly a JSON array of objects with: question, options (array of 4), correctAnswer (0-3 index), and explanation.`,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                correctAnswer: { type: Type.NUMBER },
+                explanation: { type: Type.STRING }
+              },
+              required: ["question", "options", "correctAnswer", "explanation"]
+            }
+          }
+        }
+      }));
+      
+      let text = response.text;
+      if (!text) throw new Error("Gemini quiz generation failed: No text returned");
+      
+      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      return JSON.parse(text);
+    } catch (error) {
+      console.warn(`Model ${model} failed for quiz generation:`, error);
+      lastError = error;
+    }
+  }
+
+  // Fallback to OpenRouter
+  try {
+    console.log("Gemini failed, falling back to OpenRouter for quiz generation...");
+    return await generateQuizQuestionsWithOpenRouter(content, language, count, difficulty, complexity);
+  } catch (orcError) {
+    console.error("OpenRouter fallback also failed for quiz generation:", orcError);
+  }
+
+  throw lastError || new Error("All AI models (Gemini & OpenRouter) failed for quiz generation");
 };
 
 export const generateTopicSectionOnClient = async (content: string, title: string, topic: string, language: string = "English (US)"): Promise<NoteSection> => {
@@ -313,5 +419,14 @@ export const generateTopicSectionOnClient = async (content: string, title: strin
       lastError = error;
     }
   }
-  throw lastError || new Error("All Gemini models failed for topic generation");
+
+  // Fallback to OpenRouter
+  try {
+    console.log("Gemini failed, falling back to OpenRouter for topic generation...");
+    return await generateTopicSection(content, title, topic);
+  } catch (orcError) {
+    console.error("OpenRouter fallback also failed for topic generation:", orcError);
+  }
+
+  throw lastError || new Error("All AI models (Gemini & OpenRouter) failed for topic generation");
 };
