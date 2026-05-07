@@ -232,9 +232,10 @@ export const login = async (req: Request, res: Response) => {
       message: 'Login failed due to an internal server error', 
       error: error.message || 'Unknown error',
       errorName: error.name,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+      stack: error.stack, // Always show stack for debugging
       debugInfo: {
-        dbState: mongoose.connection.readyState
+        dbState: mongoose.connection.readyState,
+        isDbConnected: mongoose.connection.readyState === 1
       }
     };
     console.log('[LOGIN_FATAL_RESPONSE_SENDING]', JSON.stringify(errorResponse));
@@ -289,10 +290,11 @@ export const getMe = async (req: Request, res: Response) => {
       message: 'Failed to fetch user data', 
       error: error.message || 'Unknown error',
       errorName: error.name,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+      stack: error.stack, // Always show stack for debugging
       debugInfo: {
         userId: (req as any).userId,
-        dbState: mongoose.connection.readyState
+        dbState: mongoose.connection.readyState,
+        isDbConnected: mongoose.connection.readyState === 1
       }
     };
     console.log('[GET_ME_FATAL_RESPONSE_SENDING]', JSON.stringify(errorResponse));

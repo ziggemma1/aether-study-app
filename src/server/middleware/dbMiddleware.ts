@@ -23,20 +23,31 @@ export const checkDbConnection = async (req: Request, res: Response, next: NextF
   console.log('⏳ DB is not connected. Attempting to connect...');
   try {
     const db = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 15000, // increased timeout for serverless cold starts
+      serverSelectionTimeoutMS: 15000, 
       connectTimeoutMS: 15000,
-      bufferCommands: false,
+      bufferCommands: true, // Allow buffering temporarily to prevent immediate crashes
     });
     isConnected = db.connections[0].readyState === 1;
     return next();
   } catch (error: any) {
-    console.error('Failed to connect to DB:', error);
+    console.error('❌ Failed to connect to DB:', error.message);
     
+    let userFriendlyMessage = 'Database connection in progress. Please wait a few seconds and try again.';
+    let hint = 'This usually happens during the first boot or cold starts.';
+
+    if (error.message.includes('authentication failed')) {
+      userFriendlyMessage = 'Database Authentication Failed';
+      hint = 'Your MONGODB_URI contains incorrect credentials. Please check your MongoDB password in the Environment Variables Settings.';
+    } else if (error.message.includes('IP address') || error.message.includes('whitelist')) {
+      userFriendlyMessage = 'Database Access Denied (IP Whitelist)';
+      hint = 'Ensure your MongoDB Atlas project allows connections from any IP (0.0.0.0/0) for these environments.';
+    }
+
     return res.status(503).json({ 
-      message: 'Database connection in progress. Please wait a few seconds and try again.',
+      message: userFriendlyMessage,
       state: mongoose.connection.readyState,
       error: error.message,
-      hint: 'This usually happens during the first boot or cold starts. We are retrying the connection automatically.'
+      hint
     });
   }
 };

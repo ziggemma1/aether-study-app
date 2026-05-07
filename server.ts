@@ -21,6 +21,9 @@ import { initSocket } from "./src/server/socket.js";
 
 dotenv.config();
 
+// Mongoose Global Configuration
+mongoose.set('bufferCommands', true); 
+
 // Handle uncaught exceptions and unhandled rejections
 process.on('uncaughtException', (err) => {
   console.error('❌ UNCAUGHT EXCEPTION:', err);

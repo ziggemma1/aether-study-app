@@ -13,15 +13,14 @@ export const getSocket = (token?: string) => {
   }
 
   if (!socket) {
-    const DEFAULT_RENDER_URL = "https://aether-socket-server-17zk.onrender.com";
-    const envUrl = import.meta.env.VITE_SOCKET_URL;
+    const envUrl = (import.meta.env?.VITE_SOCKET_URL as string);
     
-    // Choose target: Env var > Render Fallback (if not local) > Origin
-    let targetUrl = envUrl || DEFAULT_RENDER_URL;
+    // Choose target: Env var > Origin (safest fallback)
+    let targetUrl = envUrl || window.location.origin;
     
-    // If we're in the AI Studio preview environment and no URL is set, we use origin (local server)
+    // Explicitly check for local environments to ensure we use the correct origin
     const origin = window.location.origin;
-    if (!envUrl && (origin.includes("google-west1.run.app") || origin.includes("localhost"))) {
+    if (!envUrl && (origin.includes("google-west1.run.app") || origin.includes("localhost") || origin.includes("webcontainer.io"))) {
       targetUrl = origin;
     }
 
