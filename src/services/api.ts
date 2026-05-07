@@ -5,6 +5,16 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Add interceptor to include Authorization header if token exists in localStorage
+// this provides a fallback when httpOnly cookies are blocked in cross-domain previews
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {

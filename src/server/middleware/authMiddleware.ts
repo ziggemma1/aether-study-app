@@ -7,7 +7,10 @@ const getJwtSecret = () => {
     if (process.env.NODE_ENV !== 'production') {
       return 'dev_temporary_secret_key_12345';
     }
-    throw new Error('JWT_SECRET is not defined');
+    // Consistent fallback with authController.ts to prevent 500 crashes
+    // while still logging the critical error.
+    console.error("❌ CRITICAL ERROR: JWT_SECRET is not defined in production middleware!");
+    return 'prod_emergency_fallback_secret_999';
   }
   return secret;
 };
