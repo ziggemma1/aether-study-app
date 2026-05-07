@@ -41,8 +41,10 @@ if (error.response?.status === 503 && error.response?.data?.message?.includes('D
       const serverError = error.response?.data;
       console.error('❌ API 500 ERROR:', {
         url: error.config?.url,
-        fullData: serverError
+        fullData: serverError,
+        message: serverError?.message || 'Check server logs'
       });
+      // Optionally show a global toast if possible, but for now just enhanced logging
     }
     
     return Promise.reject(error);

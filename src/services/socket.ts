@@ -51,12 +51,15 @@ export const getSocket = (token?: string) => {
     });
 
     socket.on("connect_error", (err: any) => {
+      // Significantly reduce noise for connection errors in restricted environments
       if (err.message === "xhr poll error" || err.message === "websocket error" || err.message === "timeout") {
-         console.warn("Socket connection failed (likely environment restriction e.g. Vercel). Real-time features disabled.");
+         // Only log once to avoid flooding the console
+         if (!(window as any)._socket_error_logged) {
+           console.log("ℹ️ Real-time features restricted in this environment (Vercel/Iframe). Using standard API polling.");
+           (window as any)._socket_error_logged = true;
+         }
       } else {
-         console.error("Socket connection error:", err.message);
-         if (err.description) console.error("Error Description:", err.description);
-         if (err.context) console.error("Error Context:", err.context);
+         console.warn("Socket connection error:", err.message);
       }
     });
   }

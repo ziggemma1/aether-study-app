@@ -17,7 +17,20 @@ const getApiKey = () => {
 };
 
 const apiKey = getApiKey();
-const ai = new GoogleGenAI({ apiKey });
+if (!apiKey) {
+  console.warn("⚠️ GEMINI_API_KEY is missing in the client. Features requiring client-side AI will fail.");
+}
+
+let aiInstance: GoogleGenAI | null = null;
+const getAi = () => {
+  if (!aiInstance && apiKey) {
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
+
+// Functions now use getAi() internally to avoid initialization warnings when API key is missing.
+
 
 export interface StudyMaterialAnalysis {
   summary: string;
@@ -57,7 +70,8 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, backoff = 1000): 
 };
 
 export const generateVisualAidOnClient = async (prompt: string): Promise<string> => {
-  if (!apiKey) {
+  const gAi = getAi();
+  if (!gAi) {
     console.warn("GEMINI_API_KEY missing on client. Visual aid generation skipped.");
     return '';
   }
@@ -67,7 +81,7 @@ export const generateVisualAidOnClient = async (prompt: string): Promise<string>
   
   for (const model of models) {
     try {
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => gAi.models.generateContent({
         model,
         contents: {
           parts: [{ text: `Create a professional educational diagram for: ${prompt}` }],
@@ -90,8 +104,9 @@ export const generateVisualAidOnClient = async (prompt: string): Promise<string>
 };
 
 export const analyzeStudyMaterialOnClient = async (content: string, title: string = "Material", language: string = "English (US)"): Promise<StudyMaterialAnalysis> => {
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not configured on the client. Please ensure you have added it to your environment.");
+  const gAi = getAi();
+  if (!gAi) {
+    throw new Error("GEMINI_API_KEY is not configured on the client.");
   }
 
   // Determine actual language prompt
@@ -106,7 +121,7 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
       console.log(`Analyzing material with model: ${model} in ${language}`);
       // Reduce content size slightly to avoid proxy buffer issues
       const contentLimit = 12000; 
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => gAi.models.generateContent({
         model,
         contents: `Material Title: ${title}\n\nMaterial Content:\n${content.substring(0, contentLimit)}`,
         config: {
@@ -191,7 +206,8 @@ export const analyzeStudyMaterialOnClient = async (content: string, title: strin
 };
 
 export const simplifyContentELI5 = async (content: string, language: string = "English (US)"): Promise<string> => {
-  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  const gAi = getAi();
+  if (!gAi) throw new Error("GEMINI_API_KEY missing");
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
   
   const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
@@ -199,7 +215,7 @@ export const simplifyContentELI5 = async (content: string, language: string = "E
 
   for (const model of models) {
     try {
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => gAi.models.generateContent({
         model,
         contents: `Please explain the following text as if I am 5 years old. Make it extremely simple, use analogies, and keep it brief.\n\nText to explain:\n${content}`,
         config: {
@@ -217,7 +233,8 @@ export const simplifyContentELI5 = async (content: string, language: string = "E
 };
 
 export const chatWithTutorOnClient = async (materialTitle: string, materialContent: string, chatHistory: { role: 'user' | 'model'; parts: { text: string }[] }[], userMessage: string, language: string = "English (US)"): Promise<string> => {
-  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  const gAi = getAi();
+  if (!gAi) throw new Error("GEMINI_API_KEY missing");
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
   const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
@@ -225,7 +242,6 @@ export const chatWithTutorOnClient = async (materialTitle: string, materialConte
 
   for (const model of models) {
     try {
-      const chatModel = ai.models; // we can use generateContent with history
       const systemInstruction = `You are a helpful Interactive AI Tutor. You know exactly what the user is studying. Material Title: ${materialTitle}. Here is the material content to refer to: ${materialContent.substring(0, 10000)}. STRICT REQUIREMENT: Output MUST be in ${langPrompt}. Be conversational, concise, and educational.`;
 
       const contents = [
@@ -233,7 +249,7 @@ export const chatWithTutorOnClient = async (materialTitle: string, materialConte
         { role: 'user', parts: [{ text: userMessage }] }
       ] as any[];
 
-      const response = await withRetry(() => chatModel.generateContent({
+      const response = await withRetry(() => gAi.models.generateContent({
         model,
         contents,
         config: { systemInstruction }
@@ -264,7 +280,8 @@ export const generateFlashcardsOnClient = async (
   language: string = "English (US)",
   count: number = 10
 ): Promise<{ question: string; answer: string }[]> => {
-  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  const gAi = getAi();
+  if (!gAi) throw new Error("GEMINI_API_KEY missing");
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
   const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
@@ -272,7 +289,7 @@ export const generateFlashcardsOnClient = async (
 
   for (const model of models) {
     try {
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => gAi.models.generateContent({
         model,
         contents: `Extract exactly ${count} important key terms and concepts from this material and create flashcards.\n\nMaterial:\n${content.substring(0, 10000)}`,
         config: {
@@ -323,7 +340,8 @@ export const generateQuizQuestionsOnClient = async (
   difficulty: "Easy" | "Medium" | "Hard" = "Medium",
   complexity: "Basic" | "Standard" | "Comprehensive" = "Standard"
 ): Promise<{ question: string; options: string[]; correctAnswer: number; explanation: string }[]> => {
-  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  const gAi = getAi();
+  if (!gAi) throw new Error("GEMINI_API_KEY missing");
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
   const models = ['gemini-3-flash-preview', 'gemini-flash-latest'];
@@ -331,7 +349,7 @@ export const generateQuizQuestionsOnClient = async (
 
   for (const model of models) {
     try {
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => gAi.models.generateContent({
         model,
         contents: `Generate exactly ${count} ${difficulty} difficulty level quiz questions with ${complexity} complexity based on this material.\n\nMaterial:\n${content.substring(0, 10000)}`,
         config: {
@@ -380,7 +398,8 @@ export const generateQuizQuestionsOnClient = async (
 };
 
 export const generateTopicSectionOnClient = async (content: string, title: string, topic: string, language: string = "English (US)"): Promise<NoteSection> => {
-  if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+  const gAi = getAi();
+  if (!gAi) throw new Error("GEMINI_API_KEY missing");
   
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
   
@@ -392,7 +411,7 @@ export const generateTopicSectionOnClient = async (content: string, title: strin
       console.log(`Generating topic section with model: ${model} in ${language}`);
       // Reduce content size slightly to avoid proxy buffer issues
       const contentLimit = 8000;
-      const response = await withRetry(() => ai.models.generateContent({
+      const response = await withRetry(() => gAi.models.generateContent({
         model,
         contents: `Create an EXTREMELY detailed study chapter for the topic "${topic}" based on the following material: ${title}.
         
