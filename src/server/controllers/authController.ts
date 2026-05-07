@@ -5,6 +5,7 @@ import { OAuth2Client } from 'google-auth-library';
 
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
+  console.log(`[AUTH_DEBUG] NODE_ENV: ${process.env.NODE_ENV}, JWT_SECRET present: ${!!secret}`);
   if (!secret) {
     if (process.env.NODE_ENV !== 'production') {
       console.warn("⚠️ WARNING: JWT_SECRET environment variable is not set. Using a temporary fallback secret for development.");
@@ -161,6 +162,7 @@ export const register = async (req: Request, res: Response) => {
 };
 
 export const login = async (req: Request, res: Response) => {
+  console.log(`[LOGIN_ENTRY] Request received at ${new Date().toISOString()}`);
   console.log(`[LOGIN] Received login request for: ${req.body?.email}`);
   try {
     const { email, password } = req.body;
@@ -170,9 +172,10 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    console.log(`Login attempt for: "${normalizedEmail}"`);
+    console.log(`[AUTH_DEBUG] Attempting DB lookup for: "${normalizedEmail}"`);
 
     const user = await User.findOne({ email: normalizedEmail });
+    console.log(`[AUTH_DEBUG] User found: ${!!user}`);
     if (!user) {
       console.log(`Login failed: User "${normalizedEmail}" not found`);
       return res.status(400).json({ message: 'Invalid credentials' });
@@ -221,12 +224,15 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    console.error('[LOGIN_FATAL] Error occurred during login:', error.message);
-    res.status(500).json({ 
+    console.error('[LOGIN_FATAL_ERROR_OBJECT]', error);
+    const errorResponse = { 
       message: 'Login failed due to an internal server error', 
       error: error.message || 'Unknown error',
+      errorName: error.name,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
-    });
+    };
+    console.log('[LOGIN_FATAL_RESPONSE_SENDING]', JSON.stringify(errorResponse));
+    res.status(500).json(errorResponse);
   }
 };
 
@@ -272,10 +278,13 @@ export const getMe = async (req: Request, res: Response) => {
       handle: user.handle || ''
     });
   } catch (error: any) {
-    console.error('[GET_ME_FATAL] Error fetching current user:', error.message);
-    res.status(500).json({ 
+    console.error('[GET_ME_FATAL_ERROR_OBJECT]', error);
+    const errorResponse = { 
       message: 'Failed to fetch user data', 
-      error: error.message || 'Unknown error'
-    });
+      error: error.message || 'Unknown error',
+      errorName: error.name
+    };
+    console.log('[GET_ME_FATAL_RESPONSE_SENDING]', JSON.stringify(errorResponse));
+    res.status(500).json(errorResponse);
   }
 };

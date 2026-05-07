@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 let isConnected = false;
 
 export const checkDbConnection = async (req: Request, res: Response, next: NextFunction) => {
+  console.log(`[DB_CHECK] Request to ${req.url}, State: ${mongoose.connection.readyState}`);
   if (!process.env.MONGODB_URI) {
     return res.status(500).json({
       message: 'Database Configuration Error: Missing MONGODB_URI',
