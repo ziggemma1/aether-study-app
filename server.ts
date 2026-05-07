@@ -96,9 +96,19 @@ async function startServer() {
   app.use(express.json({ limit: '5mb' })); 
   app.use(express.urlencoded({ limit: '5mb', extended: true }));
   app.use(cookieParser());
-  const MONGODB_URI = process.env.MONGODB_URI;
-  if (MONGODB_URI) {
-    if (MONGODB_URI.includes('<db_password>') || MONGODB_URI.includes('<') || MONGODB_URI.includes('>')) {
+  const rawUri = process.env.MONGODB_URI;
+  if (rawUri && rawUri.trim() !== '') {
+    let MONGODB_URI = rawUri.trim();
+    if ((MONGODB_URI.startsWith('"') && MONGODB_URI.endsWith('"')) || (MONGODB_URI.startsWith("'") && MONGODB_URI.endsWith("'"))) {
+      MONGODB_URI = MONGODB_URI.substring(1, MONGODB_URI.length - 1).trim();
+    }
+    const uriPrefix = MONGODB_URI.substring(0, 15);
+    console.log(`[DB_INIT] URI starts with: "${uriPrefix}..." (Raw length: ${rawUri.length})`);
+    
+    if (!MONGODB_URI.startsWith('mongodb://') && !MONGODB_URI.startsWith('mongodb+srv://')) {
+      console.error("❌ CRITICAL ERROR: Your MONGODB_URI has an invalid scheme.");
+      console.error("👉 ACTION REQUIRED: Your URI must start with 'mongodb://' or 'mongodb+srv://'. Check for leading spaces, quotes, or accidental characters in your environment variables.");
+    } else if (MONGODB_URI.includes('<db_password>') || MONGODB_URI.includes('<') || MONGODB_URI.includes('>')) {
       console.error("❌ CRITICAL ERROR: Your MONGODB_URI contains placeholder text like '<db_password>'.");
       console.error("👉 ACTION REQUIRED: Please replace '<db_password>' with your actual MongoDB database password in your environment variables.");
     } else {

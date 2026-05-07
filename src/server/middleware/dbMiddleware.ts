@@ -6,15 +6,31 @@ let isConnected = false;
 
 export const checkDbConnection = async (req: Request, res: Response, next: NextFunction) => {
   console.log(`[DB_CHECK] Request to ${req.url}, State: ${mongoose.connection.readyState}`);
-  if (!process.env.MONGODB_URI) {
+  const rawUri = process.env.MONGODB_URI;
+  if (!rawUri || rawUri.trim() === '') {
     return res.status(500).json({
       message: 'Database Configuration Error: Missing MONGODB_URI',
-      error: 'The MONGODB_URI environment variable is not set.',
+      error: 'The MONGODB_URI environment variable is empty or not set.',
       hint: 'Please go to the Settings menu in AI Studio, find Environment Variables, and add MONGODB_URI with your MongoDB Atlas connection string.'
     });
   }
 
-  // Use cached connection state in serverless to reduce readyState checks mapping
+  let uri = rawUri.trim();
+  
+  // Clean common mistakes: trailing/leading quotes
+  if ((uri.startsWith('"') && uri.endsWith('"')) || (uri.startsWith("'") && uri.endsWith("'"))) {
+    uri = uri.substring(1, uri.length - 1).trim();
+  }
+
+  if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
+    return res.status(500).json({
+      message: 'Database Configuration Error: Invalid MONGODB_URI Scheme',
+      error: 'The connection string must start with "mongodb://" or "mongodb+srv://".',
+      hint: 'Your URI currently starts with: ' + uri.substring(0, 10) + '... (check for leading spaces or quotes in your Environment Variables)'
+    });
+  }
+
+  // Use cached connection state in serverless to reduce readyState checks
   if (isConnected || mongoose.connection.readyState === 1) {
     isConnected = true;
     return next();
@@ -22,7 +38,7 @@ export const checkDbConnection = async (req: Request, res: Response, next: NextF
 
   console.log('⏳ DB is not connected. Attempting to connect...');
   try {
-    const db = await mongoose.connect(process.env.MONGODB_URI, {
+    const db = await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 15000, 
       connectTimeoutMS: 15000,
       bufferCommands: true, // Allow buffering temporarily to prevent immediate crashes

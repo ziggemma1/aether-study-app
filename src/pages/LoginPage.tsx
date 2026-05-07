@@ -55,8 +55,14 @@ export default function LoginPage() {
         if (responseData) {
           if (typeof responseData === 'string') {
             message = responseData;
-          } else if (responseData.message) {
-            message = responseData.message;
+          } else {
+            message = responseData.message || 'Failed to log in';
+            if (responseData.error) {
+              message += `: ${responseData.error}`;
+            }
+            if (responseData.hint) {
+              message += ` (Hint: ${responseData.hint})`;
+            }
           }
         } else {
           message = err.message || 'Failed to log in';
