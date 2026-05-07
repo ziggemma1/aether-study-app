@@ -14,6 +14,19 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<React.ReactNode | null>(null);
+  const [serverState, setServerState] = React.useState<{ dbConnected: boolean, hasUri: boolean } | null>(null);
+
+  React.useEffect(() => {
+    const checkServerHealth = async () => {
+      try {
+        const response = await api.get('/health');
+        setServerState(response.data);
+      } catch (err) {
+        console.warn('Initial health check failed:', err);
+      }
+    };
+    checkServerHealth();
+  }, []);
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -204,6 +217,21 @@ export default function LoginPage() {
         </div>
 
         <div className="glass-card p-8 bg-slate-950/40 backdrop-blur-2xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+          {serverState && !serverState.hasUri && (
+            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-500 text-sm">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold mb-1 uppercase tracking-wider text-xs">Deployment Action Required</p>
+                  <p className="opacity-90 leading-relaxed">
+                    This deployed version is missing its <strong>MONGODB_URI</strong> environment variable. 
+                    Please add it in your deployment settings (Vercel, Cloud Run, or GitHub) to enable authentication.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
               <div className="flex items-center gap-2">

@@ -102,13 +102,15 @@ export const register = async (req: Request, res: Response) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    console.log(`[REGISTER_DEBUG] Checking if user exists: "${normalizedEmail}" in readyState: ${mongoose.connection.readyState}`);
     
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
-      console.log(`Registration failed: User ${normalizedEmail} already exists`);
+      console.log(`[REGISTER_DEBUG] Registration failed: User ${normalizedEmail} already exists`);
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    console.log(`[REGISTER_DEBUG] Creating new user: ${normalizedEmail}`);
     const user = new User({ 
       name, 
       email: normalizedEmail, 
@@ -117,9 +119,12 @@ export const register = async (req: Request, res: Response) => {
       language: language || 'English (US)'
     });
     await user.save();
+    console.log(`[REGISTER_DEBUG] User saved with ID: ${user._id}. Signing JWT...`);
 
-    const token = jwt.sign({ id: user._id }, getJwtSecret(), { expiresIn: '7d' });
+    const secret = getJwtSecret();
+    const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
     const isSecure = process.env.NODE_ENV === 'production' || req.secure || req.headers['x-forwarded-proto'] === 'https';
+    console.log(`[REGISTER_DEBUG] JWT signed. Setting cookie (isSecure: ${isSecure})...`);
 
     res.cookie('token', token, {
       httpOnly: true,
@@ -183,23 +188,28 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    console.log(`[AUTH_DEBUG] Attempting DB lookup for: "${normalizedEmail}"`);
+    console.log(`[LOGIN_DEBUG] Attempting DB lookup for: "${normalizedEmail}" in readyState: ${mongoose.connection.readyState}`);
 
     const user = await User.findOne({ email: normalizedEmail });
-    console.log(`[AUTH_DEBUG] User found: ${!!user}`);
+    console.log(`[LOGIN_DEBUG] User lookup completed. Found: ${!!user}`);
     if (!user) {
-      console.log(`Login failed: User "${normalizedEmail}" not found`);
+      console.log(`[LOGIN_DEBUG] Login failed: User "${normalizedEmail}" not found`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    console.log(`[LOGIN_DEBUG] Verifying password for user: ${user._id}`);
     const isMatch = await (user as any).comparePassword(password);
     if (!isMatch) {
-      console.log(`Login failed: Password mismatch for ${normalizedEmail}`);
+      console.log(`[LOGIN_DEBUG] Login failed: Password mismatch for ${normalizedEmail}`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user._id }, getJwtSecret(), { expiresIn: '7d' });
+    console.log(`[LOGIN_DEBUG] Password verified. Signing JWT...`);
+    const secret = getJwtSecret();
+    const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
+    
     const isSecure = process.env.NODE_ENV === 'production' || req.secure || req.headers['x-forwarded-proto'] === 'https';
+    console.log(`[LOGIN_DEBUG] JWT signed. Setting cookie (isSecure: ${isSecure})...`);
 
     res.cookie('token', token, {
       httpOnly: true,

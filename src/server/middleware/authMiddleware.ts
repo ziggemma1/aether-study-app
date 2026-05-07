@@ -9,7 +9,7 @@ const getJwtSecret = () => {
     }
     // Consistent fallback with authController.ts to prevent 500 crashes
     // while still logging the critical error.
-    console.error("❌ CRITICAL ERROR: JWT_SECRET is not defined in production middleware!");
+    console.error("❌ AUTH CONFIG ERROR: JWT_SECRET is not defined in production!");
     return 'prod_emergency_fallback_secret_999';
   }
   return secret;
@@ -20,14 +20,23 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
 
     if (!token) {
-      return res.status(401).json({ message: 'Not authorized, no token' });
+      return res.status(401).json({ 
+        errorId: 'AUTH_MISSING_TOKEN',
+        message: 'Not authorized, no token' 
+      });
     }
 
-    const decoded = jwt.verify(token, getJwtSecret()) as { id: string };
+    const secret = getJwtSecret();
+    const decoded = jwt.verify(token, secret) as { id: string };
     (req as any).userId = decoded.id;
     next();
   } catch (error: any) {
     console.error('[AUTH_MIDDLEWARE_ERROR]', error.message);
-    res.status(401).json({ message: 'Not authorized, token failed', error: error.message });
+    const isExpired = error.name === 'TokenExpiredError';
+    res.status(401).json({ 
+      errorId: isExpired ? 'AUTH_TOKEN_EXPIRED' : 'AUTH_TOKEN_INVALID',
+      message: isExpired ? 'Your session has expired. Please log in again.' : 'Authentication failed', 
+      error: error.message 
+    });
   }
 };
