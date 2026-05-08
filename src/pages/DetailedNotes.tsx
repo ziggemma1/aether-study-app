@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Sparkles, Download, Share2, FileText, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, BookOpen, Sparkles, Download, Share2, FileText, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { StudyTimer } from '../components/StudyTimer';
 import { TutorChat } from '../components/TutorChat';
@@ -90,32 +90,61 @@ export default function DetailedNotes() {
     );
   }
 
-  const sections = material.noteSections || [];
-  const totalPages = sections.length;
-  const isPending = (material as any).generationStatus === 'pending' && !material.detailedNotes;
+  const isPending = (material as any)?.generationStatus === 'pending' && !material?.detailedNotes;
+  const isFailed = (material as any)?.generationStatus === 'failed';
 
   const [isRegenerating, setIsRegenerating] = React.useState(false);
+  const [pollCount, setPollCount] = React.useState(0);
+
+  const sections = material?.noteSections || [];
+  const totalPages = sections.length;
 
   // Poll for completion if pending
   React.useEffect(() => {
     let interval: any;
-    if (isPending) {
+    if (isPending && pollCount < 20) { // Limit polling to ~100 seconds
       interval = setInterval(async () => {
         try {
-          const res = await api.get(`/materials/${material.id}`);
+          const res = await api.get(`/materials/${id}`);
           if (res.data.generationStatus === 'completed' || res.data.detailedNotes) {
-            // Update local state
-            const updated = materials.map(m => m.id === material.id ? { ...m, ...res.data, id: res.data._id || res.data.id } : m);
+            // Update local state in context
+            const updated = materials.map(m => 
+              (m.id === id || (m as any)._id === id) 
+                ? { ...m, ...res.data, id: res.data._id || res.data.id } 
+                : m
+            );
             setMaterials(updated);
             clearInterval(interval);
           }
+          setPollCount(prev => prev + 1);
         } catch (err) {
           console.warn('Polling failed', err);
         }
       }, 5000);
     }
     return () => clearInterval(interval);
-  }, [isPending, material.id]);
+  }, [isPending, id, pollCount]);
+
+  const handleManualRetry = async () => {
+    if (!material) return;
+    setIsRegenerating(true);
+    try {
+      await api.post('/materials/generate-chapters', {
+        content: material.content,
+        title: material.title,
+        materialId: id
+      });
+      // Reset poll count to start polling again
+      setPollCount(0);
+      // Optimistically update status to pending
+      const updated = materials.map(m => (m.id === id) ? { ...m, generationStatus: 'pending' } : m);
+      setMaterials(updated as any);
+    } catch (err) {
+      console.error('Retry failed', err);
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const handleRegenerate = async () => {
     if (isRegenerating || !material) return;
@@ -313,6 +342,33 @@ export default function DetailedNotes() {
                 <div className="flex items-center justify-center gap-2 text-primary font-bold text-xs uppercase tracking-widest animate-pulse">
                   <Sparkles size={14} /> Background Task Active
                 </div>
+                {pollCount > 10 && (
+                  <p className="text-xs text-text-muted mt-6">
+                    Taking longer than expected? You can wait or check back later in your library.
+                  </p>
+                )}
+              </motion.div>
+            ) : isFailed ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="glass-card p-12 text-center border-red-500/20"
+              >
+                <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <AlertCircle size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-text-main mb-2">Generation Failed</h3>
+                <p className="text-text-muted mb-6 max-w-sm mx-auto">
+                  We encountered an issue while generating your detailed notes. This might be due to a temporary model outage.
+                </p>
+                <button
+                  onClick={handleManualRetry}
+                  disabled={isRegenerating}
+                  className="btn-primary w-full max-w-xs mx-auto flex items-center justify-center gap-2"
+                >
+                  {isRegenerating ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+                  Retry Generation
+                </button>
               </motion.div>
             ) : sections.length > 0 ? (
               <motion.div

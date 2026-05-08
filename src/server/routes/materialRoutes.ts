@@ -1,6 +1,7 @@
 import express from 'express';
 import { 
   getMaterials, 
+  getMaterial,
   createMaterial, 
   deleteMaterial, 
   deleteMaterials, 
@@ -42,6 +43,13 @@ router.post('/:id/flashcards/:cardId/review', reviewFlashcard);
 router.post('/youtube-transcript', getYoutubeTranscript);
 
 router.get('/', getMaterials);
+router.get('/analyze', (req, res) => {
+  res.status(405).json({ 
+    message: 'Method Not Allowed. Material analysis requires a POST request with content.',
+    hint: 'If you were trying to fetch a material with ID "analyze", ensure the ID is valid.'
+  });
+});
+router.get('/:id', getMaterial);
 router.post('/', createMaterial);
 router.post('/analyze', analyzeMaterial);
 router.post('/generate-chapters', generateChapters);

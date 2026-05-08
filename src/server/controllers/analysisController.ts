@@ -61,20 +61,27 @@ export const generateChapters = async (req: Request, res: Response) => {
     
     // We return a response immediately if it's a background call
     if (materialId) {
-      res.json({ message: 'Background generation started' });
+      res.json({ message: 'Background generation started', materialId });
       
       // Run generation in "background"
       (async () => {
         try {
+          console.log(`[AI-Background] Starting for material: ${materialId}`);
           const notesResult = await generateDetailedNotesSvc(content, title);
-          await MaterialModel.findByIdAndUpdate(materialId, {
+          
+          const updated = await MaterialModel.findByIdAndUpdate(materialId, {
             detailedNotes: notesResult.detailedNotes,
             generationStatus: 'completed'
-          });
-          console.log(`Background generation completed for ${materialId}`);
+          }, { new: true });
+
+          if (updated) {
+            console.log(`[AI-Background] Success for ${materialId}. Length: ${notesResult.detailedNotes.length}`);
+          } else {
+            console.error(`[AI-Background] Failed to find material ${materialId} to update`);
+          }
         } catch (err: any) {
-          console.error(`Background generation failed for ${materialId}:`, err.message);
-          await MaterialModel.findByIdAndUpdate(materialId, { generationStatus: 'failed' });
+          console.error(`[AI-Background] Critical Failure for ${materialId}:`, err.message);
+          await MaterialModel.findByIdAndUpdate(materialId, { generationStatus: 'failed' }).catch(e => console.error('Double fail:', e));
         }
       })();
       return;
