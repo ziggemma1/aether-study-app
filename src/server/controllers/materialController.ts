@@ -1,6 +1,92 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { Material } from '../models/Material.js';
+import { SharedMaterial } from '../models/SharedMaterial.js';
+import crypto from 'crypto';
+
+export const shareMaterial = async (req: Request, res: Response) => {
+  try {
+    const { materialId } = req.body;
+    const userId = (req as any).userId;
+
+    const material = await Material.findOne({ _id: materialId, userId });
+    if (!material) {
+      return res.status(404).json({ message: "Material not found or unauthorized" });
+    }
+
+    // Check if it's already shared
+    let shared = await SharedMaterial.findOne({ materialId });
+    if (!shared) {
+      const shareToken = crypto.randomBytes(12).toString('hex');
+      shared = new SharedMaterial({
+        materialId,
+        shareToken,
+        originalUserId: userId,
+      });
+      await shared.save();
+    }
+
+    res.json({
+      shareToken: shared.shareToken,
+      shareUrl: `${req.protocol}://${req.get('host')}/share/${shared.shareToken}`
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getSharedMaterial = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const shared = await SharedMaterial.findOne({ shareToken: token })
+      .populate({
+        path: 'materialId',
+        populate: { path: 'userId', select: 'name avatar' }
+      });
+
+    if (!shared || !shared.materialId) {
+      return res.status(404).json({ message: "Shared material not found or expired" });
+    }
+
+    // Increment view count
+    shared.viewCount = (shared.viewCount || 0) + 1;
+    await shared.save();
+
+    res.json(shared.materialId);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const saveFromShare = async (req: Request, res: Response) => {
+  try {
+    const { shareToken } = req.body;
+    const userId = (req as any).userId;
+
+    const shared = await SharedMaterial.findOne({ shareToken }).populate('materialId');
+    if (!shared || !shared.materialId) {
+      return res.status(404).json({ message: "Shared material not found" });
+    }
+
+    const originalMaterial = shared.materialId as any;
+
+    const savedCopy = new Material({
+      ...originalMaterial.toObject(),
+      _id: new mongoose.Types.ObjectId(),
+      userId,
+      title: `${originalMaterial.title} (Shared)`,
+      isPublic: false,
+      likes: 0,
+      downloads: 0,
+      createdAt: new Date()
+    });
+
+    await savedCopy.save();
+    res.status(201).json(savedCopy);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export const getMaterials = async (req: Request, res: Response) => {
   try {

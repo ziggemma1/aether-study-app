@@ -22,6 +22,7 @@ export default function MaterialDetail() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [generationType, setGenerationType] = useState<'Quiz' | 'Flashcards'>('Quiz');
@@ -60,7 +61,19 @@ export default function MaterialDetail() {
   };
 
   const handleShare = async () => {
-    setIsShareModalOpen(true);
+    if (isSharing) return;
+    setIsSharing(true);
+    try {
+      const response = await api.post('/materials/share', { materialId: material.id });
+      const { shareUrl: generatedUrl } = response.data;
+      setShareUrl(generatedUrl);
+      setIsShareModalOpen(true);
+    } catch (error: any) {
+      console.error('Share failed:', error);
+      showToast('Failed to generate share link', 'error');
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   const handleListen = async () => {
@@ -380,14 +393,12 @@ export default function MaterialDetail() {
         onGenerate={handleGenerate}
       />
 
-      {material && (
-        <ShareModal
-          isOpen={isShareModalOpen}
-          onClose={() => setIsShareModalOpen(false)}
-          title={material.title}
-          url={window.location.href}
-        />
-      )}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={material.title}
+        url={shareUrl || `${window.location.origin}/share/loading`}
+      />
     </div>
   );
 }

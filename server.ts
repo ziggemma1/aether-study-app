@@ -121,6 +121,16 @@ async function startServer() {
           });
           console.log("✅ Connected to MongoDB successfully");
         } catch (err: any) {
+          const lowerMsg = err.message.toLowerCase();
+          const isAuthError = lowerMsg.includes('authentication failed') || lowerMsg.includes('bad auth');
+          
+          if (isAuthError) {
+            console.error("❌ FATAL DATABASE AUTHENTICATION FAILURE.");
+            console.error("👉 YOUR MONGODB_URI HAS INCORRECT CREDENTIALS (USERNAME/PASSWORD).");
+            console.error("👉 ACTION REQUIRED: Update your MONGODB_URI in the Settings > Environment Variables menu with the correct password.");
+            return; // Stop retrying on auth errors
+          }
+
           if (retries > 0) {
             const delay = 5000;
             console.warn(`❌ MongoDB connection failed: ${err.message}. Retrying in ${delay}ms... (${retries} retries left)`);
@@ -133,15 +143,13 @@ async function startServer() {
         }
       };
       
-      // In production/Vercel, we can try to connect
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-        console.log("⏳ Initializing MongoDB connection for production environment...");
-        // Don't block forever with 10 retries in a single lambda invocation
-        connectWithRetry(2).catch(err => {
-          console.warn("⚠️ Initial DB connection attempt failed in production, will retry on middleware demand.");
-        });
-      } else {
+      // In production/Vercel, we ALMOST ALWAYS want to let the dbMiddleware 
+      // handle the connection on a per-request basis to avoid cold-start 
+      // timeouts during the initial module evaluation.
+      if (!isProduction) {
         connectWithRetry();
+      } else {
+        console.log("[DB_INIT] Production mode: Delaying connection until first request to avoid cold-start timeout.");
       }
     }
   } else {

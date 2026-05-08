@@ -32,38 +32,24 @@ export const checkDbConnection = async (req: Request, res: Response, next: NextF
     });
   }
 
-  // Use cached connection state in serverless to reduce readyState checks
+  // Skip if already connected
   if (mongoose.connection.readyState === 1) {
     isConnected = true;
     return next();
   }
 
-  // If already connecting, wait a bit
-  if (mongoose.connection.readyState === 2) {
-    console.log('⏳ DB is already connecting. Waiting for it...');
-    try {
-      // Poll for readyState 1 for up to 5 seconds
-      for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // Use any cast to bypass narrowing from outer if (readyState === 2)
-        if ((mongoose.connection.readyState as any) === 1) {
-          isConnected = true;
-          return next();
-        }
-      }
-    } catch (e) {
-      console.warn('Wait for connection failed, proceeding to attempt connect()');
-    }
-  }
-
-  console.log('⏳ DB is not connected. Attempting to connect...');
+  console.log(`⏳ DB state is ${mongoose.connection.readyState}. Connection required for ${req.url}...`);
   try {
+    // Mongoose connect() is singleton: if already connecting, it returns the existing promise.
+    // We set a strict timeout to stay under Vercel's 10s limit.
     const db = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 15000, 
-      connectTimeoutMS: 15000,
+      serverSelectionTimeoutMS: 6000, 
+      connectTimeoutMS: 6000,
       bufferCommands: true, 
     });
+    
     isConnected = db.connections[0].readyState === 1;
+    console.log('✅ DB connected successfully via middleware');
     return next();
   } catch (error: any) {
     console.error('❌ Failed to connect to DB:', error.message);

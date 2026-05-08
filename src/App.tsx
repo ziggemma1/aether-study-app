@@ -35,6 +35,8 @@ import Leaderboard from './pages/Leaderboard';
 import LiveRooms from './pages/LiveRooms';
 import Explore from './pages/Explore';
 
+import SharedMaterialView from './pages/SharedMaterialView';
+
 function ProtectedRoute() {
   const { user, isLoading } = useAppContext();
   
@@ -85,6 +87,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/share/:token" element={<SharedMaterialView />} />
 
           {/* Protected Routes (Wrapped in AppLayout and ProtectedRoute) */}
           <Route element={<ProtectedRoute />}>
