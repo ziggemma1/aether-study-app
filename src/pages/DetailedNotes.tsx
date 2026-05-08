@@ -92,8 +92,30 @@ export default function DetailedNotes() {
 
   const sections = material.noteSections || [];
   const totalPages = sections.length;
+  const isPending = (material as any).generationStatus === 'pending' && !material.detailedNotes;
 
   const [isRegenerating, setIsRegenerating] = React.useState(false);
+
+  // Poll for completion if pending
+  React.useEffect(() => {
+    let interval: any;
+    if (isPending) {
+      interval = setInterval(async () => {
+        try {
+          const res = await api.get(`/materials/${material.id}`);
+          if (res.data.generationStatus === 'completed' || res.data.detailedNotes) {
+            // Update local state
+            const updated = materials.map(m => m.id === material.id ? { ...m, ...res.data, id: res.data._id || res.data.id } : m);
+            setMaterials(updated);
+            clearInterval(interval);
+          }
+        } catch (err) {
+          console.warn('Polling failed', err);
+        }
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [isPending, material.id]);
 
   const handleRegenerate = async () => {
     if (isRegenerating || !material) return;
@@ -273,9 +295,26 @@ export default function DetailedNotes() {
           )}
         </header>
 
-        <div className="relative min-h-[600px]">
+        <div className="relative min-h-[400px]">
           <AnimatePresence mode="wait">
-            {sections.length > 0 ? (
+            {isPending ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="glass-card p-12 text-center"
+              >
+                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Loader2 size={32} className="animate-spin" />
+                </div>
+                <h3 className="text-xl font-bold text-text-main mb-2">Generating Deep Notes...</h3>
+                <p className="text-text-muted mb-4 max-w-sm mx-auto">
+                  Our AI is currently synthesizing your study material into a high-quality guide. This usually takes 30-60 seconds.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-primary font-bold text-xs uppercase tracking-widest animate-pulse">
+                  <Sparkles size={14} /> Background Task Active
+                </div>
+              </motion.div>
+            ) : sections.length > 0 ? (
               <motion.div
                 key={currentPage}
                 initial={{ opacity: 0, x: 10 }}

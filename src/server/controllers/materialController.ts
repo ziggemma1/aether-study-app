@@ -92,7 +92,7 @@ export const saveFromShare = async (req: Request, res: Response) => {
 
     // Reset spaced repetition stats for flashcards if they exist
     if (savedCopy.flashcards && savedCopy.flashcards.length > 0) {
-      savedCopy.flashcards = savedCopy.flashcards.map((f: any) => ({
+      (savedCopy as any).flashcards = (savedCopy.flashcards as any[]).map((f: any) => ({
         ...f,
         interval: 0,
         easeFactor: 2.5,

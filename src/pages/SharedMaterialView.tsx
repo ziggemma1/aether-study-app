@@ -54,8 +54,17 @@ export default function SharedMaterialView() {
     setIsSaving(true);
     try {
       const response = await api.post('/materials/save-from-share', { shareToken: token });
-      showToast('Successfully added to your library!');
-      navigate(`/library/${response.data._id || response.data.id}`);
+      
+      // Refresh the context's material list so it shows up without a reload
+      if (typeof (window as any).refreshMaterials === 'function') {
+        await (window as any).refreshMaterials();
+      }
+      
+      showToast('Successfully added to your library!', 'success');
+      
+      // Navigate to the full detail view of the new material
+      const newId = response.data._id || response.data.id;
+      navigate(`/library/${newId}`);
     } catch (error: any) {
       console.error('Failed to save material:', error);
       showToast(error.message || 'Failed to save material', 'error');

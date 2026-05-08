@@ -33,6 +33,7 @@ const materialSchema = new mongoose.Schema({
   visualAidUrl: { type: String },
   progress: { type: Number, default: 0 },
   isPublic: { type: Boolean, default: false },
+  generationStatus: { type: String, enum: ['pending', 'completed', 'failed'], default: 'completed' },
   likes: { type: Number, default: 0 },
   downloads: { type: Number, default: 0 },
   authorName: { type: String },

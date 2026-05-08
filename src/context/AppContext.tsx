@@ -296,6 +296,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    (window as any).refreshMaterials = fetchAppData;
+    return () => {
+      delete (window as any).refreshMaterials;
+    };
+  }, [fetchAppData]);
+
   const initialize = useCallback(async () => {
     const cachedUser = localStorage.getItem('user');
     const cachedMaterials = localStorage.getItem('cached_materials');

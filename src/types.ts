@@ -78,6 +78,7 @@ export interface Material {
   progress: number;
   content?: string;
   isPublic?: boolean;
+  generationStatus?: 'pending' | 'completed' | 'failed';
 }
 
 export interface ReadingPlan {

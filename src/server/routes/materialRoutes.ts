@@ -13,7 +13,15 @@ import {
   getSharedMaterial,
   saveFromShare
 } from '../controllers/materialController.js';
-import { analyzeMaterial, generateChapters, getYoutubeTranscript } from '../controllers/analysisController.js';
+import { 
+  analyzeMaterial, 
+  generateChapters, 
+  getYoutubeTranscript,
+  generateFlashcards as generateFlashcardsController,
+  generateQuiz as generateQuizController,
+  chatWithTutor as chatWithTutorController,
+  generatePlan as generatePlanController
+} from '../controllers/analysisController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -37,6 +45,10 @@ router.get('/', getMaterials);
 router.post('/', createMaterial);
 router.post('/analyze', analyzeMaterial);
 router.post('/generate-chapters', generateChapters);
+router.post('/generate-flashcards', generateFlashcardsController);
+router.post('/generate-quiz', generateQuizController);
+router.post('/chat', chatWithTutorController);
+router.post('/generate-plan', generatePlanController);
 router.put('/:id', updateMaterial);
 router.delete('/:id', deleteMaterial);
 router.post('/bulk-delete', deleteMaterials);

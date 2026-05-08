@@ -196,13 +196,23 @@ export default function UploadMaterial() {
         }))
       });
 
+      const newId = response.data._id || response.data.id;
+      
+      // Trigger background intensive generation (OpenRouter)
+      api.post('/materials/generate-chapters', {
+        content: finalContent,
+        title: materialTitle || 'Untitled Material',
+        materialId: newId
+      }).catch(err => console.error('Background generation trigger failed', err));
+
       console.log('Material saved successfully:', response.data);
       
       // Update local context immediately
       const newMaterial = {
         ...response.data,
-        id: response.data._id || response.data.id,
-        uploadDate: new Date().toLocaleDateString()
+        id: newId,
+        uploadDate: new Date().toLocaleDateString(),
+        generationStatus: 'pending'
       };
       setMaterials([newMaterial, ...materials]);
       
