@@ -64,7 +64,9 @@ export default function MaterialDetail() {
     if (isSharing) return;
     setIsSharing(true);
     try {
-      const response = await api.post('/materials/share', { materialId: material.id });
+      // Use material.id specifically (mapped in context)
+      const matId = material.id || (material as any)._id;
+      const response = await api.post('/materials/share', { materialId: matId });
       const { shareUrl: generatedUrl } = response.data;
       setShareUrl(generatedUrl);
       setIsShareModalOpen(true);

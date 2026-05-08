@@ -63,27 +63,50 @@ export const saveFromShare = async (req: Request, res: Response) => {
     const { shareToken } = req.body;
     const userId = (req as any).userId;
 
+    console.log(`[SaveFromShare] User ${userId} attempting to save from token ${shareToken}`);
+
     const shared = await SharedMaterial.findOne({ shareToken }).populate('materialId');
     if (!shared || !shared.materialId) {
+      console.warn(`[SaveFromShare] Shared material not found for token: ${shareToken}`);
       return res.status(404).json({ message: "Shared material not found" });
     }
 
     const originalMaterial = shared.materialId as any;
+    
+    // Create a clean copy of the data, removing MongoDB internal fields
+    const materialData = originalMaterial.toObject();
+    delete materialData._id;
+    delete materialData.__v;
+    delete materialData.id;
 
     const savedCopy = new Material({
-      ...originalMaterial.toObject(),
-      _id: new mongoose.Types.ObjectId(),
-      userId,
+      ...materialData,
+      userId, // Assign to current user
       title: `${originalMaterial.title} (Shared)`,
       isPublic: false,
       likes: 0,
       downloads: 0,
+      progress: 0,
       createdAt: new Date()
     });
 
+    // Reset spaced repetition stats for flashcards if they exist
+    if (savedCopy.flashcards && savedCopy.flashcards.length > 0) {
+      savedCopy.flashcards = savedCopy.flashcards.map((f: any) => ({
+        ...f,
+        interval: 0,
+        easeFactor: 2.5,
+        repetitions: 0,
+        nextReview: new Date(),
+        masteryLevel: 0
+      }));
+    }
+
     await savedCopy.save();
+    console.log(`[SaveFromShare] Successfully saved copy ${savedCopy._id} for user ${userId}`);
     res.status(201).json(savedCopy);
   } catch (error: any) {
+    console.error(`[SaveFromShare] Error:`, error);
     res.status(500).json({ message: error.message });
   }
 };
