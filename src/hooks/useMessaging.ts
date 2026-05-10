@@ -48,7 +48,10 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
 
     console.log('Messaging: Attempting to connect to', SOCKET_URL);
 
-    const newSocket = io(SOCKET_URL, {
+    // Normalize protocol: https -> wss, http -> ws
+    const WS_URL = SOCKET_URL.replace(/^http/, 'ws');
+
+    const newSocket = io(WS_URL, {
       auth: { token },
       autoConnect: true,
       reconnection: true,
@@ -56,7 +59,8 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
-      transports: ['websocket', 'polling']
+      transports: ['websocket'], // Force WebSocket transport as requested
+      withCredentials: true
     });
 
     socketRef.current = newSocket;

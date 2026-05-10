@@ -35,11 +35,14 @@ export const getSocket = (token?: string) => {
       if (match) finalToken = match[2];
     }
 
-    socket = io(targetUrl, {
+    // Normalize protocol: https -> wss, http -> ws
+    const WS_URL = targetUrl.replace(/^http/, 'ws');
+
+    socket = io(WS_URL, {
       auth: finalToken ? { token: finalToken } : undefined,
       autoConnect: true,
       reconnection: true,
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'], // Force WebSocket transport
       withCredentials: true
     });
 

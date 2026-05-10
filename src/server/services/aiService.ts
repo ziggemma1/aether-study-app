@@ -81,67 +81,80 @@ export const callOpenRouter = async (messages: any[], useJson = false): Promise<
 // Shared Logic exported for controllers
 export const analyzeStudyMaterial = async (content: string, title: string, language: string = "English (US)") => {
   console.log(`[AI-Service] analyzeStudyMaterial called for: ${title}`);
+  
+  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
+  
   const ai = getAiClient();
-  if (!ai) {
-    console.warn(`[AI-Service] No Gemini client available. Trying OpenRouter...`);
-    return analyzeWithOpenRouter(content, title);
+  if (!ai && !OPENROUTER_API_KEY) {
+    console.error(`[AI-Service] No AI providers available!`);
+    return {
+      summary: content.substring(0, 300) + "...",
+      keyTopics: ["Main Material"],
+      realLifeApplications: ["Academic Study"],
+      simpleDetailedNotes: content.substring(0, 1000),
+      detailedNotes: content.substring(0, 1000),
+      suggestedQuizQuestions: []
+    };
   }
 
-  const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
-
   try {
-    const response = await withRetry(() => ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: [{ role: 'user', parts: [{ text: `Material Title: ${title}\n\nContent:\n${content.substring(0, 15000)}` }]}],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            summary: { type: Type.STRING },
-            keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
-            realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
-            simpleDetailedNotes: { type: Type.STRING },
-            suggestedQuizQuestions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  question: { type: Type.STRING },
-                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  correctAnswer: { type: Type.NUMBER },
-                  explanation: { type: Type.STRING }
-                },
-                required: ["question", "options", "correctAnswer", "explanation"]
+    if (ai) {
+      const response = await withRetry(() => ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [{ role: 'user', parts: [{ text: `Material Title: ${title}\n\nContent:\n${content.substring(0, 15000)}` }]}],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: { type: Type.STRING },
+              keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+              realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
+              simpleDetailedNotes: { type: Type.STRING },
+              suggestedQuizQuestions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    correctAnswer: { type: Type.NUMBER },
+                    explanation: { type: Type.STRING }
+                  },
+                  required: ["question", "options", "correctAnswer", "explanation"]
+                }
               }
-            }
+            },
+            required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
           },
-          required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
-        },
-        systemInstruction: `Analyze the material. All generated text MUST be in ${langPrompt}. Return JSON.`
-      }
-    }));
+          systemInstruction: `Analyze the material. All generated text MUST be in ${langPrompt}. Return JSON.`
+        }
+      }));
 
-    const text = response.text || "";
-    if (!text) {
-      console.error(`[AI-Service] Empty text response from Gemini`);
-      throw new Error("No response from AI");
+      const text = response.text || "";
+      if (text) {
+        const result = JSON.parse(text);
+        const normalizedQuiz = result.suggestedQuizQuestions?.questions || result.suggestedQuizQuestions || [];
+        return { 
+          ...result, 
+          detailedNotes: result.simpleDetailedNotes,
+          suggestedQuizQuestions: normalizedQuiz
+        };
+      }
     }
-    const result = JSON.parse(text);
-    // Normalize quiz questions if they came back in an object wrapper
-    const normalizedQuiz = result.suggestedQuizQuestions?.questions || result.suggestedQuizQuestions || [];
+
+    if (OPENROUTER_API_KEY) {
+      console.log(`[AI-Service] Using OpenRouter for analysis...`);
+      return await analyzeWithOpenRouter(content, title, langPrompt);
+    }
     
-    return { 
-      ...result, 
-      detailedNotes: result.simpleDetailedNotes,
-      suggestedQuizQuestions: normalizedQuiz
-    };
+    throw new Error("No AI providers succeeded");
   } catch (error: any) {
-    console.error(`[AI-Service] Gemini analysis failed:`, error.message);
+    console.error(`[AI-Service] Analysis failed:`, error.message);
     if (OPENROUTER_API_KEY) {
       try {
         console.log(`[AI-Service] Falling back to OpenRouter...`);
-        return await analyzeWithOpenRouter(content, title);
+        return await analyzeWithOpenRouter(content, title, langPrompt);
       } catch (orError: any) {
         console.error(`[AI-Service] OpenRouter analysis fallback failed:`, orError.message);
       }
@@ -160,11 +173,11 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
   }
 };
 
-const analyzeWithOpenRouter = async (content: string, title: string) => {
+const analyzeWithOpenRouter = async (content: string, title: string, langPrompt: string) => {
   const response = await callOpenRouter([
     {
       role: 'system',
-      content: `Analyze the material and return JSON with summary, keyTopics, realLifeApplications, simpleDetailedNotes, and suggestedQuizQuestions.`
+      content: `Analyze the material and return JSON with summary, keyTopics, realLifeApplications, simpleDetailedNotes, and suggestedQuizQuestions. All text MUST be in ${langPrompt}.`
     },
     { role: 'user', content: `Title: ${title}\nContent: ${content.substring(0, 15000)}` }
   ], true);
@@ -186,7 +199,7 @@ export const generateFlashcards = async (content: string, language: string, coun
   if (ai) {
     try {
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: [{ role: 'user', parts: [{ text: `Content: ${content.substring(0, 10000)}\n\n${prompt}` }]}],
         config: {
           responseMimeType: "application/json",
@@ -234,7 +247,7 @@ export const generateQuiz = async (content: string, language: string, count: num
   if (ai) {
     try {
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: [{ role: 'user', parts: [{ text: `Content: ${content.substring(0, 10000)}\n\n${prompt}` }]}],
         config: {
           responseMimeType: "application/json",
