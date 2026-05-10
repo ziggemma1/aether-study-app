@@ -43,7 +43,8 @@ export const analyzeMaterial = async (req: Request, res: Response) => {
     console.error('Server-side analysis error:', error);
     res.status(500).json({ 
       message: 'Analysis failed on server', 
-      error: error.message 
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
 };
@@ -69,18 +70,29 @@ export const generateChapters = async (req: Request, res: Response) => {
           console.log(`[AI-Background] Starting for material: ${materialId}`);
           const notesResult = await generateDetailedNotesSvc(content, title);
           
+          if (!notesResult || (!notesResult.detailedNotes && !notesResult.structuredNote)) {
+            throw new Error("Generation returned empty results");
+          }
+
           const updated = await MaterialModel.findByIdAndUpdate(materialId, {
             detailedNotes: notesResult.detailedNotes,
+            structuredNote: notesResult.structuredNote,
             generationStatus: 'completed'
           }, { new: true });
 
           if (updated) {
-            console.log(`[AI-Background] Success for ${materialId}. Length: ${notesResult.detailedNotes.length}`);
+            console.log(`[AI-Background] Success for ${materialId}. Length: ${notesResult.detailedNotes?.length}, Structured: ${!!notesResult.structuredNote}`);
           } else {
             console.error(`[AI-Background] Failed to find material ${materialId} to update`);
           }
         } catch (err: any) {
           console.error(`[AI-Background] Critical Failure for ${materialId}:`, err.message);
+          
+          // Last ditch effort fallback check
+          if (err.message.includes("quota") || err.message.includes("timeout") || err.message.includes("failed")) {
+             console.log(`[AI-Background] Emergency retry for ${materialId} might be needed...`);
+          }
+
           await MaterialModel.findByIdAndUpdate(materialId, { generationStatus: 'failed' }).catch(e => console.error('Double fail:', e));
         }
       })();
@@ -94,7 +106,8 @@ export const generateChapters = async (req: Request, res: Response) => {
     console.error('Backend generation error:', error);
     res.status(500).json({ 
       message: 'Generation failed on server', 
-      error: error.message 
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
 };
@@ -105,7 +118,11 @@ export const generateFlashcards = async (req: Request, res: Response) => {
     const result = await generateFlashcardsSvc(content, language, count);
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ message: 'Flashcard generation failed', error: error.message });
+    res.status(500).json({ 
+      message: 'Flashcard generation failed', 
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 };
 
@@ -115,7 +132,11 @@ export const generateQuiz = async (req: Request, res: Response) => {
     const result = await generateQuizSvc(content, language, count, difficulty, complexity);
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ message: 'Quiz generation failed', error: error.message });
+    res.status(500).json({ 
+      message: 'Quiz generation failed', 
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 };
 
@@ -125,7 +146,11 @@ export const chatWithTutor = async (req: Request, res: Response) => {
     const result = await chatWithTutorSvc(materialTitle, materialContent, chatHistory, userMessage, language);
     res.json({ content: result });
   } catch (error: any) {
-    res.status(500).json({ message: 'Tutor chat failed', error: error.message });
+    res.status(500).json({ 
+      message: 'Tutor chat failed', 
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 };
 
@@ -135,6 +160,10 @@ export const generatePlan = async (req: Request, res: Response) => {
     const result = await generateStudyPlanSvc(materials, startDate, duration, goal, complexity, commitment, language);
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ message: 'Plan generation failed', error: error.message });
+    res.status(500).json({ 
+      message: 'Plan generation failed', 
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 };

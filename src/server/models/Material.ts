@@ -31,6 +31,34 @@ const materialSchema = new mongoose.Schema({
     imageUrl: { type: String }
   }],
   visualAidUrl: { type: String },
+  structuredNote: {
+    title: String,
+    learningObjectives: [String],
+    keyTerms: [{
+      term: String,
+      definition: String,
+      memoryTip: String
+    }],
+    sections: [{
+      heading: String,
+      subsections: [{
+        subheading: String,
+        content: String,
+        keywords: [String],
+        memoryTip: String,
+        quickCheck: String
+      }]
+    }],
+    comparisonTable: {
+      headers: [String],
+      rows: [[String]],
+      title: String
+    },
+    summary: [String],
+    activeRecallQuestions: [String],
+    mnemonic: String,
+    relatedTopics: [String]
+  },
   progress: { type: Number, default: 0 },
   isPublic: { type: Boolean, default: false },
   generationStatus: { type: String, enum: ['pending', 'completed', 'failed'], default: 'completed' },

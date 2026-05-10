@@ -13,6 +13,8 @@ import { analyzeStudyMaterialOnClient, generateVisualAidOnClient, generateTopicS
 import { generateMaterialPDF } from '../lib/pdf';
 import { ShareModal } from '../components/ShareModal';
 
+import { StructuredNoteRenderer } from '../components/StructuredNoteRenderer';
+
 export default function DetailedNotes() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -93,37 +95,11 @@ export default function DetailedNotes() {
   const isPending = (material as any)?.generationStatus === 'pending' && !material?.detailedNotes;
   const isFailed = (material as any)?.generationStatus === 'failed';
 
-  const [isRegenerating, setIsRegenerating] = React.useState(false);
-  const [pollCount, setPollCount] = React.useState(0);
-
+  // Sections and pages
   const sections = material?.noteSections || [];
   const totalPages = sections.length;
 
-  // Poll for completion if pending
-  React.useEffect(() => {
-    let interval: any;
-    if (isPending && pollCount < 20) { // Limit polling to ~100 seconds
-      interval = setInterval(async () => {
-        try {
-          const res = await api.get(`/materials/${id}`);
-          if (res.data.generationStatus === 'completed' || res.data.detailedNotes) {
-            // Update local state in context
-            const updated = materials.map(m => 
-              (m.id === id || (m as any)._id === id) 
-                ? { ...m, ...res.data, id: res.data._id || res.data.id } 
-                : m
-            );
-            setMaterials(updated);
-            clearInterval(interval);
-          }
-          setPollCount(prev => prev + 1);
-        } catch (err) {
-          console.warn('Polling failed', err);
-        }
-      }, 5000);
-    }
-    return () => clearInterval(interval);
-  }, [isPending, id, pollCount]);
+  const [isRegenerating, setIsRegenerating] = React.useState(false);
 
   const handleManualRetry = async () => {
     if (!material) return;
@@ -134,13 +110,14 @@ export default function DetailedNotes() {
         title: material.title,
         materialId: id
       });
-      // Reset poll count to start polling again
-      setPollCount(0);
-      // Optimistically update status to pending
-      const updated = materials.map(m => (m.id === id) ? { ...m, generationStatus: 'pending' } : m);
+      // Refresh local data
+      const res = await api.get(`/materials/${id}`);
+      const updated = materials.map(m => (m.id === id) ? { ...m, ...res.data } : m);
       setMaterials(updated as any);
+      showToast('Analysis triggered successfully.');
     } catch (err) {
       console.error('Retry failed', err);
+      showToast('Failed to start analysis.', 'error');
     } finally {
       setIsRegenerating(false);
     }
@@ -151,75 +128,28 @@ export default function DetailedNotes() {
     
     setIsRegenerating(true);
     try {
-      console.log('Regenerating detailed analysis for (Client-Side Gemini first):', material.title);
+      showToast('Engaging Academic Deep-Dive Analysis...');
       
-      // Step 1: Perform initial analysis on client to use platform API Key
-      const analysis = await analyzeStudyMaterialOnClient(material.content || material.title, material.title, user?.language);
-      
-      // Step 2: Request massive chapters from backend (OpenRouter)
-      let noteSections = [];
-      try {
-        const chaptersResponse = await api.post('/materials/generate-chapters', {
-          content: material.content || material.title,
-          title: material.title,
-          keyTopics: analysis.keyTopics
-        });
-        noteSections = chaptersResponse.data.noteSections;
-        console.log('Backend chapter generation successful');
-      } catch (backendErr) {
-        console.warn('Backend chapter generation failed, falling back to client-side Gemini:', backendErr);
-        // Fallback to client-side Gemini for iterative chapter generation
-        for (const topic of analysis.keyTopics) {
-          try {
-            console.log(`Generating fallback chapter for: ${topic}`);
-            const section = await generateTopicSectionOnClient(material.content || material.title, material.title, topic, user?.language);
-            noteSections.push(section);
-          } catch (geminiErr) {
-            console.error(`Gemini fallback failed for ${topic}:`, geminiErr);
-          }
-        }
-      }
-
-      if (noteSections.length === 0) {
-        throw new Error('Both OpenRouter and Gemini fallback failed to generate chapters.');
-      }
-
-      // Step 3: Generate visual aids on client for each section
-      console.log('Generating visual aids on client...');
-      const processedSections = await Promise.all(
-        noteSections.map(async (section: any) => {
-          try {
-            const imageUrl = await generateVisualAidOnClient(section.imagePrompt);
-            return { ...section, imageUrl };
-          } catch (err) {
-            return { ...section, imageUrl: '' };
-          }
-        })
-      );
-      
-      // Final detailed notes string
-      const detailedNotes = processedSections.map((s: any) => `# ${s.heading}\n\n${s.content}`).join('\n\n---\n\n');
-
-      const response = await api.put(`/materials/${material.id}`, {
-        summary: analysis.summary,
-        keyTopics: analysis.keyTopics,
-        realLifeApplications: analysis.realLifeApplications,
-        detailedNotes: detailedNotes,
-        noteSections: processedSections,
-        suggestedQuizQuestions: analysis.suggestedQuizQuestions
+      // Call backend which now handles Gemini -> OpenRouter fallback automatically
+      const chaptersResponse = await api.post('/materials/generate-chapters', {
+        content: material.content || material.title,
+        title: material.title,
+        materialId: id // This will update the DB
       });
 
-      // Update local state
+      // Update local state with the same structured response format the server returns
       const updatedMaterials = materials.map(m => 
-        m.id === material.id ? { ...m, ...response.data } : m
+        (m.id === id || (m as any)._id === id) 
+          ? { ...m, ...chaptersResponse.data, generationStatus: 'completed' } 
+          : m
       );
       setMaterials(updatedMaterials);
       setCurrentPage(0);
-      showToast('Academic deep-dive complete! Your study guide is ready.');
+      showToast('Deep-dive complete! Your study guide is now fully ready.');
     } catch (error: any) {
       console.error('Regeneration error:', error);
-      const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      showToast('Analysis failed: ' + message, 'error');
+      const message = error.response?.data?.message || error.message;
+      showToast('Deep analysis failed. Please try again later. ' + message, 'error');
     } finally {
       setIsRegenerating(false);
     }
@@ -297,58 +227,38 @@ export default function DetailedNotes() {
           </div>
         </div>
 
-        <header className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="p-2 bg-secondary/10 text-secondary rounded-xl">
-              <BookOpen size={20} />
-            </div>
-            <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">{t('detailed_study_notes')}</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-text-main mb-6 tracking-tighter leading-tight drop-shadow-sm">
-            {material.title}
-          </h1>
-          
-          {totalPages > 0 && (
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-grow bg-white/5 h-1.5 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${((currentPage + 1) / totalPages) * 100}%` }}
-                  className="h-full bg-primary"
-                />
+        {!material.structuredNote && (
+          <header className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-secondary/10 text-secondary rounded-xl">
+                <BookOpen size={20} />
               </div>
-              <span className="text-[10px] font-bold text-text-muted uppercase shrink-0">
-                {t('page_info', { current: currentPage + 1, total: totalPages })}
-              </span>
+              <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">{t('detailed_study_notes')}</span>
             </div>
-          )}
-        </header>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-text-main mb-6 tracking-tighter leading-tight drop-shadow-sm">
+              {material.title}
+            </h1>
+            
+            {totalPages > 0 && (
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-grow bg-white/5 h-1.5 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${((currentPage + 1) / totalPages) * 100}%` }}
+                    className="h-full bg-primary"
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-text-muted uppercase shrink-0">
+                  {t('page_info', { current: currentPage + 1, total: totalPages })}
+                </span>
+              </div>
+            )}
+          </header>
+        )}
 
         <div className="relative min-h-[400px]">
           <AnimatePresence mode="wait">
-            {isPending ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="glass-card p-12 text-center"
-              >
-                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Loader2 size={32} className="animate-spin" />
-                </div>
-                <h3 className="text-xl font-bold text-text-main mb-2">Generating Deep Notes...</h3>
-                <p className="text-text-muted mb-4 max-w-sm mx-auto">
-                  Our AI is currently synthesizing your study material into a high-quality guide. This usually takes 30-60 seconds.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-primary font-bold text-xs uppercase tracking-widest animate-pulse">
-                  <Sparkles size={14} /> Background Task Active
-                </div>
-                {pollCount > 10 && (
-                  <p className="text-xs text-text-muted mt-6">
-                    Taking longer than expected? You can wait or check back later in your library.
-                  </p>
-                )}
-              </motion.div>
-            ) : isFailed ? (
+            {isFailed ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -369,6 +279,16 @@ export default function DetailedNotes() {
                   {isRegenerating ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
                   Retry Generation
                 </button>
+              </motion.div>
+            ) : material.structuredNote ? (
+              <motion.div
+                key="structured"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-transparent"
+              >
+                <StructuredNoteRenderer note={material.structuredNote} />
               </motion.div>
             ) : sections.length > 0 ? (
               <motion.div

@@ -72,6 +72,7 @@ async function startServer() {
   }
 
   console.log(`[INIT] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} (isVercel: ${isVercel})`);
+  console.log(`[INIT] Checking API Keys: Gemini=${!!process.env.GEMINI_API_KEY}, Google=${!!process.env.GOOGLE_API_KEY}, OpenRouter=${!!process.env.OPENROUTER_API_KEY}`);
 
   // Request Logging
   app.use((req, res, next) => {

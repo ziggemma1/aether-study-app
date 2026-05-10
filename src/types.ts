@@ -62,6 +62,43 @@ export interface Flashcard {
   nextReview: string;
 }
 
+export interface KeyTerm {
+  term: string;
+  definition: string;
+  memoryTip?: string;
+}
+
+export interface Subsection {
+  subheading?: string;
+  content: string;
+  keywords: string[];
+  memoryTip?: string;
+  quickCheck?: string;
+}
+
+export interface NoteSectionGroup {
+  heading: string;
+  subsections: Subsection[];
+}
+
+export interface ComparisonTable {
+  headers: string[];
+  rows: string[][];
+  title?: string;
+}
+
+export interface StructuredStudyNote {
+  title: string;
+  learningObjectives: string[];
+  keyTerms: KeyTerm[];
+  sections: NoteSectionGroup[];
+  comparisonTable?: ComparisonTable;
+  summary: string[];
+  activeRecallQuestions: string[];
+  mnemonic?: string;
+  relatedTopics?: string[];
+}
+
 export interface Material {
   id: string;
   title: string;
@@ -74,6 +111,7 @@ export interface Material {
   flashcards?: Flashcard[];
   detailedNotes?: string;
   noteSections?: NoteSection[];
+  structuredNote?: StructuredStudyNote;
   visualAidUrl?: string;
   progress: number;
   content?: string;

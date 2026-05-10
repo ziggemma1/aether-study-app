@@ -135,7 +135,7 @@ export const getMaterials = async (req: Request, res: Response) => {
 export const createMaterial = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
-    const { title, type, summary, content, keyTopics, realLifeApplications, detailedNotes, noteSections, visualAidUrl, suggestedQuizQuestions } = req.body;
+    const { title, type, summary, content, keyTopics, realLifeApplications, detailedNotes, noteSections, structuredNote, visualAidUrl, suggestedQuizQuestions } = req.body;
     
     console.log(`Creating material for user ID: ${userId}, Title: ${title}`);
     
@@ -149,6 +149,7 @@ export const createMaterial = async (req: Request, res: Response) => {
       realLifeApplications,
       detailedNotes,
       noteSections,
+      structuredNote,
       visualAidUrl,
       suggestedQuizQuestions
     });

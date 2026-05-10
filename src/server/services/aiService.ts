@@ -2,13 +2,20 @@ import { GoogleGenAI, Type } from "@google/genai";
 import axios from 'axios';
 import { NoteSection, PlanSession } from "../../types.js";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+
+console.log(`[AI-Service] Keys Status: Gemini=${GEMINI_API_KEY ? 'Present' : 'Missing'}, OpenRouter=${OPENROUTER_API_KEY ? 'Present' : 'Missing'}`);
 
 let aiClient: GoogleGenAI | null = null;
 const getAiClient = () => {
   if (!aiClient && GEMINI_API_KEY) {
-    aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    try {
+      console.log(`[AI-Service] Initializing GoogleGenAI client...`);
+      aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    } catch (err: any) {
+      console.error(`[AI-Service] Initialization failed:`, err.message);
+    }
   }
   return aiClient;
 };
@@ -73,47 +80,63 @@ export const callOpenRouter = async (messages: any[], useJson = false): Promise<
 
 // Shared Logic exported for controllers
 export const analyzeStudyMaterial = async (content: string, title: string, language: string = "English (US)") => {
+  console.log(`[AI-Service] analyzeStudyMaterial called for: ${title}`);
   const ai = getAiClient();
-  if (!ai) return analyzeWithOpenRouter(content, title);
+  if (!ai) {
+    console.warn(`[AI-Service] No Gemini client available. Trying OpenRouter...`);
+    return analyzeWithOpenRouter(content, title);
+  }
 
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
 
-  const response = await withRetry(() => ai.models.generateContent({
-    model: "gemini-1.5-flash",
-    contents: [{ role: 'user', parts: [{ text: `Material Title: ${title}\n\nContent:\n${content.substring(0, 15000)}` }]}],
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          summary: { type: Type.STRING },
-          keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
-          realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
-          simpleDetailedNotes: { type: Type.STRING },
-          suggestedQuizQuestions: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                question: { type: Type.STRING },
-                options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                correctAnswer: { type: Type.NUMBER },
-                explanation: { type: Type.STRING }
-              },
-              required: ["question", "options", "correctAnswer", "explanation"]
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: [{ role: 'user', parts: [{ text: `Material Title: ${title}\n\nContent:\n${content.substring(0, 15000)}` }]}],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            summary: { type: "string" },
+            keyTopics: { type: "array", items: { type: "string" } },
+            realLifeApplications: { type: "array", items: { type: "string" } },
+            simpleDetailedNotes: { type: "string" },
+            suggestedQuizQuestions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  question: { type: "string" },
+                  options: { type: "array", items: { type: "string" } },
+                  correctAnswer: { type: "number" },
+                  explanation: { type: "string" }
+                },
+                required: ["question", "options", "correctAnswer", "explanation"]
+              }
             }
-          }
+          },
+          required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
         },
-        required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
-      },
-      systemInstruction: `Analyze the material. All generated text MUST be in ${langPrompt}. Return JSON.`
-    }
-  }));
+        systemInstruction: `Analyze the material. All generated text MUST be in ${langPrompt}. Return JSON.`
+      }
+    }));
 
-  const text = response.text || "";
-  if (!text) throw new Error("No response from AI");
-  const result = JSON.parse(text);
-  return { ...result, detailedNotes: result.simpleDetailedNotes };
+    const text = response.text || "";
+    if (!text) {
+      console.error(`[AI-Service] Empty text response from Gemini`);
+      throw new Error("No response from AI");
+    }
+    const result = JSON.parse(text);
+    return { ...result, detailedNotes: result.simpleDetailedNotes };
+  } catch (error: any) {
+    console.error(`[AI-Service] Gemini analysis failed:`, error.message);
+    if (OPENROUTER_API_KEY) {
+      console.log(`[AI-Service] Falling back to OpenRouter...`);
+      return analyzeWithOpenRouter(content, title);
+    }
+    throw error;
+  }
 };
 
 const analyzeWithOpenRouter = async (content: string, title: string) => {
@@ -164,9 +187,131 @@ export const generateStudyPlan = async (materials: any[], startDate: string, dur
 };
 
 export const generateDetailedNotes = async (content: string, title: string) => {
-  const response = await callOpenRouter([
-    { role: 'system', content: `Create structured detailed study notes for ${title}. Markdown format.` },
-    { role: 'user', content: content.substring(0, 15000) }
-  ]);
-  return { detailedNotes: response.content };
+  console.log(`[AI-Service] generateDetailedNotes called for: ${title}`);
+  
+  const ai = getAiClient();
+  const systemInstruction = `You are an expert educator. Convert the following content into a structured JSON study note following this exact schema. Focus on clarity, key terminology, and active learning.
+
+Rules:
+- Extract 3-5 learning objectives
+- Identify 5-8 key terms with definitions
+- Break content into logical sections with 2-3 subsections max
+- Highlight 2-4 keywords per subsection
+- Add a memory tip for complex concepts
+- Create one comparison table if comparing 2+ items
+- Write 3-5 active recall questions
+- Add a mnemonic if applicable
+- Keep language clear and student-friendly.`;
+
+  const promptText = `Content to convert:
+Material Title: ${title}
+Content:
+${content.substring(0, 15000)}`;
+
+  if (ai) {
+    try {
+      console.log(`[AI-Service] Attempting generateDetailedNotes with Gemini...`);
+      const response = await withRetry(() => ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [{ role: 'user', parts: [{ text: promptText }]}],
+        config: {
+          temperature: 0.2,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              learningObjectives: { type: "array", items: { type: "string" } },
+              keyTerms: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    term: { type: "string" },
+                    definition: { type: "string" },
+                    memoryTip: { type: "string" }
+                  },
+                  required: ["term", "definition"]
+                }
+              },
+              sections: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    heading: { type: "string" },
+                    subsections: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          subheading: { type: "string" },
+                          content: { type: "string" },
+                          keywords: { type: "array", items: { type: "string" } },
+                          memoryTip: { type: "string" },
+                          quickCheck: { type: "string" }
+                        },
+                        required: ["content", "keywords"]
+                      }
+                    }
+                  },
+                  required: ["heading", "subsections"]
+                }
+              },
+              comparisonTable: {
+                type: "object",
+                properties: {
+                  headers: { type: "array", items: { type: "string" } },
+                  rows: { type: "array", items: { type: "array", items: { type: "string" } } },
+                  title: { type: "string" }
+                },
+                required: ["headers", "rows"]
+              },
+              summary: { type: "array", items: { type: "string" } },
+              activeRecallQuestions: { type: "array", items: { type: "string" } },
+              mnemonic: { type: "string" },
+              relatedTopics: { type: "array", items: { type: "string" } }
+            },
+            required: ["title", "learningObjectives", "keyTerms", "sections", "summary", "activeRecallQuestions"]
+          },
+          systemInstruction
+        }
+      }));
+
+      const text = response.text || "";
+      if (text) {
+        try {
+          const result = JSON.parse(text);
+          console.log(`[AI-Service] Gemini successfully generated structured note. Title: ${result.title}`);
+          return { structuredNote: result, detailedNotes: "Structured content generated" };
+        } catch (jsonErr) {
+          console.warn("[AI-Service] Gemini returned non-JSON for structured notes");
+        }
+      }
+    } catch (err: any) {
+      console.error(`[AI-Service] Gemini detailed notes failed:`, err.message);
+    }
+  }
+
+  console.log(`[AI-Service] Falling back to OpenRouter for structured notes...`);
+  try {
+    const response = await callOpenRouter([
+      { 
+        role: 'system', 
+        content: systemInstruction 
+      },
+      { role: 'user', content: promptText }
+    ], true);
+    
+    try {
+      const result = JSON.parse(response.content.replace(/```json|```/g, ''));
+      return { structuredNote: result, detailedNotes: "Structured content generated" };
+    } catch (parseErr) {
+      console.warn("[AI-Service] OpenRouter returned non-JSON for structured notes");
+      throw new Error("Failed to parse structured notes from OpenRouter");
+    }
+  } catch (err: any) {
+    console.error(`[AI-Service] generateDetailedNotes failed everywhere:`, err.message);
+    throw err;
+  }
 };

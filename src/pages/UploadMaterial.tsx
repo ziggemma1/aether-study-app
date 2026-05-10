@@ -174,7 +174,28 @@ export default function UploadMaterial() {
       }
       
       setUploadProgress(70);
-      console.log('Saving material to database...');
+      console.log('Generating Deep Explained Notes (Synchronous)...');
+      
+      // Step 2: Detailed Notes Generation (Now Synchronous to satisfy user request)
+      let detailedNotesData: any = { detailedNotes: '', noteSections: [], structuredNote: null };
+      try {
+        const chaptersResponse = await api.post('/materials/generate-chapters', {
+          content: finalContent,
+          title: materialTitle || 'Untitled Material'
+        });
+        detailedNotesData = chaptersResponse.data;
+        console.log('Deep Notes generation successful');
+      } catch (genErr: any) {
+        console.warn('Backend deep generation failed, using simple notes:', genErr);
+        detailedNotesData = { 
+          detailedNotes: analysis.detailedNotes || analysis.simpleDetailedNotes || '', 
+          noteSections: analysis.noteSections || [],
+          structuredNote: analysis.structuredNote || null
+        };
+      }
+
+      setUploadProgress(85);
+      console.log('Saving completed material to database...');
 
       const response = await api.post('/materials', {
         title: materialTitle || 'Untitled Material',
@@ -183,10 +204,12 @@ export default function UploadMaterial() {
         summary: analysis.summary,
         keyTopics: analysis.keyTopics,
         realLifeApplications: analysis.realLifeApplications,
-        detailedNotes: analysis.detailedNotes,
-        noteSections: analysis.noteSections,
+        detailedNotes: detailedNotesData.detailedNotes,
+        noteSections: detailedNotesData.noteSections,
+        structuredNote: detailedNotesData.structuredNote,
         visualAidUrl: analysis.visualAidUrl,
         suggestedQuizQuestions: analysis.suggestedQuizQuestions,
+        generationStatus: 'completed', // Immediately completed
         flashcards: analysis.recommendedFlashcards?.map((c: any) => ({
           ...c,
           interval: 0,
@@ -197,14 +220,6 @@ export default function UploadMaterial() {
       });
 
       const newId = response.data._id || response.data.id;
-      
-      // Trigger background intensive generation (OpenRouter)
-      api.post('/materials/generate-chapters', {
-        content: finalContent,
-        title: materialTitle || 'Untitled Material',
-        materialId: newId
-      }).catch(err => console.error('Background generation trigger failed', err));
-
       console.log('Material saved successfully:', response.data);
       
       // Update local context immediately
@@ -212,7 +227,7 @@ export default function UploadMaterial() {
         ...response.data,
         id: newId,
         uploadDate: new Date().toLocaleDateString(),
-        generationStatus: 'pending'
+        generationStatus: 'completed'
       };
       setMaterials([newMaterial, ...materials]);
       
