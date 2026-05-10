@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import axios from 'axios';
 import { NoteSection, PlanSession } from "../../types.js";
+import { validateAndFillNote } from "../../lib/note-validator";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -405,17 +406,20 @@ export const generateDetailedNotes = async (content: string, title: string) => {
   const ai = getAiClient();
   const systemInstruction = `You are an expert pedagogical note transformation system.
       Your goal is to transform study material into a structured, beautiful, and logically deep JSON note.
+      
+      CRITICAL: You MUST fill EVERY section with ACTUAL content from the material. Do NOT output empty strings OR empty arrays.
+      If a section truly cannot be filled, write a generic educational insight related to the topic instead of leaving it blank.
+
       RULES:
       - Title: Catchy and academic.
-      - Learning Objectives: 3-5 specific "Students will be able to..." goals.
-      - Key Terms: Critical bolded terms with simple definitions and a creative memory tip.
-      - Sections: logical chapters with 2-3 subsections each.
-      - Content: Rich pedagogical explanations. Use lists and bold text for clarity. DO NOT use markdown headings (#) inside the content strings.
-      - Comparisons: Must include a comparisonTable if the topic allows for contrasting concepts.
-      - Summary: Quick-read bullet points.
+      - Learning Objectives: 3-5 specific "Students will be able to..." goals. MANDATORY.
+      - Key Terms: Critical bolded terms with simple definitions and a creative memory tip. MANDATORY.
+      - Sections: logical chapters with 2-3 subsections each. Each subsection must have at least 150 characters of content.
+      - Body Content: Rich pedagogical explanations. Use lists and bold text for clarity. DO NOT use markdown headings (#) inside the content strings.
+      - Comparisons: Include a comparisonTable if the topic has contrasting concepts; otherwise provide a general classification table.
+      - Summary: Quick-read bullet points. MANDATORY.
       - Mnemonic: A catchy phrase to remember the core concept.
-      - Active Recall: Challenging questions that force deep reflection.
-      - Keywords: List actual keywords from the content here to enable highlighting.
+      - Active Recall: Challenging questions that force deep reflection. MANDATORY.
       Return valid JSON only.`;
 
   const promptText = `Content to convert:
@@ -426,12 +430,12 @@ ${content.substring(0, 15000)}`;
   if (ai) {
     try {
       console.log(`[AI-Service] Attempting generateDetailedNotes with Gemini...`);
-      // Use responseSchema for better standard compliance with lowercase types
       const response = await withRetry(() => ai.models.generateContent({
         model: "gemini-1.5-pro",
         contents: [{ role: 'user', parts: [{ text: promptText }]}],
         config: {
-          temperature: 0.2,
+          temperature: 0.3,
+          maxOutputTokens: 8192,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -498,14 +502,15 @@ ${content.substring(0, 15000)}`;
       if (text) {
         try {
           const result = JSON.parse(text);
-          console.log(`[AI-Service] Gemini successfully generated structured note. Title: ${result.title}`);
-          return { structuredNote: result, detailedNotes: "Structured content generated" };
-        } catch (jsonErr) {
-          console.warn("[AI-Service] Gemini returned non-JSON for structured notes");
+          console.log(`[AI-Service] Gemini response parsed. Validating...`);
+          const validatedNote = validateAndFillNote(result, content, title);
+          return { structuredNote: validatedNote, detailedNotes: "Structured content generated" };
+        } catch (parseErr) {
+          console.error("[AI-Service] Failed to parse Gemini response as JSON", parseErr);
         }
       }
     } catch (err: any) {
-      console.error(`[AI-Service] Gemini detailed notes failed:`, err.message);
+      console.warn(`[AI-Service] Gemini detailed notes failed:`, err.message);
     }
   }
 
@@ -522,7 +527,9 @@ ${content.substring(0, 15000)}`;
       
       try {
         const result = JSON.parse(response.content.replace(/```json|```/g, ''));
-        return { structuredNote: result, detailedNotes: "Structured content generated" };
+        console.log(`[AI-Service] OpenRouter response parsed. Validating...`);
+        const validatedNote = validateAndFillNote(result, content, title);
+        return { structuredNote: validatedNote, detailedNotes: "Structured content generated" };
       } catch (parseErr) {
         console.warn("[AI-Service] OpenRouter returned non-JSON for structured notes");
       }
@@ -531,22 +538,12 @@ ${content.substring(0, 15000)}`;
     }
   }
 
-  // Final static fallback
+  // Final static fallback - validated and filled
   console.warn(`[AI-Service] Using static fallback for detailed notes...`);
+  const finalFallback = validateAndFillNote({}, content, title);
   return {
-    structuredNote: {
-      title: title || "Study Material",
-      learningObjectives: ["Understand main concept", "Identify key terms"],
-      keyTerms: [{ term: "Topic", definition: "Main subject of study", memoryTip: "Focus on the basics" }],
-      sections: [{ 
-        heading: "Overview", 
-        subsections: [{ subheading: "Introduction", content: content.substring(0, 1000), keywords: ["study", "notes"] }] 
-      }],
-      summary: ["Material processed with basic logic due to AI unavailability."],
-      activeRecallQuestions: ["What is the main idea of this material?"],
-      mnemonic: "Read And Remember",
-      relatedTopics: ["Context", "Background"]
-    },
+    structuredNote: finalFallback,
     detailedNotes: content.substring(0, 2000)
   };
 };
+

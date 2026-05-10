@@ -66,14 +66,20 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
             <Target size={20} />
             <h2 className="text-lg uppercase tracking-wider m-0">Learning Objectives</h2>
           </div>
-          <ul className="space-y-4">
-            {note.learningObjectives.map((obj, i) => (
-              <li key={i} className="flex gap-4 text-sm note-body">
-                <CheckCircle2 size={18} className="text-primary mt-0.5 shrink-0" />
-                <span className="leading-relaxed">{obj}</span>
-              </li>
-            ))}
-          </ul>
+          {note.learningObjectives && note.learningObjectives.length > 0 ? (
+            <ul className="space-y-4">
+              {note.learningObjectives.map((obj, i) => (
+                <li key={i} className="flex gap-4 text-sm note-body">
+                  <CheckCircle2 size={18} className="text-primary mt-0.5 shrink-0" />
+                  <span className="leading-relaxed">{obj}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-center py-6 border-2 border-dashed border-primary/20 rounded-2xl">
+              <p className="text-xs text-text-muted italic">No learning objectives extracted for this material.</p>
+            </div>
+          )}
         </section>
 
         {/* Key Terms */}
@@ -82,28 +88,35 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
             <Info size={20} className="text-[#00D2FF]" />
             <h2 className="note-h2 m-0 p-0 border-0">Vault of Knowledge</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {note.keyTerms.map((term, i) => (
-              <motion.div 
-                key={i} 
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                className="study-card hover:border-primary/50 transition-all cursor-default group"
-              >
-                <h3 className="text-primary font-black text-xl mb-3 group-hover:text-[#00D2FF] transition-colors">{term.term}</h3>
-                <div className="markdown-body text-sm leading-relaxed">
-                  <ReactMarkdown>{term.definition}</ReactMarkdown>
-                </div>
-                {term.memoryTip && (
-                  <div className="memory-tip mt-5 flex gap-3 items-start bg-[#00D2FF]/10 rounded-xl p-4">
-                    <Lightbulb size={20} className="text-[#00D2FF] mt-0.5 shrink-0" />
-                    <span className="text-xs font-medium italic opacity-90">{term.memoryTip}</span>
+          {note.keyTerms && note.keyTerms.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {note.keyTerms.map((term, i) => (
+                <motion.div 
+                  key={i} 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  className="study-card hover:border-primary/50 transition-all cursor-default group"
+                >
+                  <h3 className="text-primary font-black text-xl mb-3 group-hover:text-[#00D2FF] transition-colors">{term.term}</h3>
+                  <div className="markdown-body text-sm leading-relaxed">
+                    <ReactMarkdown>{term.definition}</ReactMarkdown>
                   </div>
-                )}
-              </motion.div>
-            ))}
-          </div>
+                  {term.memoryTip && (
+                    <div className="memory-tip mt-5 flex gap-3 items-start bg-[#00D2FF]/10 rounded-xl p-4">
+                      <Lightbulb size={20} className="text-[#00D2FF] mt-0.5 shrink-0" />
+                      <span className="text-xs font-medium italic opacity-90">{term.memoryTip}</span>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-3xl">
+              <Info size={40} className="mx-auto text-text-muted mb-4 opacity-20" />
+              <p className="text-sm text-text-muted italic">Key terminology could not be isolated from the content.</p>
+            </div>
+          )}
         </section>
 
         {/* Main Content Sections */}
@@ -205,14 +218,20 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
             <List size={20} className="text-primary" />
             <h2 className="note-h2 m-0 p-0 border-0">High-Impact Takeaways</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {note.summary.map((point, i) => (
-              <div key={i} className="study-card bg-surface/50 border-white/10 flex items-start gap-4 p-5">
-                <span className="w-6 h-6 shrink-0 flex items-center justify-center bg-primary rounded-lg text-white font-black text-[10px]">{i+1}</span>
-                <p className="text-sm font-medium leading-relaxed m-0">{point}</p>
-              </div>
-            ))}
-          </div>
+          {note.summary && note.summary.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {note.summary.map((point, i) => (
+                <div key={i} className="study-card bg-surface/50 border-white/10 flex items-start gap-4 p-5">
+                  <span className="w-6 h-6 shrink-0 flex items-center justify-center bg-primary rounded-lg text-white font-black text-[10px]">{i+1}</span>
+                  <p className="text-sm font-medium leading-relaxed m-0">{point}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 bg-surface/30 rounded-3xl border border-white/5 text-center italic text-text-muted text-sm">
+              No summary points extracted.
+            </div>
+          )}
         </section>
 
         {/* Active Recall */}
