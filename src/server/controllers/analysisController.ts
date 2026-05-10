@@ -60,47 +60,27 @@ export const generateChapters = async (req: Request, res: Response) => {
 
     console.log(`Backend generation starting for: ${title} (Material ID: ${materialId || 'none'})`);
     
-    // We return a response immediately if it's a background call
-    if (materialId) {
-      res.json({ message: 'Background generation started', materialId });
-      
-      // Run generation in "background"
-      (async () => {
-        try {
-          console.log(`[AI-Background] Starting for material: ${materialId}`);
-          const notesResult = await generateDetailedNotesSvc(content, title);
-          
-          if (!notesResult || (!notesResult.detailedNotes && !notesResult.structuredNote)) {
-            throw new Error("Generation returned empty results");
-          }
-
-          const updated = await MaterialModel.findByIdAndUpdate(materialId, {
-            detailedNotes: notesResult.detailedNotes,
-            structuredNote: notesResult.structuredNote,
-            generationStatus: 'completed'
-          }, { new: true });
-
-          if (updated) {
-            console.log(`[AI-Background] Success for ${materialId}. Length: ${notesResult.detailedNotes?.length}, Structured: ${!!notesResult.structuredNote}`);
-          } else {
-            console.error(`[AI-Background] Failed to find material ${materialId} to update`);
-          }
-        } catch (err: any) {
-          console.error(`[AI-Background] Critical Failure for ${materialId}:`, err.message);
-          
-          // Last ditch effort fallback check
-          if (err.message.includes("quota") || err.message.includes("timeout") || err.message.includes("failed")) {
-             console.log(`[AI-Background] Emergency retry for ${materialId} might be needed...`);
-          }
-
-          await MaterialModel.findByIdAndUpdate(materialId, { generationStatus: 'failed' }).catch(e => console.error('Double fail:', e));
-        }
-      })();
-      return;
+    // Always call generation service
+    const notesResult = await generateDetailedNotesSvc(content, title);
+    
+    if (!notesResult || (!notesResult.detailedNotes && !notesResult.structuredNote)) {
+      throw new Error("Generation returned empty results");
     }
 
-    // Direct synchronous call (standard way)
-    const notesResult = await generateDetailedNotesSvc(content, title);
+    if (materialId) {
+      console.log(`[AI-Sync] Updating material ${materialId} after generation...`);
+      const updated = await MaterialModel.findByIdAndUpdate(materialId, {
+        detailedNotes: notesResult.detailedNotes,
+        structuredNote: notesResult.structuredNote,
+        generationStatus: 'completed'
+      }, { new: true });
+      
+      if (!updated) {
+        throw new Error(`Failed to find material ${materialId} to update`);
+      }
+      return res.json(updated);
+    }
+
     res.json(notesResult);
   } catch (error: any) {
     console.error('Backend generation error:', error);

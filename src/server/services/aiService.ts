@@ -95,7 +95,7 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
       contents: [{ role: 'user', parts: [{ text: `Material Title: ${title}\n\nContent:\n${content.substring(0, 15000)}` }]}],
       config: {
         responseMimeType: "application/json",
-        responseSchema: {
+        responseJsonSchema: {
           type: "object",
           properties: {
             summary: { type: "string" },
@@ -103,20 +103,25 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
             realLifeApplications: { type: "array", items: { type: "string" } },
             simpleDetailedNotes: { type: "string" },
             suggestedQuizQuestions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  question: { type: "string" },
-                  options: { type: "array", items: { type: "string" } },
-                  correctAnswer: { type: "number" },
-                  explanation: { type: "string" }
-                },
-                required: ["question", "options", "correctAnswer", "explanation"]
+              type: "object",
+              properties: {
+                questions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      question: { type: "string" },
+                      options: { type: "array", items: { type: "string" } },
+                      correctAnswer: { type: "number" },
+                      explanation: { type: "string" }
+                    },
+                    required: ["question", "options", "correctAnswer", "explanation"]
+                  }
+                }
               }
             }
           },
-          required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
+          required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes"]
         },
         systemInstruction: `Analyze the material. All generated text MUST be in ${langPrompt}. Return JSON.`
       }
@@ -128,7 +133,14 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
       throw new Error("No response from AI");
     }
     const result = JSON.parse(text);
-    return { ...result, detailedNotes: result.simpleDetailedNotes };
+    // Normalize quiz questions if they came back in an object wrapper
+    const normalizedQuiz = result.suggestedQuizQuestions?.questions || result.suggestedQuizQuestions || [];
+    
+    return { 
+      ...result, 
+      detailedNotes: result.simpleDetailedNotes,
+      suggestedQuizQuestions: normalizedQuiz
+    };
   } catch (error: any) {
     console.error(`[AI-Service] Gemini analysis failed:`, error.message);
     if (OPENROUTER_API_KEY) {
@@ -148,7 +160,14 @@ const analyzeWithOpenRouter = async (content: string, title: string) => {
     { role: 'user', content: `Title: ${title}\nContent: ${content.substring(0, 15000)}` }
   ], true);
   const result = JSON.parse(response.content.replace(/```json|```/g, ''));
-  return { ...result, detailedNotes: result.simpleDetailedNotes };
+  // Normalize quiz questions if they came back in an object wrapper
+  const normalizedQuiz = result.suggestedQuizQuestions?.questions || result.suggestedQuizQuestions || [];
+  
+  return { 
+    ...result, 
+    detailedNotes: result.simpleDetailedNotes,
+    suggestedQuizQuestions: normalizedQuiz
+  };
 };
 
 export const generateFlashcards = async (content: string, language: string, count: number) => {
@@ -190,18 +209,20 @@ export const generateDetailedNotes = async (content: string, title: string) => {
   console.log(`[AI-Service] generateDetailedNotes called for: ${title}`);
   
   const ai = getAiClient();
-  const systemInstruction = `You are an expert educator. Convert the following content into a structured JSON study note following this exact schema. Focus on clarity, key terminology, and active learning.
-
-Rules:
-- Extract 3-5 learning objectives
-- Identify 5-8 key terms with definitions
-- Break content into logical sections with 2-3 subsections max
-- Highlight 2-4 keywords per subsection
-- Add a memory tip for complex concepts
-- Create one comparison table if comparing 2+ items
-- Write 3-5 active recall questions
-- Add a mnemonic if applicable
-- Keep language clear and student-friendly.`;
+  const systemInstruction = `You are an expert pedagogical note transformation system.
+      Your goal is to transform study material into a structured, beautiful, and logically deep JSON note.
+      RULES:
+      - Title: Catchy and academic.
+      - Learning Objectives: 3-5 specific "Students will be able to..." goals.
+      - Key Terms: Critical bolded terms with simple definitions and a creative memory tip.
+      - Sections: logical chapters with 2-3 subsections each.
+      - Content: Rich pedagogical explanations. Use lists and bold text for clarity. DO NOT use markdown headings (#) inside the content strings.
+      - Comparisons: Must include a comparisonTable if the topic allows for contrasting concepts.
+      - Summary: Quick-read bullet points.
+      - Mnemonic: A catchy phrase to remember the core concept.
+      - Active Recall: Challenging questions that force deep reflection.
+      - Keywords: List actual keywords from the content here to enable highlighting.
+      Return valid JSON only.`;
 
   const promptText = `Content to convert:
 Material Title: ${title}
@@ -211,13 +232,14 @@ ${content.substring(0, 15000)}`;
   if (ai) {
     try {
       console.log(`[AI-Service] Attempting generateDetailedNotes with Gemini...`);
+      // Use responseJsonSchema for better standard compliance with lowercase types
       const response = await withRetry(() => ai.models.generateContent({
         model: "gemini-1.5-flash",
         contents: [{ role: 'user', parts: [{ text: promptText }]}],
         config: {
           temperature: 0.2,
           responseMimeType: "application/json",
-          responseSchema: {
+          responseJsonSchema: {
             type: "object",
             properties: {
               title: { type: "string" },
