@@ -30,9 +30,17 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
     sortedKeywords.forEach(keyword => {
       // Escape special regex characters
       const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // Only match keywords not already wrapped in bold
-      const regex = new RegExp(`(?<!\\*\\*)\\b(${escaped})\\b(?!\\*\\*)`, 'gi');
-      prepared = prepared.replace(regex, '**$1**');
+      // match keywords using word boundaries
+      const regex = new RegExp(`\\b(${escaped})\\b`, 'gi');
+      
+      // We'll use a functional replace to avoid double-bolding
+      prepared = prepared.replace(regex, (match, p1, offset) => {
+        // Simple check if already wrapped in **
+        const before = prepared.substring(Math.max(0, offset - 2), offset);
+        const after = prepared.substring(offset + match.length, offset + match.length + 2);
+        if (before === '**' && after === '**') return match;
+        return `**${match}**`;
+      });
     });
     return prepared;
   };

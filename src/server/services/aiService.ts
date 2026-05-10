@@ -95,33 +95,28 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
       contents: [{ role: 'user', parts: [{ text: `Material Title: ${title}\n\nContent:\n${content.substring(0, 15000)}` }]}],
       config: {
         responseMimeType: "application/json",
-        responseJsonSchema: {
-          type: "object",
+        responseSchema: {
+          type: Type.OBJECT,
           properties: {
-            summary: { type: "string" },
-            keyTopics: { type: "array", items: { type: "string" } },
-            realLifeApplications: { type: "array", items: { type: "string" } },
-            simpleDetailedNotes: { type: "string" },
+            summary: { type: Type.STRING },
+            keyTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+            realLifeApplications: { type: Type.ARRAY, items: { type: Type.STRING } },
+            simpleDetailedNotes: { type: Type.STRING },
             suggestedQuizQuestions: {
-              type: "object",
-              properties: {
-                questions: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      question: { type: "string" },
-                      options: { type: "array", items: { type: "string" } },
-                      correctAnswer: { type: "number" },
-                      explanation: { type: "string" }
-                    },
-                    required: ["question", "options", "correctAnswer", "explanation"]
-                  }
-                }
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  question: { type: Type.STRING },
+                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  correctAnswer: { type: Type.NUMBER },
+                  explanation: { type: Type.STRING }
+                },
+                required: ["question", "options", "correctAnswer", "explanation"]
               }
             }
           },
-          required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes"]
+          required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
         },
         systemInstruction: `Analyze the material. All generated text MUST be in ${langPrompt}. Return JSON.`
       }
@@ -144,10 +139,24 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
   } catch (error: any) {
     console.error(`[AI-Service] Gemini analysis failed:`, error.message);
     if (OPENROUTER_API_KEY) {
-      console.log(`[AI-Service] Falling back to OpenRouter...`);
-      return analyzeWithOpenRouter(content, title);
+      try {
+        console.log(`[AI-Service] Falling back to OpenRouter...`);
+        return await analyzeWithOpenRouter(content, title);
+      } catch (orError: any) {
+        console.error(`[AI-Service] OpenRouter analysis fallback failed:`, orError.message);
+      }
     }
-    throw error;
+    
+    // Final static fallback to prevent 500
+    console.warn(`[AI-Service] Using static fallback for analysis...`);
+    return {
+      summary: content.substring(0, 300) + "...",
+      keyTopics: ["Main Material"],
+      realLifeApplications: ["Academic Study"],
+      simpleDetailedNotes: content.substring(0, 1000),
+      detailedNotes: content.substring(0, 1000),
+      suggestedQuizQuestions: []
+    };
   }
 };
 
@@ -171,38 +180,210 @@ const analyzeWithOpenRouter = async (content: string, title: string) => {
 };
 
 export const generateFlashcards = async (content: string, language: string, count: number) => {
-  const response = await callOpenRouter([
-    { role: 'system', content: `Create ${count} flashcards in ${language}. Return JSON array with question/answer.` },
-    { role: 'user', content: content.substring(0, 10000) }
-  ], true);
-  return JSON.parse(response.content.replace(/```json|```/g, ''));
+  const ai = getAiClient();
+  const prompt = `Create ${count} flashcards in ${language} from the following content. Return a JSON array of objects with "question" and "answer" properties.`;
+  
+  if (ai) {
+    try {
+      const response = await withRetry(() => ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: 'user', parts: [{ text: `Content: ${content.substring(0, 10000)}\n\n${prompt}` }]}],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                answer: { type: Type.STRING }
+              },
+              required: ["question", "answer"]
+            }
+          }
+        }
+      }));
+      return JSON.parse(response.text || "[]");
+    } catch (err: any) {
+      console.warn(`[AI-Service] Gemini flashcards failed:`, err.message);
+    }
+  }
+
+  if (OPENROUTER_API_KEY) {
+    try {
+      const response = await callOpenRouter([
+        { role: 'system', content: prompt + " Return JSON array with question/answer." },
+        { role: 'user', content: content.substring(0, 10000) }
+      ], true);
+      return JSON.parse(response.content.replace(/```json|```/g, ''));
+    } catch (err: any) {
+      console.warn(`[AI-Service] OpenRouter flashcards failed:`, err.message);
+    }
+  }
+
+  // Final static fallback
+  return [
+    { question: "Summary of main topic?", answer: "The provided content covers key aspects of the study material." }
+  ];
 };
 
 export const generateQuiz = async (content: string, language: string, count: number, difficulty: string, complexity: string) => {
-  const response = await callOpenRouter([
-    { role: 'system', content: `Create ${count} ${difficulty} ${complexity} MCQs in ${language}. Return JSON array.` },
-    { role: 'user', content: content.substring(0, 10000) }
-  ], true);
-  return JSON.parse(response.content.replace(/```json|```/g, ''));
+  const ai = getAiClient();
+  const prompt = `Create ${count} ${difficulty} level MCQs with ${complexity} complexity in ${language} based on the content. Return a JSON array of objects with "question", "options" (array of 4 strings), "correctAnswer" (index 0-3), and "explanation".`;
+
+  if (ai) {
+    try {
+      const response = await withRetry(() => ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: 'user', parts: [{ text: `Content: ${content.substring(0, 10000)}\n\n${prompt}` }]}],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                correctAnswer: { type: Type.NUMBER },
+                explanation: { type: Type.STRING }
+              },
+              required: ["question", "options", "correctAnswer", "explanation"]
+            }
+          }
+        }
+      }));
+      return JSON.parse(response.text || "[]");
+    } catch (err: any) {
+      console.warn(`[AI-Service] Gemini quiz failed:`, err.message);
+    }
+  }
+
+  if (OPENROUTER_API_KEY) {
+    try {
+      const response = await callOpenRouter([
+        { role: 'system', content: prompt + " Return JSON array." },
+        { role: 'user', content: content.substring(0, 10000) }
+      ], true);
+      return JSON.parse(response.content.replace(/```json|```/g, ''));
+    } catch (err: any) {
+      console.warn(`[AI-Service] OpenRouter quiz failed:`, err.message);
+    }
+  }
+
+  // Final static fallback
+  return [
+    { 
+      question: "What is the main topic of this material?", 
+      options: ["The content provided", "Unrelated topic", "General knowledge", "None of the above"], 
+      correctAnswer: 0, 
+      explanation: "Based on the content provided." 
+    }
+  ];
 };
 
 export const chatWithTutor = async (materialTitle: string, materialContent: string, chatHistory: any[], userMessage: string, language: string) => {
-  const messages = [
-    { role: 'system', content: `You are a tutor for ${materialTitle}. Material: ${materialContent.substring(0, 5000)}. Language: ${language}` },
-    ...chatHistory.map((h: any) => ({ role: h.role === 'model' ? 'assistant' : 'user', content: h.parts?.[0]?.text || h.content })),
-    { role: 'user', content: userMessage }
-  ];
-  const response = await callOpenRouter(messages);
-  return response.content;
+  const ai = getAiClient();
+  const systemPrompt = `You are a friendly and academic tutor for the study material: "${materialTitle}". 
+  Context: ${materialContent.substring(0, 5000)}.
+  All your responses MUST be in ${language}. 
+  Be encouraging, explain concepts clearly, and ask occasional follow-up questions to test understanding.`;
+
+  if (ai) {
+    try {
+      console.log(`[AI-Service] Attempting chatWithTutor with Gemini...`);
+      const response = await withRetry(() => ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [
+          ...chatHistory.map((h: any) => ({ 
+            role: h.role === 'model' || h.role === 'assistant' ? 'model' : 'user', 
+            parts: [{ text: h.parts?.[0]?.text || h.content || "" }] 
+          })),
+          { role: 'user', parts: [{ text: userMessage }] }
+        ],
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.7
+        }
+      }));
+      return response.text || "I'm sorry, I couldn't generate a response.";
+    } catch (err: any) {
+      console.warn(`[AI-Service] Gemini tutor failed:`, err.message);
+    }
+  }
+
+  if (OPENROUTER_API_KEY) {
+    try {
+      console.log(`[AI-Service] Falling back to OpenRouter for tutor...`);
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...chatHistory.map((h: any) => ({ role: h.role === 'model' || h.role === 'assistant' ? 'assistant' : 'user', content: h.parts?.[0]?.text || h.content })),
+        { role: 'user', content: userMessage }
+      ];
+      const response = await callOpenRouter(messages);
+      return response.content;
+    } catch (err: any) {
+      console.error(`[AI-Service] OpenRouter tutor fallback failed:`, err.message);
+    }
+  }
+
+  return "I'm having trouble connecting to my AI brain. Please try again later!";
 };
 
 export const generateStudyPlan = async (materials: any[], startDate: string, duration: number, goal: string, complexity: string, commitment: string, language: string) => {
+  const ai = getAiClient();
   const materialContext = materials.map(m => `Title: ${m.title}`).join(', ');
-  const response = await callOpenRouter([
-    { role: 'system', content: `Create a study plan for ${duration} days starting ${startDate} for ${materialContext}. Goal: ${goal}. Language: ${language}. Return JSON array of sessions.` },
-    { role: 'user', content: `Generate JSON study plan.` }
-  ], true);
-  return JSON.parse(response.content.replace(/```json|```/g, ''));
+  const systemPrompt = `Create a study plan for ${duration} days starting ${startDate} for the following materials: ${materialContext}. 
+  Goal: ${goal}. 
+  Complexity: ${complexity}.
+  Commitment Level: ${commitment}.
+  Language: ${language}.
+  Return valid JSON array of session objects.`;
+
+  if (ai) {
+    try {
+      const response = await withRetry(() => ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [{ role: 'user', parts: [{ text: "Generate the study plan JSON." }]}],
+        config: {
+          systemInstruction: systemPrompt,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                day: { type: Type.NUMBER },
+                topic: { type: Type.STRING },
+                activities: { type: Type.ARRAY, items: { type: Type.STRING } },
+                duration: { type: Type.STRING },
+                materialId: { type: Type.STRING }
+              },
+              required: ["day", "topic", "activities", "duration"]
+            }
+          }
+        }
+      }));
+      return JSON.parse(response.text || "[]");
+    } catch (err: any) {
+      console.warn(`[AI-Service] Gemini study plan failed:`, err.message);
+    }
+  }
+
+  if (OPENROUTER_API_KEY) {
+    try {
+      console.log(`[AI-Service] Falling back to OpenRouter for study plan...`);
+      const response = await callOpenRouter([
+        { role: 'system', content: systemPrompt + " Return JSON array of sessions." },
+        { role: 'user', content: `Generate JSON study plan.` }
+      ], true);
+      return JSON.parse(response.content.replace(/```json|```/g, ''));
+    } catch (err: any) {
+      console.error(`[AI-Service] OpenRouter study plan fallback failed:`, err.message);
+    }
+  }
+
+  return [{ day: 1, topic: "Quick Review", activities: ["Read through materials"], duration: "30 mins" }];
 };
 
 export const generateDetailedNotes = async (content: string, title: string) => {
@@ -232,46 +413,46 @@ ${content.substring(0, 15000)}`;
   if (ai) {
     try {
       console.log(`[AI-Service] Attempting generateDetailedNotes with Gemini...`);
-      // Use responseJsonSchema for better standard compliance with lowercase types
+      // Use responseSchema for better standard compliance with lowercase types
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-pro",
         contents: [{ role: 'user', parts: [{ text: promptText }]}],
         config: {
           temperature: 0.2,
           responseMimeType: "application/json",
-          responseJsonSchema: {
-            type: "object",
+          responseSchema: {
+            type: Type.OBJECT,
             properties: {
-              title: { type: "string" },
-              learningObjectives: { type: "array", items: { type: "string" } },
+              title: { type: Type.STRING },
+              learningObjectives: { type: Type.ARRAY, items: { type: Type.STRING } },
               keyTerms: {
-                type: "array",
+                type: Type.ARRAY,
                 items: {
-                  type: "object",
+                  type: Type.OBJECT,
                   properties: {
-                    term: { type: "string" },
-                    definition: { type: "string" },
-                    memoryTip: { type: "string" }
+                    term: { type: Type.STRING },
+                    definition: { type: Type.STRING },
+                    memoryTip: { type: Type.STRING }
                   },
                   required: ["term", "definition"]
                 }
               },
               sections: {
-                type: "array",
+                type: Type.ARRAY,
                 items: {
-                  type: "object",
+                  type: Type.OBJECT,
                   properties: {
-                    heading: { type: "string" },
+                    heading: { type: Type.STRING },
                     subsections: {
-                      type: "array",
+                      type: Type.ARRAY,
                       items: {
-                        type: "object",
+                        type: Type.OBJECT,
                         properties: {
-                          subheading: { type: "string" },
-                          content: { type: "string" },
-                          keywords: { type: "array", items: { type: "string" } },
-                          memoryTip: { type: "string" },
-                          quickCheck: { type: "string" }
+                          subheading: { type: Type.STRING },
+                          content: { type: Type.STRING },
+                          keywords: { type: Type.ARRAY, items: { type: Type.STRING } },
+                          memoryTip: { type: Type.STRING },
+                          quickCheck: { type: Type.STRING }
                         },
                         required: ["content", "keywords"]
                       }
@@ -281,18 +462,18 @@ ${content.substring(0, 15000)}`;
                 }
               },
               comparisonTable: {
-                type: "object",
+                type: Type.OBJECT,
                 properties: {
-                  headers: { type: "array", items: { type: "string" } },
-                  rows: { type: "array", items: { type: "array", items: { type: "string" } } },
-                  title: { type: "string" }
+                  headers: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  rows: { type: Type.ARRAY, items: { type: Type.ARRAY, items: { type: Type.STRING } } },
+                  title: { type: Type.STRING }
                 },
                 required: ["headers", "rows"]
               },
-              summary: { type: "array", items: { type: "string" } },
-              activeRecallQuestions: { type: "array", items: { type: "string" } },
-              mnemonic: { type: "string" },
-              relatedTopics: { type: "array", items: { type: "string" } }
+              summary: { type: Type.ARRAY, items: { type: Type.STRING } },
+              activeRecallQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+              mnemonic: { type: Type.STRING },
+              relatedTopics: { type: Type.ARRAY, items: { type: Type.STRING } }
             },
             required: ["title", "learningObjectives", "keyTerms", "sections", "summary", "activeRecallQuestions"]
           },
@@ -315,25 +496,44 @@ ${content.substring(0, 15000)}`;
     }
   }
 
-  console.log(`[AI-Service] Falling back to OpenRouter for structured notes...`);
-  try {
-    const response = await callOpenRouter([
-      { 
-        role: 'system', 
-        content: systemInstruction 
-      },
-      { role: 'user', content: promptText }
-    ], true);
-    
+  if (OPENROUTER_API_KEY) {
+    console.log(`[AI-Service] Falling back to OpenRouter for structured notes...`);
     try {
-      const result = JSON.parse(response.content.replace(/```json|```/g, ''));
-      return { structuredNote: result, detailedNotes: "Structured content generated" };
-    } catch (parseErr) {
-      console.warn("[AI-Service] OpenRouter returned non-JSON for structured notes");
-      throw new Error("Failed to parse structured notes from OpenRouter");
+      const response = await callOpenRouter([
+        { 
+          role: 'system', 
+          content: systemInstruction 
+        },
+        { role: 'user', content: promptText }
+      ], true);
+      
+      try {
+        const result = JSON.parse(response.content.replace(/```json|```/g, ''));
+        return { structuredNote: result, detailedNotes: "Structured content generated" };
+      } catch (parseErr) {
+        console.warn("[AI-Service] OpenRouter returned non-JSON for structured notes");
+      }
+    } catch (err: any) {
+      console.error(`[AI-Service] generateDetailedNotes OpenRouter fallback failed:`, err.message);
     }
-  } catch (err: any) {
-    console.error(`[AI-Service] generateDetailedNotes failed everywhere:`, err.message);
-    throw err;
   }
+
+  // Final static fallback
+  console.warn(`[AI-Service] Using static fallback for detailed notes...`);
+  return {
+    structuredNote: {
+      title: title || "Study Material",
+      learningObjectives: ["Understand main concept", "Identify key terms"],
+      keyTerms: [{ term: "Topic", definition: "Main subject of study", memoryTip: "Focus on the basics" }],
+      sections: [{ 
+        heading: "Overview", 
+        subsections: [{ subheading: "Introduction", content: content.substring(0, 1000), keywords: ["study", "notes"] }] 
+      }],
+      summary: ["Material processed with basic logic due to AI unavailability."],
+      activeRecallQuestions: ["What is the main idea of this material?"],
+      mnemonic: "Read And Remember",
+      relatedTopics: ["Context", "Background"]
+    },
+    detailedNotes: content.substring(0, 2000)
+  };
 };

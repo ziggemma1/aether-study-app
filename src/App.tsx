@@ -79,8 +79,8 @@ export default function App() {
   }, []);
 
   return (
-    <AppProvider>
-      <Router>
+    <Router>
+      <AppProvider>
         <AnalyticsTracker />
         <Routes>
           {/* Public Routes */}
@@ -120,7 +120,7 @@ export default function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </AppProvider>
       </Router>
-    </AppProvider>
   );
 }
