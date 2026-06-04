@@ -81,8 +81,15 @@ export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) 
     });
 
     newSocket.on('connect_error', (err) => {
-      console.error('Messaging: Connection error:', err.message);
+      console.error('❌ WebSocket error:', err.message);
       setIsConnected(false);
+      
+      // Notify user about potential server wake-up delay
+      if (err.message.includes('timeout')) {
+        console.log('⏳ Server is likely waking up from sleep. Reconnection will resume automatically.');
+      } else {
+        console.warn('Socket connection error occurred. Ensure your network allows WebSocket connections.');
+      }
     });
 
     newSocket.on('disconnect', (reason) => {

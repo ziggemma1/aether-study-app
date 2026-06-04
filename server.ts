@@ -168,6 +168,15 @@ async function startServer() {
     });
   });
 
+  // Health and Ping for monitoring/keep-alive
+  app.get("/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  app.get("/ping", (req, res) => {
+    res.send("pong");
+  });
+
   app.use("/api/auth", checkDbConnection, authRoutes);
   app.use("/api/materials", checkDbConnection, materialRoutes);
   app.use("/api/sessions", checkDbConnection, sessionRoutes);

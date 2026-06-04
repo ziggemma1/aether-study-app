@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { OAuth2Client } from 'google-auth-library';
 
@@ -198,7 +199,17 @@ export const login = async (req: Request, res: Response) => {
     }
 
     console.log(`[LOGIN_DEBUG] Verifying password for user: ${user._id}`);
-    const isMatch = await (user as any).comparePassword(password);
+    let isMatch = false;
+    if (user && typeof (user as any).comparePassword === 'function') {
+      isMatch = await (user as any).comparePassword(password);
+    } else if (user && user.password) {
+      console.warn('⚠️ comparePassword is not a function on User model instance. Falling back to direct bcrypt comparison.');
+      isMatch = await bcrypt.compare(password, user.password);
+    } else {
+      console.error('❌ User password field is missing or empty in database.');
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+    
     if (!isMatch) {
       console.log(`[LOGIN_DEBUG] Login failed: Password mismatch for ${normalizedEmail}`);
       return res.status(400).json({ message: 'Invalid credentials' });
@@ -277,54 +288,65 @@ export const logout = (req: Request, res: Response) => {
 
 export const getMe = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById((req as any).userId).select('-password');
+    const userId = (req as any).userId;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        authenticated: false, 
+        error: 'No user ID found in request. Auth middleware might have failed.' 
+      });
+    }
+
+    const user = await User.findById(userId).select('-password');
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        authenticated: false, 
+        error: 'User not found in database' 
+      });
     }
     
     // Transform to consistent frontend structure
     res.json({
+      authenticated: true,
       token: req.cookies?.token, // Include token from cookie so SPA can have it for side-channels
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-      streak: user.streak,
-      longestStreak: user.longestStreak,
-      globalRank: user.globalRank,
-      avgQuizScore: user.avgQuizScore,
-      highestQuizScore: user.highestQuizScore,
-      lowestQuizScore: user.lowestQuizScore,
-      totalStudyTime: user.totalStudyTime,
-      weeklyTimeData: user.weeklyTimeData,
-      curriculum: user.curriculum,
-      language: user.language,
-      country: user.country || '',
-      plan: user.plan,
-      points: user.points || 0,
-      aetherPoints: user.aetherPoints || 0,
-      followersCount: user.followersCount || 0,
-      friendsCount: user.friendsCount || 0,
-      following: user.following || [],
-      achievements: user.achievements || [],
-      bio: user.bio || '',
-      location: user.location || '',
-      handle: user.handle || ''
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        streak: user.streak,
+        longestStreak: user.longestStreak,
+        globalRank: user.globalRank,
+        avgQuizScore: user.avgQuizScore,
+        highestQuizScore: user.highestQuizScore,
+        lowestQuizScore: user.lowestQuizScore,
+        totalStudyTime: user.totalStudyTime,
+        weeklyTimeData: user.weeklyTimeData,
+        curriculum: user.curriculum,
+        language: user.language,
+        country: user.country || '',
+        plan: user.plan,
+        points: user.points || 0,
+        aetherPoints: user.aetherPoints || 0,
+        followersCount: user.followersCount || 0,
+        friendsCount: user.friendsCount || 0,
+        following: user.following || [],
+        achievements: user.achievements || [],
+        bio: user.bio || '',
+        location: user.location || '',
+        handle: user.handle || ''
+      }
     });
   } catch (error: any) {
     console.error('[GET_ME_FATAL_ERROR_OBJECT]', error);
-    const errorResponse = { 
+    res.status(500).json({ 
+      authenticated: false,
       message: 'Failed to fetch user data', 
       error: error.message || 'Unknown error',
-      errorName: error.name,
-      stack: error.stack, // Always show stack for debugging
       debugInfo: {
         userId: (req as any).userId,
-        dbState: mongoose.connection.readyState,
-        isDbConnected: mongoose.connection.readyState === 1
+        dbState: mongoose.connection.readyState
       }
-    };
-    console.log('[GET_ME_FATAL_RESPONSE_SENDING]', JSON.stringify(errorResponse));
-    res.status(500).json(errorResponse);
+    });
   }
 };

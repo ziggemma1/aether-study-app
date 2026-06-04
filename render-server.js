@@ -26,8 +26,14 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: "ok", 
     mongo: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-    environment: process.env.NODE_ENV 
+    environment: process.env.NODE_ENV,
+    connections: io?.engine?.clientsCount || 0,
+    timestamp: new Date().toISOString()
   });
+});
+
+app.get('/ping', (req, res) => {
+  res.send('pong');
 });
 
 // MongoDB Connection

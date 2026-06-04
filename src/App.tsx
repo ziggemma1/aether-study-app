@@ -35,6 +35,7 @@ import Leaderboard from './pages/Leaderboard';
 import LiveRooms from './pages/LiveRooms';
 import Explore from './pages/Explore';
 
+import { startKeepAlive } from './lib/keep-alive';
 import SharedMaterialView from './pages/SharedMaterialView';
 
 function ProtectedRoute() {
@@ -60,6 +61,9 @@ let posthogInitialized = false;
 
 export default function App() {
   useEffect(() => {
+    // Start keep-alive heartbeat in production
+    const cleanup = startKeepAlive();
+    
     if (!posthogInitialized && import.meta.env.VITE_POSTHOG_KEY) {
       try {
         posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
@@ -76,6 +80,10 @@ export default function App() {
         console.warn('PostHog initialization failed:', e);
       }
     }
+
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, []);
 
   return (
