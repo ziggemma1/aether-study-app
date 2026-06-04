@@ -4,7 +4,7 @@ import { useAppContext } from '../context/AppContext';
 
 // This URL should be your Render server URL
 // Defined as VITE_SOCKET_URL in .env
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://aether-socket-server-17zk.onrender.com';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '') || 'https://aether-socket-server-17zk.onrender.com';
 
 export interface Message {
   _id: string;

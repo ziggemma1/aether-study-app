@@ -144,13 +144,13 @@ async function startServer() {
         }
       };
       
-      // In production/Vercel, we ALMOST ALWAYS want to let the dbMiddleware 
-      // handle the connection on a per-request basis to avoid cold-start 
-      // timeouts during the initial module evaluation.
-      if (!isProduction) {
+      // On Render (non-Vercel persistent environments), connect immediately on startup to ensure
+      // that WebSockets and initial API requests have immediate database access.
+      // We only delay on Vercel's serverless platform to bypass cold-start timeouts.
+      if (!isVercel) {
         connectWithRetry();
       } else {
-        console.log("[DB_INIT] Production mode: Delaying connection until first request to avoid cold-start timeout.");
+        console.log("[DB_INIT] Vercel serverless environment: Delaying connection until first request to avoid cold-start timeout.");
       }
     }
   } else {
