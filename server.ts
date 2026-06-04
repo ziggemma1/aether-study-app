@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -202,8 +203,10 @@ async function startServer() {
     res.status(404).json({ message: "API route not found" });
   });
 
-  if (isProduction) {
-    const distPath = path.join(process.cwd(), 'dist');
+  const distPath = path.join(process.cwd(), 'dist');
+  const indexHtmlExists = fs.existsSync(path.join(distPath, 'index.html'));
+
+  if (isProduction && indexHtmlExists) {
     console.log(`[INIT] Serving static files from: ${distPath}`);
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
@@ -211,15 +214,16 @@ async function startServer() {
     });
   } else {
     try {
+      console.log(`[INIT] dist/index.html not found or dev mode active. Loading Vite middleware...`);
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: "spa",
       });
       app.use(vite.middlewares);
-      console.log(`[INIT] Vite middleware loaded in dev mode`);
+      console.log(`[INIT] Vite middleware loaded successfully`);
     } catch (e) {
-      console.warn("[INIT] Vite failed to load in dev mode:", e);
+      console.warn("[INIT] Vite failed to load middleware:", e);
     }
   }
 

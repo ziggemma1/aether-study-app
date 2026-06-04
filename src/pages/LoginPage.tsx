@@ -111,9 +111,9 @@ export default function LoginPage() {
     document.body.classList.add('is-landing-page');
 
     const handleMessage = async (event: MessageEvent) => {
-      // Validate origin is from AI Studio preview or localhost
+      // Validate origin is from AI Studio preview, localhost, or Render
       const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('webcontainer.io') && !origin.includes('vercel.app')) {
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('webcontainer.io') && !origin.includes('vercel.app') && !origin.endsWith('.onrender.com')) {
         return;
       }
       
