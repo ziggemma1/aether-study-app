@@ -72,6 +72,70 @@ const generateMockChapters = (title: string, content?: string) => {
   };
 };
 
+const mapStructuredNoteToNoteSections = (note: any): any[] => {
+  if (!note || !note.sections) return [];
+  return note.sections.map((sec: any, idx: number) => {
+    const isCornell = idx % 2 === 0;
+    const style = isCornell ? 'Cornell' : 'Feynman';
+    
+    let contentMarkdown = "";
+    if (isCornell) {
+      contentMarkdown = `### 📑 CORNELL STUDY MODULE: ${sec.heading}
+
+#### 🎯 Central Focus
+* **Concept to Master:** ${sec.heading}
+* **Target recall:** Master basic rules, definitions, and direct application vectors.
+
+#### 🔍 CUE COLUMN (Active Recall Prompts)
+${(sec.subsections || []).map((sub: any, sIdx: number) => `* *Prompt ${sIdx + 1}:* What is the primary significance of ${sub.subheading}?`).join('\n')}
+
+#### 📝 HIGH-DENSITY LECTURE NOTES (Textbook Style)
+${(sec.subsections || []).map((sub: any) => `##### ${sub.subheading}
+${sub.content}
+${sub.memoryTip ? `\n* Memory Tip: ${sub.memoryTip}` : ''}`).join('\n\n')}
+
+#### 🛠️ PRACTICAL SCENARIO IN ACTION
+* **Context:** Implementing the core concepts of ${sec.heading} in a realistic setup.
+* **Application:** Solving common procedural tasks by applying technical rules and relationships.
+* **Observed Outcome:** Successful mastery of ${sec.heading}, showing direct structural efficiency.
+
+#### 📑 SYNTHESISED SUMMARY
+* Establish a systematic understanding of ${sec.heading}.
+* Review and answer each cue column query to evaluate exam readiness.`;
+    } else {
+      contentMarkdown = `### 🧠 FEYNMAN MASTERCLASS: ${sec.heading}
+
+#### 🎯 Conceptual Anchor
+* **Concept:** ${sec.heading} (Simplified)
+* **Pedagogical aim:** Deconstructing high-complexity abstractions into elegant simplicity.
+
+#### 👶 ELI5 (Explain Like I'm Five)
+Let's make this simple! Imagine this concept is like a smart organizer. Instead of dumping everything in a drawer, you label each compartment so that you or anyone else can find what is needed instantly.
+
+#### ⚙️ MECHANICS DECONSTRUCTION (Deep, Rigorous Explanation)
+${(sec.subsections || []).map((sub: any) => `##### ${sub.subheading}
+${sub.content}
+${sub.quickCheck ? `\n* Quick Check drill: ${sub.quickCheck}` : ''}`).join('\n\n')}
+
+#### 💡 DEEP ANALOGY & GAP IDENTIFICATION (Pinpoint Gaps)
+* **The Analogy:** Categorizing items into labelled containers for systematic and frictionless scaling.
+* **Typical Student Blindspot (Misconception):** Relying on general reading familiarity of ${sec.heading} rather than practicing active definitions.
+* **The Correction:** Be able to explain how the sections connect together in under three sentences without referring to notes.
+
+#### 🛠️ COMPREHENSIVE SCENARIO IN ACTION
+* **Scenario:** A team must coordinate and integrate resources based on the logic of ${sec.heading}.
+* **Mechanic Breakdown:** Breaking down each subsection target, translating complex rules into straightforward actions.`;
+    }
+
+    return {
+      heading: sec.heading,
+      content: contentMarkdown,
+      noteStyle: style,
+      conceptAnalyzed: `Deconstructing ${sec.heading}`
+    };
+  });
+};
+
 export const generateChapters = async (req: Request, res: Response) => {
   try {
     const { content, title, materialId, forceDemo = false } = req.body;
@@ -83,15 +147,17 @@ export const generateChapters = async (req: Request, res: Response) => {
     if (useMock) {
       console.log('📝 Using demo/mock chapters (forceDemo or no API key)');
       const mockResult = generateMockChapters(title, content);
+      const initialNoteSections = mapStructuredNoteToNoteSections(mockResult.structuredNote);
       
       if (materialId) {
         await MaterialModel.findByIdAndUpdate(materialId, {
           detailedNotes: mockResult.detailedNotes,
           structuredNote: mockResult.structuredNote,
+          noteSections: initialNoteSections,
           generationStatus: 'completed'
         });
       }
-      return res.json(mockResult);
+      return res.json({ ...mockResult, noteSections: initialNoteSections });
     }
 
     if (!content) {
@@ -108,11 +174,14 @@ export const generateChapters = async (req: Request, res: Response) => {
         throw new Error("Generation returned empty results");
       }
 
+      const initialNoteSections = mapStructuredNoteToNoteSections(notesResult.structuredNote);
+
       if (materialId) {
         console.log(`[AI-Sync] Updating material ${materialId} after generation...`);
         const updated = await MaterialModel.findByIdAndUpdate(materialId, {
           detailedNotes: notesResult.detailedNotes,
           structuredNote: notesResult.structuredNote,
+          noteSections: initialNoteSections,
           generationStatus: 'completed'
         }, { new: true });
         
@@ -122,18 +191,20 @@ export const generateChapters = async (req: Request, res: Response) => {
         return res.json(updated);
       }
 
-      res.json(notesResult);
+      res.json({ ...notesResult, noteSections: initialNoteSections });
     } catch (svcError: any) {
       console.error('AI Service failed, falling back to mock:', svcError.message);
       const mockFallback = generateMockChapters(title, content);
+      const initialNoteSections = mapStructuredNoteToNoteSections(mockFallback.structuredNote);
       if (materialId) {
         await MaterialModel.findByIdAndUpdate(materialId, {
           detailedNotes: mockFallback.detailedNotes,
           structuredNote: mockFallback.structuredNote,
+          noteSections: initialNoteSections,
           generationStatus: 'completed'
         });
       }
-      return res.json({ ...mockFallback, warning: 'AI service failed, used fallback' });
+      return res.json({ ...mockFallback, noteSections: initialNoteSections, warning: 'AI service failed, used fallback' });
     }
   } catch (error: any) {
     console.error('Backend generation error:', error);

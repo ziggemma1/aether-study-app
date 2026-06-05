@@ -553,23 +553,66 @@ export const generateAcademicMegaNotes = async (content: string, title: string) 
   
   const ai = getAiClient();
   const systemInstruction = `You are an elite academic curriculum designer and expert in cognitive learning frameworks.
-      Your goal is to transform the provided study material into an intensive, 8-page (or more) study guide.
+      Your goal is to transform the provided study material into an intensive, 8-page (or more) comprehensive textbook-style study guide.
       
       You MUST generate EXACTLY 8 or more entries in the JSON array (each representing an in-depth webpage text section/chapter).
-      For each entry, you must intelligently choose between two specialized learning styles:
-      - 'Cornell': Best for class notes, structured layout, textbook chapters, or general structured topics you need to recall.
-      - 'Feynman': Best for mastering single tricky, complex concepts (e.g. system logic, hard formulas, abstract theories, Bayes' Theorem, philosophies, transformer mechanics). Explain simply (as if to a 5-year old child) with clear real-world analogies, identify typical misconception gaps, and provide realistic scenario breakdowns.
+      For each entry, you must intelligently choose between two specialized, powerful learning styles:
+      
+      1. 'Cornell': Highly-structured lecture and book study layouts. MUST use this exact format structure:
+         ### 📑 CORNELL STUDY MODULE: [Heading]
+         
+         #### 🎯 Central Focus
+         * **Concept to Master:** [conceptAnalyzed]
+         * **Target recall:** [What study goals should be reached]
+         
+         #### 🔍 CUE COLUMN (Active Recall Prompts)
+         * *Prompt 1:* [Thought-provoking recall trigger]
+         * *Prompt 2:* [Analytical question connecting system concepts]
+         * *Prompt 3:* [Applied operational drill question]
+         
+         #### 📝 HIGH-DENSITY LECTURE NOTES (Textbook Style)
+         [Extensive, highly detailed explanation of subtopics with deep definitions, steps, parameters, and full architectural breakdowns. Write multiple long, detailed academic paragraphs.]
+         
+         #### 🛠️ PRACTICAL SCENARIO IN ACTION
+         * **Context:** [Detailed real-life scenario background]
+         * **Application:** [How this theory resolves the problem in practice]
+         * **Observed Outcome:** [Detailed results and structural analysis]
+         
+         #### 📑 SYNTHESISED SUMMARY
+         [A high-level synthesis combining all key takeaways into a cohesive, memorable structural outline.]
+
+      2. 'Feynman': Mastering tricky, abstract, or complex concepts by explaining simply, utilizing powerful metaphors, and addressing deep blind spots. MUST use this exact format structure:
+         ### 🧠 FEYNMAN MASTERCLASS: [Heading]
+         
+         #### 🎯 Conceptual Anchor
+         * **Concept:** [conceptAnalyzed]
+         * **Pedagogical aim:** Deconstructing high-complexity abstractions into elegant simplicity.
+         
+         #### 👶 ELI5 (Explain Like I'm Five)
+         [An incredibly simple, crystal-clear conceptual explanation that uses a highly creative, simple real-world analogy. Ensure it reads with absolute clarity, bypassing any heavy terminology list.]
+         
+         #### ⚙️ MECHANICS DECONSTRUCTION (Deep, Rigorous Explanation)
+         [Explain the complex system mechanism step-by-step with high logical precision. We simplify the vocabulary but retain absolute structural depth and textbook accuracy. Every detail of how the theory actually works under the hood is fully explained across multiple extensive paragraphs.]
+         
+         #### 💡 DEEP ANALOGY & GAP IDENTIFICATION (Pinpoint Gaps)
+         * **The Analogy:** [A powerful analogy structured to highlight relationships of elements]
+         * **Typical Student Blindspot (Misconception):** [Identify where students make false logical transitions or false assumptions]
+         * **The Correction:** [The precise academic correction to establish absolute technical correctness]
+         
+         #### 🛠️ COMPREHENSIVE SCENARIO IN ACTION
+         * **Scenario:** [A rich, immersive, real-world narrative detailing how this mechanism works in an actual production, business, scientific, or academic context]
+         * **Mechanic Breakdown:** [Step-by-step analysis of how it is applied in this scenario]
 
       CRITICAL REQUIREMENTS:
-      - Each page/entry must be highly detailed and comprehensive (at least 700 characters of rich Markdown content with lists, comparisons, bolding, and active recall cues).
+      - Each page/entry must be extremely verbose, thick, and comprehensive (at least 1500 to 2500 characters of rich, textbook-level Markdown content with detailed lists, deep comparisons, bolding, and active recall cues).
       - Alternate or select the style that truly fits each topic/subtopic analyzed.
       - Never leave fields blank.
       - Return valid JSON matching the schema.`;
 
-  const promptText = `Generate at least 8 full detailed pages.
+  const promptText = `Generate at least 8 full detailed pages. Ensure each page has extensive, high-quality textbook content (over 1500 characters each) covering key sections and subtopics of the material.
 Material Title: ${title}
 Source Content to Analyze:
-${content.substring(0, 15000)}`;
+${content.substring(0, 18000)}`;
 
   if (ai) {
     try {
@@ -634,12 +677,12 @@ ${content.substring(0, 15000)}`;
     }
   }
 
-  // Final static fallback - build 8 distinct pages
+  // Final static fallback - build 8 distinct, comprehensive, high-quality page designs
   console.warn(`[AI-Service] Using static fallback for Academic Mega Notes...`);
   const topics = [
-    "Foundational Concepts", "Advanced Architectural Logic", "Real-world Practical Applications", 
-    "Core Mechanism & Functions", "Case Studies & Deep Scenarios", "Comparative Critical Evaluation", 
-    "Socratic Method Inquiry", "Meta-cognitive Synthesis Checklist"
+    "Core Structural Foundations", "System Architectural Mechanics", "Critical Logic & Control Workflows", 
+    "High-Impact Operational Case Studies", "Interactive Problem Solving Scenarios", "Advanced Comparative Frameworks", 
+    "Socratic Cognitive Diagnostics", "Meta-cognitive Learning Checklists"
   ];
   return topics.map((heading, index) => {
     const isCornell = index % 2 === 0;
@@ -647,31 +690,54 @@ ${content.substring(0, 15000)}`;
     
     let simulatedContent = "";
     if (isCornell) {
-      simulatedContent = `### Cornell Study Module: ${heading}
+      simulatedContent = `### 📑 CORNELL STUDY MODULE: ${heading}
 
-**Cue Column / Active Recall Questions**
-- What is the primary significance of ${heading}?
-- How does the core theory apply to system structures?
+#### 🎯 Central Focus
+* **Concept to Master:** Deconstructing ${heading}
+* **Target recall:** Master structural rules, direct execution pathways, and core logic.
 
-**Recall Notes**
-The concept of *${heading}* forms the backbone of this current material. It ensures a systematic framework for understanding and application. Users must focus on structural patterns, historical context, and modern implementation methods. 
-Additionally, the relationship between input variables and final outputs must be kept transparent and predictable.
+#### 🔍 CUE COLUMN (Active Recall Prompts)
+* *Prompt 1:* Why is ${heading} considered the crucial baseline for this study material?
+* *Prompt 2:* How do secondary attributes interact with the parent structural node?
+* *Prompt 3:* What happens if the entry variables are modified during operational runtimes?
 
-**Summary**
-This page establishes that "${heading}" is fundamental to understanding the topic. Focus on definitions and standard application structures in future study.`;
+#### 📝 HIGH-DENSITY LECTURE NOTES (Textbook Style)
+The concept of *${heading}* represents a cornerstone of advanced study in this discipline. At its core, the subject mandates a rigorous separation of concerns between raw structural declaration and relational binding. This ensures that any academic user can analyze separate variables independently without causing logical conflicts or systemic feedback loops.
+
+In actual textbooks, this is analyzed through the lens of cohesive data pipelines. Every single mechanism possesses a dedicated entry point, a translation vector, and an egress endpoint. By organizing information into these rigid streams, researchers can trace errors or inconsistencies directly back to the physical source, drastically raising total conceptual readability and analytical correctness.
+
+#### 🛠️ PRACTICAL SCENARIO IN ACTION
+* **Context:** A highly-loaded cloud educational framework with over 100,000 requests per minute suffers minor packet drops due to unindexed category retrieval.
+* **Application:** Developers integrate the systematic principles of ${heading} to split records into balanced tables with custom indexing.
+* **Observed Outcome:** Database lookups fall from 120ms to 2.4ms, confirming the physical superiority of structured indexing over general tabular storage.
+
+#### 📑 SYNTHESISED SUMMARY
+* Establish a separation of structural logic and runtime binding.
+* Prioritize clear database layouts to avoid systemic lag.
+* Regularly execute active recall tests across all index parameters to maintain technical accuracy.`;
     } else {
-      simulatedContent = `### Feynman Masterclass Module: ${heading}
+      simulatedContent = `### 🧠 FEYNMAN MASTERCLASS: ${heading}
 
-**Concept to Master:** ${heading} explained in extremely simple terms.
+#### 🎯 Conceptual Anchor
+* **Concept:** ${heading} simplified from first-principles.
+* **Pedagogical aim:** Deconstructing high-complexity abstractions into elegant simplicity.
 
-**ELI5 (Explain Like I'm 5)**
-Think of this concept like building blocks. Instead of fitting everything at once, we organize them according to color and size so that the tower never falls down. 
+#### 👶 ELI5 (Explain Like I'm Five)
+Imagine you are playing with a giant box of Lego bricks. Instead of searching through a huge, disorganized pile to find a specific wheel, you separate them into custom transparent cups by size. This simple action means you always find the wheel in under three seconds, saving you from getting tired or giving up.
 
-**Core Explanation & Scenario**
-In real life, we see this in action every time we structure data. For example, when a librarian categorizes books, they don't just dump them on shelves. They use a precise index. Similarly, *${heading}* provides a mental database for retrieving tricky academic knowledge instantly.
+#### ⚙️ MECHANICS DECONSTRUCTION (Deep, Rigorous Explanation)
+In professional science and system design, we do exactly the same thing. We classify abstract variables so that they can be accessed via low-overhead pointer operations. Instead of checking every file line-by-line, modern processors use optimized page routing directories.
 
-**Analogy & Gap Identification**
-By mapping this model out on paper, we identify blind spots. The major trap students fall into is assuming familiarity when they are actually only memorizing. Focus on explaining this without using jargon.`;
+By building simple index tables, we reduce total searches from O(N) to O(1) or O(log N). This mathematical optimization is beautiful because it scales infinitely. No matter if your academic dataset has 10 lines or 10 billion lines, the search time remains incredibly low, allowing processors to direct resources to critical logical operations.
+
+#### 💡 DEEP ANALOGY & GAP IDENTIFICATION (Pinpoint Gaps)
+* **The Analogy:** Categorizing library items using an alphabetical index rather than physically examining every book spine on the shelf.
+* **Typical Student Blindspot (Misconception):** Many students assume that faster processors make indexing obsolete. This is false. A faster CPU only runs slow logic faster; it does not resolve exponential search growth.
+* **The Correction:** True technical mastery requires algorithm optimization first, supplemented by hardware upgrades second.
+
+#### 🛠️ COMPREHENSIVE SCENARIO IN ACTION
+* **Scenario:** A team of medical researchers is filtering millions of DNA sequence samples to isolate genetic markers for study.
+* **Mechanic Breakdown:** Rather than applying recursive matching, they introduce a mapped sequence based on the principles of ${heading}, resulting in near-instant match results and accelerating the creation of key vaccine treatments.`;
     }
 
     return {
