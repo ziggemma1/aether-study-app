@@ -1,36 +1,11 @@
-import { GoogleGenAI, Modality } from "@google/genai";
+import api from './api.js';
 
 export async function generateSpeech(text: string): Promise<string | null> {
   try {
-    const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
-      console.error("GEMINI_API_KEY is missing");
-      return null;
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Read this summary clearly: ${text}` }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
-          },
-        },
-      },
-    });
-
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    
-    if (base64Audio) {
-      return base64Audio;
-    }
-    return null;
+    const response = await api.post('/materials/speech', { text });
+    return response.data.audio || null;
   } catch (error) {
-    console.error("Error generating speech:", error);
+    console.error("Error generating speech client-side:", error);
     return null;
   }
 }
@@ -51,6 +26,6 @@ export function playAudio(base64Data: string) {
     source.connect(audioContext.destination);
     source.start(0);
   }, (e) => {
-    console.error("Error decoding audio data", e);
+    console.error("Error decoding audio data:", e);
   });
 }

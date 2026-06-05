@@ -5,7 +5,8 @@ import {
   generateQuiz as generateQuizSvc, 
   chatWithTutor as chatWithTutorSvc, 
   generateStudyPlan as generateStudyPlanSvc,
-  generateDetailedNotes as generateDetailedNotesSvc
+  generateDetailedNotes as generateDetailedNotesSvc,
+  generateSpeech as generateSpeechSvc
 } from '../services/aiService.js';
 import { YoutubeTranscript } from 'youtube-transcript';
 
@@ -193,6 +194,26 @@ export const generatePlan = async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({ 
       message: 'Plan generation failed', 
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
+  }
+};
+
+export const generateSpeech = async (req: Request, res: Response) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ message: 'Text is required' });
+    }
+    const audio = await generateSpeechSvc(text);
+    if (!audio) {
+      return res.status(500).json({ message: 'Speech generation failed' });
+    }
+    res.json({ audio });
+  } catch (error: any) {
+    res.status(500).json({ 
+      message: 'Speech generation failed', 
       error: error.message,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });

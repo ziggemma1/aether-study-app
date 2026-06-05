@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Modality } from "@google/genai";
 import axios from 'axios';
 import { NoteSection, PlanSession } from "../../types.js";
 import { validateAndFillNote } from "../../lib/note-validator";
@@ -546,5 +546,33 @@ ${content.substring(0, 15000)}`;
     structuredNote: finalFallback,
     detailedNotes: content.substring(0, 2000)
   };
+};
+
+export const generateSpeech = async (text: string): Promise<string | null> => {
+  const ai = getAiClient();
+  if (!ai) {
+    console.error(`[AI-Service] No AI client for speech`);
+    return null;
+  }
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ parts: [{ text: `Read this summary clearly: ${text}` }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
+        },
+      },
+    });
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    return base64Audio || null;
+  } catch (error: any) {
+    console.error("[AI-Service] Error generating speech:", error.message);
+    return null;
+  }
 };
 

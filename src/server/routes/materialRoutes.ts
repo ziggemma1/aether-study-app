@@ -21,7 +21,8 @@ import {
   generateFlashcards as generateFlashcardsController,
   generateQuiz as generateQuizController,
   chatWithTutor as chatWithTutorController,
-  generatePlan as generatePlanController
+  generatePlan as generatePlanController,
+  generateSpeech as generateSpeechController
 } from '../controllers/analysisController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -56,6 +57,7 @@ router.post('/generate-chapters', generateChapters);
 router.post('/generate-flashcards', generateFlashcardsController);
 router.post('/generate-quiz', generateQuizController);
 router.post('/chat', chatWithTutorController);
+router.post('/speech', generateSpeechController);
 router.post('/generate-plan', generatePlanController);
 router.put('/:id', updateMaterial);
 router.delete('/:id', deleteMaterial);
