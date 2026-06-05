@@ -50,6 +50,8 @@ export interface NoteSection {
   content: string;
   imagePrompt: string;
   imageUrl?: string;
+  noteStyle?: string;
+  conceptAnalyzed?: string;
 }
 
 export interface Flashcard {

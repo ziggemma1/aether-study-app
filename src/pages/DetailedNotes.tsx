@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Sparkles, Download, Share2, FileText, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, BookOpen, Sparkles, Download, Share2, FileText, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, AlertCircle, RefreshCw, Brain, GraduationCap } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { StudyTimer } from '../components/StudyTimer';
 import { TutorChat } from '../components/TutorChat';
@@ -29,6 +29,19 @@ export default function DetailedNotes() {
   const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
   
   const [isELI5, setIsELI5] = React.useState(false);
+  const [activeViewMode, setActiveViewMode] = React.useState<'slides' | 'structured'>(
+    material?.noteSections && material.noteSections.length > 0 ? 'slides' : 'structured'
+  );
+
+  React.useEffect(() => {
+    if (material) {
+      if (material.noteSections && material.noteSections.length > 0) {
+        setActiveViewMode('slides');
+      } else {
+        setActiveViewMode('structured');
+      }
+    }
+  }, [material?.id, material?.noteSections?.length]);
 
   const handleDownload = async () => {
     if (isDownloading || !material) return;
@@ -131,7 +144,7 @@ export default function DetailedNotes() {
       showToast('Engaging Academic Deep-Dive Analysis...');
       
       // Call backend which now handles Gemini -> OpenRouter fallback automatically
-      const chaptersResponse = await api.post('/materials/generate-chapters', {
+      const chaptersResponse = await api.post('/materials/generate-deep-dive', {
         content: material.content || material.title,
         title: material.title,
         materialId: id // This will update the DB
@@ -227,33 +240,61 @@ export default function DetailedNotes() {
           </div>
         </div>
 
-        {!material.structuredNote && (
-          <header className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 bg-secondary/10 text-secondary rounded-xl">
-                <BookOpen size={20} />
-              </div>
-              <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">{t('detailed_study_notes')}</span>
+        {/* Header and Title */}
+        <header className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-secondary/10 text-secondary rounded-lg">
+              <BookOpen size={16} />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-text-main mb-6 tracking-tighter leading-tight drop-shadow-sm">
-              {material.title}
-            </h1>
-            
-            {totalPages > 0 && (
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-grow bg-white/5 h-1.5 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${((currentPage + 1) / totalPages) * 100}%` }}
-                    className="h-full bg-primary"
-                  />
-                </div>
-                <span className="text-[10px] font-bold text-text-muted uppercase shrink-0">
-                  {t('page_info', { current: currentPage + 1, total: totalPages })}
-                </span>
+            <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">{t('detailed_study_notes')}</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-text-main mb-4 tracking-tighter leading-tight drop-shadow-sm">
+            {material.title}
+          </h1>
+          
+          {/* Progress bar (Only shown when viewing deep study slides) */}
+          {activeViewMode === 'slides' && totalPages > 0 && (
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex-grow bg-white/5 h-1.5 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((currentPage + 1) / totalPages) * 100}%` }}
+                  className="h-full bg-primary"
+                />
               </div>
-            )}
-          </header>
+              <span className="text-[10px] font-bold text-text-muted uppercase shrink-0">
+                Page {currentPage + 1} of {totalPages}
+              </span>
+            </div>
+          )}
+        </header>
+
+        {/* View Mode Tab Switcher (Visible only if both structured outline and pages exist) */}
+        {material.structuredNote && sections.length > 0 && (
+          <div className="flex items-center justify-center p-1 bg-surface border border-border/10 rounded-2xl w-full max-w-sm mx-auto mb-6 shadow-md">
+            <button
+              onClick={() => setActiveViewMode('slides')}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all",
+                activeViewMode === 'slides' 
+                  ? "bg-primary text-white shadow-md" 
+                  : "text-text-muted hover:text-text-main"
+              )}
+            >
+              <Sparkles size={12} /> 📑 8-Page Deep-Dive
+            </button>
+            <button
+              onClick={() => setActiveViewMode('structured')}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all",
+                activeViewMode === 'structured' 
+                  ? "bg-primary text-white shadow-md" 
+                  : "text-text-muted hover:text-text-main"
+              )}
+            >
+              <FileText size={12} /> 📋 Structured Outline
+            </button>
+          </div>
         )}
 
         <div className="relative min-h-[400px]">
@@ -262,25 +303,25 @@ export default function DetailedNotes() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="glass-card p-12 text-center border-red-500/20"
+                className="glass-card p-8 text-center border-red-500/20"
               >
-                <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <AlertCircle size={32} />
+                <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle size={24} />
                 </div>
-                <h3 className="text-xl font-bold text-text-main mb-2">Generation Failed</h3>
-                <p className="text-text-muted mb-6 max-w-sm mx-auto">
+                <h3 className="text-lg font-bold text-text-main mb-1">Generation Failed</h3>
+                <p className="text-[10px] text-text-muted mb-4 max-w-sm mx-auto">
                   We encountered an issue while generating your detailed notes. This might be due to a temporary model outage.
                 </p>
                 <button
                   onClick={handleManualRetry}
                   disabled={isRegenerating}
-                  className="btn-primary w-full max-w-xs mx-auto flex items-center justify-center gap-2"
+                  className="btn-primary w-full max-w-xs mx-auto flex items-center justify-center gap-2 text-xs py-2"
                 >
-                  {isRegenerating ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+                  {isRegenerating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                   Retry Generation
                 </button>
               </motion.div>
-            ) : material.structuredNote ? (
+            ) : activeViewMode === 'structured' && material.structuredNote ? (
               <motion.div
                 key="structured"
                 initial={{ opacity: 0, y: 20 }}
@@ -290,106 +331,182 @@ export default function DetailedNotes() {
               >
                 <StructuredNoteRenderer note={material.structuredNote} />
               </motion.div>
-            ) : sections.length > 0 ? (
+            ) : activeViewMode === 'slides' && sections.length > 0 ? (
               <motion.div
                 key={currentPage}
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="glass-card shadow-2xl p-6 sm:p-12 relative border-t-8 border-primary"
+                className="relative"
               >
-                
-                <div className="space-y-10">
-                  <header className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Sparkles size={14} className="text-accent animate-pulse" />
-                        <span className="text-xs font-bold text-accent uppercase tracking-widest">{t('enhanced_insight_chapter', { count: currentPage + 1 })}</span>
+                {/* Visual Style Selection Based on Academic Note Mode */}
+                {sections[currentPage].noteStyle === 'Cornell' ? (
+                  <div className="glass-card shadow-2xl p-4 sm:p-8 border-l-[6px] border-l-amber-500/80 bg-gradient-to-br from-amber-500/5 to-transparent rounded-3xl space-y-6">
+                    <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/15 pb-4">
+                      <div>
+                        <div className="flex items-center gap-2 text-amber-500 font-bold text-[10px] uppercase tracking-wider mb-1">
+                          <GraduationCap size={14} />
+                          <span>Cornell Note Sheet (Exam prep)</span>
+                        </div>
+                        <h2 className="text-xl font-extrabold text-text-main tracking-tight mt-1">
+                          {sections[currentPage].heading}
+                        </h2>
                       </div>
                       
                       <button
                         onClick={() => handleToggleELI5(sections[currentPage].content, currentPage)}
                         disabled={isLoadingELI5}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border",
+                          "flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all border self-start sm:self-center",
                           isELI5 
-                            ? "bg-accent/20 border-accent/50 text-accent" 
-                            : "bg-surface border-border text-text-muted hover:border-accent/30 hover:text-accent"
+                            ? "bg-amber-500/20 border-amber-500/50 text-amber-500" 
+                            : "bg-surface border-border text-text-muted hover:border-amber-500/30 hover:text-amber-500"
                         )}
                       >
-                        {isLoadingELI5 ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                        {isELI5 ? 'Reading ELI5' : 'ELI5'}
+                        {isLoadingELI5 ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                        {isELI5 ? 'Reading ELI5' : 'Simplify (ELI5)'}
+                      </button>
+                    </header>
+
+                    {/* Cornell Concept Focus Pin */}
+                    {sections[currentPage].conceptAnalyzed && (
+                      <div className="bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-bold inline-block">
+                        🎯 Study Objective: {sections[currentPage].conceptAnalyzed}
+                      </div>
+                    )}
+
+                    {/* Image visualizer */}
+                    {sections[currentPage].imageUrl && (
+                      <div className="rounded-2xl overflow-hidden border border-amber-500/10 max-h-[220px]">
+                        <img 
+                          src={sections[currentPage].imageUrl} 
+                          alt={sections[currentPage].heading} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+
+                    <div className="markdown-body text-text-main text-sm selection:bg-amber-500/30 leading-relaxed">
+                      <ReactMarkdown>
+                        {isELI5 && eli5Content[currentPage] 
+                          ? eli5Content[currentPage] 
+                          : sections[currentPage].content}
+                      </ReactMarkdown>
+                    </div>
+
+                    {/* Interactive Mobile Controls Inside Card */}
+                    <div className="pt-6 border-t border-border/10 flex items-center justify-between">
+                      <button
+                        onClick={handlePrev}
+                        disabled={currentPage === 0}
+                        className={cn(
+                          "flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
+                          currentPage === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-500/10 text-amber-500"
+                        )}
+                      >
+                        <ChevronLeft size={16} /> Prev
+                      </button>
+                      <span className="text-[10px] text-text-muted font-bold">
+                        {currentPage + 1} / {totalPages}
+                      </span>
+                      <button
+                        onClick={handleNext}
+                        disabled={currentPage === totalPages - 1}
+                        className={cn(
+                          "flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
+                          currentPage === totalPages - 1 ? "opacity-30 cursor-not-allowed text-green-500" : "bg-primary text-white shadow-sm"
+                        )}
+                      >
+                        {currentPage === totalPages - 1 ? 'Complete Review' : 'Next'} <ChevronRight size={16} />
                       </button>
                     </div>
-                    <h2 className="font-extrabold text-text-main tracking-tight leading-none">
-                      {sections[currentPage].heading}
-                    </h2>
-                  </header>
-                  
-                  {sections[currentPage].imageUrl && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="rounded-3xl overflow-hidden border-2 border-primary/20 bg-surface shadow-2xl group relative"
-                    >
-                      <img 
-                        src={sections[currentPage].imageUrl} 
-                        alt={sections[currentPage].heading} 
-                        className="w-full h-[300px] object-cover transform group-hover:scale-[1.02] transition-transform duration-1000"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute bottom-4 left-4 right-4 bg-surface/60 backdrop-blur-xl p-3 flex items-center justify-center gap-2 border border-white/10 rounded-2xl">
-                        <Sparkles size={14} className="text-secondary" />
-                        <p className="text-[10px] text-white font-bold italic tracking-wide">
-                          {t('visual_aid')}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  <div className="markdown-body text-text-main selection:bg-primary/30 p-2 sm:p-4 bg-white/10 dark:bg-black/5 rounded-2xl">
-                    <ReactMarkdown>
-                      {isELI5 && eli5Content[currentPage] 
-                        ? eli5Content[currentPage] 
-                        : sections[currentPage].content}
-                    </ReactMarkdown>
                   </div>
+                ) : (
+                  /* Feynman Template Style */
+                  <div className="glass-card shadow-2xl p-4 sm:p-8 border-l-[6px] border-l-sky-500/80 bg-gradient-to-br from-sky-500/5 to-transparent rounded-3xl space-y-6">
+                    <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/15 pb-4">
+                      <div>
+                        <div className="flex items-center gap-2 text-sky-500 font-bold text-[10px] uppercase tracking-wider mb-1">
+                          <Brain size={14} />
+                          <span>Feynman Masterclass (Concept Mastery)</span>
+                        </div>
+                        <h2 className="text-xl font-extrabold text-text-main tracking-tight mt-1">
+                          {sections[currentPage].heading}
+                        </h2>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleToggleELI5(sections[currentPage].content, currentPage)}
+                        disabled={isLoadingELI5}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all border self-start sm:self-center",
+                          isELI5 
+                            ? "bg-sky-500/20 border-sky-500/50 text-sky-500" 
+                            : "bg-surface border-border text-text-muted hover:border-sky-500/30 hover:text-sky-500"
+                        )}
+                      >
+                        {isLoadingELI5 ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                        {isELI5 ? 'Reading ELI5' : 'Simplify (ELI5)'}
+                      </button>
+                    </header>
 
-                  {/* Page Navigation Controls inside the card */}
-                  <div className="pt-12 mt-12 border-t border-border flex items-center justify-between">
-                    <button
-                      onClick={handlePrev}
-                      disabled={currentPage === 0}
-                      className={cn(
-                        "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all",
-                        currentPage === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-primary/10 text-primary"
-                      )}
-                    >
-                      <ChevronLeft size={20} />
-                      {t('previous_topic')}
-                    </button>
+                    {/* Feynman concept block */}
+                    {sections[currentPage].conceptAnalyzed && (
+                      <div className="bg-sky-500/10 px-3 py-1.5 rounded-xl border border-sky-500/20 text-sky-800 dark:text-sky-300 text-[10px] font-bold inline-block">
+                        🧠 Conceptual Core: {sections[currentPage].conceptAnalyzed}
+                      </div>
+                    )}
 
-                    <div className="hidden sm:block text-xs text-text-muted font-bold tracking-widest uppercase">
-                      {t('page_info', { current: currentPage + 1, total: totalPages })}
+                    {/* Image visualizer */}
+                    {sections[currentPage].imageUrl && (
+                      <div className="rounded-2xl overflow-hidden border border-sky-500/10 max-h-[220px]">
+                        <img 
+                          src={sections[currentPage].imageUrl} 
+                          alt={sections[currentPage].heading} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+
+                    <div className="markdown-body text-text-main text-sm selection:bg-sky-500/30 leading-relaxed">
+                      <ReactMarkdown>
+                        {isELI5 && eli5Content[currentPage] 
+                          ? eli5Content[currentPage] 
+                          : sections[currentPage].content}
+                      </ReactMarkdown>
                     </div>
 
-                    <button
-                      onClick={handleNext}
-                      disabled={currentPage === totalPages - 1}
-                      className={cn(
-                        "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all",
-                        currentPage === totalPages - 1 ? "opacity-30 cursor-not-allowed text-green-500" : "bg-primary text-white shadow-lg hover:shadow-primary/20 hover:scale-105"
-                      )}
-                    >
-                      {currentPage === totalPages - 1 ? (
-                        <>{t('complete_review')} <Sparkles size={18} /></>
-                      ) : (
-                        <>{t('next_topic')} <ChevronRight size={20} /></>
-                      )}
-                    </button>
+                    {/* Interactive Mobile Controls Inside Card */}
+                    <div className="pt-6 border-t border-border/10 flex items-center justify-between">
+                      <button
+                        onClick={handlePrev}
+                        disabled={currentPage === 0}
+                        className={cn(
+                          "flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
+                          currentPage === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-sky-500/10 text-sky-500"
+                        )}
+                      >
+                        <ChevronLeft size={16} /> Prev
+                      </button>
+                      <span className="text-[10px] text-text-muted font-bold">
+                        {currentPage + 1} / {totalPages}
+                      </span>
+                      <button
+                        onClick={handleNext}
+                        disabled={currentPage === totalPages - 1}
+                        className={cn(
+                          "flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
+                          currentPage === totalPages - 1 ? "opacity-30 cursor-not-allowed text-green-500" : "bg-primary text-white shadow-sm"
+                        )}
+                      >
+                        {currentPage === totalPages - 1 ? 'Complete Review' : 'Next'} <ChevronRight size={16} />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </motion.div>
             ) : material.detailedNotes ? (
               <motion.div
@@ -419,11 +536,12 @@ export default function DetailedNotes() {
             ) : (
               <div className="glass-card p-12 text-center">
                 <Sparkles className="w-12 h-12 text-secondary/40 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-text-main mb-2">{t('academic_analysis_required')}</h3>
-                <p className="text-text-muted mb-8">{t('academic_analysis_desc')}</p>
+                <h3 className="text-xl font-bold text-text-main mb-2">Detailed Notes Ready</h3>
+                <p className="text-text-muted text-xs mb-8">Start the cognitive deep-dive analysis below</p>
                 <button
                   onClick={handleRegenerate}
                   className="btn-primary"
+                  disabled={isRegenerating}
                 >
                   {t('start_deep_analysis')}
                 </button>

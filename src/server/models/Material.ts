@@ -28,7 +28,8 @@ const materialSchema = new mongoose.Schema({
     heading: { type: String },
     content: { type: String },
     imagePrompt: { type: String },
-    imageUrl: { type: String }
+    imageUrl: { type: String },
+    noteStyle: { type: String }
   }],
   visualAidUrl: { type: String },
   structuredNote: {

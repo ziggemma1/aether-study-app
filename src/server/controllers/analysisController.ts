@@ -6,7 +6,8 @@ import {
   chatWithTutor as chatWithTutorSvc, 
   generateStudyPlan as generateStudyPlanSvc,
   generateDetailedNotes as generateDetailedNotesSvc,
-  generateSpeech as generateSpeechSvc
+  generateSpeech as generateSpeechSvc,
+  generateAcademicMegaNotes as generateAcademicMegaNotesSvc
 } from '../services/aiService.js';
 import { YoutubeTranscript } from 'youtube-transcript';
 
@@ -140,6 +141,36 @@ export const generateChapters = async (req: Request, res: Response) => {
       message: 'Generation failed on server', 
       error: error.message,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
+  }
+};
+
+export const generateDeepDive = async (req: Request, res: Response) => {
+  try {
+    const { content, title, materialId } = req.body;
+    if (!content) {
+      return res.status(400).json({ message: 'Content is required' });
+    }
+    
+    console.log(`[Deep-Dive-Ctrl] Starting intense academic generation for: ${title} (Material ID: ${materialId || 'none'})`);
+    
+    const megaNotes = await generateAcademicMegaNotesSvc(content, title);
+    
+    if (materialId) {
+      console.log(`[Deep-Dive-Ctrl] Updating material ${materialId} noteSections with 8+ custom pages...`);
+      const updated = await MaterialModel.findByIdAndUpdate(materialId, {
+        noteSections: megaNotes,
+        generationStatus: 'completed'
+      }, { new: true });
+      return res.json(updated);
+    }
+    
+    res.json({ noteSections: megaNotes });
+  } catch (error: any) {
+    console.error('[Deep-Dive-Ctrl] Error during intensive academic deep dive generation:', error);
+    res.status(500).json({ 
+      message: 'High-impact academic deep dive failed on server', 
+      error: error.message
     });
   }
 };

@@ -17,6 +17,7 @@ import {
 import { 
   analyzeMaterial, 
   generateChapters, 
+  generateDeepDive,
   getYoutubeTranscript,
   generateFlashcards as generateFlashcardsController,
   generateQuiz as generateQuizController,
@@ -54,6 +55,7 @@ router.get('/:id', getMaterial);
 router.post('/', createMaterial);
 router.post('/analyze', analyzeMaterial);
 router.post('/generate-chapters', generateChapters);
+router.post('/generate-deep-dive', generateDeepDive);
 router.post('/generate-flashcards', generateFlashcardsController);
 router.post('/generate-quiz', generateQuizController);
 router.post('/chat', chatWithTutorController);
