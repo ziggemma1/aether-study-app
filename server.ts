@@ -38,7 +38,7 @@ process.on('unhandledRejection', (reason, promise) => {
 async function startServer() {
   const app = express();
   const httpServer = createServer(app);
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // CORS Configuration - At the very top!
   app.use(cors({
