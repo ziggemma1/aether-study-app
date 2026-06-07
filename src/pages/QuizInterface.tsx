@@ -7,6 +7,8 @@ import { cn } from '../lib/utils';
 import { StudyTimer } from '../components/StudyTimer';
 import { useConfetti } from '../hooks/useConfetti';
 import { generateQuizQuestionsOnClient } from '../lib/gemini';
+import { useHapticFeedback } from '../hooks/useHapticFeedback';
+import { sounds } from '../lib/sounds';
 
 import api from '../services/api';
 
@@ -16,6 +18,7 @@ export default function QuizInterface() {
   const location = useLocation();
   const { materials, setQuizResults, isLoading: isAppLoading, fetchAppData, user, updateMaterialInContext } = useAppContext();
   const { burstConfetti, fireConfetti } = useConfetti();
+  const { success: hapticSuccess, error: hapticError, light: hapticLight } = useHapticFeedback();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [isFinished, setIsFinished] = useState(false);
@@ -80,6 +83,11 @@ export default function QuizInterface() {
 
     if (correct) {
       burstConfetti();
+      sounds.play('correct');
+      hapticSuccess();
+    } else {
+      sounds.play('wrong');
+      hapticError();
     }
 
     // Delay move to next or just set answer
@@ -118,6 +126,9 @@ export default function QuizInterface() {
 
     if ((correctCount / questions.length) >= 0.7) {
       fireConfetti();
+      sounds.play('levelup');
+    } else {
+      sounds.play('wrong');
     }
 
     try {

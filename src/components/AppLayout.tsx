@@ -7,6 +7,7 @@ import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import { Database, ArrowRight, Loader2, Sparkles, WifiOff, CheckCircle2, AlertCircle, ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatedContainer } from './AnimatedContainer';
 
 export default function AppLayout() {
   const { theme, timeTheme, dbError, isLoading, user, toast } = useAppContext();
@@ -101,8 +102,10 @@ export default function AppLayout() {
       {/* Main Content Area */}
       <div className="flex-grow min-w-0 w-full max-w-[100vw] relative z-10 lg:ml-64 flex flex-col h-full bg-transparent transition-all duration-300 ease-out overflow-x-hidden">
         <TopNav onMenuClick={() => setIsSidebarOpen(true)} />
-        <main ref={mainRef} className="min-w-0 w-full max-w-[100vw] lg:max-w-[1600px] mx-auto px-4 md:px-8 pt-24 sm:pt-32 pb-36 sm:pb-10 flex-grow overflow-y-auto overflow-x-hidden scroll-smooth custom-scrollbar select-none overscroll-contain">
-          <Outlet />
+        <main ref={mainRef} className="min-w-0 w-full max-w-[100vw] lg:max-w-[1600px] mx-auto px-4 md:px-8 pt-24 sm:pt-32 pb-36 sm:pb-10 flex-grow overflow-y-auto overflow-x-hidden scroll-smooth custom-scrollbar select-none overscroll-contain flex flex-col">
+          <AnimatedContainer>
+            <Outlet />
+          </AnimatedContainer>
         </main>
         <BottomNav />
         
