@@ -12,7 +12,8 @@ import {
   reviewFlashcard,
   shareMaterial,
   getSharedMaterial,
-  saveFromShare
+  saveFromShare,
+  getRecentMaterials
 } from '../controllers/materialController.js';
 import { 
   analyzeMaterial, 
@@ -44,6 +45,7 @@ router.post('/:id/flashcards/:cardId/review', reviewFlashcard);
 
 router.post('/youtube-transcript', getYoutubeTranscript);
 
+router.get('/recent', getRecentMaterials);
 router.get('/', getMaterials);
 router.get('/analyze', (req, res) => {
   res.status(405).json({ 

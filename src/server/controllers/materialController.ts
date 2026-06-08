@@ -347,3 +347,26 @@ export const reviewFlashcard = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const getRecentMaterials = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const dbMaterials = await Material.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(3);
+
+    const formatted = dbMaterials.map((m: any) => ({
+      id: m._id || m.id,
+      title: m.title,
+      type: m.type || 'pdf',
+      uploadDate: m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      thumbnail: m.thumbnail || null,
+      progress: m.progress || 0
+    }));
+
+    res.json({ materials: formatted });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
