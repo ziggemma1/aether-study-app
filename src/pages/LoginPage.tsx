@@ -120,7 +120,10 @@ export default function LoginPage() {
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
         try {
           const response = await api.get('/auth/me');
-          setUser(response.data);
+          if (response.data && response.data.user) {
+            setUser(response.data.user);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+          }
           navigate('/dashboard');
         } catch (err) {
           console.error("Failed to fetch user after OAuth success:", err);
@@ -133,7 +136,10 @@ export default function LoginPage() {
       if (event.key === 'oauth_success') {
         try {
           const response = await api.get('/auth/me');
-          setUser(response.data);
+          if (response.data && response.data.user) {
+            setUser(response.data.user);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+          }
           navigate('/dashboard');
         } catch (err) {
           console.error("Failed to fetch user after OAuth success via storage:", err);

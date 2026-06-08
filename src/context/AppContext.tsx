@@ -128,12 +128,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const fetchUserData = useCallback(async () => {
     try {
       const response = await api.get('/auth/me');
-      if (response.data) {
+      if (response.data && response.data.user) {
         if (response.data.token) {
           localStorage.setItem('auth_token', response.data.token);
         }
-        setUser(response.data);
-        localStorage.setItem('user', JSON.stringify(response.data));
+        setUser(response.data.user);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         return true;
       }
       return false;
