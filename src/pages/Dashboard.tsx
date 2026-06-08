@@ -238,9 +238,11 @@ export default function Dashboard() {
           <StatsCard 
             title="Academic Health Rate" 
             value={user?.averageQuizScore && user?.averageQuizScore > 0 ? `${Math.round(user.averageQuizScore)}%` : "No Data"}
-            description={user?.averageQuizScore && user?.averageQuizScore > 0 
-              ? `Peak target: ${stats?.peak || 0}m / floor run: ${stats?.floor || 0}m`
-              : "Complete a quiz in active study mode to compute health rating."}
+            description={user?.averageQuizScore && user?.averageQuizScore > 0 && stats?.peak && stats?.floor
+              ? `Peak target: ${stats?.peak}m / floor run: ${stats?.floor}m`
+              : user?.averageQuizScore && user?.averageQuizScore > 0
+                ? "Academic performance calculated from recent study quizzes."
+                : "Complete a quiz in active study mode to compute health rating."}
             accentColor="text-primary"
             icon={<ProgressRing percentage={user?.averageQuizScore || 0} size={36} strokeWidth={4} />}
           />
@@ -286,7 +288,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* Calendar scheduling Widget */}
         <div className="lg:col-span-8">
-          <CalendarWidget className="h-[280px]" />
+          <CalendarWidget className="min-h-[380px] h-auto" />
         </div>
 
         {/* Dynamic Activity Tracking History */}
@@ -294,7 +296,7 @@ export default function Dashboard() {
           <h2 className="text-xs font-black text-text-main uppercase tracking-widest">
             {t('recent_activity')}
           </h2>
-          <div className="bg-surface border border-border/10 p-4 rounded-2xl h-[280px] overflow-y-auto no-scrollbar flex flex-col justify-between">
+          <div className="bg-surface border border-border/10 p-4 rounded-2xl min-h-[380px] h-auto overflow-y-auto no-scrollbar flex flex-col justify-between">
             <div className="space-y-2.5">
               {recentSessions.length > 0 ? (
                 recentSessions.map((session, idx) => (

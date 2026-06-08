@@ -144,7 +144,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         animate={{ x: isMobile ? (isOpen ? 0 : '-100%') : 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300, mass: 0.5 }}
         className={cn(
-          "fixed top-0 left-0 h-full w-64 bg-surface/60 backdrop-blur-3xl border-r border-border z-[100] lg:translate-x-0"
+          "fixed top-0 left-0 h-full w-64 bg-background border-r border-border/30 z-[100] lg:translate-x-0 shadow-2xl"
         )}
       >
         <div className="h-full flex flex-col overflow-y-auto custom-scrollbar">

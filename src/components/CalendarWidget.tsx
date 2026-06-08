@@ -130,7 +130,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute right-0 mt-2 w-64 bg-surface/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-50 p-4 grid grid-cols-3 gap-2"
+                  className="absolute right-0 mt-2 w-64 bg-background border border-border/30 rounded-2xl shadow-2xl z-50 p-4 grid grid-cols-3 gap-2"
                 >
                   {months.map((m, i) => (
                     <button
