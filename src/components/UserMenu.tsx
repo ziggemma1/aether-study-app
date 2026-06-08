@@ -83,11 +83,11 @@ export default function UserMenu() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2.5 w-64 bg-surface border border-border/10 rounded-2xl shadow-xl z-50 overflow-hidden pointer-events-auto"
+            className="absolute right-0 mt-2.5 w-64 bg-background border border-border/30 rounded-2xl shadow-2xl z-50 overflow-hidden pointer-events-auto"
             id="user-menu-dropdown"
           >
             {/* Header info */}
-            <div className="p-4 bg-surface-alt/40 border-b border-border/10 flex items-center gap-3">
+            <div className="p-4 bg-background border-b border-border/20 flex items-center gap-3">
               {avatarUrl ? (
                 <img 
                   src={avatarUrl} 
@@ -107,13 +107,13 @@ export default function UserMenu() {
             </div>
 
             {/* Nav Links */}
-            <div className="p-2 space-y-1">
+            <div className="p-2 space-y-1 bg-background">
               {menuItems.map(item => (
                 <Link
                   key={item.to}
                   to={item.to}
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-text-muted hover:text-text-main hover:bg-surface-alt/70 transition-all group"
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-text-muted hover:text-text-main hover:bg-surface/50 transition-all group"
                   id={`user-menu-link-${item.label.toLowerCase()}`}
                 >
                   <item.icon size={15} className="group-hover:text-primary transition-colors text-text-muted" />
@@ -123,7 +123,7 @@ export default function UserMenu() {
             </div>
 
             {/* Footer Log out */}
-            <div className="p-2 border-t border-border/10 bg-surface-alt/20">
+            <div className="p-2 border-t border-border/20 bg-background">
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-black text-red-500 hover:bg-red-500/10 transition-all"

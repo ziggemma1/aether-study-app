@@ -70,11 +70,11 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2.5 w-80 bg-surface border border-border/10 rounded-2xl shadow-xl z-50 overflow-hidden pointer-events-auto"
+            className="absolute right-0 mt-2.5 w-80 bg-background border border-border/30 rounded-2xl shadow-2xl z-50 overflow-hidden pointer-events-auto"
             id="notification-bell-panel"
           >
             {/* Header Area */}
-            <div className="p-3.5 bg-surface-alt/30 border-b border-border/10 flex items-center justify-between">
+            <div className="p-3.5 bg-background border-b border-border/20 flex items-center justify-between">
               <div>
                 <h4 className="text-xs font-black text-text-main uppercase tracking-widest flex items-center gap-1.5">
                   Alerts {unreadCount > 0 && <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />}
@@ -84,8 +84,8 @@ export default function NotificationBell() {
               
               {unreadCount > 0 && (
                 <button
-                  onClick={() => markAsRead()}
-                  className="text-[9px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1"
+                   onClick={() => markAsRead()}
+                   className="text-[9px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1"
                 >
                   <Check size={10} /> Read All
                 </button>
@@ -93,18 +93,18 @@ export default function NotificationBell() {
             </div>
 
             {/* List Item Entries */}
-            <div className="max-h-[280px] overflow-y-auto no-scrollbar divide-y divide-border/5">
+            <div className="max-h-[280px] overflow-y-auto no-scrollbar divide-y divide-border/10 bg-background">
               {notifications.length > 0 ? (
                 notifications.map(notif => (
                   <div
                     key={notif.id}
                     onClick={() => handleNotificationClick(notif)}
                     className={cn(
-                      "p-3.5 flex gap-3 cursor-pointer hover:bg-surface-alt/30 transition-all text-left",
-                      !notif.read && "bg-primary/5 border-l-2 border-primary"
+                      "p-3.5 flex gap-3 cursor-pointer hover:bg-surface/50 transition-all text-left",
+                      !notif.read && "bg-primary/10 border-l-2 border-primary"
                     )}
                   >
-                    <div className="w-7 h-7 bg-surface-alt border border-border/5 rounded-lg flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 bg-surface border border-border/10 rounded-lg flex items-center justify-center shrink-0">
                       {getIcon(notif.type)}
                     </div>
                     <div className="flex-grow min-w-0">
@@ -118,7 +118,7 @@ export default function NotificationBell() {
                   </div>
                 ))
               ) : (
-                <div className="p-10 text-center flex flex-col items-center justify-center">
+                <div className="p-10 text-center flex flex-col items-center justify-center bg-background">
                   <Info size={24} className="text-text-muted opacity-30 mb-2" />
                   <p className="text-[10px] font-black text-text-muted uppercase tracking-wider">All caught up!</p>
                   <p className="text-[9px] text-text-muted/75 mt-0.5 max-w-[180px]">No unread system alerts or study warnings.</p>
@@ -127,7 +127,7 @@ export default function NotificationBell() {
             </div>
             
             {/* View Full History redirect/refresh */}
-            <div className="p-2 border-t border-border/10 bg-surface-alt/10 text-center">
+            <div className="p-2 border-t border-border/20 bg-background text-center">
               <button 
                 onClick={() => { setIsOpen(false); refetch(); }}
                 className="w-full text-[9px] font-bold text-text-muted hover:text-text-main uppercase tracking-widest py-1 transition-colors"
