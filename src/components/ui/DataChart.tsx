@@ -14,7 +14,7 @@ interface DataChartProps {
   maxValue?: number;
 }
 
-export function DataChart({ data, title, subtitle, maxValue = 100 }: DataChartProps) {
+export function DataChart({ data, title, subtitle, maxValue = 4 }: DataChartProps) {
   const max = Math.max(...data.map(d => d.value), maxValue, 1);
 
   return (

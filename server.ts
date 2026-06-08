@@ -17,6 +17,7 @@ import userRoutes from "./src/server/routes/userRoutes.js";
 import groupRoutes from "./src/server/routes/groupRoutes.js";
 import roomRoutes from "./src/server/routes/roomRoutes.js";
 import dashboardRoutes from "./src/server/routes/dashboardRoutes.js";
+import notificationRoutes from "./src/server/routes/notificationRoutes.js";
 import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
 import { createServer } from "http";
 import { initSocket } from "./src/server/socket.js";
@@ -189,6 +190,7 @@ async function startServer() {
   app.use("/api/groups", checkDbConnection, groupRoutes);
   app.use("/api/rooms", checkDbConnection, roomRoutes);
   app.use("/api/user", checkDbConnection, dashboardRoutes);
+  app.use("/api/notifications", checkDbConnection, notificationRoutes);
   
   // Custom Error Handling Middleware
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

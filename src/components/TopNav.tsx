@@ -1,9 +1,11 @@
 import React from 'react';
-import { Search, Bell, Sun, Moon, Menu } from 'lucide-react';
+import { Search, Sun, Moon, Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
+import NotificationBell from './NotificationBell';
+import UserMenu from './UserMenu';
 
 interface TopNavProps {
   onMenuClick: () => void;
@@ -71,34 +73,13 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
               </button>
             </div>
             
-            <Link to="/notifications" className="p-2 bg-surface-alt/80 text-text-muted hover:bg-surface-alt hover:text-text-main rounded-full transition-all border border-border relative flex items-center justify-center shrink-0">
-              <Bell size={18} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-surface" />
-            </Link>
+            <NotificationBell />
           </div>
 
           {/* User Profile */}
-          <Link to="/profile" className="flex items-center gap-3 pl-3 sm:pl-5 border-l border-border/50 group shrink-0">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold text-text-main leading-none whitespace-nowrap group-hover:text-primary transition-colors">
-                {user?.name?.split(' ')[0] || t('student')}
-              </p>
-              <p className="text-[11px] font-medium text-text-muted mt-1 whitespace-nowrap">
-                Student
-              </p>
-            </div>
-            <div className="relative shrink-0 flex items-center justify-center">
-              <img 
-                src={user?.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Robert"} 
-                alt="Profile" 
-                className={cn(
-                  "rounded-full border border-border/50 shadow-sm group-hover:border-primary/50 transition-all object-cover avatar-hover-pulse",
-                  scrolled ? "w-8 h-8" : "w-10 h-10"
-                )}
-              />
-              <div className="absolute -bottom-0.5 -right-0.5 w-[10px] h-[10px] bg-green-500 rounded-full border-[2.5px] border-surface" />
-            </div>
-          </Link>
+          <div className="flex items-center gap-3 pl-3 sm:pl-5 border-l border-border/50 group shrink-0">
+            <UserMenu />
+          </div>
         </div>
       </motion.nav>
     </div>

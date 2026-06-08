@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useDashboardData } from '../hooks/useDashboardData';
-import { formatTime, getGreeting, formatDate } from '../lib/utils';
+import { formatTime, getGreeting, formatDate, getRandomQuote } from '../lib/utils';
 import { 
   Camera, 
   ArrowRight, 
@@ -35,6 +35,7 @@ export default function Dashboard() {
   const { theme, allProfiles, studySessions, quizResults, t } = useAppContext();
   const { user, stats, recentMaterials, loading, error, refetch } = useDashboardData();
   const navigate = useNavigate();
+  const randomQuote = React.useMemo(() => getRandomQuote(), []);
 
   // 1. Loading Skeleton Component
   if (loading) {
@@ -141,14 +142,14 @@ export default function Dashboard() {
             size="lg" 
           />
           <div className="min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#8B5CF6]">
-              {getGreeting()}
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#00D2FF]">
+              {getGreeting()}, {userName.split(' ')[0]}! ☀️
             </span>
             <h1 className="text-base sm:text-lg font-black text-text-main leading-tight mt-0.5 truncate uppercase">
               <TruncatedText text={userName} maxLength={24} />
             </h1>
-            <p className="text-[10px] sm:text-xs text-text-muted mt-0.5 truncate">
-              {t('welcome_subtext')}
+            <p className="text-[10px] sm:text-xs text-text-muted mt-1 italic leading-tight">
+              "{randomQuote}"
             </p>
           </div>
         </div>
@@ -216,7 +217,7 @@ export default function Dashboard() {
 
         <MetricCard 
           label="Rivals Rank" 
-          value={`#${user?.rank || 1}`}
+          value={`#${user?.rank || 1} of ${user?.totalLearners || 124}`}
           icon={<Compass size={16} />}
           tooltip="Your highlighted rank position among active course leaderboard members."
           onClick={() => navigate('/leaderboard')}
@@ -237,7 +238,9 @@ export default function Dashboard() {
           <StatsCard 
             title="Academic Health Rate" 
             value={user?.averageQuizScore && user?.averageQuizScore > 0 ? `${Math.round(user.averageQuizScore)}%` : "No Data"}
-            description={`Peak target: ${stats?.peak || 0}m / floor run: ${stats?.floor || 0}m`}
+            description={user?.averageQuizScore && user?.averageQuizScore > 0 
+              ? `Peak target: ${stats?.peak || 0}m / floor run: ${stats?.floor || 0}m`
+              : "Complete a quiz in active study mode to compute health rating."}
             accentColor="text-primary"
             icon={<ProgressRing percentage={user?.averageQuizScore || 0} size={36} strokeWidth={4} />}
           />

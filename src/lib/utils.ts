@@ -38,3 +38,57 @@ export function formatDate(dateStr: string): string {
   }
 }
 
+const QUOTES = [
+  "Small steps every day lead to big results.",
+  "Your future self will thank you for studying today.",
+  "Progress, not perfection.",
+  "One page at a time.",
+  "Deep breath in, active brain on. You got this!",
+  "Mistakes are proof that you are trying.",
+  "Consistency beats talent when talent doesn't work hard."
+];
+
+export function getRandomQuote(): string {
+  const index = Math.floor(Math.random() * QUOTES.length);
+  return QUOTES[index];
+}
+
+export function getInitials(name: string): string {
+  if (!name) return 'ST';
+  const nameParts = name.trim().split(/\s+/);
+  if (nameParts.length >= 2) {
+    return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+  }
+  return nameParts[0].substring(0, 2).toUpperCase();
+}
+
+export function formatRelativeTime(dateStr: string | Date): string {
+  if (!dateStr) return '';
+  try {
+    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+    if (isNaN(date.getTime())) return '';
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    let interval = Math.floor(seconds / 31536000);
+    if (interval >= 1) return interval === 1 ? '1 year ago' : `${interval} years ago`;
+    
+    interval = Math.floor(seconds / 2592000);
+    if (interval >= 1) return interval === 1 ? '1 month ago' : `${interval} months ago`;
+    
+    interval = Math.floor(seconds / 86400);
+    if (interval >= 1) return interval === 1 ? '1 day ago' : `${interval} days ago`;
+    
+    interval = Math.floor(seconds / 3600);
+    if (interval >= 1) return interval === 1 ? '1 hour ago' : `${interval} hours ago`;
+    
+    interval = Math.floor(seconds / 60);
+    if (interval >= 1) return interval === 1 ? '1 min ago' : `${interval} mins ago`;
+    
+    return seconds < 10 ? 'Just now' : `${Math.floor(seconds)} secs ago`;
+  } catch {
+    return '';
+  }
+}
+
+
