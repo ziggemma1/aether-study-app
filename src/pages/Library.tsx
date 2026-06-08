@@ -7,6 +7,9 @@ import { cn } from '../lib/utils';
 import { Material } from '../types';
 import api from '../services/api';
 import { Skeleton, MaterialCardSkeleton, MaterialListSkeleton } from '../components/ui/Skeleton';
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
+
 
 export default function Library() {
   const { materials, savedPlans, setMaterials, showToast, t, isLoading } = useAppContext();
@@ -281,31 +284,36 @@ export default function Library() {
 
   return (
     <div className="p-3 sm:p-8 lg:p-12 max-w-7xl mx-auto relative min-h-screen pb-24">
-      <header className="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-2 text-text-main">{t('library')}</h1>
-          <p className="text-sm sm:text-base text-text-muted">{t('library_desc')}</p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="flex bg-surface rounded-lg sm:rounded-xl p-0.5 sm:p-1 shadow-sm border border-border w-full sm:w-auto">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn("flex-1 sm:flex-none p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-colors", viewMode === 'grid' ? "bg-primary text-white" : "text-text-muted hover:text-primary")}
+      <PageHeader 
+        title={t('library')} 
+        subtitle={t('library_desc')} 
+        action={
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex bg-surface rounded-xl p-0.5 shadow-sm border border-border/10 select-none">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn("p-1.5 sm:p-2 rounded-lg transition-colors focus:outline-none", viewMode === 'grid' ? "bg-primary text-white" : "text-text-muted hover:text-primary")}
+              >
+                <Grid size={15} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn("p-1.5 sm:p-2 rounded-lg transition-colors focus:outline-none", viewMode === 'list' ? "bg-primary text-white" : "text-text-muted hover:text-primary")}
+              >
+                <List size={15} />
+              </button>
+            </div>
+            
+            <Link 
+              to="/upload" 
+              className="btn-primary !py-2 sm:!py-2.5 !px-4 sm:!px-6 !text-xs text-center font-black uppercase tracking-wider btn-ripple border border-primary/40 focus:outline-none shrink-0"
             >
-              <Grid size={16} className="sm:hidden mx-auto" />
-              <Grid size={20} className="hidden sm:block" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn("flex-1 sm:flex-none p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-colors", viewMode === 'list' ? "bg-primary text-white" : "text-text-muted hover:text-primary")}
-            >
-              <List size={16} className="sm:hidden mx-auto" />
-              <List size={20} className="hidden sm:block" />
-            </button>
+              {t('upload')}
+            </Link>
           </div>
-          <Link to="/upload" className="btn-primary py-2.5 px-4 sm:py-2 sm:px-6 text-[10px] sm:text-sm text-center w-full sm:w-auto">{t('upload')}</Link>
-        </div>
-      </header>
+        }
+      />
+
 
       {/* Tabs */}
       <div className="flex gap-4 sm:gap-6 mb-6 sm:mb-8 border-b border-border/50 overflow-x-auto custom-scrollbar">
@@ -377,13 +385,12 @@ export default function Library() {
           ) : filteredStandardMaterials.length > 0 ? (
             viewMode === 'grid' ? renderMaterialGrid(filteredStandardMaterials) : renderMaterialList(filteredStandardMaterials)
           ) : (
-            <div className="text-center py-24">
-              <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mx-auto mb-6 text-text-muted border border-border">
-                <Search size={32} />
-              </div>
-              <h2 className="text-xl font-bold mb-2 text-text-main">{t('no_materials_found')}</h2>
-              <p className="text-text-muted">{t('adjust_filter')}</p>
-            </div>
+            <EmptyState 
+              title={t('no_materials_found')}
+              message={t('adjust_filter')}
+              actionLabel="Reset Search"
+              onAction={() => setSearchQuery('')}
+            />
           )}
         </motion.div>
       )}
@@ -403,15 +410,13 @@ export default function Library() {
           ) : filteredUnifiedMaterials.length > 0 ? (
             viewMode === 'grid' ? renderMaterialGrid(filteredUnifiedMaterials) : renderMaterialList(filteredUnifiedMaterials)
           ) : (
-            <div className="glass-card p-12 flex flex-col items-center justify-center text-center border-dashed border-2 border-border/30">
-              <div className="w-16 h-16 bg-surface-alt rounded-full flex items-center justify-center text-text-muted mb-4 opacity-50">
-                <Layers size={32} />
-              </div>
-              <h2 className="text-xl font-bold mb-2 text-text-main">{t('no_unified_materials')}</h2>
-              <p className="text-text-muted max-w-md mx-auto">
-                {t('no_unified_materials_desc')}
-              </p>
-            </div>
+            <EmptyState 
+              title={t('no_unified_materials')}
+              message={t('no_unified_materials_desc')}
+              actionLabel="Select & Merge Materials"
+              onAction={() => setActiveTab('materials')}
+              icon={<Layers size={22} />}
+            />
           )}
         </motion.div>
       )}
@@ -462,19 +467,13 @@ export default function Library() {
               ))}
             </div>
           ) : (
-            <div className="glass-card p-12 flex flex-col items-center justify-center text-center border-dashed border-2 border-border/30">
-              <div className="w-16 h-16 bg-surface-alt rounded-full flex items-center justify-center text-text-muted mb-4 opacity-50">
-                <CalendarIcon size={32} />
-              </div>
-              <h2 className="text-xl font-bold mb-2 text-text-main">{t('no_saved_plans')}</h2>
-              <p className="text-text-muted">{t('no_saved_plans_desc')}</p>
-              <button 
-                onClick={() => setActiveTab('materials')} 
-                className="text-primary text-sm font-bold mt-4 hover:underline"
-              >
-                {t('browse_materials')}
-              </button>
-            </div>
+            <EmptyState 
+              title={t('no_saved_plans')}
+              message={t('no_saved_plans_desc')}
+              actionLabel={t('browse_materials')}
+              onAction={() => setActiveTab('materials')}
+              icon={<CalendarIcon size={22} />}
+            />
           )}
         </motion.div>
       )}

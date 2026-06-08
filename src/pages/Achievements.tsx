@@ -1,5 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+
 import { 
   Award, 
   Trophy, 
@@ -17,6 +19,9 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
+
 
 interface Achievement {
   id: string;
@@ -32,6 +37,7 @@ interface Achievement {
 
 export default function Achievements() {
   const { theme, achievements: realAchievements } = useAppContext();
+  const navigate = useNavigate();
   const isLight = theme === 'light';
 
   // Map icons from string to component
@@ -54,28 +60,23 @@ export default function Achievements() {
   const nextMilestone = achievements.find(a => !a.isUnlocked);
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500 pb-12">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold text-text-main tracking-tight">
-            Your <span className="text-primary">Achievements</span>
-          </h1>
-          <p className="text-text-muted text-sm md:text-base max-w-2xl leading-relaxed">
-            Track your progress, earn badges, and unlock rewards as you use the app.
-          </p>
-        </div>
-        
-        <div className="glass-card p-6 min-w-[240px] flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-            <Trophy size={24} />
+    <div className="space-y-6 animate-in fade-in duration-500 pb-12 select-none">
+      <PageHeader
+        title="Achievements"
+        subtitle="Track your progress, earn badges, and unlock rewards as you study."
+        action={
+          <div className="flex bg-surface border border-border/10 p-3 rounded-2xl items-center gap-3 shadow-soft">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Trophy size={18} />
+            </div>
+            <div>
+              <p className="text-sm font-black text-text-main leading-none">{unlockedCount}/{totalCount}</p>
+              <p className="text-[8px] text-text-muted font-black uppercase tracking-widest mt-1">Badges Unlocked</p>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-bold text-text-main">{unlockedCount}/{totalCount}</p>
-            <p className="text-xs text-text-muted font-bold uppercase tracking-wider">Badges Unlocked</p>
-          </div>
-        </div>
-      </div>
+        }
+      />
+
 
       {/* Overall Progress Bar */}
       <div className="glass-card p-8">
@@ -96,9 +97,14 @@ export default function Achievements() {
       {/* Achievements Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {achievements.length === 0 ? (
-          <div className="col-span-full py-20 text-center text-text-muted">
-            <Award size={48} className="mx-auto mb-4 opacity-20" />
-            <p>Start learning to unlock achievements!</p>
+          <div className="col-span-full">
+            <EmptyState 
+              title="No Badges Unlocked Yet"
+              message="Finish study blocks, quizzes, flashcards and read curriculum books to collect study points and unlock achievements!"
+              actionLabel="Start Focus Session"
+              onAction={() => navigate('/dashboard')}
+              icon={<Award size={24} />}
+            />
           </div>
         ) : (
           achievements.map((achievement, idx) => (

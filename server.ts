@@ -58,6 +58,7 @@ async function startServer() {
   app.use(helmet({
     contentSecurityPolicy: false, 
     crossOriginEmbedderPolicy: false,
+    frameguard: false, // Allow embedding in Google AI Studio preview frame
   }));
   app.use(mongoSanitize());
 

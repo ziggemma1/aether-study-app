@@ -6,6 +6,8 @@ import { cn } from '../lib/utils';
 import { StudyTimer } from '../components/StudyTimer';
 import { getSocket } from '../services/socket';
 import api from '../services/api';
+import { PageHeader } from '../components/ui/PageHeader';
+
 
 interface RoomParticipant {
   id: string;
@@ -360,27 +362,21 @@ export default function LiveRooms() {
   const activeRoom = rooms.find(r => r._id === activeRoomId);
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto pb-24 relative">
-      <header className="mb-10 flex flex-col sm:row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center border border-red-500/20 shadow-lg shadow-red-500/10">
-               <Radio size={24} className="animate-pulse" />
-            </div>
-            <h1 className="text-3xl font-extrabold text-text-main tracking-tight">Live Study Rooms</h1>
-          </div>
-          <p className="text-text-muted font-medium">Focus together, globally. 🌏</p>
-        </div>
-        
-        {!inRoom && (
-          <button 
-            onClick={() => setIsCreating(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all"
-          >
-            <Plus size={18} /> Create Room
-          </button>
-        )}
-      </header>
+    <div className="p-4 md:p-8 max-w-5xl mx-auto pb-24 relative select-none">
+      <PageHeader 
+        title="Live Rooms"
+        subtitle="Focus together with other global students, share pomodoro blocks and help peers."
+        action={
+          !inRoom ? (
+            <button 
+              onClick={() => setIsCreating(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg border border-primary/20 hover:scale-[1.02] transition-all btn-ripple"
+            >
+              <Plus size={14} /> Create Room
+            </button>
+          ) : undefined
+        }
+      />
 
       {!inRoom ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

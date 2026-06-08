@@ -1,12 +1,18 @@
 import React from 'react';
-import { Trophy, Clock, Search, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import api from '../services/api';
 
+// Reusable elegant UI components
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
+import { UserAvatar } from '../components/ui/UserAvatar';
+import { TruncatedText } from '../components/ui/TruncatedText';
+
 export default function Leaderboard() {
-  const { allProfiles, user, showToast, setUser } = useAppContext();
+  const { allProfiles, user, showToast, setUser, t } = useAppContext();
   const [optedIn, setOptedIn] = React.useState(user?.optedInLeaderboard || false);
 
   const toggleOptIn = async () => {
@@ -29,36 +35,34 @@ export default function Leaderboard() {
     : [];
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto pb-24">
-      <header className="mb-10 text-center flex flex-col items-center">
-        <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center text-yellow-500 mb-6 border border-yellow-500/20">
-          <Trophy size={36} />
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-text-main mb-2">Focus Leaderboards</h1>
-        <p className="text-text-muted mb-6 max-w-md">Weekly ranking based on Aether Points. Compete and climb the ranks!</p>
-        
-        <button 
-          onClick={toggleOptIn}
-          className={cn(
-            "px-6 py-2 rounded-full font-bold transition-all text-sm shadow-md",
-            optedIn 
-              ? "bg-surface border-border border text-text-muted hover:bg-surface-alt"
-              : "bg-primary text-white shadow-primary/20 hover:scale-105"
-          )}
-        >
-          {optedIn ? "Opt Out" : "Opt In to Weekly Rank"}
-        </button>
-      </header>
+    <div className="p-4 md:p-8 max-w-2xl mx-auto pb-24 select-none">
+      <PageHeader 
+        title="Leaderboard" 
+        subtitle="Weekly ranking based on active recall points. Compete and climb the ranks!"
+        action={
+          <button 
+            onClick={toggleOptIn}
+            className={cn(
+              "px-4 py-2 font-black uppercase text-[10px] tracking-widest rounded-xl transition-all btn-ripple shadow-soft border",
+              optedIn 
+                ? "bg-surface text-text-muted border-border/10 hover:bg-surface-alt"
+                : "bg-primary text-white border-primary/20 hover:scale-105"
+            )}
+          >
+            {optedIn ? "Opt Out" : "Opt In"}
+          </button>
+        }
+      />
 
       {optedIn ? (
-        <div className="space-y-4">
-          <div className="glass-card p-4 overflow-hidden relative">
-            <div className="flex items-center justify-between px-2 pb-4 border-b border-border text-xs font-bold text-text-muted uppercase tracking-widest">
+        <div className="space-y-4 mt-6">
+          <div className="bg-surface border border-border/10 p-4 rounded-3xl overflow-hidden relative">
+            <div className="flex items-center justify-between px-2 pb-3.5 border-b border-border/10 text-[9px] font-black text-text-muted uppercase tracking-widest">
                <span>Rank & Learner</span>
                <span>Aether Points</span>
             </div>
             
-            <div className="mt-4 space-y-2">
+            <div className="mt-3 space-y-2">
                {topLearners.map((learner, idx) => {
                  const isMe = (learner._id || learner.id) === user?.id;
                  const rank = idx + 1;
@@ -66,32 +70,43 @@ export default function Leaderboard() {
                  return (
                    <motion.div 
                      key={learner.id || idx}
-                     initial={{ opacity: 0, x: -20 }}
-                     animate={{ opacity: 1, x: 0 }}
+                     initial={{ opacity: 0, y: 10 }}
+                     animate={{ opacity: 1, y: 0 }}
                      transition={{ delay: idx * 0.05 }}
                      className={cn(
-                       "flex items-center justify-between p-3 sm:p-4 rounded-xl border transition-all",
-                       isMe ? "bg-primary/10 border-primary/30" : "bg-surface border-transparent"
+                       "flex items-center justify-between p-3 rounded-2xl border transition-all",
+                       isMe ? "bg-primary/10 border-primary/30" : "bg-surface-alt/20 border-transparent hover:border-border/5"
                      )}
                    >
-                      <div className="flex items-center gap-3 w-1/2 min-w-0">
+                      <div className="flex items-center gap-3 w-3/4 min-w-0">
                          <div className={cn(
-                           "w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0",
-                           rank === 1 ? "bg-yellow-500 text-white" : rank === 2 ? "bg-gray-300 text-slate-800" : rank === 3 ? "bg-amber-600 text-white" : "bg-surface-alt text-text-muted"
+                           "w-7 h-7 rounded-full flex items-center justify-center font-black text-xs shrink-0 select-none",
+                           rank === 1 ? "bg-amber-500 text-neutral-950 font-sans shadow-lg shadow-amber-500/20" : 
+                           rank === 2 ? "bg-slate-300 text-slate-800 font-sans" : 
+                           rank === 3 ? "bg-amber-700 text-white font-sans" : 
+                           "bg-surface-alt text-text-muted text-[10px]"
                          )}>
-                            {rank}
+                            {rank === 1 ? "👑" : rank}
                          </div>
-                         <div className="w-10 h-10 rounded-full border border-border/50 shrink-0 bg-primary/10 overflow-hidden avatar-hover-pulse cursor-pointer">
-                            {learner.avatar ? <img src={learner.avatar} className="w-full h-full object-cover" /> : null}
-                         </div>
+                         
+                         <UserAvatar 
+                           name={learner.name || 'User'} 
+                           avatarUrl={learner.avatar} 
+                           size="sm"
+                         />
+
                          <div className="min-w-0">
-                            <h4 className="font-bold text-text-main truncate">{isMe ? "You" : learner.name || 'User'}</h4>
-                            <p className="text-xs text-text-muted truncate">@{learner.handle || (learner.name?.toLowerCase().replace(/\s+/g,'_') + '123')}</p>
+                            <h4 className="font-bold text-text-main text-xs truncate">
+                              <TruncatedText text={isMe ? `${learner.name || 'Student'} (You)` : learner.name || 'User'} maxLength={18} />
+                            </h4>
+                            <p className="text-[10px] text-text-muted truncate">
+                              @{learner.handle || (learner.name?.toLowerCase().replace(/\s+/g,'_') + '123')}
+                            </p>
                          </div>
                       </div>
                       
-                      <div className="text-right">
-                         <div className="flex items-center gap-1.5 text-text-main font-bold">
+                      <div className="text-right shrink-0">
+                         <div className="flex items-center gap-1 text-text-main font-black text-xs">
                             <span className="text-primary tracking-tighter">⚡</span> {points.toLocaleString()}
                          </div>
                       </div>
@@ -102,9 +117,13 @@ export default function Leaderboard() {
           </div>
         </div>
       ) : (
-        <div className="glass-card p-12 text-center flex items-center justify-center border-dashed">
-          <p className="text-text-muted text-lg font-medium">You must opt in to view the leaderboard.</p>
-        </div>
+        <EmptyState 
+          title="Join the Leaderboard Arena" 
+          message="Opt in to calculate and project your daily active study recall scores and compete on WAEC/JAMB modules." 
+          actionLabel="Opt In Now"
+          onAction={toggleOptIn}
+          icon={<Trophy size={24} />}
+        />
       )}
     </div>
   );
