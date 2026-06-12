@@ -19,6 +19,8 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import MessagesList from '../components/MessagesList';
 import CalendarWidget from '../components/CalendarWidget';
+import StudyConstellation from '../components/StudyConstellation';
+import { useStudyActivity } from '../hooks/useStudyActivity';
 
 // Import our cohesive, polished shared components
 import { PageHeader } from '../components/ui/PageHeader';
@@ -36,6 +38,7 @@ export default function Dashboard() {
   const { user, stats, recentMaterials, loading, error, refetch } = useDashboardData();
   const navigate = useNavigate();
   const randomQuote = React.useMemo(() => getRandomQuote(), []);
+  const activities = useStudyActivity();
 
   // 1. Loading Skeleton Component
   if (loading) {
@@ -131,7 +134,11 @@ export default function Dashboard() {
   const formattedStreak = user?.streak || 0;
 
   return (
-    <div className="space-y-6 pb-24 max-w-lg mx-auto sm:max-w-none select-none">
+    <div className="relative min-h-screen">
+      {/* Background Study Constellation */}
+      <StudyConstellation userId={user?.id} activities={activities} />
+
+      <div className="relative z-10 space-y-6 pb-24 max-w-lg mx-auto sm:max-w-none select-none">
       {/* 1. Personalized Header */}
       <div className="flex items-center justify-between gap-4 p-4 bg-surface-alt/40 border border-border/10 rounded-2xl">
         <div className="flex items-center gap-3.5 min-w-0">
@@ -371,6 +378,7 @@ export default function Dashboard() {
             </Link>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );
