@@ -20,7 +20,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import MessagesList from '../components/MessagesList';
 import CalendarWidget from '../components/CalendarWidget';
 import StudyConstellation from '../components/StudyConstellation';
+import LearningNebula from '../components/LearningNebula';
 import { useStudyActivity } from '../hooks/useStudyActivity';
+import { useUserSubject } from '../hooks/useUserSubject';
 
 // Import our cohesive, polished shared components
 import { PageHeader } from '../components/ui/PageHeader';
@@ -39,6 +41,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const randomQuote = React.useMemo(() => getRandomQuote(), []);
   const activities = useStudyActivity();
+  const subject = useUserSubject(recentMaterials);
 
   // 1. Loading Skeleton Component
   if (loading) {
@@ -134,7 +137,10 @@ export default function Dashboard() {
   const formattedStreak = user?.streak || 0;
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen bg-transparent">
+      {/* Background Learning Nebula */}
+      <LearningNebula subject={subject} streak={formattedStreak} />
+
       {/* Background Study Constellation */}
       <StudyConstellation userId={user?.id} activities={activities} />
 
