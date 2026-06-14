@@ -40,44 +40,37 @@ export default function StudyConstellation({ userId, activities }: StudyConstell
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // High DPI canvas scaling setup
+    // Viewport-level sizing to prevent zero-height relative layout bugs
     const updateSize = () => {
-      const container = containerRef.current;
-      if (!container || !canvas) return;
-      const rect = container.getBoundingClientRect();
+      if (!canvas || !ctx) return;
+      const width = window.innerWidth;
+      const height = window.innerHeight;
       const dpr = window.devicePixelRatio || 1;
       
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
       
       ctx.scale(dpr, dpr);
     };
 
     updateSize();
 
-    // Setup ResizeObserver to prevent redraw flickers
-    const resizeObserver = new ResizeObserver(() => {
-      updateSize();
-    });
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
+    // Sizable orientation/window shift handles
+    window.addEventListener('resize', updateSize, { passive: true });
 
-    // Interactive mouse trackers
+    // Interactive mouse trackers anywhere on the viewport window
     const handleMouseMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseRef.current.x = e.clientX - rect.left;
-      mouseRef.current.y = e.clientY - rect.top;
+      mouseRef.current.x = e.clientX;
+      mouseRef.current.y = e.clientY;
       mouseRef.current.active = true;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches && e.touches.length > 0) {
-        const rect = canvas.getBoundingClientRect();
-        mouseRef.current.x = e.touches[0].clientX - rect.left;
-        mouseRef.current.y = e.touches[0].clientY - rect.top;
+        mouseRef.current.x = e.touches[0].clientX;
+        mouseRef.current.y = e.touches[0].clientY;
         mouseRef.current.active = true;
       }
     };
@@ -86,21 +79,18 @@ export default function StudyConstellation({ userId, activities }: StudyConstell
       mouseRef.current.active = false;
     };
 
-    const containerElement = containerRef.current;
-    if (containerElement) {
-      containerElement.addEventListener('mousemove', handleMouseMove);
-      containerElement.addEventListener('mouseleave', handleMouseLeave);
-      containerElement.addEventListener('touchmove', handleTouchMove);
-      containerElement.addEventListener('touchend', handleMouseLeave);
-    }
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('mouseleave', handleMouseLeave, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleMouseLeave, { passive: true });
 
     // Main Canvas animation render frame loop
     const render = () => {
       if (!canvas || !ctx) return;
-      const w = canvas.width / (window.devicePixelRatio || 1);
-      const h = canvas.height / (window.devicePixelRatio || 1);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
 
-      // Clear with elegant translucent black to enable dark depth trail blends
+      // Clear the canvas completely so layout colors can blend beneath
       ctx.clearRect(0, 0, w, h);
 
       const time = performance.now() * 0.001; // exact elapsed time in seconds
@@ -142,7 +132,7 @@ export default function StudyConstellation({ userId, activities }: StudyConstell
           );
           grad.addColorStop(0, 'rgba(0, 210, 255, 0)');
           grad.addColorStop(0.5, 'rgba(108, 92, 231, 0.4)');
-          grad.addColorStop(1, 'rgba(0, 210, 255, 0.95)');
+          grad.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
           ctx.strokeStyle = grad;
           ctx.lineWidth = 1.8;
           ctx.moveTo(s.x - s.dx * 2, s.y - s.dy * 2);
@@ -161,7 +151,7 @@ export default function StudyConstellation({ userId, activities }: StudyConstell
         // Twinkling logic using non-blocking math wave offsets
         const offset = index * 4.3;
         const twinkleFreq = star.glow ? 2.5 : 1.25;
-        const baseOpacity = 0.25;
+        const baseOpacity = 0.35;
         const deltaOpacity = star.glow ? 0.55 : 0.35;
         const opacity = baseOpacity + Math.sin(time * twinkleFreq + offset) * deltaOpacity;
 
@@ -182,7 +172,7 @@ export default function StudyConstellation({ userId, activities }: StudyConstell
           y,
           size: star.size * Math.max(0.8, Math.min(2.5, interactionFactor)),
           color: star.color,
-          opacity: Math.max(0.1, Math.min(1.0, opacity * (interactionFactor > 1.2 ? 1.4 : 1.0))),
+          opacity: Math.max(0.15, Math.min(1.0, opacity * (interactionFactor > 1.2 ? 1.4 : 1.0))),
           glow: star.glow || interactionFactor > 1.8,
         };
       });
@@ -196,15 +186,14 @@ export default function StudyConstellation({ userId, activities }: StudyConstell
         const from = starMap.get(conn.fromId);
         const to = starMap.get(conn.toId);
         if (from && to) {
-          // Connections fade out if they stretch too far on window expand
           const lx = from.x - to.x;
           const ly = from.y - to.y;
           const dist = Math.sqrt(lx * lx + ly * ly);
-          const drawDistLimit = 300;
+          const drawDistLimit = 350;
           
           if (dist < drawDistLimit) {
             const opacityMultiplier = 1.0 - (dist / drawDistLimit);
-            const lineOpacity = Math.min(from.opacity, to.opacity) * 0.3 * opacityMultiplier;
+            const lineOpacity = Math.min(from.opacity, to.opacity) * 0.35 * opacityMultiplier;
             
             ctx.beginPath();
             const grad = ctx.createLinearGradient(from.x, from.y, to.x, to.y);
@@ -218,22 +207,37 @@ export default function StudyConstellation({ userId, activities }: StudyConstell
         }
       });
 
-      // 3. Render Stars
+      // 3. Render Stars with dynamic dual-layered glows and crisp cores
       renderedStars.forEach((star) => {
+        ctx.save();
+        
+        // Soft glowing outer corona halo
         ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-        ctx.fillStyle = star.color;
+        ctx.arc(star.x, star.y, star.size * 2.8, 0, Math.PI * 2);
+        const hasGlow = star.glow;
+        const blurRadius = hasGlow ? 12 : 5;
+        
+        ctx.shadowBlur = blurRadius;
         ctx.shadowColor = star.color;
         
-        ctx.save();
-        if (star.glow) {
-          // Apply a glowing backdrop layer
-          ctx.shadowBlur = 8;
-          ctx.globalAlpha = star.opacity;
-        } else {
-          ctx.globalAlpha = star.opacity;
-        }
+        const haloGrad = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.size * 2.8);
+        haloGrad.addColorStop(0, star.color);
+        haloGrad.addColorStop(0.3, star.color);
+        haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        
+        ctx.fillStyle = haloGrad;
+        ctx.globalAlpha = star.opacity * 0.75;
         ctx.fill();
+        
+        // Bright crisp organic stellar core
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, Math.max(0.7, star.size * 0.4), 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = '#FFFFFF';
+        ctx.globalAlpha = star.opacity * 0.95;
+        ctx.fill();
+        
         ctx.restore();
       });
 
@@ -248,26 +252,23 @@ export default function StudyConstellation({ userId, activities }: StudyConstell
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      resizeObserver.disconnect();
-      if (containerElement) {
-        containerElement.removeEventListener('mousemove', handleMouseMove);
-        containerElement.removeEventListener('mouseleave', handleMouseLeave);
-        containerElement.removeEventListener('touchmove', handleTouchMove);
-        containerElement.removeEventListener('touchend', handleMouseLeave);
-      }
+      window.removeEventListener('resize', updateSize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleMouseLeave);
     };
   }, [stars, connections]);
 
   return (
     <div 
       ref={containerRef} 
-      className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden select-none z-0 opacity-25"
+      className="fixed inset-0 w-screen h-screen pointer-events-none overflow-hidden select-none z-0 opacity-45"
       id="study-constellation-container"
     >
       <canvas 
         ref={canvasRef} 
-        className="block w-full h-full pointer-events-auto"
-        style={{ cursor: 'crosshair' }}
+        className="block w-full h-full pointer-events-none"
       />
     </div>
   );
