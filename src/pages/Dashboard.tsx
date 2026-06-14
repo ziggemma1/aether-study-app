@@ -19,10 +19,9 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import MessagesList from '../components/MessagesList';
 import CalendarWidget from '../components/CalendarWidget';
-import StudyConstellation from '../components/StudyConstellation';
-import LearningNebula from '../components/LearningNebula';
+import BubbleField from '../components/BubbleField';
 import { useStudyActivity } from '../hooks/useStudyActivity';
-import { useUserSubject } from '../hooks/useUserSubject';
+import { useBubbleData } from '../hooks/useBubbleData';
 
 // Import our cohesive, polished shared components
 import { PageHeader } from '../components/ui/PageHeader';
@@ -41,7 +40,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const randomQuote = React.useMemo(() => getRandomQuote(), []);
   const activities = useStudyActivity();
-  const subject = useUserSubject(recentMaterials);
+  const { bubbles } = useBubbleData();
 
   // 1. Loading Skeleton Component
   if (loading) {
@@ -138,11 +137,8 @@ export default function Dashboard() {
 
   return (
     <div className="relative min-h-screen bg-transparent">
-      {/* Background Learning Nebula */}
-      <LearningNebula subject={subject} streak={formattedStreak} />
-
-      {/* Background Study Constellation */}
-      <StudyConstellation userId={user?.id} activities={activities} />
+      {/* Personalized Subject Bubbles Background */}
+      <BubbleField bubbles={bubbles} />
 
       <div className="relative z-10 space-y-6 pb-24 max-w-lg mx-auto sm:max-w-none select-none">
       {/* 1. Personalized Header */}
