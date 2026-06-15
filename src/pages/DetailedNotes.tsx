@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, Sparkles, Download, Share2, FileText, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, AlertCircle, RefreshCw, Brain, GraduationCap } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import MathMarkdown from '../components/MathMarkdown';
 import { StudyTimer } from '../components/StudyTimer';
 import { TutorChat } from '../components/TutorChat';
 import api from '../services/api';
@@ -389,11 +389,11 @@ export default function DetailedNotes() {
                     )}
 
                     <div className="markdown-body text-text-main text-sm selection:bg-amber-500/30 leading-relaxed">
-                      <ReactMarkdown>
+                      <MathMarkdown>
                         {isELI5 && eli5Content[currentPage] 
                           ? eli5Content[currentPage] 
                           : sections[currentPage].content}
-                      </ReactMarkdown>
+                      </MathMarkdown>
                     </div>
 
                     {/* Interactive Mobile Controls Inside Card */}
@@ -472,11 +472,11 @@ export default function DetailedNotes() {
                     )}
 
                     <div className="markdown-body text-text-main text-sm selection:bg-sky-500/30 leading-relaxed">
-                      <ReactMarkdown>
+                      <MathMarkdown>
                         {isELI5 && eli5Content[currentPage] 
                           ? eli5Content[currentPage] 
                           : sections[currentPage].content}
-                      </ReactMarkdown>
+                      </MathMarkdown>
                     </div>
 
                     {/* Interactive Mobile Controls Inside Card */}
@@ -519,7 +519,7 @@ export default function DetailedNotes() {
                   <span className="text-[10px] font-bold uppercase tracking-[0.3em]">{t('core_concept_review')}</span>
                 </div>
                 <div className="markdown-body text-text-main leading-relaxed prose prose-invert max-w-none">
-                  <ReactMarkdown>{material.detailedNotes}</ReactMarkdown>
+                  <MathMarkdown>{material.detailedNotes}</MathMarkdown>
                 </div>
                 
                 <div className="mt-12 p-6 bg-primary/5 rounded-3xl border border-primary/10 text-center">

@@ -22,7 +22,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import { format, addDays, startOfToday } from 'date-fns';
-import ReactMarkdown from 'react-markdown';
+import MathMarkdown from '../components/MathMarkdown';
 import { generateStudyPlan } from '../services/geminiService';
 
 import { PlanSession, SavedPlan } from '../types';
@@ -653,7 +653,7 @@ export default function ReadingPlanGenerator() {
                               <div>
                                 <h4 className="text-sm font-bold text-secondary mb-3 uppercase tracking-wide">Detailed Notes & Tasks</h4>
                                 <div className="glass-card p-6 prose prose-sm max-w-none prose-p:text-text-muted prose-headings:text-text-main prose-strong:text-text-main prose-ul:text-text-muted prose-li:marker:text-primary">
-                                  <ReactMarkdown>{session.detailedNotes || ''}</ReactMarkdown>
+                                  <MathMarkdown>{session.detailedNotes || ''}</MathMarkdown>
                                 </div>
                               </div>
                             </div>

@@ -2,7 +2,7 @@ import React from 'react';
 import { StructuredStudyNote } from '../types';
 import { motion } from 'framer-motion';
 import { Lightbulb, Info, HelpCircle, CheckCircle2, List, Table as TableIcon, Target, BrainCircuit, Type } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import MathMarkdown from './MathMarkdown';
 import { cn } from '../lib/utils';
 
 interface Props {
@@ -100,7 +100,7 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
                 >
                   <h3 className="text-primary font-black text-xl mb-3 group-hover:text-[#00D2FF] transition-colors">{term.term}</h3>
                   <div className="markdown-body text-sm leading-relaxed">
-                    <ReactMarkdown>{term.definition}</ReactMarkdown>
+                    <MathMarkdown>{term.definition}</MathMarkdown>
                   </div>
                   {term.memoryTip && (
                     <div className="memory-tip mt-5 flex gap-3 items-start bg-[#00D2FF]/10 rounded-xl p-4">
@@ -132,9 +132,9 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
                 <div key={j} className="relative">
                   {sub.subheading && <h3 className="note-h3 text-[#00D2FF] font-black tracking-tight mb-6">{sub.subheading}</h3>}
                   <div className="markdown-body text-base leading-loose p-0 sm:pr-8">
-                    <ReactMarkdown>
+                    <MathMarkdown>
                       {prepareMarkdown(sub.content, sub.keywords || [])}
-                    </ReactMarkdown>
+                    </MathMarkdown>
                   </div>
                   
                   {(sub.memoryTip || sub.quickCheck) && (

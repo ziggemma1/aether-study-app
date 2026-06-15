@@ -14,7 +14,7 @@ import {
   Layers,
   ArrowRight
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import MathMarkdown from '../components/MathMarkdown';
 import { useAppContext } from '../context/AppContext';
 import api from '../services/api';
 import { cn } from '../lib/utils';
@@ -172,7 +172,7 @@ export default function SharedMaterialView() {
               </div>
               
               <div className="prose prose-slate max-w-none prose-p:text-slate-600 prose-p:leading-relaxed prose-headings:text-slate-900 prose-headings:font-bold">
-                <ReactMarkdown>{material.summary || "No summary available."}</ReactMarkdown>
+                <MathMarkdown>{material.summary || "No summary available."}</MathMarkdown>
               </div>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function SharedMaterialView() {
 
                   <div className="relative">
                     <div className="prose prose-slate max-w-none pt-2 opacity-60 pointer-events-none select-none">
-                       <ReactMarkdown>{material.detailedNotes || "No detailed notes available."}</ReactMarkdown>
+                       <MathMarkdown>{material.detailedNotes || "No detailed notes available."}</MathMarkdown>
                     </div>
                     
                     {/* Locked Paywall-style Overlay */}

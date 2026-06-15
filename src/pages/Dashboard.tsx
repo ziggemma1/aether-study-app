@@ -21,6 +21,7 @@ import MessagesList from '../components/MessagesList';
 import CalendarWidget from '../components/CalendarWidget';
 import StudyConstellation from '../components/StudyConstellation';
 import LearningNebula from '../components/LearningNebula';
+import StreakFlameIndicator from '../components/StreakFlameIndicator';
 import { useStudyActivity } from '../hooks/useStudyActivity';
 import { useUserSubject } from '../hooks/useUserSubject';
 
@@ -42,6 +43,31 @@ export default function Dashboard() {
   const randomQuote = React.useMemo(() => getRandomQuote(), []);
   const activities = useStudyActivity();
   const subject = useUserSubject(recentMaterials);
+  
+  const studiedToday = React.useMemo(() => {
+    // 1. Check if we have weekly minutes recorded today
+    const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const todayDayName = weekDays[new Date().getDay()];
+    const todayStats = stats?.weeklyData?.find((d: any) => d.day === todayDayName);
+    if (todayStats && todayStats.minutes > 0) {
+      return true;
+    }
+
+    // 2. Check studySessions
+    if (Array.isArray(studySessions) && studySessions.length > 0) {
+      const todayStr = new Date().toDateString();
+      return studySessions.some((session: any) => {
+        if (!session || !session.startTime) return false;
+        try {
+          return new Date(session.startTime).toDateString() === todayStr;
+        } catch {
+          return false;
+        }
+      });
+    }
+
+    return false;
+  }, [stats, studySessions]);
 
   // 1. Loading Skeleton Component
   if (loading) {
@@ -204,29 +230,12 @@ export default function Dashboard() {
           onClick={() => navigate('/reports')}
         />
         
-        {/* Real Dynamic Streak with Action Prompt if Zero */}
-        {formattedStreak > 0 ? (
-          <MetricCard 
-            label="Recall Streak" 
-            value={`${formattedStreak} Days`}
-            trend={{ value: 100, direction: 'up' }}
-            icon={<span className="text-sm">🔥</span>}
-            tooltip="Consecutive days studied active recall sessions."
-            onClick={() => navigate('/reports')}
-          />
-        ) : (
-          <div 
-            onClick={() => navigate('/rooms')}
-            className="flex flex-col bg-[#F59E0B]/5 hover:bg-[#F59E0B]/10 border border-[#F59E0B]/20 rounded-2xl p-3.5 transition-all cursor-pointer relative overflow-hidden group select-none shadow-soft"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[9px] font-black uppercase text-[#F59E0B] tracking-widest truncate">Recall Streak</span>
-              <span className="text-sm">⚡</span>
-            </div>
-            <div className="text-sm font-black text-[#F59E0B] mt-1 pr-6 leading-tight">Start First Session</div>
-            <p className="text-[8px] text-[#F59E0B]/70 mt-0.5">Focus now to build streak →</p>
-          </div>
-        )}
+        <StreakFlameIndicator 
+          days={formattedStreak} 
+          studiedToday={studiedToday} 
+          onClick={() => navigate('/reports')}
+          onActionClick={() => navigate('/rooms')}
+        />
 
         <MetricCard 
           label="Rivals Rank" 
