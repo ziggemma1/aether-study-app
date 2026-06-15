@@ -34,7 +34,6 @@ import Shop from './pages/Shop';
 import Leaderboard from './pages/Leaderboard';
 import LiveRooms from './pages/LiveRooms';
 import Explore from './pages/Explore';
-import TestMath from './pages/TestMath';
 
 import { startKeepAlive } from './lib/keep-alive';
 import SharedMaterialView from './pages/SharedMaterialView';
@@ -123,7 +122,6 @@ export default function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/subscription" element={<SubscriptionManagement />} />
-              <Route path="/test-math" element={<TestMath />} />
             </Route>
           </Route>
 

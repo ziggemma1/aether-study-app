@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion } from 'framer-motion';
 import { BookOpen, FileText, Calendar, Sparkles, GraduationCap, ArrowLeft, Download, Share2, Volume2, Loader2, Lightbulb, Settings, Zap, RefreshCw } from 'lucide-react';
-import MathMarkdown from '../components/MathMarkdown';
+import ReactMarkdown from 'react-markdown';
 import { generateSpeech, playAudio } from '../services/ttsService';
 import { StudyTimer } from '../components/StudyTimer';
 import { GenerationSettingsModal } from '../components/GenerationSettingsModal';
@@ -230,7 +230,7 @@ export default function MaterialDetail() {
               !material.summary && "italic text-text-muted"
             )}>
               {material.summary ? (
-                <MathMarkdown>{material.summary}</MathMarkdown>
+                <ReactMarkdown>{material.summary}</ReactMarkdown>
               ) : (
                 "No summary available. Try regenerating the analysis."
               )}

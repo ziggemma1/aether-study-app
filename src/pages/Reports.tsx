@@ -1,333 +1,379 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
 import { 
-  Clock, 
-  Target, 
-  Award, 
-  Flame, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area,
+  BarChart,
+  Bar,
+  Cell,
+  PieChart,
+  Pie,
+  Legend
+} from 'recharts';
+import { 
   TrendingUp, 
-  Download, 
-  Users, 
-  Sparkles,
-  ArrowRight,
-  ChevronRight,
-  ShieldCheck,
-  RefreshCw,
-  HelpCircle,
-  TrendingDown
+  Clock, 
+  Award, 
+  Target, 
+  ArrowUpRight, 
+  ArrowDownRight,
+  Calendar,
+  Filter,
+  Download
 } from 'lucide-react';
-import { useReports } from '../hooks/useReports';
+import { cn } from '../lib/utils';
+
+// Mock data for growth over time
+const growthData = [
+  { month: 'Jan', score: 65, avg: 60 },
+  { month: 'Feb', score: 68, avg: 62 },
+  { month: 'Mar', score: 75, avg: 65 },
+  { month: 'Apr', score: 72, avg: 64 },
+  { month: 'May', score: 85, avg: 68 },
+  { month: 'Jun', score: 82, avg: 70 },
+  { month: 'Jul', score: 94, avg: 72 },
+];
+
+// Mock data for scores vs losses (Correct vs Incorrect answers)
+const performanceData = [
+  { name: 'Correct', value: 840, color: '#10B981', lightColor: '#059669' },
+  { name: 'Incorrect', value: 160, color: '#EF4444', lightColor: '#DC2626' },
+];
+
+
 import { useAppContext } from '../context/AppContext';
-import DateRangeFilter from '../components/DateRangeFilter';
-import GrowthChart from '../components/GrowthChart';
-import SubjectProficiency from '../components/SubjectProficiency';
 
 export default function Reports() {
-  const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
-  const { summary, trends, subjects, leaderboard, loading, error } = useReports(period);
-  const { theme, t } = useAppContext();
-  const [showExportModal, setShowExportModal] = useState(false);
+  const { theme, quizResults, user, studySessions, materials, allProfiles, t } = useAppContext();
+  const isLight = theme === 'light';
 
-  // Helper formatting for minutes
-  const formatTimeMinutes = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins > 0 ? `${mins}m` : ''}`;
-    }
-    return `${mins}m`;
-  };
+  // Safe arrays
+  const safeMaterials = Array.isArray(materials) ? materials : [];
+  const safeQuizResults = Array.isArray(quizResults) ? quizResults : [];
+  const safeStudySessions = Array.isArray(studySessions) ? studySessions : [];
+  const safeAllProfiles = Array.isArray(allProfiles) ? allProfiles : [];
 
-  // Safe variables with fallbacks
-  const totalTimeStr = summary?.totalStudyTimeMinutes !== undefined ? formatTimeMinutes(summary.totalStudyTimeMinutes) : '0m';
-  const averageAccuracy = summary?.averageQuizScore !== undefined ? summary.averageQuizScore : 0;
-  const rankStr = summary?.globalRank !== undefined ? `#${summary.globalRank.toLocaleString()}` : '#12';
-  const totalLearners = summary?.totalLearners !== undefined ? summary.totalLearners : 120;
-  const activeStreak = summary?.studyStreak !== undefined ? summary.studyStreak : 0;
-  const timeChangePercent = summary?.weeklyChange?.studyTime !== undefined ? summary.weeklyChange.studyTime : 12;
-  const accuracyChangePercent = summary?.weeklyChange?.quizScore !== undefined ? summary.weeklyChange.quizScore : 4.2;
+  // Subject breakdown (derived from materials and quiz results)
+  const subjectData = safeMaterials.map(m => {
+    const materialQuizzes = safeQuizResults.filter(r => r.quizId === m.id);
+    const avgScore = materialQuizzes.length > 0
+      ? Math.round(materialQuizzes.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions), 0) / materialQuizzes.length * 100)
+      : 0;
+    return {
+      subject: m.title,
+      score: avgScore,
+      fullMark: 100
+    };
+  }).slice(0, 5);
 
-  // Render Skeleton loader for high UX standards
-  if (loading && !summary) {
-    return (
-      <div className="space-y-6 pb-12 animate-pulse" id="reports-skeleton-page">
-        <div className="flex flex-col gap-2">
-          <div className="h-6 w-32 bg-surface rounded-lg" />
-          <div className="h-4 w-52 bg-surface rounded-lg" />
-        </div>
+  const timeTrend = user?.timeTrend || 12;
+  const quizTrend = user?.quizTrend || 4.2;
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="h-28 bg-surface rounded-2xl" />
-          <div className="h-28 bg-surface rounded-2xl" />
-          <div className="h-28 bg-surface rounded-2xl" />
-          <div className="h-28 bg-surface rounded-2xl" />
-        </div>
+  // Calculate real stats
+  const calculatedStudyMins = safeStudySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
+  const fallbackMins = (user?.totalStudyTime || 0);
+  const totalStudyMinutes = calculatedStudyMins > 0 ? calculatedStudyMins : fallbackMins; 
+  
+  const displayHours = Math.floor(totalStudyMinutes / 60);
+  const displayMinutes = totalStudyMinutes % 60;
+  const formattedTimeSpent = displayHours > 0 
+    ? `${displayHours}h ${displayMinutes > 0 ? `${displayMinutes}m` : ''}` 
+    : `${displayMinutes}m`;
 
-        <div className="h-40 bg-surface rounded-2xl" />
-        <div className="h-56 bg-surface rounded-2xl" />
-      </div>
-    );
-  }
+  // Calculate Average Percentage Score instead of raw points
+  const avgScorePercentage = safeQuizResults.length > 0 
+    ? Math.round(
+        safeQuizResults.reduce((acc, curr) => {
+          const p = curr.totalQuestions > 0 ? (curr.score / curr.totalQuestions) * 100 : 0;
+          return acc + p;
+        }, 0) / safeQuizResults.length
+      ) 
+    : 0;
+
+  const totalPoints = safeQuizResults.reduce((acc, curr) => acc + (curr.score * 10), 0);
+
+  const filteredProfiles = safeAllProfiles.filter(p => p.optedInLeaderboard || (user && (p.id === user.id || (p as any)._id === user.id)));
+  const myRankIndex = filteredProfiles.findIndex(p => p.id === user?.id || (p as any)._id === user?.id);
+  const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
+  
+  // Accuracy breakdown
+  const totalCorrect = safeQuizResults.reduce((acc, curr) => acc + curr.score, 0);
+  const totalQuestions = safeQuizResults.reduce((acc, curr) => acc + curr.totalQuestions, 0);
+  const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+
+  const performanceData = [
+    { name: 'Correct', value: totalCorrect, color: '#10B981', lightColor: '#059669' },
+    { name: 'Incorrect', value: totalQuestions - totalCorrect > 0 ? totalQuestions - totalCorrect : 0, color: '#EF4444', lightColor: '#DC2626' },
+  ];
+
+  // Growth data (last 7 quizzes) using percentage
+  const growthData = safeQuizResults.slice(0, 7).reverse().map(r => ({
+    month: new Date(r.date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+    score: r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0,
+    avg: 75 // Platform average mock
+  }));
 
   return (
-    <div className="space-y-6 pb-16 animate-in fade-in duration-300 select-none" id="reports-page-wrapper">
-      
-      {/* Tiny Header Badge \& Controls */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <span className="text-[9px] font-black tracking-widest text-primary uppercase bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full">
-            Recall Diagnostics
-          </span>
-          <h1 className="text-xl font-black text-text-main mt-1 tracking-tight">Performance Reports</h1>
+          <h1 className="text-3xl font-bold text-text-main tracking-tight mb-2">{t('performance_reports')}</h1>
+          <p className="text-text-muted text-sm">{t('reports_desc')}</p>
         </div>
-        
-        {/* Compact Export triggering */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowExportModal(true)}
-          className="w-10 h-10 bg-surface border border-border/10 hover:border-primary/20 rounded-xl flex items-center justify-center text-text-muted hover:text-primary transition-all cursor-pointer"
-          aria-label="Export dataset"
-        >
-          <Download size={16} />
-        </motion.button>
-      </div>
-
-      {/* Touch-Friendly Period Filter */}
-      <DateRangeFilter value={period} onChange={setPeriod} />
-
-      {/* 2x2 Grid of Vital Metric Cards optimised for mobile viewports */}
-      <div className="grid grid-cols-2 gap-3" id="metric-grid-reports">
-        
-        {/* STUDY MINUTES CARD */}
-        <motion.div 
-          whileTap={{ scale: 0.98 }}
-          className="bg-surface border border-border/10 rounded-2xl p-4 flex flex-col justify-between min-h-[110px] relative overflow-hidden"
-          id="report-stat-time"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-black text-text-muted uppercase tracking-wider">Study Time</span>
-            <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/15 flex items-center justify-center text-blue-400">
-              <Clock size={11} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <h2 className="text-lg font-black text-text-main leading-none">{totalTimeStr}</h2>
-            <div className="flex items-center gap-1 mt-1">
-              <TrendingUp size={10} className="text-[#00E5A0]" />
-              <span className="text-[8px] font-black text-[#00E5A0] uppercase tracking-wider">
-                +{timeChangePercent}% this {period}
-              </span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ACCURACY/QUIZ AVERAGE CARD */}
-        <motion.div 
-          whileTap={{ scale: 0.98 }}
-          className="bg-surface border border-border/10 rounded-2xl p-4 flex flex-col justify-between min-h-[110px] relative overflow-hidden"
-          id="report-stat-accuracy"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-black text-text-muted uppercase tracking-wider">Quiz Score</span>
-            <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center text-primary">
-              <Target size={11} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <h2 className="text-lg font-black text-text-main leading-none">{averageAccuracy}%</h2>
-            <div className="flex items-center gap-1 mt-1">
-              <TrendingUp size={10} className="text-[#00E5A0]" />
-              <span className="text-[8px] font-black text-[#00E5A0] uppercase tracking-wider">
-                +{accuracyChangePercent}% avg
-              </span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* GLOBAL LEADERBOARD RANK CARD */}
-        <motion.div 
-          whileTap={{ scale: 0.98 }}
-          className="bg-surface border border-border/10 rounded-2xl p-4 flex flex-col justify-between min-h-[110px] relative overflow-hidden"
-          id="report-stat-rank"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-black text-text-muted uppercase tracking-wider">Global Rank</span>
-            <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/15 flex items-center justify-center text-amber-500">
-              <Award size={11} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <h3 className="text-lg font-black text-text-main leading-none">{rankStr}</h3>
-            <span className="text-[8px] font-bold text-text-muted mt-1 uppercase tracking-wider block">
-              Out of {totalLearners} learners
-            </span>
-          </div>
-        </motion.div>
-
-        {/* CURRENT RETRIEVAL STREAK */}
-        <motion.div 
-          whileTap={{ scale: 0.98 }}
-          className="bg-surface border border-border/10 rounded-2xl p-4 flex flex-col justify-between min-h-[110px] relative overflow-hidden"
-          id="report-stat-streak"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-black text-text-muted uppercase tracking-wider">Recall Streak</span>
-            <div className="w-6 h-6 rounded-lg bg-orange-500/10 border border-orange-500/15 flex items-center justify-center text-orange-400">
-              <Flame size={12} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <h3 className="text-lg font-black text-text-main leading-none">
-              {activeStreak > 0 ? `${activeStreak} Days` : 'Unkindled'}
-            </h3>
-            <span className="text-[8px] font-bold text-orange-400 mt-1 uppercase tracking-wider block">
-              {activeStreak > 0 ? 'Blazing active' : 'Start recall session'}
-            </span>
-          </div>
-        </motion.div>
-
-      </div>
-
-      {/* Primary Analytics Chart Block */}
-      <div className="bg-surface border border-border/10 rounded-2xl p-4">
-        {trends ? (
-          <GrowthChart 
-            labels={trends.labels} 
-            scores={trends.scores} 
-            studyMinutes={trends.studyMinutes} 
-            period={period}
-          />
-        ) : (
-          <div className="h-[220px] flex items-center justify-center">
-            <RefreshCw className="animate-spin text-primary" size={24} />
-          </div>
-        )}
-      </div>
-
-      {/* Subject Domain Mastery Tracking */}
-      <SubjectProficiency subjects={subjects} />
-
-      {/* Mobile touch-focused mini leaderboard block */}
-      <div className="bg-surface border border-border/10 rounded-2xl p-5 space-y-4" id="mini-leaderboard">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">AETHER CHAMPIONS</span>
-            <h2 className="text-sm font-black text-main uppercase tracking-tight mt-0.5">Top Active Learners</h2>
-          </div>
-          <div className="flex items-center gap-1 bg-surface-alt/80 border border-border/5 px-2 py-0.5 rounded-lg text-[9px] font-black text-text-muted uppercase">
-            <Users size={10} className="text-primary" />
-            Live
-          </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-surface-alt/50 hover:bg-surface-alt text-text-main text-xs font-bold rounded-xl border border-border transition-all">
+            <Calendar size={16} />
+            6 {t('months')}
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 transition-all">
+            <Download size={16} />
+            {t('export')}
+          </button>
         </div>
+      </div>
 
-        {/* Leaderboard records column */}
-        <div className="space-y-2">
-          {leaderboard?.leaderboard?.map((player: any) => {
-            const isMe = leaderboard.currentUser && player.name === leaderboard.currentUser.name;
-            let rankColor = "text-text-muted";
-            let rankBg = "bg-surface-alt border-border/5";
-            
-            if (player.rank === 1) {
-              rankColor = "text-amber-500";
-              rankBg = "bg-amber-500/10 border-amber-500/20";
-            } else if (player.rank === 2) {
-              rankColor = "text-slate-300";
-              rankBg = "bg-slate-300/10 border-slate-300/20";
-            } else if (player.rank === 3) {
-              rankColor = "text-orange-400";
-              rankBg = "bg-orange-400/10 border-orange-400/20";
-            }
+      {/* Summary Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard 
+          icon={Clock} 
+          label={t('time_on_platform')} 
+          value={formattedTimeSpent} 
+          trend={`${timeTrend > 0 ? '+' : ''}${timeTrend}% ${t('from_last_week')}`} 
+          trendUp={timeTrend >= 0}
+          color={isLight ? "text-blue-600" : "text-blue-400"}
+          bg={isLight ? "bg-blue-100" : "bg-blue-400/10"}
+        />
+        <StatCard 
+          icon={TrendingUp} 
+          label={t('overall_growth')} 
+          value={`${accuracy}%`} 
+          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% ${t('this_week')}`} 
+          trendUp={quizTrend >= 0}
+          color={isLight ? "text-emerald-600" : "text-emerald-400"}
+          bg={isLight ? "bg-emerald-100" : "bg-emerald-400/10"}
+        />
+        <StatCard 
+          icon={Target} 
+          label={t('avg_quiz_score')} 
+          value={`${avgScorePercentage}%`} 
+          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% ${t('from_last_quiz')}`} 
+          trendUp={quizTrend >= 0}
+          color={isLight ? "text-orange-600" : "text-orange-400"}
+          bg={isLight ? "bg-orange-100" : "bg-orange-400/10"}
+        />
+        <StatCard 
+          icon={Award} 
+          label={t('global_rank')} 
+          value={`#${globalRank.toLocaleString()}`} 
+          trend={t('top_5_percent')} 
+          trendUp={true}
+          color={isLight ? "text-purple-600" : "text-purple-400"}
+          bg={isLight ? "bg-purple-100" : "bg-purple-400/10"}
+        />
+      </div>
 
-            return (
-              <div 
-                key={player.rank}
-                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                  isMe ? 'bg-primary/5 border-primary/20 shadow-[0_0_12px_rgba(108,92,231,0.04)]' : 'bg-surface border-border/5'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border ${rankBg} ${rankColor}`}>
-                    {player.rank}
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-text-main flex items-center gap-1.5">
-                      {player.name}
-                      {isMe && (
-                        <span className="text-[7px] font-black bg-primary text-white border-none px-1 py-0.2 rounded uppercase">
-                          YOU
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-                <span className="text-xs font-black text-primary">{player.points} <span className="text-[8px] text-text-muted/60">pts</span></span>
+      {/* Main Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Growth Over Time Chart */}
+        <div className="lg:col-span-8 glass-card p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-xl font-bold text-text-main">{t('growth_over_time')}</h2>
+              <p className="text-xs text-text-muted mt-1">{t('growth_over_time_desc') || 'Your score progression vs platform average'}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-primary" />
+                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Your Score</span>
               </div>
-            );
-          })}
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-slate-600" />
+                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Avg. Student</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="h-[350px] w-full">
+            {growthData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <AreaChart data={growthData}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#E2E8F0" : "#1E293B"} vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke={isLight ? "#64748B" : "#94A3B8"} 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    dy={10}
+                  />
+                  <YAxis 
+                    stroke={isLight ? "#64748B" : "#94A3B8"} 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickFormatter={(value) => `${value}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: isLight ? '#FFFFFF' : '#0F172A', 
+                      borderColor: isLight ? '#E2E8F0' : '#1E293B', 
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      color: isLight ? '#0F172A' : '#fff'
+                    }}
+                    itemStyle={{ color: isLight ? '#0F172A' : '#fff' }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="#8B5CF6" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorScore)" 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="avg" 
+                    stroke={isLight ? "#94A3B8" : "#475569"} 
+                    strokeWidth={2} 
+                    strokeDasharray="5 5"
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-text-muted">
+                <TrendingUp size={48} className="mb-4 opacity-20" />
+                <p>Complete more quizzes to see your growth chart.</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Current user's relative layout footer */}
-        {leaderboard?.currentUser && (
-          <div className="p-3 bg-surface-alt/70 border border-border/5 rounded-xl flex items-center justify-between text-xs mt-3">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-md bg-primary/10 border border-primary/15 flex items-center justify-center text-primary font-black text-[10px]">
-                {leaderboard.currentUser.rank}
-              </div>
-              <span className="font-bold text-text-muted">Your active learning ranking</span>
-            </div>
-            <span className="font-black text-text-main">{leaderboard.currentUser.points} pts</span>
+        {/* Wins vs Losses Chart */}
+        <div className="lg:col-span-4 glass-card p-8 flex flex-col">
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-text-main">{t('accuracy_breakdown')}</h2>
+            <p className="text-xs text-text-muted mt-1">{t('accuracy_breakdown_desc') || 'Correct vs Incorrect answers'}</p>
           </div>
-        )}
-      </div>
-
-      {/* Safe and beautifully descriptive modal overlay */}
-      <AnimatePresence>
-        {showExportModal && (
-          <div className="fixed inset-0 z-50 bg-[#0B0E14]/70 backdrop-blur-sm flex items-end justify-center">
-            <motion.div 
-              initial={{ y: 200, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 200, opacity: 0 }}
-              className="w-full bg-[#141A24] rounded-t-3xl border-t border-border/20 p-6 space-y-6 max-w-md"
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                <h3 className="text-base font-black text-text-main">Export Diagnostics</h3>
-                <button 
-                  onClick={() => setShowExportModal(false)}
-                  className="text-text-muted text-xs font-black uppercase hover:text-text-main px-2 py-1"
+          
+          <div className="flex-grow flex items-center justify-center relative">
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-3xl font-bold text-text-main">{accuracy}%</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-widest">Accuracy</span>
+            </div>
+            <ResponsiveContainer width="100%" height={250} minWidth={0}>
+              <PieChart>
+                <Pie
+                  data={performanceData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={70}
+                  outerRadius={90}
+                  paddingAngle={8}
+                  dataKey="value"
                 >
-                  Close
-                </button>
-              </div>
-              
-              <p className="text-xs text-text-muted leading-relaxed">
-                You can download your study logs and active-recall milestones. This includes your daily scores, subject proficiency progress, and streak histories.
-              </p>
-
-              <div className="space-y-2">
-                <button 
-                  onClick={() => {
-                    // Triggers static mock CSV generation download safely
-                    const csvContent = "data:text/csv;charset=utf-8,Period,StudyTimeMin,AverageScore\n" + `${period},${summary?.totalStudyTimeMinutes || 0},${averageAccuracy}\n`;
-                    const encodedUri = encodeURI(csvContent);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", `aether_study_${period}_report.csv`);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    setShowExportModal(false);
+                  {performanceData.map((entry: any, index) => (
+                    <Cell key={`cell-${index}`} fill={isLight ? entry.lightColor : entry.color} stroke="none" />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: isLight ? '#FFFFFF' : '#0F172A', 
+                    borderColor: isLight ? '#E2E8F0' : '#1E293B', 
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    color: isLight ? '#0F172A' : '#fff'
                   }}
-                  className="w-full py-3.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Download size={14} /> Download CSV Summary
-                </button>
-              </div>
-            </motion.div>
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-        )}
-      </AnimatePresence>
 
+          <div className="space-y-4 mt-6">
+            {performanceData.map((item) => (
+              <div key={item.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="text-sm font-medium text-text-muted">{item.name}</span>
+                </div>
+                <span className="text-sm font-bold text-text-main">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Subject Breakdown Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-12 glass-card p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-xl font-bold text-text-main">{t('subject_proficiency')}</h2>
+              <p className="text-xs text-text-muted mt-1">{t('subject_proficiency_desc') || 'Detailed performance across all enrolled subjects'}</p>
+            </div>
+            <button className="p-2.5 bg-surface/50 text-text-muted hover:text-text-main rounded-xl border border-border transition-all">
+              <Filter size={18} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+            {subjectData.map((subject) => (
+              <div key={subject.subject} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-text-main">{subject.subject}</span>
+                  <span className="text-sm font-bold text-primary">{subject.score}%</span>
+                </div>
+                <div className="h-2 w-full bg-surface border border-border rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-primary to-violet-400 rounded-full transition-all duration-1000"
+                    style={{ width: `${subject.score}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                  <span>Progress</span>
+                  <span>Excellent</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon: Icon, label, value, trend, trendUp, color, bg }: any) {
+  return (
+    <div className="glass-card p-6 group hover:border-primary/30 transition-all">
+      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110", bg, color)}>
+        <Icon size={24} />
+      </div>
+      <p className="text-xs font-bold text-text-muted uppercase tracking-widest mb-1">{label}</p>
+      <h3 className="text-2xl font-bold text-text-main mb-2 tracking-tight">{value}</h3>
+      <div className="flex items-center gap-1.5">
+        {trendUp ? (
+          <ArrowUpRight size={14} className="text-emerald-400" />
+        ) : (
+          <ArrowDownRight size={14} className="text-red-400" />
+        )}
+        <span className={cn("text-[10px] font-bold", trendUp ? "text-emerald-400" : "text-red-400")}>
+          {trend}
+        </span>
+      </div>
     </div>
   );
 }

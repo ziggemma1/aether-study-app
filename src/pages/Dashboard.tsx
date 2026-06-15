@@ -19,11 +19,9 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import MessagesList from '../components/MessagesList';
 import CalendarWidget from '../components/CalendarWidget';
-import StudyConstellation from '../components/StudyConstellation';
-import LearningNebula from '../components/LearningNebula';
-import StreakFlameIndicator from '../components/StreakFlameIndicator';
+import BubbleField from '../components/BubbleField';
 import { useStudyActivity } from '../hooks/useStudyActivity';
-import { useUserSubject } from '../hooks/useUserSubject';
+import { useBubbleData } from '../hooks/useBubbleData';
 
 // Import our cohesive, polished shared components
 import { PageHeader } from '../components/ui/PageHeader';
@@ -42,32 +40,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const randomQuote = React.useMemo(() => getRandomQuote(), []);
   const activities = useStudyActivity();
-  const subject = useUserSubject(recentMaterials);
-  
-  const studiedToday = React.useMemo(() => {
-    // 1. Check if we have weekly minutes recorded today
-    const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const todayDayName = weekDays[new Date().getDay()];
-    const todayStats = stats?.weeklyData?.find((d: any) => d.day === todayDayName);
-    if (todayStats && todayStats.minutes > 0) {
-      return true;
-    }
-
-    // 2. Check studySessions
-    if (Array.isArray(studySessions) && studySessions.length > 0) {
-      const todayStr = new Date().toDateString();
-      return studySessions.some((session: any) => {
-        if (!session || !session.startTime) return false;
-        try {
-          return new Date(session.startTime).toDateString() === todayStr;
-        } catch {
-          return false;
-        }
-      });
-    }
-
-    return false;
-  }, [stats, studySessions]);
+  const { bubbles } = useBubbleData();
 
   // 1. Loading Skeleton Component
   if (loading) {
@@ -164,11 +137,8 @@ export default function Dashboard() {
 
   return (
     <div className="relative min-h-screen bg-transparent">
-      {/* Background Learning Nebula */}
-      <LearningNebula subject={subject} streak={formattedStreak} />
-
-      {/* Background Study Constellation */}
-      <StudyConstellation userId={user?.id} activities={activities} />
+      {/* Personalized Subject Bubbles Background */}
+      <BubbleField bubbles={bubbles} />
 
       <div className="relative z-10 space-y-6 pb-24 max-w-lg mx-auto sm:max-w-none select-none">
       {/* 1. Personalized Header */}
@@ -230,12 +200,29 @@ export default function Dashboard() {
           onClick={() => navigate('/reports')}
         />
         
-        <StreakFlameIndicator 
-          days={formattedStreak} 
-          studiedToday={studiedToday} 
-          onClick={() => navigate('/reports')}
-          onActionClick={() => navigate('/rooms')}
-        />
+        {/* Real Dynamic Streak with Action Prompt if Zero */}
+        {formattedStreak > 0 ? (
+          <MetricCard 
+            label="Recall Streak" 
+            value={`${formattedStreak} Days`}
+            trend={{ value: 100, direction: 'up' }}
+            icon={<span className="text-sm">🔥</span>}
+            tooltip="Consecutive days studied active recall sessions."
+            onClick={() => navigate('/reports')}
+          />
+        ) : (
+          <div 
+            onClick={() => navigate('/rooms')}
+            className="flex flex-col bg-[#F59E0B]/5 hover:bg-[#F59E0B]/10 border border-[#F59E0B]/20 rounded-2xl p-3.5 transition-all cursor-pointer relative overflow-hidden group select-none shadow-soft"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[9px] font-black uppercase text-[#F59E0B] tracking-widest truncate">Recall Streak</span>
+              <span className="text-sm">⚡</span>
+            </div>
+            <div className="text-sm font-black text-[#F59E0B] mt-1 pr-6 leading-tight">Start First Session</div>
+            <p className="text-[8px] text-[#F59E0B]/70 mt-0.5">Focus now to build streak →</p>
+          </div>
+        )}
 
         <MetricCard 
           label="Rivals Rank" 

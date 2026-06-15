@@ -23,18 +23,6 @@ const getAiClient = () => {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const LATEX_INSTRUCTION = `
-When writing any mathematical content, formulas, equations, expressions, variables, or scientific symbols, ALWAYS use standard LaTeX notation.
-Follow these rules carefully:
-- Inline formulas: $...$ (e.g., $E = mc^2$ or $x^2$)
-- Display formulas (centered on their own line): $$...$$ (e.g., $$x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$)
-- Exponents and indices: x^2, x_i, or x^{10}
-- Fractions: \\frac{numerator}{denominator}
-- Square roots: \\sqrt{x} or \\sqrt[3]{x}
-- Greek letters: \\alpha, \\beta, \\gamma, \\theta, \\pi, etc.
-- Signs/operations: \\pm, \\times, \\div, \\geq, \\leq, \\sum, \\int.
-Always output pure valid standard LaTeX for all math content.`;
-
 const withRetry = async <T>(fn: () => Promise<T>, retries = 3, backoff = 1000): Promise<T> => {
   for (let i = 0; i < retries; i++) {
     try {
@@ -140,7 +128,7 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
             },
             required: ["summary", "keyTopics", "realLifeApplications", "simpleDetailedNotes", "suggestedQuizQuestions"]
           },
-          systemInstruction: `Analyze the material. All generated text MUST be in ${langPrompt}. Return JSON. ${LATEX_INSTRUCTION}`
+          systemInstruction: `Analyze the material. All generated text MUST be in ${langPrompt}. Return JSON.`
         }
       }));
 
@@ -190,7 +178,7 @@ const analyzeWithOpenRouter = async (content: string, title: string, langPrompt:
   const response = await callOpenRouter([
     {
       role: 'system',
-      content: `Analyze the material and return JSON with summary, keyTopics, realLifeApplications, simpleDetailedNotes, and suggestedQuizQuestions. All text MUST be in ${langPrompt}. ${LATEX_INSTRUCTION}`
+      content: `Analyze the material and return JSON with summary, keyTopics, realLifeApplications, simpleDetailedNotes, and suggestedQuizQuestions. All text MUST be in ${langPrompt}.`
     },
     { role: 'user', content: `Title: ${title}\nContent: ${content.substring(0, 15000)}` }
   ], true);
@@ -419,8 +407,6 @@ export const generateDetailedNotes = async (content: string, title: string) => {
   const systemInstruction = `You are an expert pedagogical note transformation system.
       Your goal is to transform study material into a structured, beautiful, and logically deep JSON note.
       
-      ${LATEX_INSTRUCTION}
-
       CRITICAL: You MUST fill EVERY section with ACTUAL content from the material. Do NOT output empty strings OR empty arrays.
       If a section truly cannot be filled, write a generic educational insight related to the topic instead of leaving it blank.
 
@@ -569,8 +555,6 @@ export const generateAcademicMegaNotes = async (content: string, title: string) 
   const systemInstruction = `You are an elite academic curriculum designer and expert in cognitive learning frameworks.
       Your goal is to transform the provided study material into an intensive, 8-page (or more) comprehensive textbook-style study guide.
       
-      ${LATEX_INSTRUCTION}
-
       You MUST generate EXACTLY 8 or more entries in the JSON array (each representing an in-depth webpage text section/chapter).
       For each entry, you must intelligently choose between two specialized, powerful learning styles:
       
