@@ -1,379 +1,298 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area,
-  BarChart,
-  Bar,
-  Cell,
-  PieChart,
-  Pie,
-  Legend
-} from 'recharts';
-import { 
-  TrendingUp, 
   Clock, 
-  Award, 
   Target, 
+  Award, 
+  Flame, 
+  TrendingUp, 
+  Users, 
   ArrowUpRight, 
-  ArrowDownRight,
-  Calendar,
-  Filter,
-  Download
+  Compass, 
+  BookOpen 
 } from 'lucide-react';
-import { cn } from '../lib/utils';
-
-// Mock data for growth over time
-const growthData = [
-  { month: 'Jan', score: 65, avg: 60 },
-  { month: 'Feb', score: 68, avg: 62 },
-  { month: 'Mar', score: 75, avg: 65 },
-  { month: 'Apr', score: 72, avg: 64 },
-  { month: 'May', score: 85, avg: 68 },
-  { month: 'Jun', score: 82, avg: 70 },
-  { month: 'Jul', score: 94, avg: 72 },
-];
-
-// Mock data for scores vs losses (Correct vs Incorrect answers)
-const performanceData = [
-  { name: 'Correct', value: 840, color: '#10B981', lightColor: '#059669' },
-  { name: 'Incorrect', value: 160, color: '#EF4444', lightColor: '#DC2626' },
-];
-
-
 import { useAppContext } from '../context/AppContext';
+import { useReports } from '../hooks/useReports';
+import GrowthChart from '../components/GrowthChart';
+import SubjectProficiency from '../components/SubjectProficiency';
+import DateRangeFilter from '../components/DateRangeFilter';
 
 export default function Reports() {
-  const { theme, quizResults, user, studySessions, materials, allProfiles, t } = useAppContext();
-  const isLight = theme === 'light';
+  const { theme, t } = useAppContext();
+  const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
+  const { summary, trends, subjects, leaderboard, loading } = useReports(period);
 
-  // Safe arrays
-  const safeMaterials = Array.isArray(materials) ? materials : [];
-  const safeQuizResults = Array.isArray(quizResults) ? quizResults : [];
-  const safeStudySessions = Array.isArray(studySessions) ? studySessions : [];
-  const safeAllProfiles = Array.isArray(allProfiles) ? allProfiles : [];
+  // Safe checks & Defaults
+  const totalStudyTimeMinutes = summary?.totalStudyTimeMinutes ?? 0;
+  const averageQuizScore = summary?.averageQuizScore ?? 0;
+  const globalRank = summary?.globalRank ?? 12;
+  const totalLearners = summary?.totalLearners ?? 100;
+  const studyStreak = summary?.studyStreak ?? 0;
+  const studyTimeChange = summary?.weeklyChange?.studyTime ?? 12;
+  const quizScoreChange = summary?.weeklyChange?.quizScore ?? 4.2;
 
-  // Subject breakdown (derived from materials and quiz results)
-  const subjectData = safeMaterials.map(m => {
-    const materialQuizzes = safeQuizResults.filter(r => r.quizId === m.id);
-    const avgScore = materialQuizzes.length > 0
-      ? Math.round(materialQuizzes.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions), 0) / materialQuizzes.length * 100)
-      : 0;
-    return {
-      subject: m.title,
-      score: avgScore,
-      fullMark: 100
-    };
-  }).slice(0, 5);
-
-  const timeTrend = user?.timeTrend || 12;
-  const quizTrend = user?.quizTrend || 4.2;
-
-  // Calculate real stats
-  const calculatedStudyMins = safeStudySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
-  const fallbackMins = (user?.totalStudyTime || 0);
-  const totalStudyMinutes = calculatedStudyMins > 0 ? calculatedStudyMins : fallbackMins; 
-  
-  const displayHours = Math.floor(totalStudyMinutes / 60);
-  const displayMinutes = totalStudyMinutes % 60;
-  const formattedTimeSpent = displayHours > 0 
+  // Formatting hours/minutes spent
+  const displayHours = Math.floor(totalStudyTimeMinutes / 60);
+  const displayMinutes = totalStudyTimeMinutes % 60;
+  const formattedStudyTime = displayHours > 0 
     ? `${displayHours}h ${displayMinutes > 0 ? `${displayMinutes}m` : ''}` 
     : `${displayMinutes}m`;
 
-  // Calculate Average Percentage Score instead of raw points
-  const avgScorePercentage = safeQuizResults.length > 0 
-    ? Math.round(
-        safeQuizResults.reduce((acc, curr) => {
-          const p = curr.totalQuestions > 0 ? (curr.score / curr.totalQuestions) * 100 : 0;
-          return acc + p;
-        }, 0) / safeQuizResults.length
-      ) 
-    : 0;
-
-  const totalPoints = safeQuizResults.reduce((acc, curr) => acc + (curr.score * 10), 0);
-
-  const filteredProfiles = safeAllProfiles.filter(p => p.optedInLeaderboard || (user && (p.id === user.id || (p as any)._id === user.id)));
-  const myRankIndex = filteredProfiles.findIndex(p => p.id === user?.id || (p as any)._id === user?.id);
-  const globalRank = myRankIndex !== -1 ? myRankIndex + 1 : (user?.globalRank || 1);
-  
-  // Accuracy breakdown
-  const totalCorrect = safeQuizResults.reduce((acc, curr) => acc + curr.score, 0);
-  const totalQuestions = safeQuizResults.reduce((acc, curr) => acc + curr.totalQuestions, 0);
-  const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-
-  const performanceData = [
-    { name: 'Correct', value: totalCorrect, color: '#10B981', lightColor: '#059669' },
-    { name: 'Incorrect', value: totalQuestions - totalCorrect > 0 ? totalQuestions - totalCorrect : 0, color: '#EF4444', lightColor: '#DC2626' },
-  ];
-
-  // Growth data (last 7 quizzes) using percentage
-  const growthData = safeQuizResults.slice(0, 7).reverse().map(r => ({
-    month: new Date(r.date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-    score: r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0,
-    avg: 75 // Platform average mock
-  }));
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-300">
+      {/* Header with Date Range Filter - Highly Optimized for Mobile layout */}
+      <div className="flex flex-col gap-4 pb-1 border-b border-white/5">
         <div>
-          <h1 className="text-3xl font-bold text-text-main tracking-tight mb-2">{t('performance_reports')}</h1>
-          <p className="text-text-muted text-sm">{t('reports_desc')}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#F0F3F8]">
+            {t?.('performance_reports') || 'Analysis Reports'}
+          </h1>
+          <p className="text-xs text-gray-400 mt-1">
+            {t?.('reports_desc') || 'Your detailed study metrics and progress analytics.'}
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-surface-alt/50 hover:bg-surface-alt text-text-main text-xs font-bold rounded-xl border border-border transition-all">
-            <Calendar size={16} />
-            6 {t('months')}
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 transition-all">
-            <Download size={16} />
-            {t('export')}
-          </button>
+        
+        <div className="flex justify-start">
+          <DateRangeFilter currentPeriod={period} onChange={setPeriod} />
         </div>
       </div>
 
-      {/* Summary Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          icon={Clock} 
-          label={t('time_on_platform')} 
-          value={formattedTimeSpent} 
-          trend={`${timeTrend > 0 ? '+' : ''}${timeTrend}% ${t('from_last_week')}`} 
-          trendUp={timeTrend >= 0}
-          color={isLight ? "text-blue-600" : "text-blue-400"}
-          bg={isLight ? "bg-blue-100" : "bg-blue-400/10"}
-        />
-        <StatCard 
-          icon={TrendingUp} 
-          label={t('overall_growth')} 
-          value={`${accuracy}%`} 
-          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% ${t('this_week')}`} 
-          trendUp={quizTrend >= 0}
-          color={isLight ? "text-emerald-600" : "text-emerald-400"}
-          bg={isLight ? "bg-emerald-100" : "bg-emerald-400/10"}
-        />
-        <StatCard 
-          icon={Target} 
-          label={t('avg_quiz_score')} 
-          value={`${avgScorePercentage}%`} 
-          trend={`${quizTrend > 0 ? '+' : ''}${quizTrend}% ${t('from_last_quiz')}`} 
-          trendUp={quizTrend >= 0}
-          color={isLight ? "text-orange-600" : "text-orange-400"}
-          bg={isLight ? "bg-orange-100" : "bg-orange-400/10"}
-        />
-        <StatCard 
-          icon={Award} 
-          label={t('global_rank')} 
-          value={`#${globalRank.toLocaleString()}`} 
-          trend={t('top_5_percent')} 
-          trendUp={true}
-          color={isLight ? "text-purple-600" : "text-purple-400"}
-          bg={isLight ? "bg-purple-100" : "bg-purple-400/10"}
-        />
-      </div>
-
-      {/* Main Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Growth Over Time Chart */}
-        <div className="lg:col-span-8 glass-card p-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-xl font-bold text-text-main">{t('growth_over_time')}</h2>
-              <p className="text-xs text-text-muted mt-1">{t('growth_over_time_desc') || 'Your score progression vs platform average'}</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary" />
-                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Your Score</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-slate-600" />
-                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Avg. Student</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="h-[350px] w-full">
-            {growthData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <AreaChart data={growthData}>
-                  <defs>
-                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={isLight ? "#E2E8F0" : "#1E293B"} vertical={false} />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke={isLight ? "#64748B" : "#94A3B8"} 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    stroke={isLight ? "#64748B" : "#94A3B8"} 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickFormatter={(value) => `${value}`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: isLight ? '#FFFFFF' : '#0F172A', 
-                      borderColor: isLight ? '#E2E8F0' : '#1E293B', 
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      color: isLight ? '#0F172A' : '#fff'
-                    }}
-                    itemStyle={{ color: isLight ? '#0F172A' : '#fff' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="score" 
-                    stroke="#8B5CF6" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorScore)" 
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="avg" 
-                    stroke={isLight ? "#94A3B8" : "#475569"} 
-                    strokeWidth={2} 
-                    strokeDasharray="5 5"
-                    dot={false}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-text-muted">
-                <TrendingUp size={48} className="mb-4 opacity-20" />
-                <p>Complete more quizzes to see your growth chart.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Wins vs Losses Chart */}
-        <div className="lg:col-span-4 glass-card p-8 flex flex-col">
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-text-main">{t('accuracy_breakdown')}</h2>
-            <p className="text-xs text-text-muted mt-1">{t('accuracy_breakdown_desc') || 'Correct vs Incorrect answers'}</p>
-          </div>
-          
-          <div className="flex-grow flex items-center justify-center relative">
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-bold text-text-main">{accuracy}%</span>
-              <span className="text-xs font-bold text-text-muted uppercase tracking-widest">Accuracy</span>
-            </div>
-            <ResponsiveContainer width="100%" height={250} minWidth={0}>
-              <PieChart>
-                <Pie
-                  data={performanceData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={70}
-                  outerRadius={90}
-                  paddingAngle={8}
-                  dataKey="value"
-                >
-                  {performanceData.map((entry: any, index) => (
-                    <Cell key={`cell-${index}`} fill={isLight ? entry.lightColor : entry.color} stroke="none" />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: isLight ? '#FFFFFF' : '#0F172A', 
-                    borderColor: isLight ? '#E2E8F0' : '#1E293B', 
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    color: isLight ? '#0F172A' : '#fff'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="space-y-4 mt-6">
-            {performanceData.map((item) => (
-              <div key={item.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-sm font-medium text-text-muted">{item.name}</span>
-                </div>
-                <span className="text-sm font-bold text-text-main">{item.value}</span>
-              </div>
+      {loading ? (
+        /* Mobile-Friendly loading skeleton screens */
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="h-28 bg-[#141A24] rounded-2xl animate-pulse border border-white/5" />
             ))}
           </div>
+          <div className="h-64 bg-[#141A24] rounded-2xl animate-pulse border border-white/5" />
+          <div className="h-48 bg-[#141A24] rounded-2xl animate-pulse border border-white/5" />
         </div>
-      </div>
-
-      {/* Subject Breakdown Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-12 glass-card p-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-xl font-bold text-text-main">{t('subject_proficiency')}</h2>
-              <p className="text-xs text-text-muted mt-1">{t('subject_proficiency_desc') || 'Detailed performance across all enrolled subjects'}</p>
+      ) : (
+        <>
+          {/* Metrics Grid - Optimized as a 2x2 grid on mobile screens */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Study Time Card */}
+            <div className="bg-[#141A24] p-4 rounded-2xl border border-white/5 shadow-md flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <div className="w-9 h-9 rounded-xl bg-[#00D2FF]/10 flex items-center justify-center">
+                  <Clock className="text-[#00D2FF]" size={18} />
+                </div>
+                <span className="text-[10px] text-[#00E5A0] font-bold flex items-center gap-0.5">
+                  <ArrowUpRight size={10} />
+                  {studyTimeChange}%
+                </span>
+              </div>
+              <div className="mt-4">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 block">
+                  {t?.('time_on_platform') || 'Study Time'}
+                </span>
+                <span className="text-lg font-bold text-[#F0F3F8] mt-1 block">
+                  {totalStudyTimeMinutes > 0 ? formattedStudyTime : '0m'}
+                </span>
+              </div>
             </div>
-            <button className="p-2.5 bg-surface/50 text-text-muted hover:text-text-main rounded-xl border border-border transition-all">
-              <Filter size={18} />
-            </button>
+
+            {/* Quiz Accuracy Card */}
+            <div className="bg-[#141A24] p-4 rounded-2xl border border-white/5 shadow-md flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <div className="w-9 h-9 rounded-xl bg-[#6C5CE7]/10 flex items-center justify-center">
+                  <Target className="text-[#6C5CE7]" size={18} />
+                </div>
+                <span className="text-[10px] text-[#00E5A0] font-bold flex items-center gap-0.5">
+                  <ArrowUpRight size={10} />
+                  {quizScoreChange}%
+                </span>
+              </div>
+              <div className="mt-4">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 block">
+                  {t?.('avg_quiz_score') || 'Quiz Score'}
+                </span>
+                <span className="text-lg font-bold text-[#F0F3F8] mt-1 block">
+                  {averageQuizScore > 0 ? `${averageQuizScore}%` : '0%'}
+                </span>
+              </div>
+            </div>
+
+            {/* Global Rank Card */}
+            <div className="bg-[#141A24] p-4 rounded-2xl border border-white/5 shadow-md flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <div className="w-9 h-9 rounded-xl bg-[#F5B042]/10 flex items-center justify-center">
+                  <Award className="text-[#F5B042]" size={18} />
+                </div>
+                <span className="text-[9px] text-[#F5B042] font-semibold bg-[#F5B042]/10 px-1.5 py-0.5 rounded-md">
+                  TOP 5%
+                </span>
+              </div>
+              <div className="mt-4">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 block">
+                  {t?.('global_rank') || 'Global Rank'}
+                </span>
+                <span className="text-lg font-bold text-[#F0F3F8] mt-1 block">
+                  #{globalRank}
+                </span>
+              </div>
+            </div>
+
+            {/* Streak Card */}
+            <div className="bg-[#141A24] p-4 rounded-2xl border border-white/5 shadow-md flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center">
+                  <Flame className="text-red-500 animate-pulse" size={18} />
+                </div>
+                <span className="text-[9px] text-red-400 font-semibold bg-red-400/10 px-1.5 py-0.5 rounded-md">
+                  ACTIVE
+                </span>
+              </div>
+              <div className="mt-4">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 block">
+                  {t?.('streak') || 'Streak'}
+                </span>
+                <span className="text-lg font-bold text-[#F0F3F8] mt-1 block">
+                  {studyStreak} Day{studyStreak !== 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-            {subjectData.map((subject) => (
-              <div key={subject.subject} className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-text-main">{subject.subject}</span>
-                  <span className="text-sm font-bold text-primary">{subject.score}%</span>
-                </div>
-                <div className="h-2 w-full bg-surface border border-border rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-primary to-violet-400 rounded-full transition-all duration-1000"
-                    style={{ width: `${subject.score}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                  <span>Progress</span>
-                  <span>Excellent</span>
+          {/* Growth Over Time Chart Block */}
+          <div className="bg-[#141A24] p-5 rounded-2xl border border-white/5 shadow-md">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-[#F0F3F8] flex items-center gap-2">
+                <TrendingUp size={16} className="text-[#00D2FF]" />
+                {t?.('growth_over_time') || 'Growth Over Time'}
+              </h3>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                {t?.('growth_over_time_desc') || 'Your quiz scores and total study minutes compared.'}
+              </p>
+            </div>
+            
+            <div className="pt-2">
+              <GrowthChart trends={trends} />
+            </div>
+          </div>
+
+          {/* Subject Proficiency and Leaderboard Block - Stacked vertically for mobile */}
+          <div className="grid grid-cols-1 gap-6">
+            
+            {/* Subject Proficiency */}
+            <div className="bg-[#141A24] p-5 rounded-2xl border border-white/5 shadow-md">
+              <div className="mb-5">
+                <h3 className="text-sm font-bold text-[#F0F3F8] flex items-center gap-2">
+                  <BookOpen size={16} className="text-[#6C5CE7]" />
+                  {t?.('subject_proficiency') || 'Subject Proficiency'}
+                </h3>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  {t?.('subject_proficiency_desc') || 'Your proficiency score categorized across learning topics.'}
+                </p>
+              </div>
+
+              <SubjectProficiency subjects={subjects} />
+            </div>
+
+            {/* Mini Leaderboard */}
+            <div className="bg-[#141A24] p-5 rounded-2xl border border-white/5 shadow-md">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-[#F0F3F8] flex items-center gap-2">
+                    <Users size={16} className="text-[#F5B042]" />
+                    {t?.('leaderboard') || 'Global Leaderboard'}
+                  </h3>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    Top learners this week. Join your peers!
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function StatCard({ icon: Icon, label, value, trend, trendUp, color, bg }: any) {
-  return (
-    <div className="glass-card p-6 group hover:border-primary/30 transition-all">
-      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110", bg, color)}>
-        <Icon size={24} />
-      </div>
-      <p className="text-xs font-bold text-text-muted uppercase tracking-widest mb-1">{label}</p>
-      <h3 className="text-2xl font-bold text-text-main mb-2 tracking-tight">{value}</h3>
-      <div className="flex items-center gap-1.5">
-        {trendUp ? (
-          <ArrowUpRight size={14} className="text-emerald-400" />
-        ) : (
-          <ArrowDownRight size={14} className="text-red-400" />
-        )}
-        <span className={cn("text-[10px] font-bold", trendUp ? "text-emerald-400" : "text-red-400")}>
-          {trend}
-        </span>
-      </div>
+              {!leaderboard || !leaderboard.leaderboard || leaderboard.leaderboard.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <span className="text-xs font-semibold text-gray-400">Invite friends to compete</span>
+                  <p className="text-[10px] text-gray-500 mt-1 max-w-[220px]">
+                    Leaderboard is currently quiet. Encourage friends to sign up to view real rankings!
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Leaderboard Competitors */}
+                  <div className="space-y-2 max-h-[280px] overflow-y-auto">
+                    {leaderboard.leaderboard.map((item: any) => {
+                      const isCurrentUser = item.name === leaderboard.currentUser?.name;
+                      return (
+                        <div 
+                          key={item.rank} 
+                          className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                            isCurrentUser 
+                              ? 'bg-[#141A24] border-[#00D2FF]/40 shadow-sm' 
+                              : 'bg-[#0B0E14]/60 border-white/5'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {/* Rank circle */}
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                              item.rank === 1 ? 'bg-[#F5B042] text-[#0B0E14]' :
+                              item.rank === 2 ? 'bg-gray-300 text-[#0B0E14]' :
+                              item.rank === 3 ? 'bg-[#CD7F32] text-[#0B0E14]' :
+                              'text-gray-400 bg-white/5'
+                            }`}>
+                              {item.rank}
+                            </span>
+                            
+                            {/* Avatar or Placeholder */}
+                            {item.avatar ? (
+                              <img 
+                                src={item.avatar} 
+                                alt={item.name} 
+                                className="w-8 h-8 rounded-full object-cover border border-white/10" 
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-[#6C5CE7]/10 flex items-center justify-center border border-white/5">
+                                <span className="text-[11px] font-bold text-[#6C5CE7]">
+                                  {item.name.substring(0, 2).toUpperCase()}
+                                </span>
+                              </div>
+                            )}
+
+                            <div>
+                              <span className="text-xs font-bold text-[#F0F3F8] block">
+                                {item.name}
+                              </span>
+                              {isCurrentUser && (
+                                <span className="text-[9px] text-[#00D2FF] font-semibold uppercase tracking-wider block">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <span className="text-xs font-extrabold text-[#00E5A0]">
+                            {item.points.toLocaleString()} pts
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Current User Floating Footer / Standings (if rank is outside top 5) */}
+                  {leaderboard.currentUser && leaderboard.currentUser.rank > leaderboard.leaderboard.length && (
+                    <div className="mt-4 p-3 bg-[#6C5CE7]/5 rounded-xl border border-[#6C5CE7]/20 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#6C5CE7]">
+                          #{leaderboard.currentUser.rank}
+                        </span>
+                        <span className="text-xs font-bold text-[#F0F3F8]">
+                          {leaderboard.currentUser.name} (You)
+                        </span>
+                      </div>
+                      <span className="text-xs font-extrabold text-[#6C5CE7]">
+                        {leaderboard.currentUser.points.toLocaleString()} pts
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
