@@ -22,7 +22,7 @@ import reportsRoutes from "./src/server/routes/reportsRoutes.js";
 import leaderboardRoutes from "./src/server/routes/leaderboardRoutes.js";
 import achievementsRoutes from "./src/server/routes/achievementsRoutes.js";
 import studyPlanRoutes from "./src/server/routes/studyPlanRoutes.js";
-import calendarRoutes from "./src/server/routes/calendarRoutes.js";
+import googleCalendarRoutes from "./src/server/routes/googleCalendarRoutes.js";
 import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
 import { createServer } from "http";
 import { initSocket } from "./src/server/socket.js";
@@ -200,7 +200,7 @@ async function startServer() {
   app.use("/api/leaderboard", checkDbConnection, leaderboardRoutes);
   app.use("/api/achievements", checkDbConnection, achievementsRoutes);
   app.use("/api/study-plans", checkDbConnection, studyPlanRoutes);
-  app.use("/api/calendar", checkDbConnection, calendarRoutes);
+  app.use("/api/calendar/google", checkDbConnection, googleCalendarRoutes);
   
   // Custom Error Handling Middleware
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

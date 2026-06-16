@@ -14,6 +14,7 @@ import Dashboard from './pages/Dashboard';
 import Library from './pages/Library';
 import Messages from './pages/Messages';
 import CalendarPage from './pages/CalendarPage';
+import CalendarAnalytics from './pages/CalendarAnalytics';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import LoginPage from './pages/LoginPage';
@@ -116,6 +117,7 @@ export default function App() {
               <Route path="/explore" element={<Explore />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/calendar-analytics" element={<CalendarAnalytics />} />
               <Route path="/plans" element={<ReadingPlanGenerator />} />
               <Route path="/plans/:id" element={<StudyPlanDetail />} />
               <Route path="/quiz/:id" element={<QuizInterface />} />

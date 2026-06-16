@@ -25,7 +25,7 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
       focusAreas = []
     } = req.body;
 
-    const userId = (req as any).userId;
+    const userId = (req as any).user?._id;
     if (!userId) {
       return res.status(401).json({ message: 'User not authenticated' });
     }
@@ -199,7 +199,7 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
 
 export const getStudyPlans = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?._id;
     const plans = await StudyPlan.find({ userId }).sort({ createdAt: -1 });
     res.json(plans);
   } catch (error: any) {
@@ -209,7 +209,7 @@ export const getStudyPlans = async (req: Request, res: Response) => {
 
 export const getStudyPlan = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?._id;
     const plan = await StudyPlan.findOne({ _id: req.params.id, userId });
     if (!plan) {
       return res.status(404).json({ message: 'Study plan not found' });
@@ -222,7 +222,7 @@ export const getStudyPlan = async (req: Request, res: Response) => {
 
 export const updateStudyPlan = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?._id;
     const { title, goal, complexity, days, dailyCommitment, startDate, calendarSync } = req.body;
     
     const plan = await StudyPlan.findOne({ _id: req.params.id, userId });
@@ -267,7 +267,7 @@ export const updateStudyPlan = async (req: Request, res: Response) => {
 
 export const deleteStudyPlan = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?._id;
     const plan = await StudyPlan.findOneAndDelete({ _id: req.params.id, userId });
     if (!plan) {
       return res.status(404).json({ message: 'Study plan not found' });
