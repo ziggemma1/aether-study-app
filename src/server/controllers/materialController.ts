@@ -378,3 +378,27 @@ export const getRecentMaterials = async (req: Request, res: Response) => {
   }
 };
 
+export const getLibraryMaterials = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const dbMaterials = await Material.find({ userId }).sort({ createdAt: -1 });
+
+    const formatted = dbMaterials.map((m: any) => ({
+      id: m._id ? m._id.toString() : m.id,
+      title: m.title || 'Untitled',
+      type: m.type || 'pdf',
+      date: m.createdAt ? new Date(m.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      description: m.summary || '',
+      tags: m.keyTopics || [],
+      mastery: m.progress || 0,
+      hasQuiz: !!(m.suggestedQuizQuestions && m.suggestedQuizQuestions.length > 0),
+      hasFlashcards: !!(m.flashcards && m.flashcards.length > 0),
+      hasNotes: !!(m.detailedNotes || (m.noteSections && m.noteSections.length > 0) || m.structuredNote)
+    }));
+
+    res.json({ materials: formatted });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+

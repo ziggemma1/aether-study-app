@@ -13,7 +13,8 @@ import {
   shareMaterial,
   getSharedMaterial,
   saveFromShare,
-  getRecentMaterials
+  getRecentMaterials,
+  getLibraryMaterials
 } from '../controllers/materialController.js';
 import { 
   analyzeMaterial, 
@@ -46,6 +47,7 @@ router.post('/:id/flashcards/:cardId/review', reviewFlashcard);
 router.post('/youtube-transcript', getYoutubeTranscript);
 
 router.get('/recent', getRecentMaterials);
+router.get('/library', getLibraryMaterials);
 router.get('/', getMaterials);
 router.get('/analyze', (req, res) => {
   res.status(405).json({ 
