@@ -37,6 +37,7 @@ import Explore from './pages/Explore';
 
 import { startKeepAlive } from './lib/keep-alive';
 import SharedMaterialView from './pages/SharedMaterialView';
+import { AchievementNotification } from './components/AchievementNotification';
 
 function ProtectedRoute() {
   const { user, isLoading } = useAppContext();
@@ -90,6 +91,7 @@ export default function App() {
     <Router>
       <AppProvider>
         <AnalyticsTracker />
+        <AchievementNotification />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />

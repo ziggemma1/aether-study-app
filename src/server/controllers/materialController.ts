@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Material } from '../models/Material.js';
 import { SharedMaterial } from '../models/SharedMaterial.js';
 import crypto from 'crypto';
+import { checkAchievements } from '../services/achievement-service.js';
 
 export const shareMaterial = async (req: Request, res: Response) => {
   try {
@@ -155,6 +156,13 @@ export const createMaterial = async (req: Request, res: Response) => {
     });
     await material.save();
     console.log(`Material saved successfully with ID: ${material._id}`);
+    
+    try {
+      await checkAchievements(userId);
+    } catch (achError) {
+      console.error('Error triggering achievements on material creation:', achError);
+    }
+
     res.status(201).json(material);
   } catch (error: any) {
     console.error(`Error creating material for user ${(req as any).userId}:`, error);

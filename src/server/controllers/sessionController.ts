@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { StudySession } from '../models/StudySession.js';
 import { User } from '../models/User.js';
+import { checkAchievements } from '../services/achievement-service.js';
 
 export const getSessions = async (req: Request, res: Response) => {
   try {
@@ -39,6 +40,9 @@ export const createSession = async (req: Request, res: Response) => {
       });
     }
 
+    // Update achievements on the and send response
+    await checkAchievements(userId);
+
     res.status(201).json(session);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -71,6 +75,8 @@ export const updateSession = async (req: Request, res: Response) => {
         });
       }
     }
+
+    await checkAchievements(userId);
 
     res.json(session);
   } catch (error: any) {

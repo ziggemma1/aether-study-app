@@ -51,7 +51,18 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
+  const [savedPlans, setSavedPlans] = useState<SavedPlan[]>(() => {
+    try {
+      const cached = localStorage.getItem('saved_plans');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to parse cached saved_plans:', e);
+    }
+    return [];
+  });
   const [messages, setMessages] = useState<Message[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
@@ -309,7 +320,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     if (cachedUser) {
       try {
-        setUser(JSON.parse(cachedUser));
+        const parsedUser = JSON.parse(cachedUser);
+        if (parsedUser && typeof parsedUser === 'object') {
+          setUser(parsedUser);
+        } else {
+          localStorage.removeItem('user');
+        }
       } catch (e) {
         localStorage.removeItem('user');
       }
@@ -317,7 +333,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     if (cachedMaterials) {
       try {
-        setMaterials(JSON.parse(cachedMaterials));
+        const parsedMaterials = JSON.parse(cachedMaterials);
+        if (Array.isArray(parsedMaterials)) {
+          setMaterials(parsedMaterials);
+        } else {
+          localStorage.removeItem('cached_materials');
+        }
       } catch (e) {
         localStorage.removeItem('cached_materials');
       }
@@ -350,6 +371,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (pollInterval) clearInterval(pollInterval);
     };
   }, [dbError, initialize]);
+
+  useEffect(() => {
+    localStorage.setItem('saved_plans', JSON.stringify(savedPlans));
+  }, [savedPlans]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchAppData();
+    }
+  }, [user?.id, fetchAppData]);
 
   useEffect(() => {
     initialize();

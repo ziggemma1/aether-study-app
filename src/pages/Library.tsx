@@ -31,26 +31,35 @@ export default function Library() {
     }
   }, [initialFilter]);
 
-  const filteredStandardMaterials = materials.filter(m => {
+  const materialsList = Array.isArray(materials) ? materials : [];
+
+  const getNormalizedType = (typeStr: string) => {
+    return String(typeStr || '').toLowerCase().replace(/[\s_-]+/g, '');
+  };
+
+  const filteredStandardMaterials = materialsList.filter(m => {
     if (!m || m.type === 'unified') return false;
-    const title = m.title || 'Untitled';
-    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'All' || (m.type && m.type.toLowerCase() === filter.toLowerCase());
+    const title = String(m.title || 'Untitled');
+    const matchesSearch = title.toLowerCase().includes(String(searchQuery || '').toLowerCase());
+    
+    const matType = getNormalizedType(m.type);
+    const filterType = getNormalizedType(filter);
+    const matchesFilter = filterType === 'all' || matType === filterType;
     return matchesSearch && matchesFilter;
   });
 
-  const filteredUnifiedMaterials = materials.filter(m => {
+  const filteredUnifiedMaterials = materialsList.filter(m => {
     if (!m || m.type !== 'unified') return false;
-    const title = m.title || 'Untitled';
-    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
-    // Unified usually doesn't need internal media type filters
+    const title = String(m.title || 'Untitled');
+    const matchesSearch = title.toLowerCase().includes(String(searchQuery || '').toLowerCase());
     return matchesSearch;
   });
 
   const filterChips = ['All', 'PDF', 'YouTube', 'Article', 'Audio', 'Voice Note'];
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
+  const getTypeIcon = (type: any) => {
+    const typeStr = getNormalizedType(type);
+    switch (typeStr) {
       case 'pdf': return FileText;
       case 'youtube': return Youtube;
       case 'article': return BookOpen;
@@ -79,14 +88,14 @@ export default function Library() {
     if (selectedMaterials.length < 2) return;
     
     try {
-      const relatedMaterials = materials.filter(m => selectedMaterials.includes(m.id));
+      const relatedMaterials = materialsList.filter(m => selectedMaterials.includes(m.id || (m as any)._id));
       const combinedTopics = Array.from(new Set(relatedMaterials.flatMap(m => m.keyTopics || [])));
-      const combinedContent = relatedMaterials.map(m => `--- ${m.title} ---\n${m.content || m.summary}`).join('\n\n');
+      const combinedContent = relatedMaterials.map(m => `--- ${m.title || 'Untitled'} ---\n${m.content || m.summary || ''}`).join('\n\n');
       
       const response = await api.post('/materials', {
-        title: `Combined: ${relatedMaterials[0].title} & ${relatedMaterials.length - 1} more`,
+        title: `Combined: ${relatedMaterials[0]?.title || 'Untitled'} & ${relatedMaterials.length - 1} more`,
         type: 'unified',
-        summary: `A unified collection containing insights from: ${relatedMaterials.map(m => m.title).join(', ')}.`,
+        summary: `A unified collection containing insights from: ${relatedMaterials.map(m => m.title || 'Untitled').join(', ')}.`,
         content: combinedContent,
         keyTopics: combinedTopics,
         progress: 0,
@@ -98,7 +107,7 @@ export default function Library() {
         uploadDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       };
 
-      setMaterials([newMaterial, ...materials]);
+      setMaterials([newMaterial, ...materialsList]);
       setSelectedMaterials([]);
       setActiveTab('unified');
       showToast('Materials merged successfully!');
@@ -114,7 +123,7 @@ export default function Library() {
     setIsDeleting(true);
     try {
       await api.post('/materials/bulk-delete', { ids: selectedMaterials });
-      setMaterials(materials.filter(m => !selectedMaterials.includes(m.id)));
+      setMaterials(materialsList.filter(m => !selectedMaterials.includes(m.id || (m as any)._id)));
       setSelectedMaterials([]);
       setShowDeleteConfirm(false);
       showToast('Selected materials deleted successfully.');
@@ -131,7 +140,7 @@ export default function Library() {
     e.stopPropagation();
     try {
       const res = await api.post(`/materials/${materialId}/toggle-public`);
-      setMaterials(materials.map(m => m.id === materialId ? { ...m, isPublic: res.data.isPublic } : m));
+      setMaterials(materialsList.map(m => (m.id === materialId || (m as any)._id === materialId) ? { ...m, isPublic: res.data.isPublic } : m));
       showToast(res.data.isPublic ? 'Material is now public! 🌏' : 'Material is now private. 🔒');
     } catch (err) {
       showToast('Failed to change visibility', 'error');
@@ -141,13 +150,14 @@ export default function Library() {
   const renderMaterialGrid = (items: Material[]) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {items.map((material) => {
+        const mId = material.id || (material as any)._id;
         const Icon = getTypeIcon(material.type);
-        const isSelected = selectedMaterials.includes(material.id);
-        const isPublic = material.isPublic;
+        const isSelected = selectedMaterials.includes(mId);
+        const isPublic = !!material.isPublic;
 
         return (
           <motion.div
-            key={material.id}
+            key={mId}
             layout
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -159,13 +169,13 @@ export default function Library() {
           >
             {/* Index Number - Technical Feel */}
             <div className="absolute -top-2 -left-2 text-4xl font-black text-text-main opacity-[0.03] select-none">
-              {(materials.indexOf(material) + 1).toString().padStart(2, '0')}
+              {(materialsList.indexOf(material) + 1).toString().padStart(2, '0')}
             </div>
 
             {/* Action Bar */}
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 flex items-center gap-2">
               <button
-                onClick={(e) => handleTogglePublic(e, material.id)}
+                onClick={(e) => handleTogglePublic(e, mId)}
                 className={cn(
                   "w-7 h-7 rounded-lg border flex items-center justify-center transition-all backdrop-blur-sm",
                   isPublic 
@@ -177,7 +187,7 @@ export default function Library() {
               </button>
 
               <button
-                onClick={(e) => toggleSelection(e, material.id)}
+                onClick={(e) => toggleSelection(e, mId)}
                 className={cn(
                   "w-7 h-7 rounded-lg border flex items-center justify-center transition-all",
                   isSelected ? "bg-primary border-primary text-white" : "bg-surface/50 border-border group-hover:border-primary/30 hover:bg-surface"
@@ -187,17 +197,17 @@ export default function Library() {
               </button>
             </div>
 
-            <Link to={`/library/${material.id}`} className="block relative z-0 mt-2">
+            <Link to={`/library/${mId}`} className="block relative z-0 mt-2">
               <div className="flex items-center gap-4 mb-5">
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-inner border border-primary/20">
                   <Icon size={22} />
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-black line-clamp-1 text-text-main pr-8 group-hover:text-primary transition-colors tracking-tight">
-                    {material.title}
+                    {material.title || 'Untitled'}
                   </h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[9px] font-black uppercase text-text-muted tracking-widest">{material.uploadDate}</span>
+                    <span className="text-[9px] font-black uppercase text-text-muted tracking-widest">{material.uploadDate || 'Recently'}</span>
                     {isPublic && <span className="w-1 h-1 rounded-full bg-emerald-500" />}
                     {isPublic && <span className="text-[9px] font-black uppercase text-emerald-500 tracking-tighter">Live</span>}
                   </div>
@@ -205,18 +215,18 @@ export default function Library() {
               </div>
               
               <p className="text-xs text-text-muted mb-6 line-clamp-2 leading-relaxed opacity-80 min-h-[32px]">
-                {material.summary}
+                {material.summary || ''}
               </p>
               
               <div className="pt-4 border-t border-dashed border-border/60">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[9px] font-black uppercase text-text-muted tracking-[0.2em]">Mastery</span>
-                  <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-sm">{material.progress}%</span>
+                  <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-sm">{material.progress ?? 0}%</span>
                 </div>
                 <div className="h-1 bg-surface-alt rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${material.progress}%` }}
+                    animate={{ width: `${material.progress ?? 0}%` }}
                     className="h-full bg-primary"
                   />
                 </div>
@@ -231,11 +241,12 @@ export default function Library() {
   const renderMaterialList = (items: Material[]) => (
     <div className="space-y-4">
       {items.map((material) => {
+        const mId = material.id || (material as any)._id;
         const Icon = getTypeIcon(material.type);
-        const isSelected = selectedMaterials.includes(material.id);
+        const isSelected = selectedMaterials.includes(mId);
         return (
           <motion.div
-            key={material.id}
+            key={mId}
             layout
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -246,7 +257,7 @@ export default function Library() {
           >
             <div className="flex items-center gap-4">
               <button
-                onClick={(e) => toggleSelection(e, material.id)}
+                onClick={(e) => toggleSelection(e, mId)}
                 className={cn(
                   "w-6 h-6 shrink-0 rounded-md border-2 flex items-center justify-center transition-all",
                   isSelected ? "bg-primary border-primary text-white" : "bg-surface border-text-muted/30 hover:border-primary/50"
@@ -254,23 +265,23 @@ export default function Library() {
               >
                 {isSelected && <Check size={14} strokeWidth={3} />}
               </button>
-              <Link to={`/material/${material.id}`} className="flex items-center gap-6 flex-grow">
+              <Link to={`/library/${mId}`} className="flex items-center gap-6 flex-grow">
                 <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary shrink-0">
                   <Icon size={20} />
                 </div>
                 <div className="flex-grow">
-                  <h3 className="font-bold text-text-main">{material.title}</h3>
-                  <p className="text-xs text-text-muted">{material.uploadDate} • {material.type.toUpperCase()}</p>
+                  <h3 className="font-bold text-text-main">{material.title || 'Untitled'}</h3>
+                  <p className="text-xs text-text-muted">{material.uploadDate || 'Recently'} • {String(material.type || '').toUpperCase()}</p>
                 </div>
                 <div className="hidden md:block w-48 shrink-0">
                   <div className="flex items-center gap-3">
                     <div className="flex-grow h-1.5 bg-surface rounded-full overflow-hidden border border-border">
                       <div
                         className="h-full bg-secondary"
-                        style={{ width: `${material.progress}%` }}
+                        style={{ width: `${material.progress ?? 0}%` }}
                       />
                     </div>
-                    <span className="text-xs font-bold text-text-muted">{material.progress}%</span>
+                    <span className="text-xs font-bold text-text-muted">{material.progress ?? 0}%</span>
                   </div>
                 </div>
                 <ChevronRight className="text-text-muted shrink-0" size={20} />
@@ -321,14 +332,14 @@ export default function Library() {
           onClick={() => setActiveTab('materials')} 
           className={cn("pb-3 sm:pb-4 text-[10px] sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap", activeTab === 'materials' ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main")}
         >
-          {t('materials')} ({materials.filter(m => m.type !== 'unified').length})
+          {t('materials')} ({materialsList.filter(m => m && m.type !== 'unified').length})
         </button>
         <button 
           onClick={() => setActiveTab('unified')} 
           className={cn("pb-3 sm:pb-4 text-[10px] sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5", activeTab === 'unified' ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-main")}
         >
           <Layers size={14} className="sm:hidden" />
-          <Layers size={16} className="hidden sm:block" /> {t('unified')} ({materials.filter(m => m.type === 'unified').length})
+          <Layers size={16} className="hidden sm:block" /> {t('unified')} ({materialsList.filter(m => m && m.type === 'unified').length})
         </button>
         <button 
           onClick={() => setActiveTab('plans')} 

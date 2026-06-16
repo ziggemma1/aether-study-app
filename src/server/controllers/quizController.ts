@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { QuizResult } from '../models/QuizResult.js';
 import { User } from '../models/User.js';
+import { checkAchievements } from '../services/achievement-service.js';
 
 export const getResults = async (req: Request, res: Response) => {
   try {
@@ -47,6 +48,8 @@ export const createResult = async (req: Request, res: Response) => {
         }
       });
     }
+
+    await checkAchievements(userId);
 
     res.status(201).json(result);
   } catch (error: any) {
