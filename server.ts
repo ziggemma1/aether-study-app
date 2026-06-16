@@ -21,6 +21,8 @@ import notificationRoutes from "./src/server/routes/notificationRoutes.js";
 import reportsRoutes from "./src/server/routes/reportsRoutes.js";
 import leaderboardRoutes from "./src/server/routes/leaderboardRoutes.js";
 import achievementsRoutes from "./src/server/routes/achievementsRoutes.js";
+import studyPlanRoutes from "./src/server/routes/studyPlanRoutes.js";
+import calendarRoutes from "./src/server/routes/calendarRoutes.js";
 import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
 import { createServer } from "http";
 import { initSocket } from "./src/server/socket.js";
@@ -197,6 +199,8 @@ async function startServer() {
   app.use("/api/reports", checkDbConnection, reportsRoutes);
   app.use("/api/leaderboard", checkDbConnection, leaderboardRoutes);
   app.use("/api/achievements", checkDbConnection, achievementsRoutes);
+  app.use("/api/study-plans", checkDbConnection, studyPlanRoutes);
+  app.use("/api/calendar", checkDbConnection, calendarRoutes);
   
   // Custom Error Handling Middleware
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

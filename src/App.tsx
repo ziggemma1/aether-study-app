@@ -24,6 +24,7 @@ import Reports from './pages/Reports';
 import SubscriptionManagement from './pages/SubscriptionManagement';
 import MaterialDetail from './pages/MaterialDetail';
 import ReadingPlanGenerator from './pages/ReadingPlanGenerator';
+import StudyPlanDetail from './pages/StudyPlanDetail';
 import UploadMaterial from './pages/UploadMaterial';
 import CurriculumLibrary from './pages/CurriculumLibrary';
 import QuizInterface from './pages/QuizInterface';
@@ -116,6 +117,7 @@ export default function App() {
               <Route path="/messages" element={<Messages />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/plans" element={<ReadingPlanGenerator />} />
+              <Route path="/plans/:id" element={<StudyPlanDetail />} />
               <Route path="/quiz/:id" element={<QuizInterface />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/achievements" element={<Achievements />} />

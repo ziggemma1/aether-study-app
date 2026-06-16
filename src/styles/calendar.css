@@ -1,0 +1,92 @@
+/* Custom Calendar Styles for Aether Study */
+
+.calendar-container {
+  background: transparent;
+  padding: 1rem 0;
+}
+
+.calendar-month-header {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #F0F3F8;
+  text-align: center;
+  margin-bottom: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.weekday-label {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #8E9AAF;
+  padding: 0.5rem 0;
+  letter-spacing: 0.05em;
+}
+
+.date-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+  border-radius: 8px;
+  aspect-ratio: 1 / 1;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.date-number {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #F0F3F8;
+  line-height: 1;
+}
+
+/* Current month dates */
+.date-cell.current-month .date-number {
+  color: #F0F3F8;
+}
+
+/* Other month dates */
+.date-cell.other-month .date-number {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* Today */
+.date-cell.today {
+  background: #6C5CE7;
+  border-radius: 50%;
+}
+
+.date-cell.today .date-number {
+  color: #0B0E14;
+  font-weight: 700;
+}
+
+/* Active study day */
+.date-cell.active .active-dot {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #00D2FF;
+  margin-top: 2px;
+  box-shadow: 0 0 8px rgba(0, 210, 255, 0.4);
+}
+
+/* Missed past day */
+.date-cell.missed .date-number {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+/* Hover effect */
+.date-cell:hover:not(.today) {
+  background: rgba(108, 92, 231, 0.1);
+}
