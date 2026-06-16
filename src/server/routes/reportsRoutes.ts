@@ -67,7 +67,8 @@ router.get('/trends', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const sessions = await StudySession.find({ userId, type: 'study' });
+    // Fetch all user sessions (study or review) and quiz results
+    const sessions = await StudySession.find({ userId });
     const results = await QuizResult.find({ userId });
 
     const labels: string[] = [];
@@ -75,6 +76,19 @@ router.get('/trends', async (req, res) => {
     const studyMinutes: number[] = [];
 
     const today = new Date();
+
+    // Timezone-robust short-date string matching helper (YYYY-MM-DD)
+    const getLocalDateString = (dateInput: any) => {
+      if (!dateInput) return '';
+      const date = new Date(dateInput);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+
+    const getLocalMonthString = (dateInput: any) => {
+      if (!dateInput) return '';
+      const date = new Date(dateInput);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    };
 
     if (period === 'week') {
       // Last 7 days ending today
@@ -84,17 +98,14 @@ router.get('/trends', async (req, res) => {
         const label = d.toLocaleDateString('en-US', { weekday: 'short' });
         labels.push(label);
 
-        const startOfDay = new Date(d);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(d);
-        endOfDay.setHours(23, 59, 59, 999);
+        const targetDayStr = getLocalDateString(d);
 
-        // Sessions study minutes in this day
-        const daySessions = sessions.filter(s => s.startTime && new Date(s.startTime) >= startOfDay && new Date(s.startTime) <= endOfDay);
+        // Sessions study minutes in this day (checks matching calendar day)
+        const daySessions = sessions.filter(s => s.startTime && getLocalDateString(s.startTime) === targetDayStr);
         studyMinutes.push(daySessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0));
 
         // Quiz scores in this day
-        const dayQuizzes = results.filter(r => r.createdAt && new Date(r.createdAt) >= startOfDay && new Date(r.createdAt) <= endOfDay);
+        const dayQuizzes = results.filter(r => r.createdAt && getLocalDateString(r.createdAt) === targetDayStr);
         if (dayQuizzes.length > 0) {
           const avg = dayQuizzes.reduce((acc, curr) => {
             const p = curr.totalQuestions > 0 ? (curr.score / curr.totalQuestions) * 100 : 0;
@@ -102,7 +113,8 @@ router.get('/trends', async (req, res) => {
           }, 0) / dayQuizzes.length;
           scores.push(Math.round(avg));
         } else {
-          scores.push(user.avgQuizScore || 70);
+          // Fall back gracefully to user average when no quizzes exist, or 0 if user is fresh
+          scores.push(user.avgQuizScore || 0);
         }
       }
     } else if (period === 'month') {
@@ -116,10 +128,15 @@ router.get('/trends', async (req, res) => {
         const label = `${startDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDay.toLocaleDateString('en-US', { day: 'numeric' })}`;
         labels.push(label);
 
-        const rangeSessions = sessions.filter(s => s.startTime && new Date(s.startTime) >= startDay && new Date(s.startTime) <= endDay);
+        const startOfDay = new Date(startDay);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(endDay);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const rangeSessions = sessions.filter(s => s.startTime && new Date(s.startTime) >= startOfDay && new Date(s.startTime) <= endOfDay);
         studyMinutes.push(rangeSessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0));
 
-        const rangeQuizzes = results.filter(r => r.createdAt && new Date(r.createdAt) >= startDay && new Date(r.createdAt) <= endDay);
+        const rangeQuizzes = results.filter(r => r.createdAt && new Date(r.createdAt) >= startOfDay && new Date(r.createdAt) <= endOfDay);
         if (rangeQuizzes.length > 0) {
           const avg = rangeQuizzes.reduce((acc, curr) => {
             const p = curr.totalQuestions > 0 ? (curr.score / curr.totalQuestions) * 100 : 0;
@@ -127,7 +144,7 @@ router.get('/trends', async (req, res) => {
           }, 0) / rangeQuizzes.length;
           scores.push(Math.round(avg));
         } else {
-          scores.push(user.avgQuizScore || 70);
+          scores.push(user.avgQuizScore || 0);
         }
       }
     } else {
@@ -138,13 +155,12 @@ router.get('/trends', async (req, res) => {
         const label = d.toLocaleDateString('en-US', { month: 'short' });
         labels.push(label);
 
-        const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
-        const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+        const targetMonthStr = getLocalMonthString(d);
 
-        const monthSessions = sessions.filter(s => s.startTime && new Date(s.startTime) >= startOfMonth && new Date(s.startTime) <= endOfMonth);
+        const monthSessions = sessions.filter(s => s.startTime && getLocalMonthString(s.startTime) === targetMonthStr);
         studyMinutes.push(monthSessions.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0));
 
-        const monthQuizzes = results.filter(r => r.createdAt && new Date(r.createdAt) >= startOfMonth && new Date(r.createdAt) <= endOfMonth);
+        const monthQuizzes = results.filter(r => r.createdAt && getLocalMonthString(r.createdAt) === targetMonthStr);
         if (monthQuizzes.length > 0) {
           const avg = monthQuizzes.reduce((acc, curr) => {
             const p = curr.totalQuestions > 0 ? (curr.score / curr.totalQuestions) * 100 : 0;
@@ -152,7 +168,7 @@ router.get('/trends', async (req, res) => {
           }, 0) / monthQuizzes.length;
           scores.push(Math.round(avg));
         } else {
-          scores.push(user.avgQuizScore || 75);
+          scores.push(user.avgQuizScore || 0);
         }
       }
     }
