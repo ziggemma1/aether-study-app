@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 interface PageHeaderProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   action?: React.ReactNode;
   breadcrumbs?: Array<{ label: string; href?: string }>;
 }
@@ -34,9 +34,9 @@ export function PageHeader({ title, subtitle, action, breadcrumbs }: PageHeaderP
             {title}
           </h1>
           {subtitle && (
-            <p className="text-xs text-text-muted mt-1 leading-normal font-sans">
+            <div className="text-xs text-text-muted mt-1 leading-normal font-sans">
               {subtitle}
-            </p>
+            </div>
           )}
         </div>
         {action && (
