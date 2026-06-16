@@ -39,7 +39,7 @@ export default function Library() {
   }, [materials]);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto relative min-h-screen pb-24 bg-[#0B0E14] text-[#F0F3F8]">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto relative min-h-screen pb-24 bg-[#0B0E14] text-[#F0F3F8]">
       {/* Page Header */}
       <PageHeader
         title="📚 Library"
@@ -63,6 +63,12 @@ export default function Library() {
         }
       />
 
+      {/* Global Mastery Notice Banner */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-[#6C5CE7]/10 border border-[#6C5CE7]/20 rounded-2xl mt-4 text-[#F0F3F8] text-xs font-medium select-none">
+        <span className="text-lg">📊</span>
+        <span>Complete quizzes to track and increase your mastery level for each study folder!</span>
+      </div>
+
       {/* Search & Sort Row */}
       <div className="flex flex-col gap-3 mt-4 mb-4">
         <div className="flex flex-col sm:flex-row gap-3">
@@ -83,8 +89,8 @@ export default function Library() {
       {/* Materials List Section */}
       <div className="mt-4">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <MaterialCardSkeleton key={i} />
             ))}
           </div>
@@ -92,7 +98,7 @@ export default function Library() {
           <AnimatePresence mode="popLayout">
             <motion.div
               layout
-              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch"
             >
               {materials.map((material) => (
                 <MaterialCard key={material.id} material={material} />

@@ -53,9 +53,9 @@ export function MaterialCard({ material }: MaterialCardProps) {
   return (
     <motion.div
       layout
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -4 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="group relative flex flex-col justify-between rounded-2xl bg-[#141A24] p-5 mb-4 border border-[#8E9AAF]/5 transition-shadow hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] w-full"
+      className="group relative flex flex-col justify-between rounded-2xl bg-[#141A24] p-5 border border-[#8E9AAF]/5 transition-shadow hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] w-full h-full min-h-[280px]"
     >
       <div>
         {/* Header Section */}
@@ -73,7 +73,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
           <button
             onClick={handleShare}
             id={`share-${material.id}`}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#8E9AAF]/5 text-[#8E9AAF] transition-all active:scale-90 active:bg-[#8E9AAF]/10 shrink-0"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#8E9AAF]/5 text-[#8E9AAF] transition-all active:scale-90 active:bg-[#8E9AAF]/10 shrink-0 cursor-pointer"
             title="Share material"
           >
             <Share2 size={16} className={copied ? 'text-[#00E5A0]' : ''} />
@@ -101,9 +101,9 @@ export function MaterialCard({ material }: MaterialCardProps) {
             {material.tags.slice(0, 3).map((tag, idx) => (
               <span
                 key={`${tag}-${idx}`}
-                className="text-[11px] font-semibold text-[#8E9AAF] bg-[#8E9AAF]/5 px-2.5 py-1 rounded-lg border border-[#8E9AAF]/10 max-w-[150px] truncate"
+                className="text-[11px] font-semibold text-[#8E9AAF] bg-[#8E9AAF]/5 px-2.5 py-1 rounded-lg border border-[#8E9AAF]/10 whitespace-nowrap"
               >
-                {tag}
+                #{tag}
               </span>
             ))}
           </div>
@@ -112,8 +112,8 @@ export function MaterialCard({ material }: MaterialCardProps) {
 
       <div>
         {/* Mastery Progress */}
-        <div className="pt-3 border-t border-[#8E9AAF]/5 mb-4 selectors-progress">
-          {material.mastery > 0 ? (
+        {material.mastery > 0 && (
+          <div className="pt-3 border-t border-[#8E9AAF]/5 mb-4 selectors-progress">
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] font-bold uppercase text-[#8E9AAF] tracking-wider">
@@ -130,13 +130,8 @@ export function MaterialCard({ material }: MaterialCardProps) {
                 />
               </div>
             </div>
-          ) : (
-            <div className="flex items-center gap-2 text-xs text-[#8E9AAF]/80 py-1 font-medium bg-[#8E9AAF]/5 px-3 rounded-xl border border-[#8E9AAF]/5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F5B042]/80 animate-pulse shrink-0" />
-              <span>No quiz score yet • Complete a Quiz to measure mastery</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Quick Action Interactive Buttons (Touch Target: min 44px) */}
         <div className="grid grid-cols-4 gap-2 border-t border-[#8E9AAF]/5 pt-3">
