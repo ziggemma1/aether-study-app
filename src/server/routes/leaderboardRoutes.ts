@@ -19,26 +19,28 @@ router.get('/top', async (req, res) => {
     const mappedUsers = allLeaderboardUsers.map((u, idx) => ({
       rank: idx + 1,
       name: u.name,
-      points: u.aetherPoints || 0,
+      id: u._id.toString(),
       avatar: u.avatar || null,
-      id: u._id.toString()
+      subject: (u as any).subject || 'All Subjects',
+      points: {
+        total: u.aetherPoints || 0,
+        studyTime: Math.floor((u.aetherPoints || 0) * 0.4), // Derived points
+        quizzes: Math.floor((u.aetherPoints || 0) * 0.5),
+        streak: Math.floor((u.aetherPoints || 0) * 0.1),
+      }
     }));
 
     const leaderboard = mappedUsers.slice(0, limitNum);
 
     // Find current user's profile and dynamic rank
     const currentUserIndex = mappedUsers.findIndex(u => u.id === userId.toString());
-    const currentUserObj = await User.findById(userId);
-
-    const currentUser = {
-      rank: currentUserIndex !== -1 ? currentUserIndex + 1 : 12,
-      name: currentUserObj?.name || "Ziggemma",
-      points: currentUserObj?.aetherPoints || 0
-    };
-
+    
     res.json({
       leaderboard,
-      currentUser
+      totalUsers: mappedUsers.length,
+      currentUserRank: currentUserIndex !== -1 ? currentUserIndex + 1 : null,
+      topScore: mappedUsers[0]?.points.total || 0,
+      weekEnding: '4d 12h' // Could be dynamic
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

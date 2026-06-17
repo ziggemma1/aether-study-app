@@ -29,7 +29,9 @@ router.get('/profile', async (req, res) => {
       image: user.avatar || null,
       joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       streak: user.streak || 0,
-      totalStudyTime: user.totalStudyTime || 0, // In minutes
+      aetherPoints: user.aetherPoints || 0,
+      points: user.points || 0,
+      totalStudyTime: user.totalStudyTime || 0,
       averageQuizScore: user.avgQuizScore || 0,
       rank: rank,
       totalLearners: totalLearners

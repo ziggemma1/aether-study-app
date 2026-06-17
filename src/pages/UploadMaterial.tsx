@@ -197,27 +197,37 @@ export default function UploadMaterial() {
       setUploadProgress(85);
       console.log('Saving completed material to database...');
 
-      const response = await api.post('/materials', {
-        title: materialTitle || 'Untitled Material',
-        type: materialType,
-        content: finalContent,
-        summary: analysis.summary,
-        keyTopics: analysis.keyTopics,
-        realLifeApplications: analysis.realLifeApplications,
-        detailedNotes: detailedNotesData.detailedNotes,
-        noteSections: detailedNotesData.noteSections,
-        structuredNote: detailedNotesData.structuredNote,
-        visualAidUrl: analysis.visualAidUrl,
-        suggestedQuizQuestions: analysis.suggestedQuizQuestions,
-        generationStatus: 'completed', // Immediately completed
-        flashcards: analysis.recommendedFlashcards?.map((c: any) => ({
-          ...c,
-          interval: 0,
-          repetitions: 0,
-          easeFactor: 2.5,
-          nextReview: new Date()
-        }))
-      });
+      let response;
+      try {
+        response = await api.post('/materials', {
+          title: materialTitle || 'Untitled Material',
+          type: materialType,
+          content: finalContent,
+          summary: analysis.summary,
+          keyTopics: analysis.keyTopics,
+          realLifeApplications: analysis.realLifeApplications,
+          detailedNotes: detailedNotesData.detailedNotes,
+          noteSections: detailedNotesData.noteSections,
+          structuredNote: detailedNotesData.structuredNote,
+          visualAidUrl: analysis.visualAidUrl,
+          suggestedQuizQuestions: analysis.suggestedQuizQuestions,
+          generationStatus: 'completed', // Immediately completed
+          flashcards: analysis.recommendedFlashcards?.map((c: any) => ({
+            ...c,
+            interval: 0,
+            repetitions: 0,
+            easeFactor: 2.5,
+            nextReview: new Date()
+          }))
+        });
+      } catch (err: any) {
+        if (err.response?.status === 403 && err.response?.data?.code === 'LIMIT_EXCEEDED') {
+          showToast('Monthly upload limit reached (3 documents). Upgrade to Pro for unlimited uploads.', 'error');
+          setIsUploading(false);
+          return;
+        }
+        throw err; // Re-throw to be caught by the outer catch
+      }
 
       const newId = response.data._id || response.data.id;
       console.log('Material saved successfully:', response.data);

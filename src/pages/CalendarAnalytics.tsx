@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, Cell } from 'recharts';
 import { Target, TrendingUp, Clock, Flame } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
@@ -90,7 +90,7 @@ export default function CalendarAnalytics() {
                 />
                 <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
                   {weeklyData.map((entry, index) => (
-                    <cell key={`cell-${index}`} fill={index === 5 || index === 6 ? '#8b5cf6' : '#3b82f6'} />
+                    <Cell key={`cell-${index}`} fill={index === 5 || index === 6 ? '#8b5cf6' : '#3b82f6'} />
                   ))}
                 </Bar>
               </BarChart>
