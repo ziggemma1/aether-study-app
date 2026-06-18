@@ -41,10 +41,10 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, backoff = 1000): 
 
 // OpenRouter Logic
 const FREE_MODELS = [
-  'google/gemini-2.5-flash:free',
-  'qwen/qwen-2.5-7b-instruct:free',
-  'meta-llama/llama-3-8b-instruct:free',
-  'microsoft/phi-3-medium-128k-instruct:free'
+  'google/gemini-flash-1.5-8b:free',
+  'meta-llama/llama-3.1-8b-instruct:free',
+  'mistralai/mistral-7b-instruct:free',
+  'openchat/openchat-7b:free'
 ];
 
 export const callOpenRouter = async (messages: any[], useJson = false): Promise<any> => {
@@ -101,7 +101,7 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
   try {
     if (ai) {
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-flash-latest",
         contents: [{ role: 'user', parts: [{ text: `Material Title: ${title}\n\nContent:\n${content.substring(0, 15000)}` }]}],
         config: {
           responseMimeType: "application/json",
@@ -200,7 +200,7 @@ export const generateFlashcards = async (content: string, language: string, coun
   if (ai) {
     try {
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-flash-latest",
         contents: [{ role: 'user', parts: [{ text: `Content: ${content.substring(0, 10000)}\n\n${prompt}` }]}],
         config: {
           responseMimeType: "application/json",
@@ -248,7 +248,7 @@ export const generateQuiz = async (content: string, language: string, count: num
   if (ai) {
     try {
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-flash-latest",
         contents: [{ role: 'user', parts: [{ text: `Content: ${content.substring(0, 10000)}\n\n${prompt}` }]}],
         config: {
           responseMimeType: "application/json",
@@ -307,7 +307,7 @@ export const chatWithTutor = async (materialTitle: string, materialContent: stri
     try {
       console.log(`[AI-Service] Attempting chatWithTutor with Gemini...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-flash-latest",
         contents: [
           ...chatHistory.map((h: any) => ({ 
             role: h.role === 'model' || h.role === 'assistant' ? 'model' : 'user', 
@@ -357,7 +357,7 @@ export const generateStudyPlan = async (materials: any[], startDate: string, dur
   if (ai) {
     try {
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-flash-latest",
         contents: [{ role: 'user', parts: [{ text: "Generate the study plan JSON." }]}],
         config: {
           systemInstruction: systemPrompt,
@@ -431,7 +431,7 @@ ${content.substring(0, 15000)}`;
     try {
       console.log(`[AI-Service] Attempting generateDetailedNotes with Gemini...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-flash-latest",
         contents: [{ role: 'user', parts: [{ text: promptText }]}],
         config: {
           temperature: 0.3,
@@ -618,7 +618,7 @@ ${content.substring(0, 18000)}`;
     try {
       console.log(`[AI-Service] Calling Gemini for Academic Mega Notes...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-flash-latest",
         contents: [{ role: 'user', parts: [{ text: promptText }]}],
         config: {
           temperature: 0.4,
@@ -757,7 +757,7 @@ export const generateSpeech = async (text: string): Promise<string | null> => {
   }
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.1-flash-tts-preview",
       contents: [{ parts: [{ text: `Read this summary clearly: ${text}` }] }],
       config: {
         responseModalities: [Modality.AUDIO],

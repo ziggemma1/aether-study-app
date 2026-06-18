@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAppContext } from '../context/AppContext';
 
-// Use the current origin for the socket connection
-const SOCKET_URL = typeof window !== 'undefined' ? window.location.origin : '';
+// This URL should be your Render server URL
+// Defined as VITE_SOCKET_URL in .env
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '') || 'https://aether-socket-server-17zk.onrender.com';
 
 export interface Message {
   _id: string;

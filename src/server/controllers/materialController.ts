@@ -140,32 +140,10 @@ export const createMaterial = async (req: Request, res: Response) => {
     
     console.log(`Creating material for user ID: ${userId}, Title: ${title}`);
     
-    // Enforce Plan Limits
-    const user = await mongoose.model('User').findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const now = new Date();
-    const lastReset = user.lastUploadResetDate || user.createdAt;
-    const isNewMonth = now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear();
-
-    if (isNewMonth) {
-      user.monthlyUploadCount = 0;
-      user.lastUploadResetDate = now;
-    }
-
-    if (user.plan === 'free' && user.monthlyUploadCount >= 3) {
-      return res.status(403).json({ 
-        message: "Neural Link Capacity Exceeded", 
-        code: "LIMIT_EXCEEDED",
-        details: "Free tier is limited to 3 document uploads per cycle. Upgrade to Pro for infinite bandwidth."
-      });
-    }
-
     let authorName = req.body.authorName;
     if (isPublic && !authorName) {
-      authorName = user.name || "Unknown Author";
+      const user = await mongoose.model('User').findById(userId);
+      authorName = user?.name || "Unknown Author";
     }
 
     const material = new Material({
@@ -183,18 +161,12 @@ export const createMaterial = async (req: Request, res: Response) => {
       suggestedQuizQuestions,
       isPublic: isPublic || false,
       authorName: authorName || "Unknown Author",
-      likes: Math.floor(Math.random() * 15) + 2,
+      likes: Math.floor(Math.random() * 15) + 2, // starter values for community flavor
       downloads: Math.floor(Math.random() * 20) + 5,
       rating: parseFloat((4 + Math.random()).toFixed(1))
     });
-    
     await material.save();
-    
-    // Increment upload count
-    user.monthlyUploadCount += 1;
-    await user.save();
-    
-    console.log(`Material saved successfully with ID: ${material._id}. User count: ${user.monthlyUploadCount}`);
+    console.log(`Material saved successfully with ID: ${material._id}`);
     
     try {
       await checkAchievements(userId);

@@ -1,165 +1,134 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Zap, Headphones, Palette, Lock, Check, ZapOff, Loader2, ShoppingBag, Trophy, History } from 'lucide-react';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Sparkles, Zap, Headphones, Palette, Lock, Unlock, Snowflake } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import api from '../services/api';
 
-// New Components & Hooks
-import { ShopItemCard } from '../components/shop/ShopItemCard';
-import { PointsDisplay } from '../components/shop/PointsDisplay';
-import { useShop } from '../hooks/useShop';
-
 export default function Shop() {
-  const { user, showToast } = useAppContext();
-  const [activeCategory, setActiveCategory] = useState<'all' | 'theme' | 'voice' | 'utility' | 'badge'>('all');
-  const [isPurchasing, setIsPurchasing] = useState(false);
+  const { user, showToast, t, setUser } = useAppContext();
+  
+  // local mock points state for demo purposes without hitting backend
+  const points = user?.aetherPoints || 0;
+  const freezeTokens = user?.freezeTokens || 0;
 
-  const { items, points, totalEarned, totalSpent, loading, error, purchaseItem } = useShop();
-
-  const handlePurchase = async (itemId: string) => {
-    setIsPurchasing(true);
-    const result = await purchaseItem(itemId);
-    setIsPurchasing(false);
-    
-    if (result.success) {
-      showToast(`Successfully purchased ${result.item?.name}!`, 'success');
+  const handleBuyItem = async (cost: number, itemName: string, isFreeze: boolean = false) => {
+    if (points >= cost) {
+      try {
+        const response = await api.post('/users/shop/purchase', { cost, itemName, isFreeze });
+        if (setUser && user) {
+          setUser({
+            ...user,
+            aetherPoints: response.data.aetherPoints,
+            freezeTokens: response.data.freezeTokens,
+            themeUnlocked: response.data.themeUnlocked
+          });
+        }
+        if (isFreeze) {
+          showToast(`Purchased ${itemName}! You now have ${response.data.freezeTokens} tokens.`);
+        } else {
+          showToast(`Unlocked ${itemName}! Enjoy.`);
+        }
+      } catch (error: any) {
+        showToast(error.response?.data?.message || 'Purchase failed', 'error');
+      }
     } else {
-      showToast(result.message || 'Purchase failed', 'error');
+      showToast(`Not enough Aether Points for ${itemName}. Keep studying!`, 'error');
     }
   };
 
-  const categories = [
-    { id: 'all', label: 'All', icon: Sparkles },
-    { id: 'utility', label: 'Utilities', icon: Zap },
-    { id: 'theme', label: 'Themes', icon: Palette },
-    { id: 'voice', label: 'Voices', icon: Headphones },
-    { id: 'badge', label: 'Badges', icon: Trophy },
-  ] as const;
+  const themes = [
+    { id: 't1', name: 'Cyberpunk Red', icon: Palette, cost: 200 },
+    { id: 't2', name: 'Ocean Breeze', icon: Palette, cost: 150 },
+  ];
 
-  const filteredItems = activeCategory === 'all' 
-    ? items 
-    : items.filter(item => item.category === activeCategory);
+  const voices = [
+    { id: 'v1', name: 'Voice: Atlas (Deep UK)', icon: Headphones, cost: 500 },
+    { id: 'v2', name: 'Voice: Nova (Bright US)', icon: Headphones, cost: 300 },
+  ];
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto pb-24 relative select-none">
-      {/* Background Decor */}
-      <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-[#6C5CE7]/5 rounded-full blur-[150px] -z-10 pointer-events-none" />
-      <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-[#00D2FF]/5 rounded-full blur-[150px] -z-10 pointer-events-none" />
-
-      {/* Header Section */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-        <div className="max-w-md">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 mb-4"
-          >
-            <div className="w-10 h-10 rounded-xl bg-[#6C5CE7] flex items-center justify-center shadow-lg shadow-[#6C5CE7]/20">
-              <ShoppingBag size={20} className="text-white" />
-            </div>
-            <h1 className="text-3xl font-black text-white tracking-tight uppercase italic">Aether Shop</h1>
-          </motion.div>
-          <p className="text-sm text-white/40 font-bold leading-relaxed">
-            Personalize your study experience with exclusive Aether themes, crystalline voices, and powerful streak-preserving tools.
-          </p>
+    <div className="p-4 md:p-8 max-w-4xl mx-auto pb-24">
+      <header className="mb-10 text-center flex flex-col items-center">
+        <div className="w-20 h-20 bg-gradient-to-tr from-primary to-accent rounded-full flex items-center justify-center text-white mb-6 shadow-xl shadow-primary/20">
+          <Zap size={36} className="animate-pulse" />
         </div>
-
-        <PointsDisplay />
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-text-main mb-2">Aether Shop</h1>
+        <p className="text-text-muted mb-6">Spend points earned from your focus sessions.</p>
+        
+        <div className="flex gap-4">
+          <div className="glass-card px-6 py-3 flex items-center gap-3">
+             <Zap className="text-yellow-500" />
+             <span className="text-2xl font-black text-text-main">{points}</span>
+             <span className="text-xs text-text-muted font-bold uppercase tracking-widest">Points</span>
+          </div>
+          <div className="glass-card px-6 py-3 flex items-center gap-3">
+             <Snowflake className="text-cyan-500" />
+             <span className="text-2xl font-black text-text-main">{freezeTokens}</span>
+             <span className="text-xs text-text-muted font-bold uppercase tracking-widest">Freeze Tokens</span>
+          </div>
+        </div>
       </header>
 
-      {/* Categories Scroller */}
-      <div className="flex items-center gap-3 mb-10 overflow-x-auto pb-4 scrollbar-hide">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={cn(
-              "px-6 py-3.5 rounded-2xl flex items-center gap-2.5 transition-all duration-300 border whitespace-nowrap",
-              activeCategory === cat.id 
-                ? "bg-[#6C5CE7] border-[#6C5CE7] text-white shadow-lg shadow-[#6C5CE7]/20" 
-                : "bg-[#141A24]/60 border-white/5 text-white/40 hover:border-white/10"
-            )}
-          >
-            <cat.icon size={16} className={cn(activeCategory === cat.id ? "text-white" : "text-white/40")} />
-            <span className="text-xs font-black uppercase tracking-widest">{cat.label}</span>
-          </button>
-        ))}
-      </div>
+      <div className="space-y-12">
+        {/* Utilities */}
+        <section>
+          <h2 className="text-lg font-bold text-text-main mb-4 flex items-center gap-2">
+            <Snowflake className="text-cyan-500" /> Utilities
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <motion.div whileHover={{ y: -4 }} className="glass-card p-6 border-2 border-border/40 hover:border-cyan-500/50 transition-all flex justify-between items-center">
+               <div>
+                  <h3 className="font-bold text-text-main text-lg mb-1">Streak Freeze</h3>
+                  <p className="text-sm text-text-muted">Guilt-free day off. Keeps your streak active.</p>
+               </div>
+               <button onClick={() => handleBuyItem(100, 'Streak Freeze', true)} className="btn-primary bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/20 whitespace-nowrap px-6 rounded-xl font-black">
+                 100 <Zap size={14} className="inline ml-1 mb-0.5" />
+               </button>
+            </motion.div>
+          </div>
+        </section>
 
-      {/* Items Grid */}
-      <AnimatePresence mode="wait">
-        {loading ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center py-32"
-          >
-            <Loader2 size={48} className="text-[#6C5CE7] animate-spin mb-6" />
-            <p className="text-white/40 font-black uppercase tracking-widest text-xs">Accessing vault...</p>
-          </motion.div>
-        ) : error ? (
-          <motion.div
-            key="error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-32 text-center"
-          >
-            <ZapOff size={48} className="text-red-400/20 mb-6" />
-            <h3 className="text-xl font-black text-white mb-2">Sync Interrupted</h3>
-            <p className="text-white/40 text-sm max-w-xs">{error}</p>
-          </motion.div>
-        ) : filteredItems.length === 0 ? (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-32 text-center"
-          >
-            <Sparkles size={48} className="text-white/5 mb-6" />
-            <h3 className="text-xl font-black text-white mb-2">Vault Empty</h3>
-            <p className="text-white/40 text-sm">Check back soon for new exclusive artifacts.</p>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="grid"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {filteredItems.map((item) => (
-              <ShopItemCard
-                key={item._id}
-                item={item}
-                userPoints={points}
-                onPurchase={handlePurchase}
-                isLoading={isPurchasing}
-              />
+        {/* UI Themes */}
+        <section>
+          <h2 className="text-lg font-bold text-text-main mb-4 flex items-center gap-2">
+             <Palette className="text-purple-500" /> Display Themes
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {themes.map(t => (
+              <motion.div key={t.id} whileHover={{ y: -4 }} className="glass-card p-6 flex flex-col items-center text-center">
+                 <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted mb-4">
+                   <t.icon />
+                 </div>
+                 <h3 className="font-bold text-text-main mb-4">{t.name}</h3>
+                 <button onClick={() => handleBuyItem(t.cost, t.name)} className="w-full btn-outline border-primary/20 text-text-main hover:bg-primary/5 rounded-xl font-bold flex items-center justify-center gap-2">
+                   <Lock size={14} /> {t.cost} <Zap size={14} />
+                 </button>
+              </motion.div>
             ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </section>
 
-      {/* Footer Info */}
-      <footer className="mt-20 pt-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
-           <div className="flex flex-col">
-              <span className="text-[9px] font-black uppercase tracking-widest text-white/20 mb-1">Total Earned</span>
-              <span className="text-white font-mono font-bold">{totalEarned.toLocaleString()}</span>
-           </div>
-           <div className="flex flex-col">
-              <span className="text-[9px] font-black uppercase tracking-widest text-white/20 mb-1">Total Spent</span>
-              <span className="text-white font-mono font-bold">{totalSpent.toLocaleString()}</span>
-           </div>
-        </div>
-        
-        <button className="flex items-center gap-2 group">
-           <History size={16} className="text-white/20 group-hover:text-[#6C5CE7] transition-colors" />
-           <span className="text-[10px] font-black uppercase tracking-widest text-white/20 group-hover:text-white transition-colors">Transaction History</span>
-        </button>
-      </footer>
+        {/* TTS Voices */}
+        <section>
+          <h2 className="text-lg font-bold text-text-main mb-4 flex items-center gap-2">
+             <Headphones className="text-blue-500" /> AI Voices
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {voices.map(t => (
+              <motion.div key={t.id} whileHover={{ y: -4 }} className="glass-card p-6 flex flex-col items-center text-center">
+                 <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted mb-4">
+                   <t.icon />
+                 </div>
+                 <h3 className="font-bold text-text-main mb-4">{t.name}</h3>
+                 <button onClick={() => handleBuyItem(t.cost, t.name)} className="w-full btn-outline border-primary/20 text-text-main hover:bg-primary/5 rounded-xl font-bold flex items-center justify-center gap-2">
+                   <Lock size={14} /> {t.cost} <Zap size={14} />
+                 </button>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
