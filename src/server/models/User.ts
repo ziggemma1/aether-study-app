@@ -16,6 +16,8 @@ const userSchema = new mongoose.Schema({
   location: { type: String, default: '' },
   handle: { type: String, unique: true, sparse: true },
   plan: { type: String, enum: ['free', 'pro'], default: 'free' },
+  monthlyUploadCount: { type: Number, default: 0 },
+  lastUploadResetDate: { type: Date, default: Date.now },
   avgQuizScore: { type: Number, default: 0 },
   highestQuizScore: { type: Number, default: 0 },
   lowestQuizScore: { type: Number, default: 0 },

@@ -13,7 +13,14 @@ const getAiClient = () => {
   if (!aiClient && GEMINI_API_KEY) {
     try {
       console.log(`[AI-Service] Initializing GoogleGenAI client...`);
-      aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      aiClient = new GoogleGenAI({ 
+        apiKey: GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
     } catch (err: any) {
       console.error(`[AI-Service] Initialization failed:`, err.message);
     }
@@ -43,8 +50,8 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, backoff = 1000): 
 const FREE_MODELS = [
   'google/gemini-flash-1.5-8b:free',
   'meta-llama/llama-3.1-8b-instruct:free',
-  'mistralai/mistral-7b-instruct:free',
-  'openchat/openchat-7b:free'
+  'qwen/qwen-2-7b-instruct:free',
+  'mistralai/mistral-7b-instruct:free'
 ];
 
 export const callOpenRouter = async (messages: any[], useJson = false): Promise<any> => {

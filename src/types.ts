@@ -8,6 +8,8 @@ export interface User {
   language: string;
   country: string;
   plan: 'free' | 'pro';
+  monthlyUploadCount?: number;
+  lastUploadResetDate?: string;
   bio?: string;
   location?: string;
   handle?: string;

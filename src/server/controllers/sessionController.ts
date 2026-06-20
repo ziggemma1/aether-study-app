@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { StudySession } from '../models/StudySession.js';
 import { User } from '../models/User.js';
 import { checkAchievements } from '../services/achievement-service.js';
+import { awardPoints } from '../utils/pointsSystem.js';
 
 export const getSessions = async (req: Request, res: Response) => {
   try {
@@ -34,10 +35,10 @@ export const createSession = async (req: Request, res: Response) => {
     if (duration > 0 && req.body.type === 'study') {
       await User.findByIdAndUpdate(userId, {
         $inc: { 
-          totalStudyTime: duration,
-          aetherPoints: duration * 10
+          totalStudyTime: duration
         }
       });
+      await awardPoints(userId, 'STUDY_SESSION_COMPLETE', session._id.toString());
     }
 
     // Update achievements on the and send response

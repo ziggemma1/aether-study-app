@@ -230,6 +230,28 @@ export const toggleLeaderboardOptIn = async (req: Request, res: Response) => {
   }
 };
 
+export const upgradeToPro = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Mocking an instant upgrade for demonstration
+    user.plan = 'pro';
+    await user.save();
+
+    res.json({ 
+      message: "Sync Complete. Quantum Access Granted.", 
+      plan: user.plan
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const purchaseShopItem = async (req: Request, res: Response) => {
   try {
     const { cost, itemName, isFreeze } = req.body;
