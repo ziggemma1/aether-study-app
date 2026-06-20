@@ -1,6 +1,6 @@
 {
   "name": "Aether Study",
   "description": "AI-powered personalized study roadmaps and collaborative learning platform.",
-  "requestFramePermissions": ["geolocation", "microphone"],
+  "requestFramePermissions": ["geolocation", "microphone", "camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

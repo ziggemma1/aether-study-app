@@ -3,6 +3,7 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: '/api',
   withCredentials: true,
+  timeout: 120000, // 2 minute timeout for AI analysis
 });
 
 // Add interceptor to include Authorization header if token exists in localStorage

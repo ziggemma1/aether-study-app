@@ -35,6 +35,73 @@ export function useLibrary() {
     }
   };
 
+  const deleteMaterial = async (id: string) => {
+    try {
+      console.log(`[useLibrary] Deleting material: ${id}`);
+      await api.delete(`/materials/${id}`);
+      setMaterials(prev => prev.filter(m => (m.id !== id && (m as any)._id !== id)));
+      return true;
+    } catch (err) {
+      console.error('Failed to delete material:', err);
+      return false;
+    }
+  };
+
+  const deleteMaterials = async (ids: string[]) => {
+    try {
+      console.log(`[useLibrary] Bulk deleting materials:`, ids);
+      await api.post('/materials/bulk-delete', { ids });
+      setMaterials(prev => prev.filter(m => {
+        const materialId = m.id || (m as any)._id;
+        return !ids.includes(materialId);
+      }));
+      return true;
+    } catch (err) {
+      console.error('Failed to bulk delete materials:', err);
+      return false;
+    }
+  };
+
+  const mergeMaterials = async (ids: string[], title: string) => {
+    try {
+      // 1. Fetch details of all materials to merge
+      const detailedMaterials = await Promise.all(
+        ids.map(id => api.get(`/materials/${id}`).then(res => res.data))
+      );
+
+      // 2. Combine their contents
+      const combinedContent = detailedMaterials
+        .map(m => `--- ${m.title} ---\n${m.content || m.summary || ''}`)
+        .join('\n\n');
+
+      const combinedSummary = `Unified study material merged from: ${detailedMaterials.map(m => m.title).join(', ')}`;
+      
+      const allTags = new Set<string>();
+      detailedMaterials.forEach(m => {
+        if (m.keyTopics) m.keyTopics.forEach((t: string) => allTags.add(t));
+      });
+
+      // 3. Create the new merged material
+      const res = await api.post('/materials', {
+        title,
+        type: 'unified',
+        content: combinedContent,
+        summary: combinedSummary,
+        keyTopics: Array.from(allTags).slice(0, 5),
+        isPublic: false
+      });
+
+      if (res.data) {
+        await fetchMaterials();
+        return res.data;
+      }
+      return null;
+    } catch (err) {
+      console.error('Failed to merge materials:', err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchMaterials();
   }, []);
@@ -95,5 +162,8 @@ export function useLibrary() {
     sortBy,
     setSortBy,
     refetch: fetchMaterials,
+    deleteMaterial,
+    deleteMaterials,
+    mergeMaterials,
   };
 }

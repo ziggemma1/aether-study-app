@@ -3,54 +3,6 @@ import { Message } from '../models/Message.js';
 import { User } from '../models/User.js';
 import { Group } from '../models/Group.js';
 
-export const getConversations = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).userId;
-    
-    // Find all users this user has messaged or received messages from
-    const sentMessages = await Message.distinct('receiverId', { senderId: userId, receiverId: { $ne: null } });
-    const receivedMessages = await Message.distinct('senderId', { receiverId: userId, senderId: { $ne: null } });
-    
-    const contactIds = Array.from(new Set([...sentMessages, ...receivedMessages]));
-    
-    const conversations = await User.find({ _id: { $in: contactIds } })
-      .select('name avatar followers following');
-    
-    // Supplement with last message for each
-    const conversationsWithLastMsg = await Promise.all(conversations.map(async (conv) => {
-      const lastMsg = await Message.findOne({
-        $or: [
-          { senderId: userId, receiverId: conv._id },
-          { senderId: conv._id, receiverId: userId }
-        ]
-      }).sort({ createdAt: -1 });
-      
-      const unreadCount = await Message.countDocuments({
-        senderId: conv._id,
-        receiverId: userId,
-        isRead: false
-      });
-
-      const isFriend = conv.following.includes(userId); // Assuming 'following' means they follow. But usually it's mutual.
-      
-      return {
-        id: conv._id,
-        name: conv.name,
-        avatar: conv.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conv.name}`,
-        lastMsg: lastMsg ? lastMsg.content : 'No messages',
-        time: lastMsg ? lastMsg.createdAt : null,
-        unread: unreadCount,
-        type: 'private',
-        isFriend
-      };
-    }));
-
-    res.json(conversationsWithLastMsg);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 export const getMessages = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;

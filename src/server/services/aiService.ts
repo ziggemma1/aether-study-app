@@ -13,14 +13,7 @@ const getAiClient = () => {
   if (!aiClient && GEMINI_API_KEY) {
     try {
       console.log(`[AI-Service] Initializing GoogleGenAI client...`);
-      aiClient = new GoogleGenAI({ 
-        apiKey: GEMINI_API_KEY,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
+      aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     } catch (err: any) {
       console.error(`[AI-Service] Initialization failed:`, err.message);
     }
@@ -46,13 +39,69 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, backoff = 1000): 
   throw new Error('Max retries exceeded');
 };
 
+const GEMINI_MODEL = "gemini-1.5-flash"; 
+
 // OpenRouter Logic
 const FREE_MODELS = [
-  'google/gemini-flash-1.5-8b:free',
-  'meta-llama/llama-3.1-8b-instruct:free',
-  'qwen/qwen-2-7b-instruct:free',
-  'mistralai/mistral-7b-instruct:free'
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'google/gemma-4-31b-it:free',
+  'meta-llama/llama-3.2-3b-instruct:free',
+  'qwen/qwen3-coder:free',
+  'openrouter/free'
 ];
+
+const cleanJsonContent = (content: string): string => {
+  if (!content) return "";
+  // Strip safety wrappers like "User Safety: safe" prepended by some 2026 models
+  let cleaned = content.replace(/^User Safety: safe\s*/i, '');
+  // Strip markdown code blocks
+  cleaned = cleaned.replace(/```json\s?|```/g, '').trim();
+  return cleaned;
+};
+
+const normalizeQuizQuestions = (questions: any) => {
+  const raw = Array.isArray(questions) ? questions : (questions?.questions || []);
+  
+  // Filter out invalid items and things that don't look like questions
+  return raw.filter((q: any) => 
+    q && typeof q === 'object' && !Array.isArray(q) &&
+    (q.question || q.text || q.prompt)
+  ).map((q: any) => {
+    // Extract options robustly
+    let rawOptions = Array.isArray(q.options) ? q.options : (q.choices || q.answers || []);
+    // Map options to strings if they are objects
+    const options = rawOptions.map((opt: any) => {
+      if (typeof opt === 'string') return opt;
+      if (typeof opt === 'object' && opt !== null) return opt.text || opt.content || opt.option || JSON.stringify(opt);
+      return String(opt);
+    });
+    
+    // Fallback options if missing or too few
+    const finalOptions = options.length >= 2 ? options.slice(0, 4) : ["A", "B", "C", "D"];
+
+    // Determine correct answer index
+    let correctAnswer = 0;
+    if (!isNaN(Number(q.correctAnswer))) {
+      correctAnswer = Number(q.correctAnswer);
+    } else if (!isNaN(Number(q.answerIndex))) {
+      correctAnswer = Number(q.answerIndex);
+    } else if (!isNaN(Number(q.correctIndex))) {
+      correctAnswer = Number(q.correctIndex);
+    } else if (typeof q.correctAnswer === 'string') {
+      // Try to find index of the string in options
+      const idx = finalOptions.findIndex(opt => opt.toLowerCase() === q.correctAnswer.toLowerCase());
+      if (idx !== -1) correctAnswer = idx;
+    }
+
+    return {
+      question: String(q.question || q.text || q.prompt || "Question missing"),
+      options: finalOptions,
+      correctAnswer: Math.max(0, Math.min(correctAnswer, finalOptions.length - 1)),
+      explanation: String(q.explanation || q.reasoning || q.answerDescription || "No explanation provided.")
+    };
+  });
+};
 
 export const callOpenRouter = async (messages: any[], useJson = false): Promise<any> => {
   if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY missing');
@@ -65,22 +114,45 @@ export const callOpenRouter = async (messages: any[], useJson = false): Promise<
         messages, 
         temperature: useJson ? 0.1 : 0.3 
       };
-      if (useJson) payload.response_format = { type: 'json_object' };
+      
+      // Only include response_format if the model likely supports it
+      // For now, only include for models that aren't 'openrouter/free' or older ones
+      if (useJson && !model.includes('openrouter/free')) {
+        payload.response_format = { type: 'json_object' };
+      }
 
       const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', payload, {
         headers: {
           'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://ai.studio',
+          'X-Title': 'Aether Study'
         },
-        timeout: 60000
+        timeout: 90000 
       });
 
-      if (response.data.choices?.[0]?.message?.content) {
-        return response.data.choices[0].message;
+      if (response.data.choices?.[0]?.message) {
+        const msg = response.data.choices[0].message;
+        if (msg.content) return msg;
+      }
+      
+      if (response.data?.error) {
+        const errCode = response.data.error.code;
+        console.warn(`[AI] Model ${model} returned API error (${errCode}):`, response.data.error.message);
+        if (errCode === 429) {
+          console.log(`[AI] Rate limited on ${model}, waiting 2s before next model...`);
+          await sleep(2000);
+        }
       }
     } catch (err: any) {
       lastError = err;
-      console.warn(`[AI] Model ${model} failed: ${err.message}`);
+      const status = err.response?.status;
+      const details = err.response?.data?.error?.message || err.message;
+      console.warn(`[AI] Model ${model} failed (${status || 'No Status'}): ${details}`);
+      if (status === 429) {
+        console.log(`[AI] Status 429 on ${model}, waiting 2s...`);
+        await sleep(2000);
+      }
     }
   }
   throw lastError || new Error('All models failed');
@@ -93,22 +165,13 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
   const langPrompt = language === 'English (UK)' ? 'British English' : language === 'Indonesia' ? 'Indonesian (Bahasa Indonesia)' : 'American English';
   
   const ai = getAiClient();
-  if (!ai && !OPENROUTER_API_KEY) {
-    console.error(`[AI-Service] No AI providers available!`);
-    return {
-      summary: content.substring(0, 300) + "...",
-      keyTopics: ["Main Material"],
-      realLifeApplications: ["Academic Study"],
-      simpleDetailedNotes: content.substring(0, 1000),
-      detailedNotes: content.substring(0, 1000),
-      suggestedQuizQuestions: []
-    };
-  }
-
-  try {
-    if (ai) {
+  
+  // Try direct Gemini FIRST for reliability
+  if (ai) {
+    try {
+      console.log(`[AI-Service] Attempting direct Gemini analysis...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: GEMINI_MODEL,
         contents: [{ role: 'user', parts: [{ text: `Material Title: ${title}\n\nContent:\n${content.substring(0, 15000)}` }]}],
         config: {
           responseMimeType: "application/json",
@@ -141,44 +204,43 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
 
       const text = response.text || "";
       if (text) {
-        const result = JSON.parse(text);
-        const normalizedQuiz = result.suggestedQuizQuestions?.questions || result.suggestedQuizQuestions || [];
+        const result = JSON.parse(cleanJsonContent(text));
+        const normalizedQuiz = normalizeQuizQuestions(result.suggestedQuizQuestions);
         return { 
           ...result, 
           detailedNotes: result.simpleDetailedNotes,
           suggestedQuizQuestions: normalizedQuiz
         };
       }
+    } catch (error: any) {
+      console.warn(`[AI-Service] Direct Gemini analysis failed, falling back to OpenRouter:`, error.message);
     }
+  }
 
-    if (OPENROUTER_API_KEY) {
+  // Try OpenRouter as SECOND option
+  if (OPENROUTER_API_KEY) {
+    try {
       console.log(`[AI-Service] Using OpenRouter for analysis...`);
       return await analyzeWithOpenRouter(content, title, langPrompt);
+    } catch (err: any) {
+      console.warn(`[AI-Service] OpenRouter analysis failed: ${err.message}.`);
     }
-    
-    throw new Error("No AI providers succeeded");
-  } catch (error: any) {
-    console.error(`[AI-Service] Analysis failed:`, error.message);
-    if (OPENROUTER_API_KEY) {
-      try {
-        console.log(`[AI-Service] Falling back to OpenRouter...`);
-        return await analyzeWithOpenRouter(content, title, langPrompt);
-      } catch (orError: any) {
-        console.error(`[AI-Service] OpenRouter analysis fallback failed:`, orError.message);
-      }
-    }
-    
-    // Final static fallback to prevent 500
-    console.warn(`[AI-Service] Using static fallback for analysis...`);
-    return {
-      summary: content.substring(0, 300) + "...",
-      keyTopics: ["Main Material"],
-      realLifeApplications: ["Academic Study"],
-      simpleDetailedNotes: content.substring(0, 1000),
-      detailedNotes: content.substring(0, 1000),
-      suggestedQuizQuestions: []
-    };
   }
+
+  if (!ai && !OPENROUTER_API_KEY) {
+    console.error(`[AI-Service] No AI providers available!`);
+  }
+
+  // Final static fallback to prevent 500
+  console.warn(`[AI-Service] Using static fallback for analysis...`);
+  return {
+    summary: content.substring(0, 300) + "...",
+    keyTopics: ["Main Material"],
+    realLifeApplications: ["Academic Study"],
+    simpleDetailedNotes: content.substring(0, 1000),
+    detailedNotes: content.substring(0, 1000),
+    suggestedQuizQuestions: []
+  };
 };
 
 const analyzeWithOpenRouter = async (content: string, title: string, langPrompt: string) => {
@@ -189,9 +251,8 @@ const analyzeWithOpenRouter = async (content: string, title: string, langPrompt:
     },
     { role: 'user', content: `Title: ${title}\nContent: ${content.substring(0, 15000)}` }
   ], true);
-  const result = JSON.parse(response.content.replace(/```json|```/g, ''));
-  // Normalize quiz questions if they came back in an object wrapper
-  const normalizedQuiz = result.suggestedQuizQuestions?.questions || result.suggestedQuizQuestions || [];
+  const result = JSON.parse(cleanJsonContent(response.content));
+  const normalizedQuiz = normalizeQuizQuestions(result.suggestedQuizQuestions);
   
   return { 
     ...result, 
@@ -201,13 +262,14 @@ const analyzeWithOpenRouter = async (content: string, title: string, langPrompt:
 };
 
 export const generateFlashcards = async (content: string, language: string, count: number) => {
-  const ai = getAiClient();
   const prompt = `Create ${count} flashcards in ${language} from the following content. Return a JSON array of objects with "question" and "answer" properties.`;
   
+  const ai = getAiClient();
   if (ai) {
     try {
+      console.log(`[AI-Service] Attempting direct Gemini for flashcards...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: GEMINI_MODEL,
         contents: [{ role: 'user', parts: [{ text: `Content: ${content.substring(0, 10000)}\n\n${prompt}` }]}],
         config: {
           responseMimeType: "application/json",
@@ -224,21 +286,22 @@ export const generateFlashcards = async (content: string, language: string, coun
           }
         }
       }));
-      return JSON.parse(response.text || "[]");
+      return JSON.parse(cleanJsonContent(response.text || "[]"));
     } catch (err: any) {
-      console.warn(`[AI-Service] Gemini flashcards failed:`, err.message);
+      console.warn(`[AI-Service] Gemini flashcards failed, falling back to OpenRouter:`, err.message);
     }
   }
 
   if (OPENROUTER_API_KEY) {
     try {
+      console.log(`[AI-Service] Using OpenRouter for flashcards (Fallback)...`);
       const response = await callOpenRouter([
         { role: 'system', content: prompt + " Return JSON array with question/answer." },
         { role: 'user', content: content.substring(0, 10000) }
       ], true);
-      return JSON.parse(response.content.replace(/```json|```/g, ''));
+      return JSON.parse(cleanJsonContent(response.content));
     } catch (err: any) {
-      console.warn(`[AI-Service] OpenRouter flashcards failed:`, err.message);
+      console.warn(`[AI-Service] OpenRouter flashcards fallback failed:`, err.message);
     }
   }
 
@@ -249,13 +312,14 @@ export const generateFlashcards = async (content: string, language: string, coun
 };
 
 export const generateQuiz = async (content: string, language: string, count: number, difficulty: string, complexity: string) => {
-  const ai = getAiClient();
   const prompt = `Create ${count} ${difficulty} level MCQs with ${complexity} complexity in ${language} based on the content. Return a JSON array of objects with "question", "options" (array of 4 strings), "correctAnswer" (index 0-3), and "explanation".`;
 
+  const ai = getAiClient();
   if (ai) {
     try {
+      console.log(`[AI-Service] Attempting direct Gemini for quiz...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: GEMINI_MODEL,
         contents: [{ role: 'user', parts: [{ text: `Content: ${content.substring(0, 10000)}\n\n${prompt}` }]}],
         config: {
           responseMimeType: "application/json",
@@ -274,21 +338,22 @@ export const generateQuiz = async (content: string, language: string, count: num
           }
         }
       }));
-      return JSON.parse(response.text || "[]");
+      return normalizeQuizQuestions(JSON.parse(response.text || "[]"));
     } catch (err: any) {
-      console.warn(`[AI-Service] Gemini quiz failed:`, err.message);
+      console.warn(`[AI-Service] Gemini quiz failed, falling back to OpenRouter:`, err.message);
     }
   }
 
   if (OPENROUTER_API_KEY) {
     try {
+      console.log(`[AI-Service] Using OpenRouter for quiz generation (Fallback)...`);
       const response = await callOpenRouter([
         { role: 'system', content: prompt + " Return JSON array." },
         { role: 'user', content: content.substring(0, 10000) }
       ], true);
-      return JSON.parse(response.content.replace(/```json|```/g, ''));
+      return normalizeQuizQuestions(JSON.parse(cleanJsonContent(response.content)));
     } catch (err: any) {
-      console.warn(`[AI-Service] OpenRouter quiz failed:`, err.message);
+      console.warn(`[AI-Service] OpenRouter quiz fallback failed:`, err.message);
     }
   }
 
@@ -304,17 +369,17 @@ export const generateQuiz = async (content: string, language: string, count: num
 };
 
 export const chatWithTutor = async (materialTitle: string, materialContent: string, chatHistory: any[], userMessage: string, language: string) => {
-  const ai = getAiClient();
   const systemPrompt = `You are a friendly and academic tutor for the study material: "${materialTitle}". 
   Context: ${materialContent.substring(0, 5000)}.
   All your responses MUST be in ${language}. 
   Be encouraging, explain concepts clearly, and ask occasional follow-up questions to test understanding.`;
 
+  const ai = getAiClient();
   if (ai) {
     try {
-      console.log(`[AI-Service] Attempting chatWithTutor with Gemini...`);
+      console.log(`[AI-Service] Attempting direct Gemini for tutor chat...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: GEMINI_MODEL,
         contents: [
           ...chatHistory.map((h: any) => ({ 
             role: h.role === 'model' || h.role === 'assistant' ? 'model' : 'user', 
@@ -329,13 +394,13 @@ export const chatWithTutor = async (materialTitle: string, materialContent: stri
       }));
       return response.text || "I'm sorry, I couldn't generate a response.";
     } catch (err: any) {
-      console.warn(`[AI-Service] Gemini tutor failed:`, err.message);
+      console.warn(`[AI-Service] Gemini tutor failed, falling back to OpenRouter:`, err.message);
     }
   }
 
   if (OPENROUTER_API_KEY) {
     try {
-      console.log(`[AI-Service] Falling back to OpenRouter for tutor...`);
+      console.log(`[AI-Service] Using OpenRouter for tutor chat (Fallback)...`);
       const messages = [
         { role: 'system', content: systemPrompt },
         ...chatHistory.map((h: any) => ({ role: h.role === 'model' || h.role === 'assistant' ? 'assistant' : 'user', content: h.parts?.[0]?.text || h.content })),
@@ -344,7 +409,7 @@ export const chatWithTutor = async (materialTitle: string, materialContent: stri
       const response = await callOpenRouter(messages);
       return response.content;
     } catch (err: any) {
-      console.error(`[AI-Service] OpenRouter tutor fallback failed:`, err.message);
+      console.warn(`[AI-Service] OpenRouter tutor chat fallback failed:`, err.message);
     }
   }
 
@@ -352,7 +417,6 @@ export const chatWithTutor = async (materialTitle: string, materialContent: stri
 };
 
 export const generateStudyPlan = async (materials: any[], startDate: string, duration: number, goal: string, complexity: string, commitment: string, language: string) => {
-  const ai = getAiClient();
   const materialContext = materials.map(m => `Title: ${m.title}`).join(', ');
   const systemPrompt = `Create a study plan for ${duration} days starting ${startDate} for the following materials: ${materialContext}. 
   Goal: ${goal}. 
@@ -361,10 +425,12 @@ export const generateStudyPlan = async (materials: any[], startDate: string, dur
   Language: ${language}.
   Return valid JSON array of session objects.`;
 
+  const ai = getAiClient();
   if (ai) {
     try {
+      console.log(`[AI-Service] Attempting direct Gemini for study plan...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: GEMINI_MODEL,
         contents: [{ role: 'user', parts: [{ text: "Generate the study plan JSON." }]}],
         config: {
           systemInstruction: systemPrompt,
@@ -385,22 +451,22 @@ export const generateStudyPlan = async (materials: any[], startDate: string, dur
           }
         }
       }));
-      return JSON.parse(response.text || "[]");
+      return JSON.parse(cleanJsonContent(response.text || "[]"));
     } catch (err: any) {
-      console.warn(`[AI-Service] Gemini study plan failed:`, err.message);
+      console.warn(`[AI-Service] Gemini study plan failed, falling back to OpenRouter:`, err.message);
     }
   }
 
   if (OPENROUTER_API_KEY) {
     try {
-      console.log(`[AI-Service] Falling back to OpenRouter for study plan...`);
+      console.log(`[AI-Service] Using OpenRouter for study plan (Fallback)...`);
       const response = await callOpenRouter([
         { role: 'system', content: systemPrompt + " Return JSON array of sessions." },
         { role: 'user', content: `Generate JSON study plan.` }
       ], true);
-      return JSON.parse(response.content.replace(/```json|```/g, ''));
+      return JSON.parse(cleanJsonContent(response.content));
     } catch (err: any) {
-      console.error(`[AI-Service] OpenRouter study plan fallback failed:`, err.message);
+      console.warn(`[AI-Service] OpenRouter study plan fallback failed:`, err.message);
     }
   }
 
@@ -410,7 +476,6 @@ export const generateStudyPlan = async (materials: any[], startDate: string, dur
 export const generateDetailedNotes = async (content: string, title: string) => {
   console.log(`[AI-Service] generateDetailedNotes called for: ${title}`);
   
-  const ai = getAiClient();
   const systemInstruction = `You are an expert pedagogical note transformation system.
       Your goal is to transform study material into a structured, beautiful, and logically deep JSON note.
       
@@ -434,11 +499,12 @@ Material Title: ${title}
 Content:
 ${content.substring(0, 15000)}`;
 
+  const ai = getAiClient();
   if (ai) {
     try {
-      console.log(`[AI-Service] Attempting generateDetailedNotes with Gemini...`);
+      console.log(`[AI-Service] Attempting direct Gemini for structured notes...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: GEMINI_MODEL,
         contents: [{ role: 'user', parts: [{ text: promptText }]}],
         config: {
           temperature: 0.3,
@@ -508,7 +574,7 @@ ${content.substring(0, 15000)}`;
       const text = response.text || "";
       if (text) {
         try {
-          const result = JSON.parse(text);
+          const result = JSON.parse(cleanJsonContent(text));
           console.log(`[AI-Service] Gemini response parsed. Validating...`);
           const validatedNote = validateAndFillNote(result, content, title);
           return { structuredNote: validatedNote, detailedNotes: "Structured content generated" };
@@ -518,12 +584,12 @@ ${content.substring(0, 15000)}`;
         }
       }
     } catch (err: any) {
-      console.warn(`[AI-Service] Gemini detailed notes failed:`, err.message);
+      console.warn(`[AI-Service] Gemini detailed notes failed, falling back to OpenRouter:`, err.message);
     }
   }
 
   if (OPENROUTER_API_KEY) {
-    console.log(`[AI-Service] Falling back to OpenRouter for structured notes...`);
+    console.log(`[AI-Service] Using OpenRouter for structured notes (Fallback)...`);
     try {
       const response = await callOpenRouter([
         { 
@@ -534,7 +600,7 @@ ${content.substring(0, 15000)}`;
       ], true);
       
       try {
-        const result = JSON.parse(response.content.replace(/```json|```/g, ''));
+        const result = JSON.parse(cleanJsonContent(response.content));
         console.log(`[AI-Service] OpenRouter response parsed. Validating...`);
         const validatedNote = validateAndFillNote(result, content, title);
         return { structuredNote: validatedNote, detailedNotes: "Structured content generated" };
@@ -542,7 +608,7 @@ ${content.substring(0, 15000)}`;
         console.warn("[AI-Service] OpenRouter returned non-JSON for structured notes");
       }
     } catch (err: any) {
-      console.error(`[AI-Service] generateDetailedNotes OpenRouter fallback failed:`, err.message);
+      console.error(`[AI-Service] OpenRouter detailed notes fallback failed:`, err.message);
     }
   }
 
@@ -558,7 +624,6 @@ ${content.substring(0, 15000)}`;
 export const generateAcademicMegaNotes = async (content: string, title: string) => {
   console.log(`[AI-Service] generateAcademicMegaNotes (8+ Pages Cornell/Feynman Deep Analysis) called for: ${title}`);
   
-  const ai = getAiClient();
   const systemInstruction = `You are an elite academic curriculum designer and expert in cognitive learning frameworks.
       Your goal is to transform the provided study material into an intensive, 8-page (or more) comprehensive textbook-style study guide.
       
@@ -621,11 +686,12 @@ Material Title: ${title}
 Source Content to Analyze:
 ${content.substring(0, 18000)}`;
 
+  const ai = getAiClient();
   if (ai) {
     try {
-      console.log(`[AI-Service] Calling Gemini for Academic Mega Notes...`);
+      console.log(`[AI-Service] Attempting direct Gemini for Academic Mega Notes...`);
       const response = await withRetry(() => ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: GEMINI_MODEL,
         contents: [{ role: 'user', parts: [{ text: promptText }]}],
         config: {
           temperature: 0.4,
@@ -651,21 +717,20 @@ ${content.substring(0, 18000)}`;
       const text = response.text || "";
       if (text) {
         try {
-          const result = JSON.parse(text);
+          const result = JSON.parse(cleanJsonContent(text));
           console.log(`[AI-Service] Gemini academic notes parsed successfully with ${result.length} chapters.`);
-          // If fewer than 8, pad them but normally the model complies.
           return result;
         } catch (parseErr) {
           console.error("[AI-Service] Failed to parse Academic Mega Notes as JSON", parseErr);
         }
       }
     } catch (err: any) {
-      console.warn(`[AI-Service] Gemini academic mega notes failed:`, err.message);
+      console.warn(`[AI-Service] Gemini academic mega notes failed, falling back to OpenRouter:`, err.message);
     }
   }
 
   if (OPENROUTER_API_KEY) {
-    console.log(`[AI-Service] Falling back to OpenRouter for Academic Mega Notes...`);
+    console.log(`[AI-Service] Using OpenRouter for Academic Mega Notes (Fallback)...`);
     try {
       const response = await callOpenRouter([
         { role: 'system', content: systemInstruction },
@@ -673,14 +738,14 @@ ${content.substring(0, 18000)}`;
       ], true);
       
       try {
-        const result = JSON.parse(response.content.replace(/```json|```/g, ''));
+        const result = JSON.parse(cleanJsonContent(response.content));
         console.log(`[AI-Service] OpenRouter academic notes parsed with ${result.length} chapters.`);
         return result;
       } catch (parseErr) {
         console.warn("[AI-Service] OpenRouter returned non-JSON for academic notes");
       }
     } catch (err: any) {
-      console.error(`[AI-Service] generateAcademicMegaNotes OpenRouter fallback failed:`, err.message);
+      console.warn(`[AI-Service] OpenRouter academic mega notes fallback failed:`, err.message);
     }
   }
 

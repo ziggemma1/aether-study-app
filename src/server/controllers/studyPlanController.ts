@@ -2,11 +2,11 @@ import { Request, Response } from 'express';
 import { StudyPlan } from '../models/StudyPlan.js';
 import { Material as MaterialModel } from '../models/Material.js';
 import { GoogleGenAI, Type } from '@google/genai';
+import { callOpenRouter } from '../services/aiService.js';
 
 const getAiClient = () => {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
-    console.warn('[StudyPlanController] GEMINI_API_KEY is not defined.');
     return null;
   }
   return new GoogleGenAI({ apiKey: key });
@@ -51,17 +51,13 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
       materialTitles = ['General Curriculum / General Concepts'];
     }
 
-    // 2. Initialize Gemini API
-    const ai = getAiClient();
+    // 2. AI Plan Generation
     let planData = {
       title: `${goal} Study Plan`,
       days: [] as any[]
     };
 
-    if (ai) {
-      try {
-        const systemPrompt = `You are an expert pedagogical study planner. Create a highly optimized, day-by-day customized study plan.
-        
+    const systemPromptHead = `You are an expert pedagogical study planner. Create a highly optimized, day-by-day customized study plan.
         Input Materials: [${materialTitles.join(', ')}]
         Duration: ${duration} days
         Learning Goal: ${goal}
@@ -72,9 +68,9 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
 
         CRITICAL: Compile a realistic Day-by-Day sequence of activities mapped directly from the target learning materials.
         Each day must have a focused topic, and a list of 2-3 specific, actionable activities (e.g. read study notes, run quizzes, review flashcards, summary checks).
-        The estimated review time for the activities should sum up to approximately ${dailyCommitment} minutes.
+        The estimated review time for the activities should sum up to approximately ${dailyCommitment} minutes.`;
 
-        Return valid JSON in the exact schema specified below:
+    const jsonSchemaInstructions = `Return valid JSON in the exact schema specified below:
         {
           "title": "A precise, inspiring academic title for the plan",
           "days": [
@@ -87,45 +83,74 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
           ]
         }`;
 
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: [{ role: 'user', parts: [{ text: "Please generate my personalized JSON study plan." }]}],
-          config: {
-            systemInstruction: systemPrompt,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                days: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      day: { type: Type.NUMBER },
-                      topic: { type: Type.STRING },
-                      activities: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING }
-                      },
-                      estimatedTime: { type: Type.NUMBER }
-                    },
-                    required: ["day", "topic", "activities", "estimatedTime"]
-                  }
-                }
-              },
-              required: ["title", "days"]
-            }
-          }
-        });
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+    let generationSucceeded = false;
 
-        const parsed = JSON.parse(response.text || '{}');
+    // Try OpenRouter First
+    if (OPENROUTER_API_KEY) {
+      try {
+        console.log(`[StudyPlanController] Attempting generation with OpenRouter...`);
+        const messages = [
+          { role: 'system', content: systemPromptHead + "\n" + jsonSchemaInstructions },
+          { role: 'user', content: "Please generate my personalized JSON study plan." }
+        ];
+        const response = await callOpenRouter(messages, true);
+        const parsed = JSON.parse(response.content.replace(/```json|```/g, ''));
         if (parsed.title && parsed.days) {
           planData = parsed;
+          generationSucceeded = true;
         }
       } catch (err: any) {
-        console.error('[StudyPlanController] AI generation error:', err);
-        // Fallback below
+        console.error('[StudyPlanController] OpenRouter generation error:', err.message);
+      }
+    }
+
+    // Fallback to direct Gemini
+    if (!generationSucceeded) {
+      const ai = getAiClient();
+      if (ai) {
+        try {
+          console.log(`[StudyPlanController] Falling back to direct Gemini for study plan...`);
+          const response = await ai.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: [{ role: 'user', parts: [{ text: "Please generate my personalized JSON study plan." }]}],
+            config: {
+              systemInstruction: systemPromptHead + "\n" + jsonSchemaInstructions,
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  days: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        day: { type: Type.NUMBER },
+                        topic: { type: Type.STRING },
+                        activities: {
+                          type: Type.ARRAY,
+                          items: { type: Type.STRING }
+                        },
+                        estimatedTime: { type: Type.NUMBER }
+                      },
+                      required: ["day", "topic", "activities", "estimatedTime"]
+                    }
+                  }
+                },
+                required: ["title", "days"]
+              }
+            }
+          });
+
+          const parsed = JSON.parse(response.text || '{}');
+          if (parsed.title && parsed.days) {
+            planData = parsed;
+            generationSucceeded = true;
+          }
+        } catch (err: any) {
+          console.error('[StudyPlanController] Gemini generation fallback error:', err.message);
+        }
       }
     }
 

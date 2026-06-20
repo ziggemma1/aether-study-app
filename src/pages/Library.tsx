@@ -11,10 +11,10 @@ import { TodaysFocus } from '../components/library/TodaysFocus';
 import { EmptyState } from '../components/library/EmptyState';
 import { MaterialCardSkeleton } from '../components/ui/Skeleton';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2, Combine, CheckSquare, X, CheckCircle2, RefreshCw } from 'lucide-react';
 
 export default function Library() {
-  const { user } = useAppContext();
+  const { user, showToast, fetchAppData } = useAppContext();
   const {
     materials,      // Filtered materials
     allMaterials = [], // All materials before filtering (to compute correct stats)
@@ -25,7 +25,82 @@ export default function Library() {
     setFilter,
     sortBy,
     setSortBy,
+    refetch,
+    deleteMaterial,
+    deleteMaterials,
+    mergeMaterials,
   } = useLibrary();
+
+  const [selectionMode, setSelectionMode] = React.useState(false);
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === materials.length) {
+      setSelectedIds([]);
+    } else {
+      const allIds = materials.map(m => m.id || (m as any)._id).filter(Boolean);
+      setSelectedIds(allIds);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} items?`)) return;
+
+    setIsProcessing(true);
+    const success = await deleteMaterials(selectedIds);
+    if (success) {
+      showToast(`Successfully deleted ${selectedIds.length} materials.`, 'success');
+      setSelectedIds([]);
+      setSelectionMode(false);
+      fetchAppData(); // Sync global state
+    } else {
+      showToast('Failed to delete materials.', 'error');
+    }
+    setIsProcessing(false);
+  };
+
+  const handleMerge = async () => {
+    if (selectedIds.length < 2) {
+      showToast('Select at least 2 materials to merge.', 'success'); // Using success as info-like or just omitting type
+      return;
+    }
+
+    const title = window.prompt('Enter a title for the unified material:', 'Combined Study Guide');
+    if (!title) return;
+
+    setIsProcessing(true);
+    const result = await mergeMaterials(selectedIds, title);
+    if (result) {
+      showToast('Materials merged successfully! 📚', 'success');
+      setSelectedIds([]);
+      setSelectionMode(false);
+      fetchAppData(); // Sync global state
+    } else {
+      showToast('Failed to merge materials.', 'error');
+    }
+    setIsProcessing(false);
+  };
+
+  const handleDeleteIndividual = async (id: string, title: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) return;
+    
+    const success = await deleteMaterial(id);
+    if (success) {
+      showToast('Material deleted successfully.', 'success');
+      setSelectedIds(prev => prev.filter(i => i !== id));
+      fetchAppData(); // Sync global state
+    } else {
+      showToast('Failed to delete material.', 'error');
+    }
+  };
 
   // Highlight welcome text name or default
   const firstName = React.useMemo(() => {
@@ -61,16 +136,93 @@ export default function Library() {
           </p>
         </div>
 
-        {/* Action Button - Touch Minimum 44px */}
-        <Link
-          to="/upload"
-          className="flex h-11 items-center gap-1.5 px-4 rounded-xl bg-[#6C5CE7] hover:bg-[#6C5CE7]/90 active:scale-95 text-[#F0F3F8] text-xs font-bold shadow-lg shadow-[#6C5CE7]/15 transition-all outline-none"
-          id="library-upload-quick-action"
-        >
-          <Plus size={15} />
-          <span>Upload</span>
-        </Link>
+        {/* Action Buttons - Touch Minimum 44px */}
+        <div className="flex items-center gap-2">
+          {selectionMode && (
+            <button
+              onClick={handleSelectAll}
+              className="flex h-11 items-center gap-2 px-4 rounded-xl font-extrabold text-[10px] sm:text-xs transition-all outline-none border-2 bg-white/10 text-white border-white/20"
+              title="Select all items"
+            >
+              <CheckSquare size={16} strokeWidth={3} />
+              <span>{selectedIds.length === materials.length ? 'Deselect All' : 'Select All'}</span>
+            </button>
+          )}
+
+          {(materials.length > 0 || allMaterials.length > 0) && (
+            <button
+              onClick={() => {
+                setSelectionMode(!selectionMode);
+                if (!selectionMode) setSelectedIds([]);
+              }}
+              className={`flex h-11 items-center gap-2 px-3 sm:px-4 rounded-xl font-extrabold text-[10px] sm:text-xs transition-all outline-none border-2 shadow-lg backdrop-blur-md ${
+                selectionMode 
+                  ? 'bg-red-500 text-white border-red-500' 
+                  : 'bg-[#6C5CE7] text-white border-[#6C5CE7] shadow-[#6C5CE7]/30'
+              }`}
+              id="library-bulk-select-action"
+              title={selectionMode ? "Cancel selection" : "Start bulk selection"}
+            >
+              {selectionMode ? <X size={16} strokeWidth={3} /> : <CheckSquare size={16} strokeWidth={3} />}
+              <span>{selectionMode ? 'Cancel' : 'Bulk Select'}</span>
+            </button>
+          )}
+
+          <Link
+            to="/upload"
+            className="flex h-11 items-center gap-2 px-3 sm:px-4 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-[10px] sm:text-xs font-bold transition-all outline-none border border-white/20"
+            id="library-upload-quick-action"
+          >
+            <Plus size={16} strokeWidth={3} />
+            <span className="hidden sm:inline">Upload</span>
+            <span className="sm:hidden">Add</span>
+          </Link>
+        </div>
       </header>
+
+      {/* Bulk Actions Floating Bar */}
+      <AnimatePresence>
+        {selectionMode && selectedIds.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-24 left-4 right-4 z-50 flex items-center justify-between gap-4 p-4 rounded-2xl bg-[#6C5CE7] shadow-[0_8px_32px_rgba(108,92,231,0.4)] border border-white/20 sm:max-w-md sm:mx-auto"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 rounded-lg p-1.5">
+                <CheckCircle2 size={20} className="text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-black text-white leading-none">
+                  {selectedIds.length} {selectedIds.length === 1 ? 'Item' : 'Items'} Selected
+                </p>
+                <p className="text-[10px] text-white/70 mt-1 font-bold">Ready for bulk action</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleMerge}
+                disabled={isProcessing || selectedIds.length < 2}
+                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-40 transition-all text-white text-[10px] font-black uppercase tracking-tight border border-white/10"
+              >
+                <Combine size={14} />
+                <span>Merge</span>
+              </button>
+              
+              <button
+                onClick={handleBulkDelete}
+                disabled={isProcessing}
+                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 transition-all text-white text-[10px] font-black uppercase tracking-tight shadow-md shadow-red-900/20"
+              >
+                {isProcessing ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                <span>Delete</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex flex-col gap-5">
         {/* 2. Engagement Quick Stats Bar (unread count, mastery progress, study streak, achievements) */}
@@ -113,12 +265,18 @@ export default function Library() {
               >
                 {materials.map((material, idx) => (
                   <motion.div
-                    key={material.id}
+                    key={material.id || (material as any)._id}
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25, delay: Math.min(idx * 0.05, 0.3) }}
                   >
-                    <LibraryCard material={material} />
+                    <LibraryCard 
+                      material={material} 
+                      selectionMode={selectionMode}
+                      selected={selectedIds.includes(material.id) || selectedIds.includes((material as any)._id)}
+                      onSelect={toggleSelection}
+                      onDelete={handleDeleteIndividual}
+                    />
                   </motion.div>
                 ))}
               </motion.div>

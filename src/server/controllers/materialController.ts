@@ -136,37 +136,30 @@ export const getMaterials = async (req: Request, res: Response) => {
 export const createMaterial = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
-    const { title, type, summary, content, keyTopics, realLifeApplications, detailedNotes, noteSections, structuredNote, visualAidUrl, suggestedQuizQuestions, isPublic } = req.body;
+    const { 
+      title, type, summary, content, keyTopics, 
+      realLifeApplications, detailedNotes, noteSections, 
+      structuredNote, visualAidUrl, suggestedQuizQuestions, 
+      isPublic, flashcards 
+    } = req.body;
     
     console.log(`Creating material for user ID: ${userId}, Title: ${title}`);
     
-    // Enforce Plan Limits
-    const user = await mongoose.model('User').findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const now = new Date();
-    const lastReset = user.lastUploadResetDate || user.createdAt;
-    const isNewMonth = now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear();
-
-    if (isNewMonth) {
-      user.monthlyUploadCount = 0;
-      user.lastUploadResetDate = now;
-    }
-
-    if (user.plan === 'free' && user.monthlyUploadCount >= 20) {
-      return res.status(403).json({ 
-        message: "Neural Link Capacity Exceeded", 
-        code: "LIMIT_EXCEEDED",
-        details: "Free tier is limited to 20 document uploads per cycle. Upgrade to Pro for infinite bandwidth."
-      });
-    }
-
     let authorName = req.body.authorName;
     if (isPublic && !authorName) {
-      authorName = user.name || "Unknown Author";
+      try {
+        const user = await mongoose.model('User').findById(userId);
+        authorName = user?.name || "Unknown Author";
+      } catch (err) {
+        console.warn('User model not found or lookup failed:', err);
+        authorName = "Aether Scholar";
+      }
     }
+
+    // Defensive check for quiz questions to prevent Mongoose "Cast to embedded failed" errors
+    const normalizedQuizQuestions = Array.isArray(suggestedQuizQuestions) 
+      ? suggestedQuizQuestions.filter(q => q && typeof q === 'object' && !Array.isArray(q)) 
+      : [];
 
     const material = new Material({
       userId,
@@ -174,27 +167,23 @@ export const createMaterial = async (req: Request, res: Response) => {
       type,
       summary,
       content,
-      keyTopics,
-      realLifeApplications,
+      keyTopics: Array.isArray(keyTopics) ? keyTopics : [],
+      realLifeApplications: Array.isArray(realLifeApplications) ? realLifeApplications : [],
       detailedNotes,
-      noteSections,
+      noteSections: Array.isArray(noteSections) ? noteSections : [],
       structuredNote,
       visualAidUrl,
-      suggestedQuizQuestions,
+      suggestedQuizQuestions: normalizedQuizQuestions,
+      flashcards: Array.isArray(flashcards) ? flashcards : [],
       isPublic: isPublic || false,
-      authorName: authorName || "Unknown Author",
+      authorName: authorName || "Aether Scholar",
       likes: Math.floor(Math.random() * 15) + 2,
       downloads: Math.floor(Math.random() * 20) + 5,
       rating: parseFloat((4 + Math.random()).toFixed(1))
     });
-    
+
     await material.save();
-    
-    // Increment upload count
-    user.monthlyUploadCount += 1;
-    await user.save();
-    
-    console.log(`Material saved successfully with ID: ${material._id}. User count: ${user.monthlyUploadCount}`);
+    console.log(`Material saved successfully with ID: ${material._id}`);
     
     try {
       await checkAchievements(userId);
@@ -205,6 +194,13 @@ export const createMaterial = async (req: Request, res: Response) => {
     res.status(201).json(material);
   } catch (error: any) {
     console.error(`Error creating material for user ${(req as any).userId}:`, error);
+    // Return detailed error if validation fails
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        details: Object.values(error.errors).map((e: any) => e.message) 
+      });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -226,15 +222,26 @@ export const getMaterial = async (req: Request, res: Response) => {
 
 export const deleteMaterial = async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
+    const userId = (req as any).userId;
+    
+    console.log(`[DELETE_MATERIAL] User ${userId} attempting to delete material ${id}`);
+    
+    // Ensure we only delete if it belongs to the user
     const material = await Material.findOneAndDelete({ 
-      _id: req.params.id, 
-      userId: (req as any).userId 
+      _id: id, 
+      userId 
     });
+    
     if (!material) {
+      console.warn(`[DELETE_MATERIAL] Material ${id} not found or unauthorized for user ${userId}`);
       return res.status(404).json({ message: 'Material not found' });
     }
-    res.json({ message: 'Material deleted' });
+    
+    console.log(`[DELETE_MATERIAL] Successfully deleted material ${id}`);
+    res.json({ message: 'Material deleted successfully' });
   } catch (error: any) {
+    console.error(`[DELETE_MATERIAL] Error:`, error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -263,13 +270,21 @@ export const deleteMaterials = async (req: Request, res: Response) => {
     }
 
     const userId = (req as any).userId;
+    console.log(`[BULK_DELETE] User ${userId} attempting to delete ${ids.length} materials:`, ids);
+
+    // Filter by userId and the provided IDs
     const result = await Material.deleteMany({
-      _id: { $in: ids },
+      _id: { $in: ids.map(id => new mongoose.Types.ObjectId(id)) },
       userId
     });
 
-    res.json({ message: `${result.deletedCount} materials deleted`, deletedCount: result.deletedCount });
+    console.log(`[BULK_DELETE] Result: ${result.deletedCount} items deleted for user ${userId}`);
+    res.json({ 
+      message: `${result.deletedCount} materials deleted`, 
+      deletedCount: result.deletedCount 
+    });
   } catch (error: any) {
+    console.error(`[BULK_DELETE] Error:`, error);
     res.status(500).json({ message: error.message });
   }
 };

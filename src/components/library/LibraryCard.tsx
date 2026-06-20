@@ -1,29 +1,56 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, Youtube, BookOpen, Sparkles, Award, Share2, ClipboardCheck, Clock } from 'lucide-react';
+import { FileText, Youtube, BookOpen, Sparkles, Award, Share2, ClipboardCheck, Clock, Trash2, CheckCircle2, Circle, Combine } from 'lucide-react';
 import { LibraryMaterial } from '../../hooks/useLibrary';
 import { useAppContext } from '../../context/AppContext';
 
 interface LibraryCardProps {
   material: LibraryMaterial;
+  selected?: boolean;
+  selectionMode?: boolean;
+  onSelect?: (id: string) => void;
+  onDelete?: (id: string, title: string) => void;
 }
 
-export function LibraryCard({ material }: LibraryCardProps) {
+export function LibraryCard({ material, selected, selectionMode, onSelect, onDelete }: LibraryCardProps) {
   const navigate = useNavigate();
   const { showToast } = useAppContext();
   const [copied, setCopied] = useState(false);
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
+    const id = material.id || (material as any)._id;
+    if (!id) return;
+    
     try {
-      const shareUrl = `${window.location.origin}/share/${material.id}`;
+      const shareUrl = `${window.location.origin}/share/${id}`;
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       showToast('Share link copied to clipboard! 📤', 'success');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       showToast('Failed to copy link', 'error');
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const id = material.id || (material as any)._id;
+    console.log(`[LibraryCard] Clicked delete for ${material.title} (${id})`);
+    if (onDelete && id) {
+      onDelete(id, material.title);
+    }
+  };
+
+  const handleCardClick = () => {
+    const id = material.id || (material as any)._id;
+    if (selectionMode && onSelect && id) {
+      onSelect(id);
+    } else if (id) {
+      navigate(`/library/${id}`);
     }
   };
 
@@ -51,6 +78,9 @@ export function LibraryCard({ material }: LibraryCardProps) {
     if (normType === 'quiz') {
       return { label: 'Quiz Pack', color: '#00E5A0', icon: Award };
     }
+    if (normType === 'unified') {
+      return { label: 'Unified Guide', color: '#00D2FF', icon: Combine };
+    }
     return { label: 'Study Notes', color: '#00D2FF', icon: BookOpen };
   };
 
@@ -76,9 +106,36 @@ export function LibraryCard({ material }: LibraryCardProps) {
       layout
       whileHover={{ y: -5 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="group relative flex rounded-3xl bg-[#141A24]/90 border border-[#8E9AAF]/5 hover:border-[#6C5CE7]/30 hover:shadow-[0_12px_36px_rgba(108,92,231,0.12)] transition-all overflow-hidden w-full min-h-[290px] select-none shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex-col cursor-pointer"
-      onClick={() => navigateTo(`/library/${material.id}`)}
+      className={`group relative flex rounded-3xl bg-[#141A24]/90 border ${
+        selected ? 'border-[#6C5CE7] shadow-[0_0_20px_rgba(108,92,231,0.2)]' : 'border-[#8E9AAF]/5'
+      } hover:border-[#6C5CE7]/30 hover:shadow-[0_12px_36px_rgba(108,92,231,0.12)] transition-all overflow-hidden w-full min-h-[290px] select-none shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex-col cursor-pointer`}
+      onClick={handleCardClick}
     >
+      {/* 0. Selection Overlay & Checkbox */}
+      {selectionMode && (
+        <div className={`absolute inset-0 z-10 transition-all duration-300 ${
+          selected ? 'bg-[#6C5CE7]/20 ring-4 ring-[#6C5CE7] ring-inset' : 'bg-black/20'
+        }`} />
+      )}
+      
+      {(selectionMode || selected) && (
+        <div className="absolute top-4 right-4 z-50 p-1">
+          {selected ? (
+            <motion.div 
+              initial={{ scale: 0, rotate: -45 }}
+              animate={{ scale: 1, rotate: 0 }}
+              className="bg-[#6C5CE7] rounded-full p-2 shadow-2xl shadow-[#6C5CE7]/60 border-2 border-white"
+            >
+              <CheckCircle2 size={24} className="text-white" strokeWidth={4} />
+            </motion.div>
+          ) : (
+            <div className="bg-white/20 rounded-full p-2 border-2 border-white/60 text-white backdrop-blur-xl shadow-xl">
+              <Circle size={24} strokeWidth={4} />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 1. Left Gradient Border Overlay Block */}
       <div 
         className="absolute left-0 top-0 bottom-0 w-2 shrink-0 transition-all duration-300 pointer-events-none group-hover:w-2.5"
@@ -113,15 +170,31 @@ export function LibraryCard({ material }: LibraryCardProps) {
               </span>
             </div>
 
-            {/* Quick Share Button */}
-            <button
-              onClick={handleShare}
-              id={`lib-share-${material.id}`}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B0E14]/40 text-[#8E9AAF] hover:text-[#F0F3F8] active:scale-95 transition-all outline-none border border-[#8E9AAF]/5 shadow-sm shrink-0 cursor-pointer"
-              title="Share notes"
-            >
-              {copied ? <ClipboardCheck size={15} className="text-[#00E5A0]" /> : <Share2 size={15} />}
-            </button>
+            {/* Quick Share / Delete Buttons */}
+            <div className="flex items-center gap-2 shrink-0 relative z-40">
+              {selectionMode ? (
+                null
+              ) : (
+                <>
+                  <button
+                    onClick={handleDelete}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95 outline-none border border-red-500/20 shadow-sm cursor-pointer"
+                    title="Delete study material"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    id={`lib-share-${material.id || (material as any)._id}`}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#6C5CE7]/10 text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white active:scale-95 transition-all outline-none border border-[#6C5CE7]/20 shadow-sm cursor-pointer"
+                    title="Share study material"
+                  >
+                    {copied ? <ClipboardCheck size={20} className="text-white" /> : <Share2 size={20} />}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Title */}
@@ -182,73 +255,75 @@ export function LibraryCard({ material }: LibraryCardProps) {
           </div>
 
           {/* Interaction Touch Buttons (min size 44px) */}
-          <div className="grid grid-cols-4 gap-2 pt-1 border-t border-[#8E9AAF]/5">
-            {/* STUDY */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigateTo(`/library/${material.id}`);
-              }}
-              className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#6C5CE7]/10 hover:bg-[#6C5CE7]/20 text-[#6C5CE7] active:scale-95 transition-all min-h-[44px] cursor-pointer"
-              id={`lib-card-study-${material.id}`}
-              title="Study Materials"
-            >
-              <BookOpen size={15} />
-              <span className="text-[9px] font-black uppercase tracking-tight mt-1">Study</span>
-            </button>
+          {!selectionMode && (
+            <div className="grid grid-cols-4 gap-2 pt-1 border-t border-[#8E9AAF]/5">
+              {/* STUDY */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateTo(`/library/${material.id}`);
+                }}
+                className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#6C5CE7]/10 hover:bg-[#6C5CE7]/20 text-[#6C5CE7] active:scale-95 transition-all min-h-[44px] cursor-pointer"
+                id={`lib-card-study-${material.id}`}
+                title="Study Materials"
+              >
+                <BookOpen size={15} />
+                <span className="text-[9px] font-black uppercase tracking-tight mt-1">Study</span>
+              </button>
 
-            {/* NOTES SNEAK */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigateTo(`/materials/${material.id}/notes`);
-              }}
-              className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#00D2FF]/10 hover:bg-[#00D2FF]/20 text-[#00D2FF] active:scale-95 transition-all min-h-[44px] cursor-pointer"
-              id={`lib-card-notes-${material.id}`}
-              title="Detailed Notes"
-            >
-              <FileText size={15} />
-              <span className="text-[9px] font-black uppercase tracking-tight mt-1">Notes</span>
-            </button>
+              {/* NOTES SNEAK */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateTo(`/materials/${material.id}/notes`);
+                }}
+                className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#00D2FF]/10 hover:bg-[#00D2FF]/20 text-[#00D2FF] active:scale-95 transition-all min-h-[44px] cursor-pointer"
+                id={`lib-card-notes-${material.id}`}
+                title="Detailed Notes"
+              >
+                <FileText size={15} />
+                <span className="text-[9px] font-black uppercase tracking-tight mt-1">Notes</span>
+              </button>
 
-            {/* QUIZ */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigateTo(`/quiz/${material.id}`);
-              }}
-              className={`flex flex-col items-center justify-center py-2.5 rounded-xl active:scale-95 transition-all min-h-[44px] cursor-pointer ${
-                material.hasQuiz
-                  ? 'bg-[#F5B042]/10 hover:bg-[#F5B042]/20 text-[#F5B042]'
-                  : 'bg-[#8E9AAF]/5 hover:bg-[#8E9AAF]/10 text-[#8E9AAF]/40 disabled:opacity-40'
-              }`}
-              id={`lib-card-quiz-${material.id}`}
-              title="Interactive Quiz"
-              disabled={!material.hasQuiz}
-            >
-              <Award size={15} />
-              <span className="text-[9px] font-black uppercase tracking-tight mt-1">Quiz</span>
-            </button>
+              {/* QUIZ */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateTo(`/quiz/${material.id}`);
+                }}
+                className={`flex flex-col items-center justify-center py-2.5 rounded-xl active:scale-95 transition-all min-h-[44px] cursor-pointer ${
+                  material.hasQuiz
+                    ? 'bg-[#F5B042]/10 hover:bg-[#F5B042]/20 text-[#F5B042]'
+                    : 'bg-[#8E9AAF]/5 hover:bg-[#8E9AAF]/10 text-[#8E9AAF]/40 disabled:opacity-40'
+                }`}
+                id={`lib-card-quiz-${material.id}`}
+                title="Interactive Quiz"
+                disabled={!material.hasQuiz}
+              >
+                <Award size={15} />
+                <span className="text-[9px] font-black uppercase tracking-tight mt-1">Quiz</span>
+              </button>
 
-            {/* FLASHCARDS */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigateTo(`/flashcards/${material.id}`);
-              }}
-              className={`flex flex-col items-center justify-center py-2.5 rounded-xl active:scale-95 transition-all min-h-[44px] cursor-pointer ${
-                material.hasFlashcards
-                  ? 'bg-[#00E5A0]/10 hover:bg-[#00E5A0]/20 text-[#00E5A0]'
-                  : 'bg-[#8E9AAF]/5 hover:bg-[#8E9AAF]/10 text-[#8E9AAF]/40 disabled:opacity-40'
-              }`}
-              id={`lib-card-flash-${material.id}`}
-              title="Active Recall Flashcards"
-              disabled={!material.hasFlashcards}
-            >
-              <Sparkles size={15} />
-              <span className="text-[9px] font-black uppercase tracking-tight mt-1">Flash</span>
-            </button>
-          </div>
+              {/* FLASHCARDS */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateTo(`/flashcards/${material.id}`);
+                }}
+                className={`flex flex-col items-center justify-center py-2.5 rounded-xl active:scale-95 transition-all min-h-[44px] cursor-pointer ${
+                  material.hasFlashcards
+                    ? 'bg-[#00E5A0]/10 hover:bg-[#00E5A0]/20 text-[#00E5A0]'
+                    : 'bg-[#8E9AAF]/5 hover:bg-[#8E9AAF]/10 text-[#8E9AAF]/40 disabled:opacity-40'
+                }`}
+                id={`lib-card-flash-${material.id}`}
+                title="Active Recall Flashcards"
+                disabled={!material.hasFlashcards}
+              >
+                <Sparkles size={15} />
+                <span className="text-[9px] font-black uppercase tracking-tight mt-1">Flash</span>
+              </button>
+            </div>
+          )}
 
         </div>
 

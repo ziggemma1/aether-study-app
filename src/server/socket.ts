@@ -1,5 +1,4 @@
 import { Server } from "socket.io";
-import mongoose from "mongoose";
 import { Message } from "./models/Message.js";
 import { Group } from "./models/Group.js";
 import { User } from "./models/User.js";
@@ -233,146 +232,86 @@ export const initSocket = (server: any) => {
     });
     // END LIVE ROOMS LOGIC
 
-    socket.on("get-unread-counts", async ({ userId }) => {
-      try {
-        const unreadCounts = await Message.aggregate([
-          { $match: { receiverId: new mongoose.Types.ObjectId(userId), isRead: false } },
-          { $group: { _id: "$senderId", count: { $sum: 1 } } }
-        ]);
-        
-        const counts: Record<string, number> = {};
-        unreadCounts.forEach(c => {
-          if (c._id) counts[c._id.toString()] = c.count;
-        });
-        
-        socket.emit("unread-counts", counts);
-      } catch (err) {
-        console.error("Error fetching unread counts:", err);
-      }
-    });
-
-    socket.on("load-dm-history", async ({ withUserId, currentUserId }) => {
-      try {
-        const messages = await Message.find({
-          $or: [
-            { senderId: currentUserId, receiverId: withUserId },
-            { senderId: withUserId, receiverId: currentUserId }
-          ]
-        }).sort({ createdAt: 1 }).limit(100);
-        
-        const formattedMessages = messages.map(m => ({
-          _id: m._id.toString(),
-          fromUserId: m.senderId.toString(),
-          toUserId: m.receiverId?.toString(),
-          text: m.content,
-          timestamp: m.createdAt.toISOString(),
-          isRead: m.isRead
-        }));
-        
-        socket.emit("dm-history", { withUserId, messages: formattedMessages });
-      } catch (err) {
-        console.error("Error loading DM history:", err);
-      }
-    });
-
-    socket.on("mark-dm-read", async ({ fromUserId, currentUserId }) => {
-      try {
-        await Message.updateMany(
-          { senderId: fromUserId, receiverId: currentUserId, isRead: false },
-          { $set: { isRead: true } }
-        );
-        // Notify sender that their messages were read
-        io.to(fromUserId).emit("messages-read", { readerId: currentUserId });
-      } catch (err) {
-        console.error("Error marking messages as read:", err);
-      }
-    });
-
-    socket.on("join-group-chat", (groupId) => {
+    socket.on("join_group", (groupId) => {
       socket.join(groupId);
       console.log(`User ${userId} joined group: ${groupId}`);
     });
 
-    socket.on("leave-group-chat", (groupId) => {
-      socket.leave(groupId);
-      console.log(`User ${userId} left group: ${groupId}`);
-    });
+    socket.on("send_message", async (data) => {
+      const { receiverId, groupId, content } = data;
 
-    socket.on("load-group-history", async ({ groupId }) => {
       try {
-        const messages = await Message.find({ groupId }).sort({ createdAt: 1 }).limit(100);
-        const formattedMessages = messages.map(m => ({
-          _id: m._id.toString(),
-          fromUserId: m.senderId.toString(),
-          groupId: m.groupId?.toString(),
-          text: m.content,
-          timestamp: m.createdAt.toISOString()
-        }));
-        socket.emit("group-history", { groupId, messages: formattedMessages });
-      } catch (err) {
-        console.error("Error loading group history:", err);
-      }
-    });
+        // Enforce friendship/membership check
+        if (groupId) {
+          const group = await Group.findById(groupId);
+          if (!group || !group.members.includes(userId)) {
+            socket.emit("error_message", { message: "You are not a member of this group" });
+            return;
+          }
+        } else if (receiverId) {
+          const currentUser = await User.findById(userId);
+          const targetUser = await User.findById(receiverId);
 
-    socket.on("send-dm", async (data) => {
-      const { toUserId, text, fromUserId, fromUserName } = data;
-      try {
-        // Enforce friendship check if desired
-        const newMessage = new Message({
-          senderId: fromUserId,
-          receiverId: toUserId,
-          content: text
-        });
-        await newMessage.save();
-        
-        const msg: any = {
-          _id: newMessage._id.toString(),
-          fromUserId,
-          toUserId,
-          fromUserName,
-          text,
-          timestamp: newMessage.createdAt.toISOString(),
-          isRead: false
-        };
-        
-        io.to(toUserId).emit("receive-dm", msg);
-        io.to(fromUserId).emit("receive-dm", msg); // Also send back to sender's other tabs
-      } catch (err) {
-        console.error("Error sending DM:", err);
-      }
-    });
+          if (!currentUser || !targetUser) {
+            socket.emit("error_message", { message: "User not found" });
+            return;
+          }
 
-    socket.on("send-group-message", async (data) => {
-      const { groupId, text, userId, userName } = data;
-      try {
+          const isFriend = currentUser.following.includes(receiverId) && targetUser.following.includes(userId);
+          if (!isFriend) {
+            console.warn(`Messaging blocked: User ${userId} is not mutual friends with ${receiverId}`);
+            socket.emit("error_message", { message: "You can only message friends (mutual followers)" });
+            return;
+          }
+        }
+
         const newMessage = new Message({
           senderId: userId,
+          receiverId,
           groupId,
-          content: text
+          content
         });
+
         await newMessage.save();
         
-        const msg: any = {
-          _id: newMessage._id.toString(),
-          fromUserId: userId,
-          fromUserName: userName,
-          groupId,
-          text,
-          timestamp: newMessage.createdAt.toISOString()
+        const messageToSend = {
+          ...newMessage.toObject(),
+          id: newMessage._id.toString()
         };
-        
-        io.to(groupId).emit("receive-group-message", msg);
+
+        console.log(`Message saved. Emitting to ${groupId ? "Group:" + groupId : "Users:" + userId + "," + receiverId}`);
+
+        if (groupId) {
+          io.to(groupId).emit("new_message", messageToSend);
+        } else if (receiverId) {
+          socket.emit("new_message", messageToSend); // Emit directly to the sending socket
+          if (receiverId !== userId) {
+            io.to(receiverId).emit("new_message", messageToSend);
+            io.to(userId).emit("new_message", messageToSend); // Emit to other tabs of sender
+          }
+        }
       } catch (err) {
-        console.error("Error sending Group message:", err);
+        console.error("Error sending message:", err);
+        socket.emit("error_message", { message: "Internal server error occurred while sending message." });
       }
     });
 
-    socket.on("typing-dm", ({ toUserId, fromUserId, isTyping }) => {
-      socket.to(toUserId).emit("user-typing", { fromUserId, isTyping });
-    });
-
-    socket.on("typing-group", ({ groupId, userId, isTyping }) => {
-      socket.to(groupId).emit("group-typing", { groupId, fromUserId: userId, isTyping });
+    socket.on("typing", async (data) => {
+      const { receiverId, groupId, isTyping } = data;
+      
+      // Optional: Add friendship check for typing too to avoid leaking status
+      if (groupId) {
+        socket.to(groupId).emit("typing_update", { userId, isTyping, groupId });
+      } else if (receiverId) {
+        // Only emit typing if they are friends
+        const currentUser = await User.findById(userId);
+        const targetUser = await User.findById(receiverId);
+        const isFriend = currentUser?.following.includes(receiverId) && targetUser?.following.includes(userId);
+        
+        if (isFriend) {
+          socket.to(receiverId).emit("typing_update", { userId, isTyping });
+        }
+      }
     });
 
     socket.on("disconnect", async () => {

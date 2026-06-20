@@ -71,6 +71,20 @@ const materialSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// Handle id virtual
+materialSchema.virtual('id').get(function() {
+  return this._id.toHexString();
+});
+
+materialSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    ret.id = ret._id.toString();
+    // delete ret._id; // Optional: keep for internal use or remove for clean API
+    return ret;
+  }
+});
+
 materialSchema.index({ userId: 1, createdAt: -1 });
 
 export const Material = mongoose.model('Material', materialSchema);

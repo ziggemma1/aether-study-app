@@ -21,7 +21,6 @@ import notificationRoutes from "./src/server/routes/notificationRoutes.js";
 import reportsRoutes from "./src/server/routes/reportsRoutes.js";
 import leaderboardRoutes from "./src/server/routes/leaderboardRoutes.js";
 import achievementsRoutes from "./src/server/routes/achievementsRoutes.js";
-import shopRoutes from "./src/server/routes/shopRoutes.js";
 import studyPlanRoutes from "./src/server/routes/studyPlanRoutes.js";
 import googleCalendarRoutes from "./src/server/routes/googleCalendarRoutes.js";
 import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
@@ -42,8 +41,6 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ UNHANDLED REJECTION at:', promise, 'reason:', reason);
 });
-
-import { seedShop } from "./src/server/utils/seedShop.js";
 
 async function startServer() {
   const app = express();
@@ -133,7 +130,6 @@ async function startServer() {
             connectTimeoutMS: 5000,
           });
           console.log("✅ Connected to MongoDB successfully");
-          await seedShop();
         } catch (err: any) {
           const lowerMsg = err.message.toLowerCase();
           const isAuthError = lowerMsg.includes('authentication failed') || lowerMsg.includes('bad auth');
@@ -203,7 +199,6 @@ async function startServer() {
   app.use("/api/reports", checkDbConnection, reportsRoutes);
   app.use("/api/leaderboard", checkDbConnection, leaderboardRoutes);
   app.use("/api/achievements", checkDbConnection, achievementsRoutes);
-  app.use("/api/shop", checkDbConnection, shopRoutes);
   app.use("/api/study-plans", checkDbConnection, studyPlanRoutes);
   app.use("/api/calendar/google", checkDbConnection, googleCalendarRoutes);
   

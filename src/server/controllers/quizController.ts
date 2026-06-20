@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { QuizResult } from '../models/QuizResult.js';
 import { User } from '../models/User.js';
 import { checkAchievements } from '../services/achievement-service.js';
-import { awardPoints } from '../utils/pointsSystem.js';
 
 export const getResults = async (req: Request, res: Response) => {
   try {
@@ -43,16 +42,11 @@ export const createResult = async (req: Request, res: Response) => {
           avgQuizScore: avgScore,
           highestQuizScore: highest,
           lowestQuizScore: lowest
+        },
+        $inc: {
+          aetherPoints: (req.body.score || 0) * 10
         }
       });
-
-      // Award points using new system
-      const score = req.body.score || 0;
-      if (score === 100) {
-        await awardPoints(userId, 'QUIZ_100', result._id.toString());
-      } else if (score >= 80) {
-        await awardPoints(userId, 'QUIZ_80_PLUS', result._id.toString());
-      }
     }
 
     await checkAchievements(userId);

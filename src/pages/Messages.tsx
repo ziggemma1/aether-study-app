@@ -1,58 +1,45 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
+  UserPlus, 
   Plus,
+  MessageSquare, 
+  Users, 
+  MoreHorizontal, 
+  Phone, 
+  Video,
+  Send,
+  Smile,
+  Paperclip,
+  CheckCheck,
+  UserCheck,
   ArrowLeft,
-  MessageCircle,
-  Clock,
-  ShieldCheck,
-  UserCheck
+  Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import api from '../services/api';
 import { motion, AnimatePresence } from 'motion/react';
-
-// New Modular Components
-import { ConversationList, Conversation } from '../components/messages/ConversationList';
-import { ChatWindow } from '../components/messages/ChatWindow';
-import { FriendRequestItem } from '../components/messages/FriendRequestItem';
-
-// New Custom Hooks
+import { Link } from 'react-router-dom';
 import { useMessaging } from '../hooks/useMessaging';
-import { useFriendRequests } from '../hooks/useFriendRequests';
+
 
 export default function Messages() {
-  const { user, showToast } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'chats' | 'friends' | 'groups' | 'requests'>('chats');
+  const { 
+    user, 
+    groups, 
+    setGroups, 
+    allProfiles, 
+    friendRequests,
+    isLoading: isLoadingProfiles 
+  } = useAppContext();
+
+  const [activeTab, setActiveTab] = useState<'chats' | 'friends' | 'groups'>('chats');
   const [selectedChat, setSelectedChat] = useState<{ id: string, type: 'private' | 'group', name: string, avatar: string } | null>(null);
   const [showChatMobile, setShowChatMobile] = useState(false);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [isLoadingConvs, setIsLoadingConvs] = useState(false);
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [groupName, setGroupName] = useState('');
+  const [input, setInput] = useState('');
 
-  // Fetch conversations from API
-  const fetchConversations = async () => {
-    setIsLoadingConvs(true);
-    try {
-      const res = await api.get('/messages/conversations');
-      setConversations(res.data);
-    } catch (err) {
-      console.error('Failed to fetch conversations:', err);
-    } finally {
-      setIsLoadingConvs(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchConversations();
-  }, []);
-
-  // Friend Requests Hook
-  const { requests: friendRequests, respondToRequest } = useFriendRequests();
-
-  // Messaging Hook
+  // Persistent Messaging Hook
   const {
     chatMessages,
     unreadCounts,
@@ -66,29 +53,69 @@ export default function Messages() {
     selectedChat?.type === 'group' ? selectedChat.id : undefined
   );
 
-  // Update local conversations unread counts from socket
-  useEffect(() => {
-    if (Object.keys(unreadCounts).length > 0) {
-      setConversations(prev => prev.map(c => ({
-        ...c,
-        unread: unreadCounts[c.id] !== undefined ? unreadCounts[c.id] : c.unread
-      })));
+  // Derive final chat list combining profiles and groups
+  const chatList = React.useMemo(() => {
+    if (!user) return [];
+    
+    if (activeTab === 'groups') {
+      return groups.map(g => {
+        return {
+          id: g.id,
+          name: g.name,
+          avatar: g.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${g.name}`,
+          type: 'group',
+          lastMsg: 'Study Group',
+          time: '',
+          unread: 0,
+          isTyping: false
+        };
+      });
     }
-  }, [unreadCounts]);
 
-  const handleSendMessage = (text: string) => {
-    if (!selectedChat) return;
+    const contactMap = new Map();
+    
+    // Add profiles
+    allProfiles.filter(p => p.id !== user.id).forEach(p => {
+      const isFriend = user.following?.includes(p.id) && p.following?.includes(user.id);
+      
+      // If we're on 'chats' tab, we might want to only show people we have messages with or friends
+      if (activeTab === 'friends' || (activeTab === 'chats' && isFriend)) {
+        contactMap.set(p.id, {
+          id: p.id,
+          name: p.name || 'User',
+          avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
+          lastMsg: isFriend ? 'Tap to message' : 'Follow each other to chat',
+          time: '',
+          unread: unreadCounts[p.id] || 0,
+          type: 'private',
+          isTyping: false,
+          isFriend
+        });
+      }
+    });
+
+    return Array.from(contactMap.values());
+  }, [user, allProfiles, activeTab, groups, unreadCounts]);
+
+  const currentChatData = chatList.find(c => c.id === selectedChat?.id);
+  const isChatBlocked = selectedChat?.type === 'private' && !currentChatData?.isFriend;
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || !selectedChat || isChatBlocked) return;
+    
     if (selectedChat.type === 'group') {
-      sendGroupMessage(text);
+      sendGroupMessage(input.trim());
     } else {
-      sendDM(text);
+      sendDM(input.trim());
     }
     
-    // Update last message in list locally
-    setConversations(prev => prev.map(c => 
-      c.id === selectedChat.id ? { ...c, lastMsg: text, time: new Date().toISOString() } : c
-    ));
+    setInput('');
+    setTypingStatus(false);
   };
+
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [groupName, setGroupName] = useState('');
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,110 +123,99 @@ export default function Messages() {
     try {
       const res = await api.post('/groups', { name: groupName });
       if (res.data) {
-        showToast('Group study link established.', 'success');
+        setGroups(prev => [...prev, res.data]);
         setShowCreateGroup(false);
         setGroupName('');
-        const newGroup: Conversation = {
-          id: res.data._id,
-          name: res.data.name,
-          avatar: res.data.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${res.data.name}`,
-          type: 'group',
-          lastMsg: 'Group created',
-          unread: 0
-        };
-        setConversations(prev => [newGroup, ...prev]);
-        setSelectedChat(newGroup);
-        setShowChatMobile(true);
+        setSelectedChat({ 
+          id: res.data._id || res.data.id, 
+          type: 'group', 
+          name: res.data.name, 
+          avatar: res.data.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${res.data.name}`
+        });
       }
     } catch (err) {
-      showToast('Neural link failed. Group creation interrupted.', 'error');
+      console.error('Error creating group:', err);
     }
   };
 
-  const handleRespondToRequest = async (id: string, status: 'accepted' | 'declined') => {
-    const res = await respondToRequest(id, status);
-    if (res.success) {
-      showToast(status === 'accepted' ? 'Alliance formed.' : 'Request neutralized.', 'success');
-      if (status === 'accepted') fetchConversations();
-    } else {
-      showToast(res.message, 'error');
-    }
-  };
+  const activeMessages = React.useMemo(() => {
+    return [...chatMessages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  }, [chatMessages]);
 
-  const filteredConversations = useMemo(() => {
-    if (activeTab === 'chats') return conversations;
-    if (activeTab === 'groups') return conversations.filter(c => c.type === 'group');
-    if (activeTab === 'friends') return conversations.filter(c => c.type === 'private');
-    return [];
-  }, [conversations, activeTab]);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeMessages]);
 
   return (
-    <div className="h-[calc(100vh-140px)] sm:h-[calc(100vh-100px)] flex gap-6 animate-in fade-in duration-700 relative overflow-hidden">
-      
-      {/* Sidebar - Conversation List */}
+    <div className="h-[calc(100vh-140px)] sm:h-[calc(100vh-120px)] flex gap-4 sm:gap-6 animate-in fade-in duration-500">
+      {/* Sidebar - Contacts & Tabs */}
       <div className={cn(
-        "w-full sm:w-96 flex flex-col gap-6",
+        "w-full sm:w-80 flex flex-col gap-4 sm:gap-6",
         showChatMobile ? "hidden sm:flex" : "flex"
       )}>
-        {/* Header Summary Card */}
-        <div className="bg-[#141A24] border border-white/5 rounded-3xl p-5 shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#6C5CE7]/10 blur-3xl rounded-full -mr-10 -mt-10" />
-          
-          <div className="flex items-center justify-between mb-4 relative z-10">
-            <div className="flex items-center gap-2">
-               <div className="p-2 bg-[#6C5CE7]/20 rounded-xl">
-                 <MessageCircle size={20} className="text-[#6C5CE7]" />
-               </div>
-               <h1 className="text-xl font-black text-[#F0F3F8] uppercase tracking-tighter italic">Comms</h1>
-            </div>
-            
+        <div className="glass-card p-4 sm:p-6 flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-text-main">Messages</h1>
             <div className="flex gap-2">
-              <button 
-                onClick={() => setActiveTab('requests')}
-                className="relative p-2 bg-white/5 hover:bg-[#6C5CE7]/20 text-[#8E9AAF] hover:text-[#6C5CE7] rounded-xl transition-all border border-white/5 group"
+              <Link
+                to="/community"
                 title="Friend Requests"
+                className="relative p-1.5 sm:p-2 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white rounded-xl transition-all border border-secondary/20"
               >
-                <UserCheck size={18} />
+                <UserPlus size={18} />
                 {friendRequests.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#6C5CE7] text-white text-[8px] flex items-center justify-center rounded-full border-2 border-[#141A24] animate-bounce font-black">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-surface animate-pulse">
                     {friendRequests.length}
                   </span>
                 )}
-              </button>
+              </Link>
               <button 
                 onClick={() => setShowCreateGroup(true)}
-                className="p-2 bg-white/5 hover:bg-[#00D2FF]/20 text-[#8E9AAF] hover:text-[#00D2FF] rounded-xl transition-all border border-white/5"
                 title="Create Group"
+                className="p-1.5 sm:p-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl transition-all border border-primary/20"
               >
-                <Plus size={18} />
+                <Users size={18} />
               </button>
             </div>
+
           </div>
 
-          <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4">Network Status: <span className="text-[#00E5A0]">Online</span></p>
+          <AnimatePresence>
+            {showCreateGroup && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-6 bg-surface-alt/30 border border-border rounded-2xl p-4 overflow-hidden"
+              >
+                <form onSubmit={handleCreateGroup} className="space-y-3">
+                  <p className="text-xs font-bold text-text-main">Create New Study Group</p>
+                  <input 
+                    type="text" 
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="Group Name..."
+                    className="w-full bg-surface border border-border rounded-xl py-2 px-3 text-xs outline-none focus:border-primary/50 text-text-main"
+                  />
+                  <div className="flex gap-2">
+                    <button type="submit" className="flex-1 bg-primary text-white text-[10px] font-bold py-2 rounded-lg">Create</button>
+                    <button type="button" onClick={() => setShowCreateGroup(false)} className="flex-1 bg-surface-alt text-text-muted text-[10px] font-bold py-2 rounded-lg">Cancel</button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Search bar */}
-          <div className="relative">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/10" />
-            <input 
-              type="text" 
-              placeholder="Search neuro-links..." 
-              className="w-full bg-[#0B0E14] border border-white/5 rounded-2xl py-3 pl-11 pr-4 text-xs outline-none focus:border-[#6C5CE7]/30 transition-all text-[#F0F3F8] placeholder:text-white/10"
-            />
-          </div>
-        </div>
-
-        {/* List Content */}
-        <div className="flex-grow flex flex-col min-h-0">
           {/* Tabs */}
-          <div className="flex gap-1 bg-[#141A24]/60 backdrop-blur-md p-1.5 rounded-2xl mb-4 border border-white/5">
+          <div className="flex bg-surface-alt/50 p-1 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 border border-border">
             {['chats', 'groups', 'friends'].map((tab) => (
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
                 className={cn(
-                  "flex-1 py-2 rounded-xl text-[10px] font-black transition-all capitalize tracking-widest",
-                  activeTab === tab ? "bg-[#6C5CE7] text-white shadow-lg shadow-[#6C5CE7]/20" : "text-[#8E9AAF] hover:text-[#F0F3F8] hover:bg-white/5"
+                  "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold transition-all capitalize",
+                  activeTab === tab ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-text-muted hover:text-text-main"
                 )}
               >
                 {tab}
@@ -207,139 +223,193 @@ export default function Messages() {
             ))}
           </div>
 
-          <div className="flex-grow overflow-hidden flex flex-col">
-            <AnimatePresence mode="wait">
-              {activeTab === 'requests' ? (
-                <motion.div 
-                  key="requests"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-4"
+          <div className="relative mb-4 sm:mb-6">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              className="w-full bg-surface-alt/50 border border-border rounded-xl sm:rounded-2xl py-2 sm:py-2.5 pl-9 sm:pl-10 pr-4 text-xs sm:text-sm outline-none focus:border-primary/30 transition-all text-text-main placeholder:text-text-muted"
+            />
+          </div>
+
+          <div className="flex-grow overflow-y-auto custom-scrollbar space-y-3 sm:space-y-4">
+            {isLoadingProfiles ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 sm:gap-4 p-2 sm:p-3 animate-pulse">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/5 shrink-0" />
+                  <div className="flex-grow space-y-2">
+                    <div className="h-3 w-24 bg-white/5 rounded-full" />
+                    <div className="h-2 w-full bg-white/5 rounded-full opacity-50" />
+                  </div>
+                </div>
+              ))
+            ) : (
+              chatList.map((chat) => (
+                <div 
+                  key={chat.id} 
+                  onClick={() => {
+                    setSelectedChat(chat);
+                    setShowChatMobile(true);
+                  }}
+                  className={cn(
+                    "flex items-center gap-3 sm:gap-4 p-2 sm:p-3 rounded-xl sm:rounded-2xl cursor-pointer transition-all group",
+                    selectedChat?.id === chat.id ? "bg-primary/10 border border-primary/20" : "hover:bg-surface-alt/50 border border-transparent"
+                  )}
                 >
-                   <div className="flex items-center justify-between px-2 mb-2">
-                     <h3 className="text-[10px] font-black text-[#8E9AAF] uppercase tracking-widest">Incoming Requests</h3>
-                     <button onClick={() => setActiveTab('chats')} className="text-[10px] font-black text-[#6C5CE7] uppercase">Back</button>
-                   </div>
-                   {friendRequests.length === 0 ? (
-                     <div className="bg-[#141A24] border border-white/5 rounded-2xl p-8 text-center">
-                        <ShieldCheck size={32} className="mx-auto mb-3 text-white/5" />
-                        <p className="text-xs font-bold text-[#8E9AAF]">No pending requests</p>
-                     </div>
-                   ) : (
-                     friendRequests.map(req => (
-                       <FriendRequestItem 
-                        key={req._id} 
-                        request={req} 
-                        onRespond={handleRespondToRequest} 
-                       />
-                     ))
-                   )}
-                </motion.div>
-              ) : (
-                <motion.div 
-                  key="list"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="h-full"
-                >
-                  <ConversationList 
-                    conversations={filteredConversations}
-                    selectedId={selectedChat?.id}
-                    isLoading={isLoadingConvs}
-                    onSelect={(conv) => {
-                      setSelectedChat(conv);
-                      setShowChatMobile(true);
-                    }}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <div className="relative shrink-0">
+                    <img src={chat.avatar} alt={chat.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-border object-cover" />
+                    {chat.isTyping && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse border-2 border-background" />
+                    )}
+                  </div>
+                  <div className="flex-grow min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <p className="text-xs sm:text-sm font-bold text-text-main truncate">{chat.name}</p>
+                      <span className="text-[8px] sm:text-[10px] text-text-muted">{chat.time}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      {chat.type === 'private' && !chat.isFriend && (
+                        <span className="shrink-0 text-[8px] bg-surface-alt text-text-muted px-1 rounded uppercase font-bold">Not Friend</span>
+                      )}
+                      <p className={cn(
+                        "text-[10px] sm:text-xs truncate",
+                        chat.isTyping ? "text-primary italic" : "text-text-muted"
+                      )}>
+                        {chat.isTyping ? 'typing...' : chat.lastMsg}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
-
-        {/* Footer Meta */}
-        <div className="mt-auto hidden sm:flex items-center justify-between px-4 opacity-30 group cursor-default">
-           <div className="flex items-center gap-2">
-             <div className="w-2 h-2 rounded-full bg-[#00E5A0]" />
-             <span className="text-[8px] font-black uppercase tracking-widest">Secure Link Active</span>
-           </div>
-           <Clock size={12} />
-        </div>
       </div>
 
-      {/* Main Chat Window */}
+      {/* Main Chat Area */}
       <div className={cn(
-        "flex-grow bg-[#141A24] border border-white/5 rounded-[40px] shadow-2xl relative overflow-hidden",
+        "flex-grow glass-card flex flex-col overflow-hidden",
         !showChatMobile ? "hidden sm:flex" : "flex"
       )}>
-        <ChatWindow 
-          chat={selectedChat}
-          messages={chatMessages}
-          isTyping={isTyping}
-          isConnected={isConnected}
-          currentUserId={user?.id || ''}
-          onSendMessage={handleSendMessage}
-          onTyping={setTypingStatus}
-          onBack={() => setShowChatMobile(false)}
-          isBlocked={selectedChat?.type === 'private' && !conversations.find(c => c.id === selectedChat.id)?.isFriend}
-        />
-      </div>
-
-      {/* Group Create Modal (Inline Overlay) */}
-      <AnimatePresence>
-        {showCreateGroup && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#0B0E14]/90 backdrop-blur-md"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-[#141A24] border border-white/5 w-full max-w-sm rounded-[32px] p-8 shadow-2xl"
-            >
-              <div className="w-16 h-16 bg-[#00D2FF]/20 rounded-3xl flex items-center justify-center mb-6 border border-[#00D2FF]/30 mx-auto">
-                <Plus size={28} className="text-[#00D2FF]" />
+        {selectedChat ? (
+          <>
+            {/* Chat Header */}
+            <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between bg-surface-alt/5 backdrop-blur-md">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <button 
+                  onClick={() => setShowChatMobile(false)}
+                  className="p-1.5 hover:bg-surface rounded-lg text-text-muted sm:hidden"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <div className="relative">
+                  <img src={selectedChat.avatar} alt={selectedChat.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-border" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-lg font-bold text-text-main truncate max-w-[120px] sm:max-w-none">{selectedChat.name}</h2>
+                  <p className="text-[10px] sm:text-xs text-primary font-medium flex items-center gap-1">
+                    {isTyping ? 'typing...' : (selectedChat.type === 'group' ? 'Group Study' : (isChatBlocked ? 'Mutual friends only' : (isConnected ? 'Online' : 'Reconnecting...')))}
+                  </p>
+                </div>
               </div>
-              <h2 className="text-xl font-black text-[#F0F3F8] text-center uppercase tracking-tight italic mb-2">Initialize Hub</h2>
-              <p className="text-xs text-[#8E9AAF] text-center mb-8">Establish a collective intelligence link for your study collective.</p>
-              
-              <form onSubmit={handleCreateGroup} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest ml-1">Registry Name</label>
-                  <input 
-                    type="text" 
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
-                    placeholder="E.g. Quantum Physics 101..."
-                    className="w-full bg-[#0B0E14] border border-white/5 rounded-2xl py-4 px-5 text-sm outline-none focus:border-[#00D2FF]/40 transition-all text-[#F0F3F8]"
-                    autoFocus
-                  />
+              <div className="flex items-center gap-1.5 sm:gap-3">
+                <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg text-text-muted border border-border">
+                  <Phone size={18} />
+                </button>
+                <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg text-text-muted border border-border">
+                  <Video size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Messages Area */}
+            <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
+              {activeMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-text-muted">
+                  <MessageSquare size={48} className="mb-4 opacity-10" />
+                  <p className="text-xs">No messages history. Say hello!</p>
                 </div>
-                
-                <div className="flex gap-3 pt-4">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowCreateGroup(false)}
-                    className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[#8E9AAF] hover:text-white transition-all"
+              ) : (
+                activeMessages.map((msg, idx) => (
+                  <div 
+                    key={msg._id || idx}
+                    className={cn(
+                      "flex flex-col gap-1 max-w-[85%]",
+                      msg.fromUserId === user?.id ? "ml-auto" : ""
+                    )}
                   >
-                    Abort
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={!groupName.trim()}
-                    className="flex-1 bg-[#6C5CE7] text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#6C5CE7]/20 active:scale-95 transition-all disabled:opacity-50"
-                  >
-                    Sync Link
-                  </button>
+                    {selectedChat.type === 'group' && msg.fromUserId !== user?.id && (
+                      <p className="text-[10px] font-bold text-primary ml-1">{msg.fromUserName || 'Member'}</p>
+                    )}
+                    <div className={cn(
+                      "p-3 rounded-2xl text-xs sm:text-sm shadow-sm",
+                      msg.fromUserId === user?.id 
+                        ? "bg-primary text-white rounded-br-none" 
+                        : "bg-surface-alt border border-border text-text-main rounded-bl-none"
+                    )}>
+                      {msg.text}
+                      <div className={cn(
+                        "flex items-center gap-1 mt-1 opacity-70 text-[8px]",
+                        msg.fromUserId === user?.id ? "justify-end" : "justify-start"
+                      )}>
+                        <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {msg.fromUserId === user?.id && selectedChat.type === 'private' && (
+                          msg.isRead ? <CheckCheck size={10} className="text-secondary-light" /> : <CheckCheck size={10} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+
+            {/* Input Area */}
+            <div className="p-4 sm:p-6 border-t border-border">
+              {isChatBlocked ? (
+                <div className="bg-surface-alt/50 border border-border rounded-xl p-3 text-center">
+                  <p className="text-xs text-text-muted">You can only message friends who also follow you back.</p>
                 </div>
-              </form>
-            </motion.div>
-          </motion.div>
+              ) : (
+                <form onSubmit={handleSend} className="flex items-center gap-2 sm:gap-4">
+                  <button type="button" className="p-2 text-text-muted hover:text-text-main">
+                    <Paperclip size={20} />
+                  </button>
+                  <div className="flex-grow relative">
+                    <input 
+                      type="text" 
+                      value={input}
+                      onChange={(e) => {
+                        setInput(e.target.value);
+                        setTypingStatus(e.target.value.length > 0);
+                      }}
+                      onBlur={() => setTypingStatus(false)}
+                      placeholder="Type a message..." 
+                      className="w-full bg-surface-alt/50 border border-border rounded-xl py-2.5 sm:py-3 px-4 text-xs sm:text-sm outline-none focus:border-primary/50 transition-all text-text-main"
+                    />
+                  </div>
+                  <button 
+                    type="submit"
+                    disabled={!input.trim()}
+                    className="w-10 h-10 sm:w-12 sm:h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <Send size={18} />
+                  </button>
+                </form>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="flex-grow flex flex-col items-center justify-center p-6 text-center">
+            <MessageSquare size={48} className="mb-4 text-text-muted opacity-10" />
+            <h2 className="text-lg font-bold text-text-main mb-2">Your Conversations</h2>
+            <p className="text-xs text-text-muted">Select a chat to start real-time messaging.</p>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }
+
+

@@ -4,10 +4,10 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 // Free models available on OpenRouter as of late 2024
 const FREE_MODELS = [
-  "google/gemini-2.5-flash:free",
-  "qwen/qwen-2.5-7b-instruct:free",
-  "meta-llama/llama-3-8b-instruct:free",
-  "microsoft/phi-3-medium-128k-instruct:free"
+  "meta-llama/llama-3.1-8b-instruct:free",
+  "google/gemini-flash-1.5:free",
+  "mistralai/mistral-7b-instruct:free",
+  "qwen/qwen-2.5-7b-instruct:free"
 ];
 
 interface AIResponse {
