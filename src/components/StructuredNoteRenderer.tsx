@@ -25,21 +25,12 @@ interface Props {
 
 export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
   const [revealedAnswers, setRevealedAnswers] = React.useState<number[]>([]);
-  const [openDeepDives, setOpenDeepDives] = React.useState<number[]>([]);
 
   const toggleAnswer = (index: number) => {
     if (revealedAnswers.includes(index)) {
       setRevealedAnswers(revealedAnswers.filter(i => i !== index));
     } else {
       setRevealedAnswers([...revealedAnswers, index]);
-    }
-  };
-
-  const toggleDeepDive = (index: number) => {
-    if (openDeepDives.includes(index)) {
-      setOpenDeepDives(openDeepDives.filter(i => i !== index));
-    } else {
-      setOpenDeepDives([...openDeepDives, index]);
     }
   };
 
@@ -218,28 +209,15 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
                     )}
                   </div>
 
-                  {/* Collapsible Deep Dive (Touch target min 44px) */}
+                  {/* Detailed Insights / Deep-Dive */}
                   {concept.deepDive && (
-                    <div className="pt-2">
-                      <button
-                        onClick={() => toggleDeepDive(i)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 bg-surface border border-border/10 rounded-xl text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/5 transition-all min-h-[44px]"
-                      >
-                        <span>🔍 Deep-Dive Insights</span>
-                        <span>{openDeepDives.includes(i) ? "Close" : "Expand"}</span>
-                      </button>
-                      <AnimatePresence>
-                        {openDeepDives.includes(i) && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="overflow-hidden mt-2 bg-surface/50 border border-border/10 rounded-xl p-3 text-xs text-text-muted leading-relaxed"
-                          >
-                            <ReactMarkdown>{concept.deepDive}</ReactMarkdown>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                    <div className="p-3.5 bg-primary/5 border border-primary/10 rounded-xl space-y-2">
+                      <span className="font-extrabold text-primary flex items-center gap-1.5 text-[9px] uppercase tracking-wider">
+                        <Sparkles size={12} /> Detailed Insights & Deep-Dive
+                      </span>
+                      <div className="text-xs text-text-muted leading-relaxed markdown-body">
+                        <ReactMarkdown>{concept.deepDive}</ReactMarkdown>
+                      </div>
                     </div>
                   )}
                 </div>

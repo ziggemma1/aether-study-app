@@ -527,13 +527,13 @@ export const generateDetailedNotes = async (content: string, title: string) => {
       - Learning Objectives: 3-5 specific objectives using Bloom's Taxonomy action verbs (Remember, Understand, Apply, Analyze, Evaluate, Create).
       - Prerequisites: 2-3 bullet points of what the student should already know or a brief refresher of foundational concepts.
       - Executive Summary: A 1-paragraph summary of the entire topic (3-5 sentences) introducing the "big picture".
-      - Key Concepts: 3-6 concepts representing the core topics. For each concept:
+      - Key Concepts: 5-8 concepts representing the core topics in detail. For each concept:
         * name: Concept name
         * definition: Clear, concise definition
         * keyPoints: Array of 3-5 detailed points with context
         * example: Real-world example or practical analogy
         * memoryTip: Mnemonic, acronym, or visual cue (e.g. "E for Evaporation - Energy Enters")
-        * deepDive: (Optional) Extended explanation or advanced details for deep learners
+        * deepDive: MANDATORY. An extensive, comprehensive, and highly detailed textbook-style explanation of the concept, including its underlying mechanics, formulas (if any), applications, and theoretical background. MUST be at least 2-3 long paragraphs (minimum 800 characters) to ensure the study notes are extremely comprehensive for reading.
       - Comparison Table: Structured comparison between related concepts (headers, rows, title).
       - Visual Prompts: 2-3 prompts urging the student to sketch flowcharts, mind maps, or diagrams to utilize dual coding.
       - Key Takeaways: 3-5 high-impact takeaways summarizing the most important aspects.
@@ -591,7 +591,7 @@ ${content.substring(0, 15000)}`;
                     memoryTip: { type: Type.STRING },
                     deepDive: { type: Type.STRING }
                   },
-                  required: ["name", "definition", "keyPoints", "example", "memoryTip"]
+                  required: ["name", "definition", "keyPoints", "example", "memoryTip", "deepDive"]
                 }
               },
               comparisonTable: {
@@ -686,12 +686,12 @@ ${content.substring(0, 15000)}`;
 };
 
 export const generateAcademicMegaNotes = async (content: string, title: string) => {
-  console.log(`[AI-Service] generateAcademicMegaNotes (8+ Pages Cornell/Feynman Deep Analysis) called for: ${title}`);
+  console.log(`[AI-Service] generateAcademicMegaNotes (12+ Pages Cornell/Feynman Deep Analysis) called for: ${title}`);
   
   const systemInstruction = `You are an elite academic curriculum designer and expert in cognitive learning frameworks.
-      Your goal is to transform the provided study material into an intensive, 8-page (or more) comprehensive textbook-style study guide.
+      Your goal is to transform the provided study material into an intensive, 12-page (or more) comprehensive textbook-style study guide.
       
-      You MUST generate EXACTLY 8 or more entries in the JSON array (each representing an in-depth webpage text section/chapter).
+      You MUST generate EXACTLY 12 or more entries in the JSON array (each representing an in-depth webpage text section/chapter) to ensure a highly extensive, comprehensive textbook coverage.
       For each entry, you must intelligently choose between two specialized, powerful learning styles:
       
       1. 'Cornell': Highly-structured lecture and book study layouts. MUST use this exact format structure:
@@ -706,7 +706,7 @@ export const generateAcademicMegaNotes = async (content: string, title: string) 
          * *Prompt 2:* [Analytical question connecting system concepts]
          * *Prompt 3:* [Applied operational drill question]
          
-         #### 📝 HIGH-DENSITY LECTURE NOTES (Textbook Style)
+         #### 📝 HIGH-DENSITY LECTURE NOTES (TextBOOK Style)
          [Extensive, highly detailed explanation of subtopics with deep definitions, steps, parameters, and full architectural breakdowns. Write multiple long, detailed academic paragraphs.]
          
          #### 🛠️ PRACTICAL SCENARIO IN ACTION
@@ -716,7 +716,7 @@ export const generateAcademicMegaNotes = async (content: string, title: string) 
          
          #### 📑 SYNTHESISED SUMMARY
          [A high-level synthesis combining all key takeaways into a cohesive, memorable structural outline.]
-
+ 
       2. 'Feynman': Mastering tricky, abstract, or complex concepts by explaining simply, utilizing powerful metaphors, and addressing deep blind spots. MUST use this exact format structure:
          ### 🧠 FEYNMAN MASTERCLASS: [Heading]
          
@@ -738,18 +738,18 @@ export const generateAcademicMegaNotes = async (content: string, title: string) 
          #### 🛠️ COMPREHENSIVE SCENARIO IN ACTION
          * **Scenario:** [A rich, immersive, real-world narrative detailing how this mechanism works in an actual production, business, scientific, or academic context]
          * **Mechanic Breakdown:** [Step-by-step analysis of how it is applied in this scenario]
-
+ 
       CRITICAL REQUIREMENTS:
-      - Each page/entry must be extremely verbose, thick, and comprehensive (at least 1500 to 2500 characters of rich, textbook-level Markdown content with detailed lists, deep comparisons, bolding, and active recall cues).
+      - Each page/entry must be extremely verbose, thick, and comprehensive (at least 2500 to 3500 characters of rich, textbook-level Markdown content with detailed lists, deep comparisons, bolding, and active recall cues).
       - Alternate or select the style that truly fits each topic/subtopic analyzed.
       - Never leave fields blank.
       - Return valid JSON matching the schema.`;
-
-  const promptText = `Generate at least 8 full detailed pages. Ensure each page has extensive, high-quality textbook content (over 1500 characters each) covering key sections and subtopics of the material.
+ 
+  const promptText = `Generate at least 12 full detailed pages. Ensure each page has exceptionally extensive, high-quality textbook content (over 2500 characters each) covering key sections and subtopics of the material.
 Material Title: ${title}
 Source Content to Analyze:
 ${content.substring(0, 18000)}`;
-
+ 
   const ai = getAiClient();
   if (ai) {
     try {
@@ -777,7 +777,7 @@ ${content.substring(0, 18000)}`;
           systemInstruction
         }
       }));
-
+ 
       const text = response.text || "";
       if (text) {
         try {
@@ -792,7 +792,7 @@ ${content.substring(0, 18000)}`;
       console.warn(`[AI-Service] Gemini academic mega notes failed, falling back to OpenRouter:`, err.message);
     }
   }
-
+ 
   if (OPENROUTER_API_KEY) {
     console.log(`[AI-Service] Using OpenRouter for Academic Mega Notes (Fallback)...`);
     try {
@@ -812,13 +812,14 @@ ${content.substring(0, 18000)}`;
       console.warn(`[AI-Service] OpenRouter academic mega notes fallback failed:`, err.message);
     }
   }
-
-  // Final static fallback - build 8 distinct, comprehensive, high-quality page designs
+ 
+  // Final static fallback - build 12 distinct, comprehensive, high-quality page designs
   console.warn(`[AI-Service] Using static fallback for Academic Mega Notes...`);
   const topics = [
     "Core Structural Foundations", "System Architectural Mechanics", "Critical Logic & Control Workflows", 
     "High-Impact Operational Case Studies", "Interactive Problem Solving Scenarios", "Advanced Comparative Frameworks", 
-    "Socratic Cognitive Diagnostics", "Meta-cognitive Learning Checklists"
+    "Socratic Cognitive Diagnostics", "Meta-cognitive Learning Checklists", "Advanced Relational Interdependencies",
+    "Dynamic Adaptive Feedback Systems", "Applied Empirical Validations", "Pedagogical Concept Maps"
   ];
   return topics.map((heading, index) => {
     const isCornell = index % 2 === 0;
