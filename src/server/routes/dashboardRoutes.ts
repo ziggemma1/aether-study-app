@@ -16,11 +16,15 @@ router.get('/profile', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Calculate leaderboard rank and total learners dynamically
-    const allUsers = await User.find({}).sort({ aetherPoints: -1 }).select('_id');
-    const totalLearners = allUsers.length;
-    const rankIndex = allUsers.findIndex(u => u._id.toString() === userId.toString());
-    const rank = rankIndex !== -1 ? rankIndex + 1 : 1;
+    // Calculate leaderboard rank and total learners dynamically using fast index counts
+    const totalLearners = await User.countDocuments({ optedInLeaderboard: { $ne: false } });
+    let rank = 1;
+    if (user.optedInLeaderboard !== false) {
+      rank = await User.countDocuments({
+        optedInLeaderboard: { $ne: false },
+        aetherPoints: { $gt: user.aetherPoints || 0 }
+      }) + 1;
+    }
 
     res.json({
       id: user._id || user.id,

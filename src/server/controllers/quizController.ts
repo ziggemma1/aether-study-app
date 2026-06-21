@@ -5,15 +5,7 @@ import { checkAchievements } from '../services/achievement-service.js';
 
 export const getResults = async (req: Request, res: Response) => {
   try {
-    const results = await QuizResult.find({ userId: (req as any).userId });
-    
-    // Sort natively to bypass Mongo memory ceilings on large objects
-    results.sort((a: any, b: any) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    });
-
+    const results = await QuizResult.find({ userId: (req as any).userId }).sort({ createdAt: -1 });
     res.json(results);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

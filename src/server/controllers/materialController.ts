@@ -116,14 +116,7 @@ export const getMaterials = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
     console.log(`Fetching materials for user ID: ${userId}`);
-    const materials = await Material.find({ userId });
-    
-    // Sort in application memory to bypass MongoDB's strict 32MB sorting limit constraint
-    materials.sort((a: any, b: any) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    });
+    const materials = await Material.find({ userId }).sort({ createdAt: -1 });
 
     console.log(`Found ${materials.length} materials for user ${userId}`);
     res.json(materials);

@@ -69,6 +69,45 @@ async function startServer() {
   }));
   app.use(mongoSanitize());
 
+  // Rate Limiting Configurations
+  const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many requests from this IP, please try again after 15 minutes." }
+  });
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 15, // Limit each IP to 15 authentication attempts per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many authentication attempts from this IP, please try again after 15 minutes." }
+  });
+
+  const aiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // Limit each IP to 20 AI generation requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many AI generation requests, please try again after 15 minutes to prevent abuse." }
+  });
+
+  // Apply rate limiters to API routes
+  app.use("/api", globalLimiter);
+  app.use("/api/auth/login", authLimiter);
+  app.use("/api/auth/register", authLimiter);
+  app.use("/api/materials/analyze", aiLimiter);
+  app.use("/api/materials/generate-chapters", aiLimiter);
+  app.use("/api/materials/generate-deep-dive", aiLimiter);
+  app.use("/api/materials/generate-flashcards", aiLimiter);
+  app.use("/api/materials/generate-quiz", aiLimiter);
+  app.use("/api/materials/chat", aiLimiter);
+  app.use("/api/materials/speech", aiLimiter);
+  app.use("/api/materials/generate-plan", aiLimiter);
+  app.use("/api/study-plans/generate", aiLimiter);
+
   // Detect environment
   const isVercel = !!process.env.VERCEL;
   const isProduction = process.env.NODE_ENV === "production" || isVercel;

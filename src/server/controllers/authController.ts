@@ -8,15 +8,15 @@ import { OAuth2Client } from 'google-auth-library';
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    if (process.env.NODE_ENV !== 'production') {
+    const isVercel = !!process.env.VERCEL;
+    const isProduction = process.env.NODE_ENV === "production" || isVercel;
+
+    if (!isProduction) {
       console.warn("⚠️ WARNING: JWT_SECRET environment variable is not set. Using a temporary fallback secret for development.");
       return 'dev_temporary_secret_key_12345';
     }
-    // In production/Vercel, we still log a CRITICAL error but provide a temporary fallback to prevent a total 500 crash
-    // This allows the user to actually see the app and debug further.
-    console.error("❌ CRITICAL ERROR: JWT_SECRET environment variable is not set! AUTH WILL BE INSECURE.");
-    console.error("👉 ACTION REQUIRED: Set JWT_SECRET in your Vercel/Deployment environment variables.");
-    return 'prod_emergency_fallback_secret_999'; 
+    console.error("❌ CRITICAL ERROR: JWT_SECRET environment variable is not set! Process exiting to prevent insecure authentication in production.");
+    process.exit(1);
   }
   return secret;
 };

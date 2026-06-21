@@ -11,4 +11,6 @@ const studySessionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+studySessionSchema.index({ userId: 1, startTime: 1 });
+
 export const StudySession = mongoose.model('StudySession', studySessionSchema);

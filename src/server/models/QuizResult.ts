@@ -9,4 +9,6 @@ const quizResultSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+quizResultSchema.index({ userId: 1, createdAt: -1 });
+
 export const QuizResult = mongoose.model('QuizResult', quizResultSchema);
