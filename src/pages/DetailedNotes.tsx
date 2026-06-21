@@ -275,13 +275,13 @@ export default function DetailedNotes() {
             <button
               onClick={() => setActiveViewMode('slides')}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all",
+                "flex-1 flex-in flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all",
                 activeViewMode === 'slides' 
                   ? "bg-primary text-white shadow-md" 
                   : "text-text-muted hover:text-text-main"
               )}
             >
-              <Sparkles size={12} /> 📑 8-Page Deep-Dive
+              <Sparkles size={12} /> 📑 {totalPages}-Page Deep-Dive
             </button>
             <button
               onClick={() => setActiveViewMode('structured')}
