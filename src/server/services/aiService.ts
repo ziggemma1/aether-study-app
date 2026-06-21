@@ -43,9 +43,10 @@ const GEMINI_MODEL = "gemini-1.5-flash";
 
 // OpenRouter Logic
 const FREE_MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'google/gemini-2.5-flash:free',
+  'liquid/lfm-2.5-1.2b-instruct:free',
   'google/gemma-4-31b-it:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
   'meta-llama/llama-3.2-3b-instruct:free',
   'qwen/qwen3-coder:free',
   'openrouter/free'
@@ -53,9 +54,29 @@ const FREE_MODELS = [
 
 const cleanJsonContent = (content: string): string => {
   if (!content) return "";
-  // Strip safety wrappers like "User Safety: safe" prepended by some 2026 models
-  let cleaned = content.replace(/^User Safety: safe\s*/i, '');
-  // Strip markdown code blocks
+  
+  // Strip safety wrappers like "User Safety: safe" prepended by some models
+  let cleaned = content.replace(/^User Safety: safe\s*/i, '').trim();
+  
+  // Try to find the start and end of a JSON object/array
+  const firstBrace = cleaned.indexOf('{');
+  const firstBracket = cleaned.indexOf('[');
+  let startIdx = -1;
+  let endIdx = -1;
+  
+  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    startIdx = firstBrace;
+    endIdx = cleaned.lastIndexOf('}');
+  } else if (firstBracket !== -1) {
+    startIdx = firstBracket;
+    endIdx = cleaned.lastIndexOf(']');
+  }
+  
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+    return cleaned.substring(startIdx, endIdx + 1);
+  }
+  
+  // Fallback: strip markdown code blocks
   cleaned = cleaned.replace(/```json\s?|```/g, '').trim();
   return cleaned;
 };
@@ -108,50 +129,69 @@ export const callOpenRouter = async (messages: any[], useJson = false): Promise<
   
   let lastError: any = null;
   for (const model of FREE_MODELS) {
-    try {
-      const payload: any = { 
-        model, 
-        messages, 
-        temperature: useJson ? 0.1 : 0.3 
-      };
-      
-      // Only include response_format if the model likely supports it
-      // For now, only include for models that aren't 'openrouter/free' or older ones
-      if (useJson && !model.includes('openrouter/free')) {
-        payload.response_format = { type: 'json_object' };
-      }
-
-      const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', payload, {
-        headers: {
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://ai.studio',
-          'X-Title': 'Aether Study'
-        },
-        timeout: 90000 
-      });
-
-      if (response.data.choices?.[0]?.message) {
-        const msg = response.data.choices[0].message;
-        if (msg.content) return msg;
-      }
-      
-      if (response.data?.error) {
-        const errCode = response.data.error.code;
-        console.warn(`[AI] Model ${model} returned API error (${errCode}):`, response.data.error.message);
-        if (errCode === 429) {
-          console.log(`[AI] Rate limited on ${model}, waiting 2s before next model...`);
-          await sleep(2000);
+    // If json is requested, try first with response_format, then without it as fallback
+    const attempts = (useJson && !model.includes('openrouter/free')) ? [true, false] : [false];
+    
+    for (const jsonMode of attempts) {
+      try {
+        const payload: any = { 
+          model, 
+          messages, 
+          temperature: useJson ? 0.1 : 0.3 
+        };
+        
+        if (jsonMode) {
+          payload.response_format = { type: 'json_object' };
         }
-      }
-    } catch (err: any) {
-      lastError = err;
-      const status = err.response?.status;
-      const details = err.response?.data?.error?.message || err.message;
-      console.warn(`[AI] Model ${model} failed (${status || 'No Status'}): ${details}`);
-      if (status === 429) {
-        console.log(`[AI] Status 429 on ${model}, waiting 2s...`);
-        await sleep(2000);
+        
+        console.log(`[AI] Attempting OpenRouter model ${model} (JSON mode: ${jsonMode})`);
+        
+        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', payload, {
+          headers: {
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://ai.studio',
+            'X-Title': 'Aether Study'
+          },
+          timeout: 90000 
+        });
+
+        if (response.data.choices?.[0]?.message) {
+          const msg = response.data.choices[0].message;
+          if (msg.content) return msg;
+        }
+        
+        if (response.data?.error) {
+          const errCode = response.data.error.code;
+          console.warn(`[AI] Model ${model} returned API error (${errCode}):`, response.data.error.message);
+          
+          if (errCode === 429) {
+            console.log(`[AI] Rate limited on ${model}, waiting 2s before next model...`);
+            await sleep(2000);
+            break; // Break the attempts loop, try next model
+          }
+          
+          if (errCode === 400 && jsonMode) {
+            console.log(`[AI] Model ${model} returned 400 error in JSON mode. Retrying without response_format...`);
+            continue; // Try next attempt for this model
+          }
+        }
+      } catch (err: any) {
+        lastError = err;
+        const status = err.response?.status;
+        const details = err.response?.data?.error?.message || err.message;
+        console.warn(`[AI] Model ${model} failed (${status || 'No Status'}): ${details}`);
+        
+        if (status === 429) {
+          console.log(`[AI] Status 429 on ${model}, waiting 2s...`);
+          await sleep(2000);
+          break; // Break the attempts loop, try next model
+        }
+        
+        if ((status === 400 || details.includes('format')) && jsonMode) {
+          console.log(`[AI] Status ${status} in JSON mode, retrying without response_format...`);
+          continue; // Try next attempt for this model
+        }
       }
     }
   }
