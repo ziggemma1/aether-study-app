@@ -58,7 +58,23 @@ const materialSchema = new mongoose.Schema({
     summary: [String],
     activeRecallQuestions: [String],
     mnemonic: String,
-    relatedTopics: [String]
+    relatedTopics: [String],
+    
+    // Proven Learning Framework fields
+    prerequisites: [String],
+    executiveSummary: String,
+    keyConcepts: [{
+      name: String,
+      definition: String,
+      keyPoints: [String],
+      example: String,
+      memoryTip: String,
+      deepDive: String
+    }],
+    visualPrompts: [String],
+    applicationQuestions: [String],
+    nextSteps: [String],
+    studySchedule: mongoose.Schema.Types.Mixed
   },
   progress: { type: Number, default: 0 },
   isPublic: { type: Boolean, default: false },

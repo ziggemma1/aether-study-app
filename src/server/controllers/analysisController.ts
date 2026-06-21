@@ -73,14 +73,87 @@ const generateMockChapters = (title: string, content?: string) => {
 };
 
 const mapStructuredNoteToNoteSections = (note: any): any[] => {
-  if (!note || !note.sections) return [];
-  return note.sections.map((sec: any, idx: number) => {
-    const isCornell = idx % 2 === 0;
-    const style = isCornell ? 'Cornell' : 'Feynman';
-    
-    let contentMarkdown = "";
-    if (isCornell) {
-      contentMarkdown = `### 📑 CORNELL STUDY MODULE: ${sec.heading}
+  if (!note) return [];
+
+  // Check for new keyConcepts first
+  if (note.keyConcepts && note.keyConcepts.length > 0) {
+    return note.keyConcepts.map((concept: any, idx: number) => {
+      const isCornell = idx % 2 === 0;
+      const style = isCornell ? 'Cornell' : 'Feynman';
+      
+      let contentMarkdown = "";
+      if (isCornell) {
+        contentMarkdown = `### 📑 CORNELL STUDY MODULE: ${concept.name}
+ 
+#### 🎯 Central Focus
+* **Concept to Master:** ${concept.name}
+* **Target recall:** Master definitions, key mechanics, and practical applications.
+ 
+#### 🔍 CUE COLUMN (Active Recall Prompts)
+* *Prompt 1:* Define ${concept.name} in your own words.
+* *Prompt 2:* What are the key elements and conditions required for ${concept.name}?
+* *Prompt 3:* How does the example of "${concept.example}" illustrate this concept?
+ 
+#### 📝 HIGH-DENSITY LECTURE NOTES (Textbook Style)
+##### Definition
+${concept.definition}
+ 
+##### Key Points
+${(concept.keyPoints || []).map((kp: string) => `- ${kp}`).join('\n')}
+ 
+${concept.deepDive ? `##### Deep Dive\n${concept.deepDive}` : ''}
+ 
+#### 🛠️ PRACTICAL SCENARIO IN ACTION
+* **Context:** Understanding the real-world application of ${concept.name}.
+* **Application:** ${concept.example}
+* **Observed Outcome:** Demonstrates direct concept utility.
+ 
+#### 📑 SYNTHESISED SUMMARY
+* **Memory Tip:** ${concept.memoryTip}
+* Review and answer each cue column query to evaluate exam readiness.`;
+      } else {
+        contentMarkdown = `### 🧠 FEYNMAN MASTERCLASS: ${concept.name}
+ 
+#### 🎯 Conceptual Anchor
+* **Concept:** ${concept.name} (Simplified)
+* **Pedagogical aim:** Deconstructing high-complexity abstractions into elegant simplicity.
+ 
+#### 👶 ELI5 (Explain Like I'm Five)
+${concept.definition} (Simplified analogy: ${concept.example})
+ 
+#### ⚙️ MECHANICS DECONSTRUCTION (Deep, Rigorous Explanation)
+##### Details
+${(concept.keyPoints || []).map((kp: string) => `- ${kp}`).join('\n')}
+ 
+${concept.deepDive ? `##### Advanced Context\n${concept.deepDive}` : ''}
+ 
+#### 💡 DEEP ANALOGY & GAP IDENTIFICATION (Pinpoint Gaps)
+* **The Analogy:** ${concept.example}
+* **Memory Cue:** ${concept.memoryTip}
+ 
+#### 🛠️ COMPREHENSIVE SCENARIO IN ACTION
+* **Scenario:** Application in real-world scenarios.
+* **Explanation:** How this manifests in actual systems or nature.`;
+      }
+
+      return {
+        heading: concept.name,
+        content: contentMarkdown,
+        noteStyle: style,
+        conceptAnalyzed: `Deconstructing ${concept.name}`
+      };
+    });
+  }
+
+  // Fallback for legacy structured notes (sections-based)
+  if (note.sections && note.sections.length > 0) {
+    return note.sections.map((sec: any, idx: number) => {
+      const isCornell = idx % 2 === 0;
+      const style = isCornell ? 'Cornell' : 'Feynman';
+      
+      let contentMarkdown = "";
+      if (isCornell) {
+        contentMarkdown = `### 📑 CORNELL STUDY MODULE: ${sec.heading}
 
 #### 🎯 Central Focus
 * **Concept to Master:** ${sec.heading}
@@ -102,8 +175,8 @@ ${sub.memoryTip ? `\n* Memory Tip: ${sub.memoryTip}` : ''}`).join('\n\n')}
 #### 📑 SYNTHESISED SUMMARY
 * Establish a systematic understanding of ${sec.heading}.
 * Review and answer each cue column query to evaluate exam readiness.`;
-    } else {
-      contentMarkdown = `### 🧠 FEYNMAN MASTERCLASS: ${sec.heading}
+      } else {
+        contentMarkdown = `### 🧠 FEYNMAN MASTERCLASS: ${sec.heading}
 
 #### 🎯 Conceptual Anchor
 * **Concept:** ${sec.heading} (Simplified)
@@ -125,15 +198,18 @@ ${sub.quickCheck ? `\n* Quick Check drill: ${sub.quickCheck}` : ''}`).join('\n\n
 #### 🛠️ COMPREHENSIVE SCENARIO IN ACTION
 * **Scenario:** A team must coordinate and integrate resources based on the logic of ${sec.heading}.
 * **Mechanic Breakdown:** Breaking down each subsection target, translating complex rules into straightforward actions.`;
-    }
+      }
 
-    return {
-      heading: sec.heading,
-      content: contentMarkdown,
-      noteStyle: style,
-      conceptAnalyzed: `Deconstructing ${sec.heading}`
-    };
-  });
+      return {
+        heading: sec.heading,
+        content: contentMarkdown,
+        noteStyle: style,
+        conceptAnalyzed: `Deconstructing ${sec.heading}`
+      };
+    });
+  }
+
+  return [];
 };
 
 export const generateChapters = async (req: Request, res: Response) => {

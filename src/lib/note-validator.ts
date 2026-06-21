@@ -1,26 +1,56 @@
+export interface KeyTerm {
+  term: string;
+  definition: string;
+  memoryTip?: string;
+}
+
+export interface Subsection {
+  subheading?: string;
+  content: string;
+  keywords: string[];
+  memoryTip?: string;
+  quickCheck?: string;
+}
+
+export interface NoteSectionGroup {
+  heading: string;
+  subsections: Subsection[];
+}
+
+export interface ComparisonTable {
+  headers: string[];
+  rows: string[][];
+  title?: string;
+}
+
+export interface KeyConcept {
+  name: string;
+  definition: string;
+  keyPoints: string[];
+  example: string;
+  memoryTip: string;
+  deepDive?: string;
+}
+
 export interface StructuredNote {
   title: string;
   learningObjectives: string[];
-  keyTerms: Array<{ term: string; definition: string; memoryTip?: string }>;
-  sections: Array<{
-    heading: string;
-    subsections: Array<{
-      subheading: string;
-      content: string;
-      keywords: string[];
-      memoryTip?: string;
-      quickCheck?: string;
-    }>;
-  }>;
-  comparisonTable?: {
-    headers: string[];
-    rows: string[][];
-    title?: string;
-  };
+  keyTerms: KeyTerm[];
+  sections?: NoteSectionGroup[]; // Optional for legacy support
+  comparisonTable?: ComparisonTable;
   summary: string[];
   activeRecallQuestions: string[];
   mnemonic?: string;
   relatedTopics?: string[];
+  
+  // Proven Learning Framework fields
+  prerequisites?: string[];
+  executiveSummary?: string;
+  keyConcepts?: KeyConcept[];
+  visualPrompts?: string[];
+  applicationQuestions?: string[];
+  nextSteps?: string[];
+  studySchedule?: Record<string, string>;
 }
 
 export function validateAndFillNote(note: Partial<StructuredNote>, originalContent?: string, title?: string): StructuredNote {
@@ -33,7 +63,16 @@ export function validateAndFillNote(note: Partial<StructuredNote>, originalConte
     summary: note.summary?.filter(v => v && v.trim() !== '') || [],
     activeRecallQuestions: note.activeRecallQuestions?.filter(v => v && v.trim() !== '') || [],
     mnemonic: note.mnemonic,
-    relatedTopics: note.relatedTopics
+    relatedTopics: note.relatedTopics,
+    
+    // Proven Learning Framework fields
+    prerequisites: note.prerequisites?.filter(v => v && v.trim() !== '') || [],
+    executiveSummary: note.executiveSummary || "",
+    keyConcepts: note.keyConcepts?.filter(k => k.name && k.definition) || [],
+    visualPrompts: note.visualPrompts?.filter(v => v && v.trim() !== '') || [],
+    applicationQuestions: note.applicationQuestions?.filter(v => v && v.trim() !== '') || [],
+    nextSteps: note.nextSteps?.filter(v => v && v.trim() !== '') || [],
+    studySchedule: note.studySchedule || {}
   };
 
   // 1. Learning Objectives Fallback
@@ -48,31 +87,102 @@ export function validateAndFillNote(note: Partial<StructuredNote>, originalConte
     console.warn('[Validator] Using fallback key terms');
   }
 
-  // 3. Sections Fallback (CRITICAL)
-  if (filled.sections.length === 0) {
-    filled.sections = [{
-      heading: "Overview",
-      subsections: [{
-        subheading: "Summary of Material",
-        content: originalContent ? originalContent.substring(0, 1500) + "..." : "No detailed content available.",
-        keywords: ["overview", "summary"]
-      }]
-    }];
-    console.warn('[Validator] Using fallback sections');
+  // 3. Backward Compatibility / Key Concepts Fallback
+  if (filled.keyConcepts.length === 0) {
+    if (filled.sections && filled.sections.length > 0) {
+      // Map legacy sections to keyConcepts format
+      filled.keyConcepts = filled.sections.flatMap(sec => 
+        (sec.subsections || []).map(sub => ({
+          name: sub.subheading || sec.heading || "Key Concept",
+          definition: sub.content.substring(0, 200) + (sub.content.length > 200 ? "..." : ""),
+          keyPoints: sub.keywords && sub.keywords.length > 0 ? sub.keywords : ["Core concept mechanics"],
+          example: "Refer to structured outline section for real-life usage.",
+          memoryTip: sub.memoryTip || "Review explanation details.",
+          deepDive: sub.content
+        }))
+      );
+      console.log('[Validator] Successfully mapped legacy sections to keyConcepts');
+    } else {
+      filled.keyConcepts = [{
+        name: "Core Subjects",
+        definition: "The core ideas and methodologies contained within the study guide.",
+        keyPoints: ["Foundational definitions", "Practical context"],
+        example: "Applying first-principles thinking to the material.",
+        memoryTip: "Pay close attention to key definitions.",
+        deepDive: originalContent ? originalContent.substring(0, 2000) : "No content available."
+      }];
+      console.warn('[Validator] Using fallback keyConcepts');
+    }
   }
 
-  // 4. Summary Fallback
+  // 4. Prerequisites Fallback
+  if (filled.prerequisites.length === 0) {
+    filled.prerequisites = [
+      "Review basic foundational context and state-related topics.",
+      "Activate prior knowledge regarding general systems and terminology."
+    ];
+  }
+
+  // 5. Executive Summary Fallback
+  if (!filled.executiveSummary) {
+    if (originalContent) {
+      const sentences = originalContent.split(/[.!?]/).filter(s => s.trim().length > 10);
+      filled.executiveSummary = sentences.slice(0, 3).join('. ') + '.';
+    } else {
+      filled.executiveSummary = "This guide synthesizes key topics, objectives, definitions, and active recall drills to maximize academic retention.";
+    }
+  }
+
+  // 6. Summary Fallback
   if (filled.summary.length === 0) {
     filled.summary = [originalContent ? originalContent.split(/[.!?]/)[0] + "." : "Key points from the material."];
   }
 
-  // 5. Active Recall Fallback
+  // 7. Active Recall Fallback
   if (filled.activeRecallQuestions.length === 0) {
     filled.activeRecallQuestions = [
       "What is the main topic of this material?",
       "How would you summarize the key findings?",
       "What were the most important definitions discussed?"
     ];
+  }
+
+  // 8. Application Questions Fallback
+  if (filled.applicationQuestions.length === 0) {
+    filled.applicationQuestions = [
+      "Design a real-world scenario where the core concept is utilized to solve a practical issue.",
+      "Compare this topic's conclusions with alternative frameworks you have studied."
+    ];
+  }
+
+  // 9. Visual Prompts Fallback
+  if (filled.visualPrompts.length === 0) {
+    filled.visualPrompts = [
+      "Draw a comprehensive concept map connecting all primary terms.",
+      "Sketch a process flowchart visualizing the sequence of events."
+    ];
+  }
+
+  // 10. Next Steps Fallback
+  if (filled.nextSteps.length === 0) {
+    if (filled.relatedTopics && filled.relatedTopics.length > 0) {
+      filled.nextSteps = filled.relatedTopics.map(topic => `Explore: ${topic}`);
+    } else {
+      filled.nextSteps = [
+        "Synthesize connections between the main terms.",
+        "Attempt all active recall questions without referring to your notes."
+      ];
+    }
+  }
+
+  // 11. Study Schedule Fallback
+  if (Object.keys(filled.studySchedule).length === 0) {
+    filled.studySchedule = {
+      "1 Day later": "Consolidate short-term memory",
+      "3 Days later": "Strengthen retention and resolve weak concepts",
+      "7 Days later": "Move definitions and applications to long-term memory",
+      "30 Days later": "Achieve full long-term mastery before evaluations"
+    };
   }
 
   return filled;

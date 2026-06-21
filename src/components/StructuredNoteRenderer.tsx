@@ -1,7 +1,21 @@
 import React from 'react';
 import { StructuredStudyNote } from '../types';
-import { motion } from 'framer-motion';
-import { Lightbulb, Info, HelpCircle, CheckCircle2, List, Table as TableIcon, Target, BrainCircuit, Type } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Lightbulb, 
+  Info, 
+  HelpCircle, 
+  CheckCircle2, 
+  List, 
+  Table as TableIcon, 
+  Target, 
+  BrainCircuit, 
+  BookOpen,
+  Calendar,
+  Sparkles,
+  Palette,
+  ArrowRight
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '../lib/utils';
 
@@ -11,6 +25,7 @@ interface Props {
 
 export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
   const [revealedAnswers, setRevealedAnswers] = React.useState<number[]>([]);
+  const [openDeepDives, setOpenDeepDives] = React.useState<number[]>([]);
 
   const toggleAnswer = (index: number) => {
     if (revealedAnswers.includes(index)) {
@@ -20,22 +35,26 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
     }
   };
 
-  const prepareMarkdown = (text: string, keywords: string[]) => {
+  const toggleDeepDive = (index: number) => {
+    if (openDeepDives.includes(index)) {
+      setOpenDeepDives(openDeepDives.filter(i => i !== index));
+    } else {
+      setOpenDeepDives([...openDeepDives, index]);
+    }
+  };
+
+  // Helper to highlight key terms dynamically
+  const prepareMarkdown = (text: string, keywords: string[] = []) => {
     if (!keywords || keywords.length === 0) return text;
     
     let prepared = text;
-    // Sort keywords by length descending to avoid partial matching issues
     const sortedKeywords = [...keywords].sort((a, b) => b.length - a.length);
     
     sortedKeywords.forEach(keyword => {
-      // Escape special regex characters
       const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // match keywords using word boundaries
       const regex = new RegExp(`\\b(${escaped})\\b`, 'gi');
       
-      // We'll use a functional replace to avoid double-bolding
       prepared = prepared.replace(regex, (match, p1, offset) => {
-        // Simple check if already wrapped in **
         const before = prepared.substring(Math.max(0, offset - 2), offset);
         const after = prepared.substring(offset + match.length, offset + match.length + 2);
         if (before === '**' && after === '**') return match;
@@ -46,147 +65,256 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
   };
 
   return (
-    <div className="note-container font-sans rounded-3xl overflow-hidden shadow-2xl border border-white/5">
+    <div className="note-container font-sans rounded-3xl overflow-hidden shadow-2xl border border-border/10 bg-surface/30">
       {/* Title */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-8 text-center bg-gradient-to-br from-surface to-background border-b border-white/10"
+        className="p-6 text-center bg-gradient-to-br from-surface to-surface-alt border-b border-border/10"
       >
-        <h1 className="note-h1 m-0 leading-tight">
+        <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] bg-primary/10 px-3 py-1 rounded-full inline-block mb-3">
+          🎓 Cognitive Study Pack
+        </span>
+        <h1 className="text-xl sm:text-2xl font-black text-text-main leading-tight tracking-tight m-0">
           {note.title}
         </h1>
-        <p className="text-text-muted text-xs mt-4 uppercase tracking-[0.3em] font-bold opacity-60">Complete Academic synthesis</p>
       </motion.div>
 
-      <div className="p-4 sm:p-8 space-y-12">
-        {/* Learning Objectives */}
-        <section className="study-card border-l-4 border-l-primary/50 bg-primary/5">
-          <div className="flex items-center gap-2 mb-6 text-primary font-bold">
-            <Target size={20} />
-            <h2 className="text-lg uppercase tracking-wider m-0">Learning Objectives</h2>
+      <div className="p-4 sm:p-6 space-y-10">
+        
+        {/* 1. Prerequisites (Knowledge Activation) */}
+        {note.prerequisites && note.prerequisites.length > 0 && (
+          <section className="study-card border-l-4 border-l-secondary bg-secondary/5 rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-3 text-secondary font-extrabold text-sm uppercase tracking-wider">
+              <BookOpen size={18} />
+              <span>📚 Before You Begin</span>
+            </div>
+            <ul className="space-y-2">
+              {note.prerequisites.map((prereq, i) => (
+                <li key={i} className="text-xs text-text-muted leading-relaxed flex items-start gap-2">
+                  <span className="text-secondary shrink-0">•</span>
+                  <span>{prereq}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* 2. Executive Summary */}
+        {note.executiveSummary && (
+          <section className="study-card border-l-4 border-l-primary bg-primary/5 rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-3 text-primary font-extrabold text-sm uppercase tracking-wider">
+              <List size={18} />
+              <span>📋 Executive Summary</span>
+            </div>
+            <p className="text-xs text-text-main leading-relaxed italic m-0">
+              "{note.executiveSummary}"
+            </p>
+          </section>
+        )}
+
+        {/* 3. Learning Objectives */}
+        <section className="study-card border-l-4 border-l-accent/80 bg-accent/5 rounded-2xl p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-4 text-accent font-extrabold text-sm uppercase tracking-wider">
+            <Target size={18} />
+            <span>🎯 Learning Objectives</span>
           </div>
           {note.learningObjectives && note.learningObjectives.length > 0 ? (
-            <ul className="space-y-4">
+            <ul className="space-y-3">
               {note.learningObjectives.map((obj, i) => (
-                <li key={i} className="flex gap-4 text-sm note-body">
-                  <CheckCircle2 size={18} className="text-primary mt-0.5 shrink-0" />
+                <li key={i} className="flex gap-2.5 text-xs text-text-main">
+                  <CheckCircle2 size={16} className="text-accent mt-0.5 shrink-0" />
                   <span className="leading-relaxed">{obj}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <div className="text-center py-6 border-2 border-dashed border-primary/20 rounded-2xl">
-              <p className="text-xs text-text-muted italic">No learning objectives extracted for this material.</p>
-            </div>
+            <p className="text-xs text-text-muted italic">No specific learning objectives.</p>
           )}
         </section>
 
-        {/* Key Terms */}
-        <section>
-          <div className="flex items-center gap-2 mb-8">
-            <Info size={20} className="text-[#00D2FF]" />
-            <h2 className="note-h2 m-0 p-0 border-0">Vault of Knowledge</h2>
+        {/* 4. Vault of Knowledge / Key Terms */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 text-primary font-extrabold text-sm uppercase tracking-wider border-b border-border/10 pb-2">
+            <Info size={18} />
+            <span>🔑 Key Terminology</span>
           </div>
           {note.keyTerms && note.keyTerms.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-3">
               {note.keyTerms.map((term, i) => (
-                <motion.div 
-                  key={i} 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  className="study-card hover:border-primary/50 transition-all cursor-default group"
-                >
-                  <h3 className="text-primary font-black text-xl mb-3 group-hover:text-[#00D2FF] transition-colors">{term.term}</h3>
-                  <div className="markdown-body text-sm leading-relaxed">
-                    <ReactMarkdown>{term.definition}</ReactMarkdown>
-                  </div>
+                <div key={i} className="p-4 bg-surface border border-border/10 rounded-2xl">
+                  <h3 className="text-primary font-black text-sm mb-1">{term.term}</h3>
+                  <p className="text-xs text-text-main leading-relaxed m-0">{term.definition}</p>
                   {term.memoryTip && (
-                    <div className="memory-tip mt-5 flex gap-3 items-start bg-[#00D2FF]/10 rounded-xl p-4">
-                      <Lightbulb size={20} className="text-[#00D2FF] mt-0.5 shrink-0" />
-                      <span className="text-xs font-medium italic opacity-90">{term.memoryTip}</span>
+                    <div className="mt-2.5 flex gap-2 items-start bg-[#00D2FF]/10 text-[#00D2FF] rounded-xl p-2.5 text-[10px] italic">
+                      <Lightbulb size={14} className="shrink-0 mt-0.5" />
+                      <span>{term.memoryTip}</span>
                     </div>
                   )}
-                </motion.div>
+                </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-3xl">
-              <Info size={40} className="mx-auto text-text-muted mb-4 opacity-20" />
-              <p className="text-sm text-text-muted italic">Key terminology could not be isolated from the content.</p>
-            </div>
+            <p className="text-xs text-text-muted italic">No key terms defined.</p>
           )}
         </section>
 
-        {/* Main Content Sections */}
-        {note.sections.map((section, i) => (
-          <section key={i} className="space-y-10">
-            <header className="flex items-center gap-4">
-              <span className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full text-primary font-black text-xs">{i+1}</span>
-              <h2 className="note-h2 m-0 p-0 border-0">{section.heading}</h2>
-            </header>
-            
-            <div className="space-y-12 pl-4 sm:pl-10 border-l border-white/5">
-              {section.subsections.map((sub, j) => (
-                <div key={j} className="relative">
-                  {sub.subheading && <h3 className="note-h3 text-[#00D2FF] font-black tracking-tight mb-6">{sub.subheading}</h3>}
-                  <div className="markdown-body text-base leading-loose p-0 sm:pr-8">
-                    <ReactMarkdown>
-                      {prepareMarkdown(sub.content, sub.keywords || [])}
-                    </ReactMarkdown>
+        {/* 5. Core Concepts (New Structure) */}
+        {note.keyConcepts && note.keyConcepts.length > 0 && (
+          <section className="space-y-6">
+            <div className="flex items-center gap-2 text-primary font-extrabold text-sm uppercase tracking-wider border-b border-border/10 pb-2">
+              <Sparkles size={18} />
+              <span>📖 Core Concepts</span>
+            </div>
+            <div className="space-y-4">
+              {note.keyConcepts.map((concept, i) => (
+                <div key={i} className="p-4 sm:p-5 bg-surface-alt border border-border/15 rounded-2xl space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 flex items-center justify-center bg-primary/10 rounded-full text-primary font-black text-[10px]">
+                      {i + 1}
+                    </span>
+                    <h3 className="text-sm font-extrabold text-text-main m-0">{concept.name}</h3>
                   </div>
-                  
-                  {(sub.memoryTip || sub.quickCheck) && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-                      {sub.memoryTip && (
-                        <div className="memory-tip m-0 bg-accent/5 border-l-accent shadow-sm">
-                          <div className="flex items-center gap-2 text-accent font-black text-[10px] uppercase mb-2 tracking-[0.2em]">
-                            <BrainCircuit size={14} />
-                            <span>Neural Association</span>
-                          </div>
-                          <p className="text-xs italic opacity-90">{sub.memoryTip}</p>
-                        </div>
-                      )}
 
-                      {sub.quickCheck && (
-                        <div className="p-4 bg-white/5 rounded-2xl border border-white/10 shadow-sm">
-                          <div className="flex items-center gap-2 text-text-muted text-[10px] font-black uppercase mb-3 tracking-[0.2em]">
-                            <HelpCircle size={14} />
-                            <span>Quick Assessment</span>
-                          </div>
-                          <p className="text-xs font-medium mb-0">{sub.quickCheck}</p>
-                        </div>
-                      )}
+                  {/* Definition */}
+                  <div className="text-xs text-text-main leading-relaxed bg-surface/50 p-3 rounded-xl border border-border/5">
+                    <span className="font-bold text-primary block mb-1 text-[10px] uppercase tracking-wider">Definition</span>
+                    {concept.definition}
+                  </div>
+
+                  {/* Key Points */}
+                  {concept.keyPoints && concept.keyPoints.length > 0 && (
+                    <div className="space-y-1">
+                      <span className="font-bold text-text-muted block text-[10px] uppercase tracking-wider">Key Details</span>
+                      <ul className="space-y-1 pl-1">
+                        {concept.keyPoints.map((kp, j) => (
+                          <li key={j} className="text-xs text-text-main leading-relaxed flex items-start gap-2">
+                            <span className="text-primary mt-0.5 shrink-0">•</span>
+                            <span>{kp}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Example & Memory Tip Grid */}
+                  <div className="grid grid-cols-1 gap-2.5 pt-2">
+                    {concept.example && (
+                      <div className="p-3 bg-green-500/5 border border-green-500/10 rounded-xl">
+                        <span className="font-bold text-green-500 block text-[9px] uppercase tracking-wider mb-1">💡 Real-World Example</span>
+                        <p className="text-xs text-text-main leading-relaxed m-0 italic">
+                          "{concept.example}"
+                        </p>
+                      </div>
+                    )}
+
+                    {concept.memoryTip && (
+                      <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                        <span className="font-bold text-amber-500 block text-[9px] uppercase tracking-wider mb-1">🔑 Memory Cue</span>
+                        <p className="text-xs text-text-main leading-relaxed m-0">
+                          {concept.memoryTip}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Collapsible Deep Dive (Touch target min 44px) */}
+                  {concept.deepDive && (
+                    <div className="pt-2">
+                      <button
+                        onClick={() => toggleDeepDive(i)}
+                        className="w-full flex items-center justify-between px-3 py-2.5 bg-surface border border-border/10 rounded-xl text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/5 transition-all min-h-[44px]"
+                      >
+                        <span>🔍 Deep-Dive Insights</span>
+                        <span>{openDeepDives.includes(i) ? "Close" : "Expand"}</span>
+                      </button>
+                      <AnimatePresence>
+                        {openDeepDives.includes(i) && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden mt-2 bg-surface/50 border border-border/10 rounded-xl p-3 text-xs text-text-muted leading-relaxed"
+                          >
+                            <ReactMarkdown>{concept.deepDive}</ReactMarkdown>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   )}
                 </div>
               ))}
             </div>
           </section>
-        ))}
+        )}
 
-        {/* Comparison Table */}
+        {/* Legacy Sections Fallback (Only shown if keyConcepts missing) */}
+        {(!note.keyConcepts || note.keyConcepts.length === 0) && note.sections && note.sections.length > 0 && (
+          <section className="space-y-6">
+            {note.sections.map((section, i) => (
+              <div key={i} className="space-y-4">
+                <header className="flex items-center gap-2">
+                  <span className="w-5 h-5 flex items-center justify-center bg-primary/10 rounded-full text-primary font-black text-xs">{i+1}</span>
+                  <h2 className="text-sm font-extrabold text-text-main m-0">{section.heading}</h2>
+                </header>
+                
+                <div className="space-y-4 pl-3 border-l border-border/10">
+                  {section.subsections.map((sub, j) => (
+                    <div key={j} className="p-3.5 bg-surface border border-border/5 rounded-xl space-y-2">
+                      {sub.subheading && <h3 className="text-xs font-bold text-primary m-0">{sub.subheading}</h3>}
+                      <div className="text-xs text-text-main leading-relaxed">
+                        <ReactMarkdown>
+                          {prepareMarkdown(sub.content, sub.keywords || [])}
+                        </ReactMarkdown>
+                      </div>
+                      
+                      {(sub.memoryTip || sub.quickCheck) && (
+                        <div className="grid grid-cols-1 gap-2 pt-2 border-t border-border/5">
+                          {sub.memoryTip && (
+                            <p className="text-[10px] text-accent leading-relaxed italic m-0">
+                              💡 {sub.memoryTip}
+                            </p>
+                          )}
+                          {sub.quickCheck && (
+                            <p className="text-[10px] text-text-muted leading-relaxed m-0 bg-surface-alt p-2 rounded-lg">
+                              ❓ Quick Check: {sub.quickCheck}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* 6. Comparison Table */}
         {note.comparisonTable && note.comparisonTable.rows.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-8">
-              <TableIcon size={20} className="text-primary" />
-              <h2 className="note-h2 m-0 p-0 border-0">{note.comparisonTable.title || 'Comparative Synthesis'}</h2>
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-primary font-extrabold text-sm uppercase tracking-wider border-b border-border/10 pb-2">
+              <TableIcon size={18} />
+              <span>📊 Comparison Table</span>
             </div>
-            <div className="note-table-wrapper border border-white/10 shadow-2xl rounded-2xl">
-              <table className="note-table w-full">
+            <div className="overflow-x-auto border border-border/10 rounded-2xl bg-surface/50 shadow-md">
+              <table className="w-full text-left border-collapse min-w-[320px]">
                 <thead>
-                  <tr className="bg-primary/20 backdrop-blur-md">
+                  <tr className="bg-primary/10 border-b border-border/10">
                     {note.comparisonTable.headers.map((header, i) => (
-                      <th key={i} className="p-4 text-left font-black uppercase tracking-widest text-[10px] py-6 border-b border-white/10">{header}</th>
+                      <th key={i} className="p-3 text-[9px] font-black uppercase tracking-wider text-text-main">
+                        {header}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {note.comparisonTable.rows.map((row, i) => (
-                    <tr key={i} className="hover:bg-white/5 transition-colors">
+                    <tr key={i} className="border-b border-border/5 hover:bg-white/5 transition-colors">
                       {row.map((cell, j) => (
-                        <td key={j} className="p-4 py-5 text-sm font-medium border-b border-white/5">{cell}</td>
+                        <td key={j} className="p-3 text-xs text-text-muted font-medium">
+                          {cell}
+                        </td>
                       ))}
                     </tr>
                   ))}
@@ -196,61 +324,77 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
           </section>
         )}
 
-        {/* Mnemonic */}
-        {note.mnemonic && (
-          <motion.section 
-            whileHover={{ scale: 1.01 }}
-            className="gradient-card bg-surface/30 p-10 text-center border border-white/10 shadow-xl"
-          >
-            <div className="flex items-center justify-center gap-3 text-primary font-black mb-6 uppercase tracking-[0.2em] text-xs">
-              <Type size={20} />
-              <h2 className="m-0">Cognitive Anchor</h2>
+        {/* 7. Visual Prompts (Dual Coding) */}
+        {note.visualPrompts && note.visualPrompts.length > 0 && (
+          <section className="study-card border-l-4 border-l-violet-500 bg-violet-500/5 rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-3 text-violet-400 font-extrabold text-sm uppercase tracking-wider">
+              <Palette size={18} />
+              <span>🎨 Sketch This (Visual Coding)</span>
             </div>
-            <p className="text-xl sm:text-2xl font-black italic text-text-main leading-tight tracking-tight">
-              "{note.mnemonic}"
+            <p className="text-[10px] text-[#00E5A0] font-bold bg-[#00E5A0]/10 px-2 py-0.5 rounded-full inline-block mb-3 leading-normal">
+              💡 Tip: Combining words and sketches improves retention by 65%.
             </p>
-          </motion.section>
+            <ul className="space-y-2">
+              {note.visualPrompts.map((prompt, i) => (
+                <li key={i} className="text-xs text-text-main leading-relaxed flex items-start gap-2">
+                  <span className="text-violet-500 shrink-0">✔</span>
+                  <span>{prompt}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
-        {/* Summary */}
-        <section>
-          <div className="flex items-center gap-2 mb-8">
-            <List size={20} className="text-primary" />
-            <h2 className="note-h2 m-0 p-0 border-0">High-Impact Takeaways</h2>
-          </div>
-          {note.summary && note.summary.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* 8. Key Takeaways */}
+        {note.summary && note.summary.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-primary font-extrabold text-sm uppercase tracking-wider border-b border-border/10 pb-2">
+              <List size={18} />
+              <span>💡 Key Takeaways</span>
+            </div>
+            <div className="space-y-2">
               {note.summary.map((point, i) => (
-                <div key={i} className="study-card bg-surface/50 border-white/10 flex items-start gap-4 p-5">
-                  <span className="w-6 h-6 shrink-0 flex items-center justify-center bg-primary rounded-lg text-white font-black text-[10px]">{i+1}</span>
-                  <p className="text-sm font-medium leading-relaxed m-0">{point}</p>
+                <div key={i} className="study-card bg-surface/50 border border-border/5 rounded-xl flex items-start gap-3 p-3">
+                  <span className="w-5 h-5 shrink-0 flex items-center justify-center bg-primary rounded-lg text-white font-black text-[10px]">
+                    {i + 1}
+                  </span>
+                  <p className="text-xs text-text-muted font-semibold leading-relaxed m-0">{point}</p>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="p-8 bg-surface/30 rounded-3xl border border-white/5 text-center italic text-text-muted text-sm">
-              No summary points extracted.
-            </div>
-          )}
-        </section>
+          </section>
+        )}
 
-        {/* Active Recall */}
-        <section className="study-card border-t-4 border-t-accent/50 bg-accent/5 p-8 sm:p-10">
-          <div className="flex items-center gap-3 mb-10 text-accent font-black uppercase tracking-[0.3em] text-sm">
-            <BrainCircuit size={24} />
-            <h2 className="m-0">Active Recall Pro</h2>
+        {/* 9. Mnemonic / Memory Peg */}
+        {note.mnemonic && (
+          <section className="bg-surface border border-border/15 p-6 text-center rounded-2xl shadow-inner relative overflow-hidden">
+            <div className="flex items-center justify-center gap-2 text-accent font-extrabold text-[10px] uppercase tracking-wider mb-2">
+              <BrainCircuit size={16} />
+              <span>🧠 Memory Peg</span>
+            </div>
+            <p className="text-base font-black italic text-text-main leading-tight tracking-tight m-0">
+              "{note.mnemonic}"
+            </p>
+          </section>
+        )}
+
+        {/* 10. Active Recall (Touch target min 44px) */}
+        <section className="study-card border-t-4 border-t-accent/50 bg-accent/5 p-4 sm:p-5 rounded-2xl space-y-4">
+          <div className="flex items-center gap-2 text-accent font-extrabold text-sm uppercase tracking-wider">
+            <BrainCircuit size={18} />
+            <span>🧠 Active Recall Questions</span>
           </div>
-          <div className="space-y-8">
+          <div className="space-y-4">
             {note.activeRecallQuestions.map((q, i) => (
-              <div key={i} className="relative group">
-                <p className="text-lg font-bold leading-snug mb-4 group-hover:text-accent transition-colors">{q}</p>
+              <div key={i} className="border-b border-border/5 pb-3 last:border-b-0 space-y-2">
+                <p className="text-xs font-bold text-text-main leading-relaxed m-0">{q}</p>
                 <button 
                   onClick={() => toggleAnswer(i)}
                   className={cn(
-                    "px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                    "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all min-h-[44px]",
                     revealedAnswers.includes(i) 
-                      ? "bg-accent text-white shadow-lg shadow-accent/20" 
-                      : "bg-surface border border-accent/30 text-accent hover:bg-accent/10"
+                      ? "bg-accent text-white shadow-md shadow-accent/25" 
+                      : "bg-surface border border-accent/20 text-accent hover:bg-accent/5"
                   )}
                 >
                   {revealedAnswers.includes(i) ? 'Hide Reflection' : 'Show Reflection Strategy'}
@@ -259,15 +403,12 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="reveal-answer bg-accent/20 border-accent/40 mt-4 p-6"
+                    className="bg-accent/10 border border-accent/20 rounded-xl p-3 mt-1.5 text-xs text-text-muted font-medium italic leading-relaxed"
                   >
-                    <div className="flex items-center gap-2 text-[#00E5A0] font-black text-xs uppercase mb-3 tracking-[0.2em]">
-                      <Info size={16} />
-                      <span>Meta-Cognition Boost</span>
+                    <div className="flex items-center gap-1.5 text-[#00E5A0] font-bold text-[9px] uppercase tracking-wider mb-1">
+                      <span>Meta-Cognition Cue</span>
                     </div>
-                    <p className="text-sm leading-relaxed font-medium italic">
-                      Explain this concept using a real-world analogy. If you can't, re-read the "Vault of Knowledge" section above.
-                    </p>
+                    Explain this from first principles. Use a simple metaphor, or refer back to the "Core Concepts" tab.
                   </motion.div>
                 )}
               </div>
@@ -275,20 +416,70 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
           </div>
         </section>
 
-        {/* Related Topics */}
-        {note.relatedTopics && note.relatedTopics.length > 0 && (
-          <section className="pt-12 text-center">
-            <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent m-0 mb-8"></div>
-            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] mb-6 opacity-40">Expansion Pathways</h4>
-            <div className="flex flex-wrap justify-center gap-3">
-              {note.relatedTopics.map((topic, i) => (
-                <span key={i} className="px-5 py-2 bg-white/5 border border-white/5 rounded-full text-[10px] font-black hover:bg-primary/20 hover:border-primary/40 transition-all cursor-pointer">
-                  {topic}
+        {/* 11. Application Questions (Critical Thinking) */}
+        {note.applicationQuestions && note.applicationQuestions.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-primary font-extrabold text-sm uppercase tracking-wider border-b border-border/10 pb-2">
+              <HelpCircle size={18} />
+              <span>🔍 Apply Your Knowledge</span>
+            </div>
+            <div className="space-y-2.5">
+              {note.applicationQuestions.map((q, i) => (
+                <div key={i} className="p-3 bg-surface border border-border/5 rounded-xl text-xs text-text-main leading-relaxed flex items-start gap-2.5">
+                  <span className="font-black text-primary text-[10px] bg-primary/10 w-5 h-5 flex items-center justify-center rounded-full shrink-0">
+                    ?
+                  </span>
+                  <span>{q}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 12. Next Steps (Interleaving) */}
+        {note.nextSteps && note.nextSteps.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-primary font-extrabold text-sm uppercase tracking-wider border-b border-border/10 pb-2">
+              <ArrowRight size={18} />
+              <span>🚀 Next Steps (Interleaved Study)</span>
+            </div>
+            <p className="text-[10px] text-text-muted font-medium italic m-0">
+              💡 Why: Switching between related topics strengthens conceptual connections.
+            </p>
+            <div className="flex flex-wrap gap-2.5 pt-1">
+              {note.nextSteps.map((step, i) => (
+                <span 
+                  key={i} 
+                  className="px-3.5 py-2 bg-surface border border-border/10 rounded-xl text-[10px] font-bold text-text-muted hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <ArrowRight size={12} className="text-primary shrink-0" />
+                  {step}
                 </span>
               ))}
             </div>
           </section>
         )}
+
+        {/* 13. Study Schedule (Spaced Repetition) */}
+        {note.studySchedule && Object.keys(note.studySchedule).length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-primary font-extrabold text-sm uppercase tracking-wider border-b border-border/10 pb-2">
+              <Calendar size={18} />
+              <span>📅 Spaced Repetition Schedule</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {Object.entries(note.studySchedule).map(([time, action], i) => (
+                <div key={i} className="p-3 bg-surface border border-border/5 rounded-xl space-y-1 text-center">
+                  <span className="font-black text-primary block text-[10px] uppercase tracking-wider">{time}</span>
+                  <p className="text-[10px] text-text-muted leading-relaxed m-0 font-medium">
+                    {action}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
       </div>
     </div>
   );

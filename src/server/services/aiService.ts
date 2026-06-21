@@ -517,22 +517,32 @@ export const generateDetailedNotes = async (content: string, title: string) => {
   console.log(`[AI-Service] generateDetailedNotes called for: ${title}`);
   
   const systemInstruction = `You are an expert pedagogical note transformation system.
-      Your goal is to transform study material into a structured, beautiful, and logically deep JSON note.
+      Your goal is to transform study material into a structured, beautiful, and logically deep JSON note following proven learning frameworks (Bloom's Taxonomy, Cornell Method, Spaced Repetition, Active Recall).
       
       CRITICAL: You MUST fill EVERY section with ACTUAL content from the material. Do NOT output empty strings OR empty arrays.
       If a section truly cannot be filled, write a generic educational insight related to the topic instead of leaving it blank.
 
       RULES:
       - Title: Catchy and academic.
-      - Learning Objectives: 3-5 specific "Students will be able to..." goals. MANDATORY.
-      - Key Terms: Critical bolded terms with simple definitions and a creative memory tip. MANDATORY.
-      - Sections: logical chapters with 2-3 subsections each. Each subsection must have at least 150 characters of content.
-      - Body Content: Rich pedagogical explanations. Use lists and bold text for clarity. DO NOT use markdown headings (#) inside the content strings.
-      - Comparisons: Include a comparisonTable if the topic has contrasting concepts; otherwise provide a general classification table.
-      - Summary: Quick-read bullet points. MANDATORY.
-      - Mnemonic: A catchy phrase to remember the core concept.
-      - Active Recall: Challenging questions that force deep reflection. MANDATORY.
-      Return valid JSON only.`;
+      - Learning Objectives: 3-5 specific objectives using Bloom's Taxonomy action verbs (Remember, Understand, Apply, Analyze, Evaluate, Create).
+      - Prerequisites: 2-3 bullet points of what the student should already know or a brief refresher of foundational concepts.
+      - Executive Summary: A 1-paragraph summary of the entire topic (3-5 sentences) introducing the "big picture".
+      - Key Concepts: 3-6 concepts representing the core topics. For each concept:
+        * name: Concept name
+        * definition: Clear, concise definition
+        * keyPoints: Array of 3-5 detailed points with context
+        * example: Real-world example or practical analogy
+        * memoryTip: Mnemonic, acronym, or visual cue (e.g. "E for Evaporation - Energy Enters")
+        * deepDive: (Optional) Extended explanation or advanced details for deep learners
+      - Comparison Table: Structured comparison between related concepts (headers, rows, title).
+      - Visual Prompts: 2-3 prompts urging the student to sketch flowcharts, mind maps, or diagrams to utilize dual coding.
+      - Key Takeaways: 3-5 high-impact takeaways summarizing the most important aspects.
+      - Active Recall Questions: 5-7 questions forcing the student to retrieve information from memory.
+      - Application Questions: 2-3 higher-level questions requiring critical thinking and application of the concepts.
+      - Mnemonic: A cognitive anchor or memory peg to remember the overall sequence or core ideas.
+      - Next Steps: 2-3 suggestions of related topics for interleaved learning.
+      - Study Schedule: A structured spaced repetition schedule mapping reviews (1 Day, 3 Days, 7 Days, 30 Days) to activities or aims.
+      Return valid JSON matching the schema.`;
 
   const promptText = `Content to convert:
 Material Title: ${title}
@@ -567,28 +577,21 @@ ${content.substring(0, 15000)}`;
                   required: ["term", "definition"]
                 }
               },
-              sections: {
+              prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
+              executiveSummary: { type: Type.STRING },
+              keyConcepts: {
                 type: Type.ARRAY,
                 items: {
                   type: Type.OBJECT,
                   properties: {
-                    heading: { type: Type.STRING },
-                    subsections: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          subheading: { type: Type.STRING },
-                          content: { type: Type.STRING },
-                          keywords: { type: Type.ARRAY, items: { type: Type.STRING } },
-                          memoryTip: { type: Type.STRING },
-                          quickCheck: { type: Type.STRING }
-                        },
-                        required: ["content", "keywords"]
-                      }
-                    }
+                    name: { type: Type.STRING },
+                    definition: { type: Type.STRING },
+                    keyPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    example: { type: Type.STRING },
+                    memoryTip: { type: Type.STRING },
+                    deepDive: { type: Type.STRING }
                   },
-                  required: ["heading", "subsections"]
+                  required: ["name", "definition", "keyPoints", "example", "memoryTip"]
                 }
               },
               comparisonTable: {
@@ -600,12 +603,33 @@ ${content.substring(0, 15000)}`;
                 },
                 required: ["headers", "rows"]
               },
-              summary: { type: Type.ARRAY, items: { type: Type.STRING } },
+              visualPrompts: { type: Type.ARRAY, items: { type: Type.STRING } },
+              keyTakeaways: { type: Type.ARRAY, items: { type: Type.STRING } },
               activeRecallQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+              applicationQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
               mnemonic: { type: Type.STRING },
-              relatedTopics: { type: Type.ARRAY, items: { type: Type.STRING } }
+              nextSteps: { type: Type.ARRAY, items: { type: Type.STRING } },
+              studySchedule: {
+                type: Type.OBJECT,
+                properties: {
+                  "1 Day later": { type: Type.STRING },
+                  "3 Days later": { type: Type.STRING },
+                  "7 Days later": { type: Type.STRING },
+                  "30 Days later": { type: Type.STRING }
+                }
+              }
             },
-            required: ["title", "learningObjectives", "keyTerms", "sections", "summary", "activeRecallQuestions"]
+            required: [
+              "title", 
+              "learningObjectives", 
+              "keyTerms", 
+              "prerequisites", 
+              "executiveSummary", 
+              "keyConcepts", 
+              "keyTakeaways", 
+              "activeRecallQuestions", 
+              "applicationQuestions"
+            ]
           },
           systemInstruction
         }

@@ -89,16 +89,34 @@ export interface ComparisonTable {
   title?: string;
 }
 
+export interface KeyConcept {
+  name: string;
+  definition: string;
+  keyPoints: string[];
+  example: string;
+  memoryTip: string;
+  deepDive?: string;
+}
+
 export interface StructuredStudyNote {
   title: string;
   learningObjectives: string[];
   keyTerms: KeyTerm[];
-  sections: NoteSectionGroup[];
+  sections?: NoteSectionGroup[]; // Made optional for legacy support
   comparisonTable?: ComparisonTable;
   summary: string[];
   activeRecallQuestions: string[];
   mnemonic?: string;
   relatedTopics?: string[];
+  
+  // Proven Learning Framework fields
+  prerequisites?: string[];
+  executiveSummary?: string;
+  keyConcepts?: KeyConcept[];
+  visualPrompts?: string[];
+  applicationQuestions?: string[];
+  nextSteps?: string[];
+  studySchedule?: Record<string, string>;
 }
 
 export interface Material {
