@@ -527,13 +527,7 @@ export const generateDetailedNotes = async (content: string, title: string) => {
       - Learning Objectives: 3-5 specific objectives using Bloom's Taxonomy action verbs (Remember, Understand, Apply, Analyze, Evaluate, Create).
       - Prerequisites: 2-3 bullet points of what the student should already know or a brief refresher of foundational concepts.
       - Executive Summary: A 1-paragraph summary of the entire topic (3-5 sentences) introducing the "big picture".
-      - Key Concepts: 5-8 concepts representing the core topics in detail. For each concept:
-        * name: Concept name
-        * definition: Clear, concise definition
-        * keyPoints: Array of 3-5 detailed points with context
-        * example: Real-world example or practical analogy
-        * memoryTip: Mnemonic, acronym, or visual cue (e.g. "E for Evaporation - Energy Enters")
-        * deepDive: MANDATORY. An extensive, comprehensive, and highly detailed textbook-style explanation of the concept, including its underlying mechanics, formulas (if any), applications, and theoretical background. MUST be at least 2-3 long paragraphs (minimum 800 characters) to ensure the study notes are extremely comprehensive for reading.
+        * deepDive: MANDATORY. A concise, high-yield structured breakdown of the concept explaining its core mechanics and practical application. Use brief, clear bullet points or short, punchy statements. Keep it highly concise (maximum 300-400 characters) and easily readable on a mobile screen.
       - Comparison Table: Structured comparison between related concepts (headers, rows, title).
       - Visual Prompts: 2-3 prompts urging the student to sketch flowcharts, mind maps, or diagrams to utilize dual coding.
       - Key Takeaways: 3-5 high-impact takeaways summarizing the most important aspects.
@@ -689,9 +683,9 @@ export const generateAcademicMegaNotes = async (content: string, title: string) 
   console.log(`[AI-Service] generateAcademicMegaNotes (12+ Pages Cornell/Feynman Deep Analysis) called for: ${title}`);
   
   const systemInstruction = `You are an elite academic curriculum designer and expert in cognitive learning frameworks.
-      Your goal is to transform the provided study material into an intensive, 12-page (or more) comprehensive textbook-style study guide.
+      Your goal is to transform the provided study material into an intensive, 6-to-8 page comprehensive, high-yield study guide.
       
-      You MUST generate EXACTLY 12 or more entries in the JSON array (each representing an in-depth webpage text section/chapter) to ensure a highly extensive, comprehensive textbook coverage.
+      You MUST generate 6 to 8 entries in the JSON array (each representing an in-depth webpage text section/chapter/slide).
       For each entry, you must intelligently choose between two specialized, powerful learning styles:
       
       1. 'Cornell': Highly-structured lecture and book study layouts. MUST use this exact format structure:
@@ -706,8 +700,8 @@ export const generateAcademicMegaNotes = async (content: string, title: string) 
          * *Prompt 2:* [Analytical question connecting system concepts]
          * *Prompt 3:* [Applied operational drill question]
          
-         #### 📝 HIGH-DENSITY LECTURE NOTES (TextBOOK Style)
-         [Extensive, highly detailed explanation of subtopics with deep definitions, steps, parameters, and full architectural breakdowns. Write multiple long, detailed academic paragraphs.]
+         #### 📝 HIGH-DENSITY LECTURE NOTES (Textbook Style)
+         [Extensive, highly detailed explanation of subtopics with deep definitions, steps, parameters, and full architectural breakdowns. Write in concise, structured bullet points rather than long paragraphs to keep it readable and focused.]
          
          #### 🛠️ PRACTICAL SCENARIO IN ACTION
          * **Context:** [Detailed real-life scenario background]
@@ -728,7 +722,7 @@ export const generateAcademicMegaNotes = async (content: string, title: string) 
          [An incredibly simple, crystal-clear conceptual explanation that uses a highly creative, simple real-world analogy. Ensure it reads with absolute clarity, bypassing any heavy terminology list.]
          
          #### ⚙️ MECHANICS DECONSTRUCTION (Deep, Rigorous Explanation)
-         [Explain the complex system mechanism step-by-step with high logical precision. We simplify the vocabulary but retain absolute structural depth and textbook accuracy. Every detail of how the theory actually works under the hood is fully explained across multiple extensive paragraphs.]
+         [Explain the complex system mechanism step-by-step with high logical precision. We simplify the vocabulary and retain absolute structural depth and textbook accuracy. Every detail of how the theory actually works under the hood is fully explained in clear bullet points or short punchy paragraphs.]
          
          #### 💡 DEEP ANALOGY & GAP IDENTIFICATION (Pinpoint Gaps)
          * **The Analogy:** [A powerful analogy structured to highlight relationships of elements]
@@ -740,12 +734,12 @@ export const generateAcademicMegaNotes = async (content: string, title: string) 
          * **Mechanic Breakdown:** [Step-by-step analysis of how it is applied in this scenario]
  
       CRITICAL REQUIREMENTS:
-      - Each page/entry must be extremely verbose, thick, and comprehensive (at least 2500 to 3500 characters of rich, textbook-level Markdown content with detailed lists, deep comparisons, bolding, and active recall cues).
+      - Each page/entry must be highly concise, structured, and easy to read on mobile. Avoid massive, long-winded paragraphs. Keep each entry's content to a clear, bulleted summary (around 400-600 characters max per section) containing active recall cues, clear comparisons, and concise definitions.
       - Alternate or select the style that truly fits each topic/subtopic analyzed.
       - Never leave fields blank.
       - Return valid JSON matching the schema.`;
  
-  const promptText = `Generate at least 12 full detailed pages. Ensure each page has exceptionally extensive, high-quality textbook content (over 2500 characters each) covering key sections and subtopics of the material.
+  const promptText = `Generate 6 to 8 full detailed pages. Ensure each page is highly concise (400-600 characters max per section) and formatted beautifully with markdown bullet points covering key sections and subtopics of the material.
 Material Title: ${title}
 Source Content to Analyze:
 ${content.substring(0, 18000)}`;
@@ -804,6 +798,7 @@ ${content.substring(0, 18000)}`;
       try {
         const result = JSON.parse(cleanJsonContent(response.content));
         console.log(`[AI-Service] OpenRouter academic notes parsed with ${result.length} chapters.`);
+        console.log(`[AI-Service] OpenRouter academic notes parsed.`);
         return result;
       } catch (parseErr) {
         console.warn("[AI-Service] OpenRouter returned non-JSON for academic notes");
@@ -813,73 +808,94 @@ ${content.substring(0, 18000)}`;
     }
   }
  
-  // Final static fallback - build 12 distinct, comprehensive, high-quality page designs
-  console.warn(`[AI-Service] Using static fallback for Academic Mega Notes...`);
+  // Final static fallback - build dynamic, content-driven page designs from the user's uploaded material
+  console.warn(`[AI-Service] Using dynamic fallback for Academic Mega Notes...`);
+  
+  const paragraphs = (content || "").split(/\n+/).map(p => p.trim()).filter(p => p.length > 25);
+  const numPages = Math.min(6, Math.max(3, paragraphs.length));
+  
+  if (paragraphs.length >= 3) {
+    const groupSize = Math.ceil(paragraphs.length / numPages);
+    return Array.from({ length: numPages }).map((_, index) => {
+      const chunkParagraphs = paragraphs.slice(index * groupSize, (index + 1) * groupSize);
+      if (chunkParagraphs.length === 0) {
+        return {
+          heading: `Concept Overview ${index + 1}`,
+          content: "No extra content available for this section.",
+          noteStyle: index % 2 === 0 ? 'Cornell' : 'Feynman',
+          conceptAnalyzed: `Deconstructing Concept ${index + 1}`
+        };
+      }
+      const combinedText = chunkParagraphs.join('\n\n');
+      const heading = chunkParagraphs[0].split(/\s+/).slice(0, 4).join(' ').replace(/[^a-zA-Z0-9 ]/g, '') || `Concept Part ${index + 1}`;
+      const isCornell = index % 2 === 0;
+      const style = isCornell ? 'Cornell' : 'Feynman';
+      
+      let simulatedContent = "";
+      if (isCornell) {
+        simulatedContent = `### 📑 CORNELL STUDY MODULE: ${heading}
+ 
+#### 🎯 Central Focus
+* **Concept to Master:** Deconstructing ${heading}
+* **Target recall:** Master definitions, key mechanics, and practical applications.
+ 
+#### 🔍 CUE COLUMN (Active Recall Prompts)
+* *Prompt 1:* Define ${heading} based on the study text.
+* *Prompt 2:* What are the primary subcomponents or implications of this concept?
+ 
+#### 📝 HIGH-DENSITY LECTURE NOTES (Textbook Style)
+* ${chunkParagraphs.map(p => p.substring(0, 150) + (p.length > 150 ? '...' : '')).join('\n* ')}
+ 
+#### 🛠️ PRACTICAL SCENARIO IN ACTION
+* **Context:** Understanding the real-world application of ${heading}.
+* **Application:** Deploying these principles systematically to solve target challenges.
+* **Observed Outcome:** Confirms efficiency and validates the core theory.
+ 
+#### 📑 SYNTHESISED SUMMARY
+* Establish a clear structural representation of ${heading}.
+* Regularly answer cue prompts to check retention.`;
+      } else {
+        simulatedContent = `### 🧠 FEYNMAN MASTERCLASS: ${heading}
+ 
+#### 🎯 Conceptual Anchor
+* **Concept:** ${heading} (Simplified)
+* **Pedagogical aim:** Deconstructing high-complexity abstractions into elegant simplicity.
+ 
+#### 👶 ELI5 (Explain Like I'm Five)
+${chunkParagraphs[0].substring(0, 200)}${chunkParagraphs[0].length > 200 ? '...' : ''}
+ 
+#### ⚙️ MECHANICS DECONSTRUCTION (Deep, Rigorous Explanation)
+* ${chunkParagraphs.map(p => p.substring(0, 150) + (p.length > 150 ? '...' : '')).join('\n* ')}
+ 
+#### 💡 DEEP ANALOGY & GAP IDENTIFICATION (Pinpoint Gaps)
+* **The Analogy:** Mapped sequence similar to daily organization.
+* **Typical Student Blindspot:** Overcomplicating basic definitions.
+* **The Correction:** Focus first on the base definitions before building complex dependencies.
+ 
+#### 🛠️ COMPREHENSIVE SCENARIO IN ACTION
+* **Scenario:** Application in real-world environments.
+* **Mechanic Breakdown:** Step-by-step analysis of how it manifests.`;
+      }
+ 
+      return {
+        heading: `Page ${index + 1}: ${heading}`,
+        content: simulatedContent,
+        noteStyle: style,
+        conceptAnalyzed: `Deconstructing ${heading}`
+      };
+    });
+  }
+
+  // Ultra-fallback if text is too short to split into paragraphs
   const topics = [
-    "Core Structural Foundations", "System Architectural Mechanics", "Critical Logic & Control Workflows", 
-    "High-Impact Operational Case Studies", "Interactive Problem Solving Scenarios", "Advanced Comparative Frameworks", 
-    "Socratic Cognitive Diagnostics", "Meta-cognitive Learning Checklists", "Advanced Relational Interdependencies",
-    "Dynamic Adaptive Feedback Systems", "Applied Empirical Validations", "Pedagogical Concept Maps"
+    "Core Structural Foundations", "System Architectural Mechanics", "Critical Logic & Control Workflows"
   ];
   return topics.map((heading, index) => {
     const isCornell = index % 2 === 0;
     const style = isCornell ? 'Cornell' : 'Feynman';
-    
-    let simulatedContent = "";
-    if (isCornell) {
-      simulatedContent = `### 📑 CORNELL STUDY MODULE: ${heading}
-
-#### 🎯 Central Focus
-* **Concept to Master:** Deconstructing ${heading}
-* **Target recall:** Master structural rules, direct execution pathways, and core logic.
-
-#### 🔍 CUE COLUMN (Active Recall Prompts)
-* *Prompt 1:* Why is ${heading} considered the crucial baseline for this study material?
-* *Prompt 2:* How do secondary attributes interact with the parent structural node?
-* *Prompt 3:* What happens if the entry variables are modified during operational runtimes?
-
-#### 📝 HIGH-DENSITY LECTURE NOTES (Textbook Style)
-The concept of *${heading}* represents a cornerstone of advanced study in this discipline. At its core, the subject mandates a rigorous separation of concerns between raw structural declaration and relational binding. This ensures that any academic user can analyze separate variables independently without causing logical conflicts or systemic feedback loops.
-
-In actual textbooks, this is analyzed through the lens of cohesive data pipelines. Every single mechanism possesses a dedicated entry point, a translation vector, and an egress endpoint. By organizing information into these rigid streams, researchers can trace errors or inconsistencies directly back to the physical source, drastically raising total conceptual readability and analytical correctness.
-
-#### 🛠️ PRACTICAL SCENARIO IN ACTION
-* **Context:** A highly-loaded cloud educational framework with over 100,000 requests per minute suffers minor packet drops due to unindexed category retrieval.
-* **Application:** Developers integrate the systematic principles of ${heading} to split records into balanced tables with custom indexing.
-* **Observed Outcome:** Database lookups fall from 120ms to 2.4ms, confirming the physical superiority of structured indexing over general tabular storage.
-
-#### 📑 SYNTHESISED SUMMARY
-* Establish a separation of structural logic and runtime binding.
-* Prioritize clear database layouts to avoid systemic lag.
-* Regularly execute active recall tests across all index parameters to maintain technical accuracy.`;
-    } else {
-      simulatedContent = `### 🧠 FEYNMAN MASTERCLASS: ${heading}
-
-#### 🎯 Conceptual Anchor
-* **Concept:** ${heading} simplified from first-principles.
-* **Pedagogical aim:** Deconstructing high-complexity abstractions into elegant simplicity.
-
-#### 👶 ELI5 (Explain Like I'm Five)
-Imagine you are playing with a giant box of Lego bricks. Instead of searching through a huge, disorganized pile to find a specific wheel, you separate them into custom transparent cups by size. This simple action means you always find the wheel in under three seconds, saving you from getting tired or giving up.
-
-#### ⚙️ MECHANICS DECONSTRUCTION (Deep, Rigorous Explanation)
-In professional science and system design, we do exactly the same thing. We classify abstract variables so that they can be accessed via low-overhead pointer operations. Instead of checking every file line-by-line, modern processors use optimized page routing directories.
-
-By building simple index tables, we reduce total searches from O(N) to O(1) or O(log N). This mathematical optimization is beautiful because it scales infinitely. No matter if your academic dataset has 10 lines or 10 billion lines, the search time remains incredibly low, allowing processors to direct resources to critical logical operations.
-
-#### 💡 DEEP ANALOGY & GAP IDENTIFICATION (Pinpoint Gaps)
-* **The Analogy:** Categorizing library items using an alphabetical index rather than physically examining every book spine on the shelf.
-* **Typical Student Blindspot (Misconception):** Many students assume that faster processors make indexing obsolete. This is false. A faster CPU only runs slow logic faster; it does not resolve exponential search growth.
-* **The Correction:** True technical mastery requires algorithm optimization first, supplemented by hardware upgrades second.
-
-#### 🛠️ COMPREHENSIVE SCENARIO IN ACTION
-* **Scenario:** A team of medical researchers is filtering millions of DNA sequence samples to isolate genetic markers for study.
-* **Mechanic Breakdown:** Rather than applying recursive matching, they introduce a mapped sequence based on the principles of ${heading}, resulting in near-instant match results and accelerating the creation of key vaccine treatments.`;
-    }
-
     return {
-      heading,
-      content: simulatedContent,
+      heading: `Page ${index + 1}: ${heading}`,
+      content: isCornell ? `### 📑 CORNELL STUDY MODULE: ${heading}\n\n#### 🎯 Central Focus\n* **Concept to Master:** Deconstructing ${heading}\n\n#### 📝 HIGH-DENSITY LECTURE NOTES\n* Focus on basic study guidelines.\n* Review definitions.` : `### 🧠 FEYNMAN MASTERCLASS: ${heading}\n\n#### 🎯 Conceptual Anchor\n* **Concept:** ${heading}\n\n#### 👶 ELI5\nImagine organizing a simple desk workspace.`,
       noteStyle: style,
       conceptAnalyzed: `Deconstructing ${heading}`
     };

@@ -102,6 +102,45 @@ export function validateAndFillNote(note: Partial<StructuredNote>, originalConte
         }))
       );
       console.log('[Validator] Successfully mapped legacy sections to keyConcepts');
+    } else if (originalContent && originalContent.trim().length > 100) {
+      // Dynamically segment the original content into 3 to 5 concise pages
+      const paragraphs = originalContent.split(/\n+/).map(p => p.trim()).filter(p => p.length > 25);
+      
+      if (paragraphs.length >= 3) {
+        const numSections = Math.min(5, paragraphs.length);
+        const groupSize = Math.ceil(paragraphs.length / numSections);
+        const concepts: KeyConcept[] = [];
+        
+        for (let idx = 0; idx < numSections; idx++) {
+          const chunkParagraphs = paragraphs.slice(idx * groupSize, (idx + 1) * groupSize);
+          if (chunkParagraphs.length === 0) continue;
+          
+          const combinedText = chunkParagraphs.join('\n\n');
+          const cleanHeading = chunkParagraphs[0].split(/\s+/).slice(0, 4).join(' ').replace(/[^a-zA-Z0-9 ]/g, '');
+          const heading = cleanHeading ? `Focus: ${cleanHeading}...` : `Study Concept ${idx + 1}`;
+          
+          concepts.push({
+            name: heading,
+            definition: chunkParagraphs[0].substring(0, 150) + (chunkParagraphs[0].length > 150 ? '...' : ''),
+            keyPoints: chunkParagraphs.map(p => p.substring(0, 100) + (p.length > 100 ? '...' : '')).slice(0, 3),
+            example: "Extracted from study material.",
+            memoryTip: `Review chapter ${idx + 1} details carefully.`,
+            deepDive: combinedText.substring(0, 800) + (combinedText.length > 800 ? '...' : '')
+          });
+        }
+        filled.keyConcepts = concepts;
+        console.log(`[Validator] Dynamically split originalContent into ${concepts.length} key concepts`);
+      } else {
+        filled.keyConcepts = [{
+          name: "Core Subjects",
+          definition: "The core ideas and methodologies contained within the study guide.",
+          keyPoints: ["Foundational definitions", "Practical context"],
+          example: "Applying first-principles thinking to the material.",
+          memoryTip: "Pay close attention to key definitions.",
+          deepDive: originalContent.substring(0, 1000)
+        }];
+        console.warn('[Validator] Using single concept fallback (text too short to segment)');
+      }
     } else {
       filled.keyConcepts = [{
         name: "Core Subjects",
@@ -111,7 +150,7 @@ export function validateAndFillNote(note: Partial<StructuredNote>, originalConte
         memoryTip: "Pay close attention to key definitions.",
         deepDive: originalContent ? originalContent.substring(0, 2000) : "No content available."
       }];
-      console.warn('[Validator] Using fallback keyConcepts');
+      console.warn('[Validator] Using static fallback keyConcepts (no content)');
     }
   }
 
