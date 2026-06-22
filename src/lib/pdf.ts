@@ -70,7 +70,38 @@ export const generateMaterialPDF = async (material: any) => {
       `;
     }
   } else if (material.detailedNotes) {
-     const parsedNotes = await marked.parse(material.detailedNotes);
+     const formatXMLNotesForPDF = (xml: string): string => {
+       if (!xml || !/<eli5>|<deep>|<concepts>/i.test(xml)) {
+         return xml;
+       }
+       
+       const eli5Match = xml.match(/<eli5>([\s\S]*?)<\/eli5>/i);
+       const conceptsMatch = xml.match(/<concepts>([\s\S]*?)<\/concepts>/i);
+       const deepMatch = xml.match(/<deep>([\s\S]*?)<\/deep>/i);
+       const examplesMatch = xml.match(/<examples>([\s\S]*?)<\/examples>/i);
+       const summaryMatch = xml.match(/<summary>([\s\S]*?)<\/summary>/i);
+       
+       let markdown = "";
+       if (eli5Match) {
+         markdown += `### 👶 ELI5 (Simple Analogy)\n\n${eli5Match[1].trim()}\n\n`;
+       }
+       if (conceptsMatch) {
+         markdown += `### 🔑 Key Vocabulary & Concepts\n\n${conceptsMatch[1].trim()}\n\n`;
+       }
+       if (deepMatch) {
+         markdown += `### 🧠 Deep-Dive Explanation\n\n${deepMatch[1].trim()}\n\n`;
+       }
+       if (examplesMatch) {
+         markdown += `### 💡 Practical Examples & Practice Problems\n\n${examplesMatch[1].trim()}\n\n`;
+       }
+       if (summaryMatch) {
+         markdown += `### 📑 Summary & Takeaways\n\n${summaryMatch[1].trim()}\n\n`;
+       }
+       return markdown;
+     };
+
+     const formattedNotes = formatXMLNotesForPDF(material.detailedNotes);
+     const parsedNotes = await marked.parse(formattedNotes);
      html += `<div style="page-break-before: always;"></div>`;
      html += `<h2 style="font-size: 26px; font-weight: 800; color: #7c3aed; margin-bottom: 24px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px;">Detailed Study Notes</h2>`;
      html += `<div style="line-height: 1.8; color: #374151; font-size: 16px;">${parsedNotes}</div>`;

@@ -516,138 +516,196 @@ export const generateStudyPlan = async (materials: any[], startDate: string, dur
 export const generateDetailedNotes = async (content: string, title: string) => {
   console.log(`[AI-Service] generateDetailedNotes called for: ${title}`);
   
-  const systemInstruction = `You are an expert pedagogical note transformation system.
-      Your goal is to transform study material into a structured, beautiful, and logically deep JSON note following proven learning frameworks (Bloom's Taxonomy, Cornell Method, Spaced Repetition, Active Recall).
-      
-      CRITICAL: You MUST fill EVERY section with ACTUAL content from the material. Do NOT output empty strings OR empty arrays.
-      If a section truly cannot be filled, write a generic educational insight related to the topic instead of leaving it blank.
+  const systemInstruction = `ROLE
+You are an expert study coach and master teacher. Your only job is to transform raw academic source material into a deeply educational, structured study note. You are NOT a summariser. You are a teacher.
 
-      RULES:
-      - Title: Catchy and academic.
-      - Learning Objectives: 3-5 specific objectives using Bloom's Taxonomy action verbs (Remember, Understand, Apply, Analyze, Evaluate, Create).
-      - Prerequisites: 2-3 bullet points of what the student should already know or a brief refresher of foundational concepts.
-      - Executive Summary: A 1-paragraph summary of the entire topic (3-5 sentences) introducing the "big picture".
-        * deepDive: MANDATORY. A concise, high-yield structured breakdown of the concept explaining its core mechanics and practical application. Use brief, clear bullet points or short, punchy statements. Keep it highly concise (maximum 300-400 characters) and easily readable on a mobile screen.
-      - Comparison Table: Structured comparison between related concepts (headers, rows, title).
-      - Visual Prompts: 2-3 prompts urging the student to sketch flowcharts, mind maps, or diagrams to utilize dual coding.
-      - Key Takeaways: 3-5 high-impact takeaways summarizing the most important aspects.
-      - Active Recall Questions: 5-7 questions forcing the student to retrieve information from memory.
-      - Application Questions: 2-3 higher-level questions requiring critical thinking and application of the concepts.
-      - Mnemonic: A cognitive anchor or memory peg to remember the overall sequence or core ideas.
-      - Next Steps: 2-3 suggestions of related topics for interleaved learning.
-      - Study Schedule: A structured spaced repetition schedule mapping reviews (1 Day, 3 Days, 7 Days, 30 Days) to activities or aims.
-      Return valid JSON matching the schema.`;
+CORE LAW — READ BEFORE ANYTHING ELSE
+Never reproduce, copy, paraphrase closely, or mirror the structure of the source document.
+Every single idea must be rewritten entirely in your own voice, as if you learned this topic years ago and are now explaining it from memory to a curious student. If a sentence you write could exist in the original document, rewrite it. If you catch yourself quoting — stop and rephrase. No exceptions.
 
-  const promptText = `Content to convert:
-Material Title: ${title}
-Content:
-${content.substring(0, 15000)}`;
+TEACHING PHILOSOPHY
+Before writing each section, ask yourself:
+  — "Could a student who has never seen this topic understand what I just wrote?"
+  — "Am I teaching this, or just restating it?"
+  — "Does every paragraph move the student forward in understanding?"
+If the answer to any of these is no, rewrite that section.
+
+MANDATORY OUTPUT STRUCTURE
+You must produce exactly 5 sections, in this order, wrapped in the XML tags shown. Do not add extra sections. Do not merge sections. Do not skip any section. The tags are parsed by the frontend.
+
+<eli5>
+  Write 2–3 short paragraphs that explain the core idea using a real-world analogy or story.
+  Zero technical jargon. Imagine your audience is a sharp 14-year-old encountering this for the first time.
+  The analogy must genuinely map to the mechanism — not just decorate it.
+  End with one sentence that bridges from the analogy to the actual topic.
+</eli5>
+
+<concepts>
+  List the 3–6 most important terms or ideas from the topic.
+  Format each as:
+    TERM: [term name]
+    DEFINITION: [your own plain-language explanation in 1–2 sentences. No lifting from source.]
+    CONNECTS TO: [one other concept it links to and why]
+  Separate each entry with a blank line.
+</concepts>
+
+<deep>
+  Write a rigorous, flowing explanation of the topic in 3–5 paragraphs.
+  Rules for this section:
+    — Prose only. No bullet points. No numbered lists.
+    — Each paragraph must build on the last. Logical progression is mandatory.
+    — Use bold (**word**) only for signpost terms the first time they appear — not for emphasis.
+    — Include the mechanism: why does this work, not just what it is.
+    — Include any formal definitions, proofs, or formulas written out and explained line by line.
+    — End with a paragraph that connects this topic to the wider subject area.
+</deep>
+
+<examples>
+  Provide 1 worked example and 1–2 practice problems.
+
+  Worked example format:
+    PROBLEM: [state the problem clearly]
+    APPROACH: [one sentence on the strategy before solving]
+    SOLUTION:
+      Step 1 — [what you do and why]
+      Step 2 — [what you do and why]
+      ...
+    RESULT: [final answer + what it means]
+
+  Practice problems:
+    PRACTICE 1: [problem statement]
+    HINT: [one directional nudge, not the answer]
+
+    PRACTICE 2 (stretch): [harder variant]
+    HINT: [one directional nudge]
+</examples>
+
+<summary>
+  Write exactly 4–5 takeaway sentences. Each one must:
+    — Stand alone as a complete, memorable insight
+    — Be written in plain language a student could repeat from memory
+    — NOT begin with "In summary" or "To conclude"
+  Then add one final line formatted as:
+    WATCH OUT: [the single most common mistake students make on this topic and why it happens]
+</summary>
+
+FORMATTING RULES
+1. Output the five XML tags and nothing else. No preamble. No "Here are your notes:". Start directly with <eli5>.
+2. Do not nest additional XML inside the tags — the frontend parses the raw inner text.
+3. Mathematical expressions: write them in plain text (e.g. n(n+1)/2 not LaTeX) unless the platform renders LaTeX, in which case wrap in $...$.
+4. Keep each section self-contained. A student should be able to read any one section without having read the others.
+5. Length guide: eli5 ~150 words · concepts ~200 words · deep ~400 words · examples ~300 words · summary ~100 words.`;
+
+  const parseXmlToStructuredNote = (xml: string, noteTitle: string): any => {
+    const eli5Match = xml.match(/<eli5>([\s\S]*?)<\/eli5>/i);
+    const conceptsMatch = xml.match(/<concepts>([\s\S]*?)<\/concepts>/i);
+    const deepMatch = xml.match(/<deep>([\s\S]*?)<\/deep>/i);
+    const examplesMatch = xml.match(/<examples>([\s\S]*?)<\/examples>/i);
+    const summaryMatch = xml.match(/<summary>([\s\S]*?)<\/summary>/i);
+
+    const eli5 = eli5Match ? eli5Match[1].trim() : "";
+    const conceptsText = conceptsMatch ? conceptsMatch[1].trim() : "";
+    const deep = deepMatch ? deepMatch[1].trim() : "";
+    const examples = examplesMatch ? examplesMatch[1].trim() : "";
+    const summaryText = summaryMatch ? summaryMatch[1].trim() : "";
+
+    const keyTerms: any[] = [];
+    const keyConcepts: any[] = [];
+    
+    if (conceptsText) {
+      const entries = conceptsText.split(/\n\s*\n+/);
+      entries.forEach(entry => {
+        const termMatch = entry.match(/TERM:\s*\[?([^\]\n]+)\]?/i) || entry.match(/TERM:\s*(.+)/i);
+        const defMatch = entry.match(/DEFINITION:\s*\[?([^\]\n]+)\]?/i) || entry.match(/DEFINITION:\s*(.+)/i);
+        const connMatch = entry.match(/CONNECTS TO:\s*\[?([^\]\n]+)\]?/i) || entry.match(/CONNECTS TO:\s*(.+)/i);
+        if (termMatch && defMatch) {
+          const term = termMatch[1].trim();
+          const definition = defMatch[1].trim();
+          const connectsTo = connMatch ? connMatch[1].trim() : "";
+          
+          keyTerms.push({
+            term,
+            definition,
+            memoryTip: connectsTo ? `Connects to: ${connectsTo}` : ""
+          });
+
+          keyConcepts.push({
+            name: term,
+            definition,
+            keyPoints: connectsTo ? [`Connects to: ${connectsTo}`] : [],
+            example: "",
+            memoryTip: connectsTo ? `Links with ${connectsTo}` : "",
+            deepDive: ""
+          });
+        }
+      });
+    }
+
+    const summaryLines: string[] = [];
+    let watchOut = "";
+    if (summaryText) {
+      const lines = summaryText.split('\n');
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        if (trimmed.toUpperCase().startsWith("WATCH OUT:")) {
+          watchOut = trimmed.substring(10).trim();
+        } else {
+          const cleaned = trimmed.replace(/^[-*•\d.]+\s*/, '');
+          summaryLines.push(cleaned);
+        }
+      });
+    }
+
+    return {
+      title: noteTitle || "Study Note",
+      learningObjectives: [
+        "Explain the core concept using the ELI5 analogy",
+        "Understand the key vocabulary and terms",
+        "Analyze the mechanism and details in the deep dive"
+      ],
+      keyTerms,
+      prerequisites: ["Review basic definitions and the ELI5 analogy first."],
+      executiveSummary: eli5 ? eli5.split('\n')[0] : "Pedagogical study notes.",
+      keyConcepts,
+      summary: summaryLines,
+      activeRecallQuestions: keyTerms.map(t => `What is the definition of ${t.term}?`),
+      mnemonic: watchOut ? `WATCH OUT: ${watchOut}` : undefined
+    };
+  };
+
+  const promptText = `Generate structured study notes on the following material:
+  
+  ${content.substring(0, 15000)}`;
 
   const ai = getAiClient();
   if (ai) {
     try {
-      console.log(`[AI-Service] Attempting direct Gemini for structured notes...`);
+      console.log(`[AI-Service] Attempting direct Gemini for XML detailed notes...`);
       const response = await withRetry(() => ai.models.generateContent({
         model: GEMINI_MODEL,
         contents: [{ role: 'user', parts: [{ text: promptText }]}],
         config: {
-          temperature: 0.3,
+          temperature: 0.4,
           maxOutputTokens: 8192,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              learningObjectives: { type: Type.ARRAY, items: { type: Type.STRING } },
-              keyTerms: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    term: { type: Type.STRING },
-                    definition: { type: Type.STRING },
-                    memoryTip: { type: Type.STRING }
-                  },
-                  required: ["term", "definition"]
-                }
-              },
-              prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
-              executiveSummary: { type: Type.STRING },
-              keyConcepts: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    definition: { type: Type.STRING },
-                    keyPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    example: { type: Type.STRING },
-                    memoryTip: { type: Type.STRING },
-                    deepDive: { type: Type.STRING }
-                  },
-                  required: ["name", "definition", "keyPoints", "example", "memoryTip", "deepDive"]
-                }
-              },
-              comparisonTable: {
-                type: Type.OBJECT,
-                properties: {
-                  headers: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  rows: { type: Type.ARRAY, items: { type: Type.ARRAY, items: { type: Type.STRING } } },
-                  title: { type: Type.STRING }
-                },
-                required: ["headers", "rows"]
-              },
-              visualPrompts: { type: Type.ARRAY, items: { type: Type.STRING } },
-              keyTakeaways: { type: Type.ARRAY, items: { type: Type.STRING } },
-              activeRecallQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-              applicationQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-              mnemonic: { type: Type.STRING },
-              nextSteps: { type: Type.ARRAY, items: { type: Type.STRING } },
-              studySchedule: {
-                type: Type.OBJECT,
-                properties: {
-                  "1 Day later": { type: Type.STRING },
-                  "3 Days later": { type: Type.STRING },
-                  "7 Days later": { type: Type.STRING },
-                  "30 Days later": { type: Type.STRING }
-                }
-              }
-            },
-            required: [
-              "title", 
-              "learningObjectives", 
-              "keyTerms", 
-              "prerequisites", 
-              "executiveSummary", 
-              "keyConcepts", 
-              "keyTakeaways", 
-              "activeRecallQuestions", 
-              "applicationQuestions"
-            ]
-          },
           systemInstruction
         }
       }));
 
       const text = response.text || "";
       if (text) {
-        try {
-          const result = JSON.parse(cleanJsonContent(text));
-          console.log(`[AI-Service] Gemini response parsed. Validating...`);
-          const validatedNote = validateAndFillNote(result, content, title);
-          return { structuredNote: validatedNote, detailedNotes: "Structured content generated" };
-        } catch (parseErr) {
-          console.error("[AI-Service] Failed to parse Gemini response as JSON", parseErr);
-          throw parseErr;
-        }
+        console.log(`[AI-Service] Gemini response received. Length: ${text.length}. Parsing XML...`);
+        const structuredNote = parseXmlToStructuredNote(text, title);
+        const validatedNote = validateAndFillNote(structuredNote, content, title);
+        return { structuredNote: validatedNote, detailedNotes: text };
       }
-    } catch (err: any) {
-      console.warn(`[AI-Service] Gemini detailed notes failed, falling back to OpenRouter:`, err.message);
+    } catch (error: any) {
+      console.warn(`[AI-Service] Gemini detailed notes failed, falling back to OpenRouter:`, error.message);
     }
   }
 
   if (OPENROUTER_API_KEY) {
-    console.log(`[AI-Service] Using OpenRouter for structured notes (Fallback)...`);
+    console.log(`[AI-Service] Using OpenRouter for XML detailed notes (Fallback)...`);
     try {
       const response = await callOpenRouter([
         { 
@@ -655,15 +713,14 @@ ${content.substring(0, 15000)}`;
           content: systemInstruction 
         },
         { role: 'user', content: promptText }
-      ], true);
+      ], false);
       
-      try {
-        const result = JSON.parse(cleanJsonContent(response.content));
-        console.log(`[AI-Service] OpenRouter response parsed. Validating...`);
-        const validatedNote = validateAndFillNote(result, content, title);
-        return { structuredNote: validatedNote, detailedNotes: "Structured content generated" };
-      } catch (parseErr) {
-        console.warn("[AI-Service] OpenRouter returned non-JSON for structured notes");
+      const text = response.content || "";
+      if (text) {
+        console.log(`[AI-Service] OpenRouter response received. Length: ${text.length}. Parsing XML...`);
+        const structuredNote = parseXmlToStructuredNote(text, title);
+        const validatedNote = validateAndFillNote(structuredNote, content, title);
+        return { structuredNote: validatedNote, detailedNotes: text };
       }
     } catch (err: any) {
       console.error(`[AI-Service] OpenRouter detailed notes fallback failed:`, err.message);
@@ -675,7 +732,7 @@ ${content.substring(0, 15000)}`;
   const finalFallback = validateAndFillNote({}, content, title);
   return {
     structuredNote: finalFallback,
-    detailedNotes: content.substring(0, 2000)
+    detailedNotes: `<eli5>No notes available. Please try regenerating.</eli5><concepts></concepts><deep></deep><examples></examples><summary></summary>`
   };
 };
 

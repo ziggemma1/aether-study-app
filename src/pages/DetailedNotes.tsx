@@ -14,6 +14,7 @@ import { generateMaterialPDF } from '../lib/pdf';
 import { ShareModal } from '../components/ShareModal';
 
 import { StructuredNoteRenderer } from '../components/StructuredNoteRenderer';
+import { XMLNoteRenderer } from '../components/XMLNoteRenderer';
 
 export default function DetailedNotes() {
   const { id } = useParams();
@@ -286,13 +287,13 @@ export default function DetailedNotes() {
             <button
               onClick={() => setActiveViewMode('structured')}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all",
+                "flex-grow flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all",
                 activeViewMode === 'structured' 
                   ? "bg-primary text-white shadow-md" 
                   : "text-text-muted hover:text-text-main"
               )}
             >
-              <FileText size={12} /> 📋 Structured Outline
+              <FileText size={12} /> {material.detailedNotes && /<eli5>|<deep>|<concepts>/i.test(material.detailedNotes) ? '📋 Interactive Teacher Notes' : '📋 Structured Outline'}
             </button>
           </div>
         )}
@@ -321,7 +322,7 @@ export default function DetailedNotes() {
                   Retry Generation
                 </button>
               </motion.div>
-            ) : activeViewMode === 'structured' && material.structuredNote ? (
+            ) : activeViewMode === 'structured' && (material.structuredNote || (material.detailedNotes && /<eli5>|<deep>|<concepts>/i.test(material.detailedNotes))) ? (
               <motion.div
                 key="structured"
                 initial={{ opacity: 0, y: 20 }}
@@ -329,7 +330,11 @@ export default function DetailedNotes() {
                 exit={{ opacity: 0, y: -20 }}
                 className="bg-transparent"
               >
-                <StructuredNoteRenderer note={material.structuredNote} />
+                {material.detailedNotes && /<eli5>|<deep>|<concepts>/i.test(material.detailedNotes) ? (
+                  <XMLNoteRenderer detailedNotes={material.detailedNotes} />
+                ) : material.structuredNote ? (
+                  <StructuredNoteRenderer note={material.structuredNote} />
+                ) : null}
               </motion.div>
             ) : activeViewMode === 'slides' && sections.length > 0 ? (
               <motion.div
