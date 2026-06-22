@@ -679,6 +679,25 @@ ${content.substring(0, 15000)}`;
   };
 };
 
+const cleanSentenceTruncate = (text: string, maxLength: number): string => {
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+  
+  const sub = text.substring(0, maxLength);
+  const lastDot = Math.max(sub.lastIndexOf('.'), sub.lastIndexOf('!'), sub.lastIndexOf('?'));
+  
+  if (lastDot > maxLength * 0.5) {
+    return text.substring(0, lastDot + 1);
+  }
+  
+  const lastSpace = sub.lastIndexOf(' ');
+  if (lastSpace > maxLength * 0.7) {
+    return text.substring(0, lastSpace) + '...';
+  }
+  
+  return sub + '...';
+};
+
 export const generateAcademicMegaNotes = async (content: string, title: string) => {
   console.log(`[AI-Service] generateAcademicMegaNotes (12+ Pages Cornell/Feynman Deep Analysis) called for: ${title}`);
   
@@ -844,7 +863,7 @@ ${content.substring(0, 18000)}`;
 * *Prompt 2:* What are the primary subcomponents or implications of this concept?
  
 #### 📝 HIGH-DENSITY LECTURE NOTES (Textbook Style)
-* ${chunkParagraphs.map(p => p.substring(0, 150) + (p.length > 150 ? '...' : '')).join('\n* ')}
+* ${chunkParagraphs.join('\n* ')}
  
 #### 🛠️ PRACTICAL SCENARIO IN ACTION
 * **Context:** Understanding the real-world application of ${heading}.
@@ -862,10 +881,10 @@ ${content.substring(0, 18000)}`;
 * **Pedagogical aim:** Deconstructing high-complexity abstractions into elegant simplicity.
  
 #### 👶 ELI5 (Explain Like I'm Five)
-${chunkParagraphs[0].substring(0, 200)}${chunkParagraphs[0].length > 200 ? '...' : ''}
+${cleanSentenceTruncate(chunkParagraphs[0], 250)}
  
 #### ⚙️ MECHANICS DECONSTRUCTION (Deep, Rigorous Explanation)
-* ${chunkParagraphs.map(p => p.substring(0, 150) + (p.length > 150 ? '...' : '')).join('\n* ')}
+* ${chunkParagraphs.join('\n* ')}
  
 #### 💡 DEEP ANALOGY & GAP IDENTIFICATION (Pinpoint Gaps)
 * **The Analogy:** Mapped sequence similar to daily organization.

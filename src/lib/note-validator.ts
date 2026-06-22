@@ -53,6 +53,25 @@ export interface StructuredNote {
   studySchedule?: Record<string, string>;
 }
 
+function cleanSentenceTruncate(text: string, maxLength: number): string {
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+  
+  const sub = text.substring(0, maxLength);
+  const lastDot = Math.max(sub.lastIndexOf('.'), sub.lastIndexOf('!'), sub.lastIndexOf('?'));
+  
+  if (lastDot > maxLength * 0.5) {
+    return text.substring(0, lastDot + 1);
+  }
+  
+  const lastSpace = sub.lastIndexOf(' ');
+  if (lastSpace > maxLength * 0.7) {
+    return text.substring(0, lastSpace) + '...';
+  }
+  
+  return sub + '...';
+}
+
 export function validateAndFillNote(note: Partial<StructuredNote>, originalContent?: string, title?: string): StructuredNote {
   const filled: StructuredNote = {
     title: note.title || title || "Study Material",
@@ -94,7 +113,7 @@ export function validateAndFillNote(note: Partial<StructuredNote>, originalConte
       filled.keyConcepts = filled.sections.flatMap(sec => 
         (sec.subsections || []).map(sub => ({
           name: sub.subheading || sec.heading || "Key Concept",
-          definition: sub.content.substring(0, 200) + (sub.content.length > 200 ? "..." : ""),
+          definition: cleanSentenceTruncate(sub.content, 250),
           keyPoints: sub.keywords && sub.keywords.length > 0 ? sub.keywords : ["Core concept mechanics"],
           example: "Refer to structured outline section for real-life usage.",
           memoryTip: sub.memoryTip || "Review explanation details.",
@@ -121,11 +140,11 @@ export function validateAndFillNote(note: Partial<StructuredNote>, originalConte
           
           concepts.push({
             name: heading,
-            definition: chunkParagraphs[0].substring(0, 150) + (chunkParagraphs[0].length > 150 ? '...' : ''),
-            keyPoints: chunkParagraphs.map(p => p.substring(0, 100) + (p.length > 100 ? '...' : '')).slice(0, 3),
+            definition: cleanSentenceTruncate(chunkParagraphs[0], 250),
+            keyPoints: chunkParagraphs.map(p => cleanSentenceTruncate(p, 150)).slice(0, 3),
             example: "Extracted from study material.",
             memoryTip: `Review chapter ${idx + 1} details carefully.`,
-            deepDive: combinedText.substring(0, 800) + (combinedText.length > 800 ? '...' : '')
+            deepDive: combinedText
           });
         }
         filled.keyConcepts = concepts;
@@ -137,7 +156,7 @@ export function validateAndFillNote(note: Partial<StructuredNote>, originalConte
           keyPoints: ["Foundational definitions", "Practical context"],
           example: "Applying first-principles thinking to the material.",
           memoryTip: "Pay close attention to key definitions.",
-          deepDive: originalContent.substring(0, 1000)
+          deepDive: originalContent
         }];
         console.warn('[Validator] Using single concept fallback (text too short to segment)');
       }
