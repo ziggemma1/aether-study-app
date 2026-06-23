@@ -594,11 +594,11 @@ QUALITY CHECK
 [ ] Does the summary capture key insights.`;
 
   const parseXmlToStructuredNote = (xml: string, noteTitle: string): any => {
-    const eli5Match = xml.match(/<eli5>([\s\S]*?)<\/eli5>/i);
-    const conceptsMatch = xml.match(/<concepts>([\s\S]*?)<\/concepts>/i);
-    const deepMatch = xml.match(/<deep>([\s\S]*?)<\/deep>/i);
-    const examplesMatch = xml.match(/<examples>([\s\S]*?)<\/examples>/i);
-    const summaryMatch = xml.match(/<summary>([\s\S]*?)<\/summary>/i);
+    const eli5Match = xml.match(/<eli5[^>]*>([\s\S]*?)<\/eli5>/i);
+    const conceptsMatch = xml.match(/<concepts[^>]*>([\s\S]*?)<\/concepts>/i);
+    const deepMatch = xml.match(/<deep[^>]*>([\s\S]*?)<\/deep>/i);
+    const examplesMatch = xml.match(/<examples[^>]*>([\s\S]*?)<\/examples>/i);
+    const summaryMatch = xml.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i);
 
     const eli5 = eli5Match ? eli5Match[1].trim() : "";
     const conceptsText = conceptsMatch ? conceptsMatch[1].trim() : "";
@@ -609,9 +609,11 @@ QUALITY CHECK
     const keyTerms: any[] = [];
     const keyConcepts: any[] = [];
     
+    const deepParagraphs = deep.split(/\n\s*\n+/).filter(p => p.trim().length > 10);
+
     if (conceptsText) {
       const entries = conceptsText.split(/\n\s*\n+/);
-      entries.forEach(entry => {
+      entries.forEach((entry, idx) => {
         const termMatch = entry.match(/TERM:\s*\[?([^\]\n]+)\]?/i) || entry.match(/TERM:\s*(.+)/i);
         const defMatch = entry.match(/DEFINITION:\s*\[?([^\]\n]+)\]?/i) || entry.match(/DEFINITION:\s*(.+)/i);
         const connMatch = entry.match(/CONNECTS TO:\s*\[?([^\]\n]+)\]?/i) || entry.match(/CONNECTS TO:\s*(.+)/i);
@@ -626,13 +628,20 @@ QUALITY CHECK
             memoryTip: connectsTo ? `Connects to: ${connectsTo}` : ""
           });
 
+          let conceptDeepDive = "";
+          if (idx === entries.length - 1) {
+            conceptDeepDive = deepParagraphs.slice(idx).join('\n\n');
+          } else {
+            conceptDeepDive = deepParagraphs[idx] || "";
+          }
+
           keyConcepts.push({
             name: term,
             definition,
             keyPoints: connectsTo ? [`Connects to: ${connectsTo}`] : [],
-            example: "",
-            memoryTip: connectsTo ? `Links with ${connectsTo}` : "",
-            deepDive: ""
+            example: "Application context from examples section.",
+            memoryTip: connectsTo ? `Links with ${connectsTo}` : "Review explanation details.",
+            deepDive: conceptDeepDive
           });
         }
       });

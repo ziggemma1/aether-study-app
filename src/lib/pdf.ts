@@ -71,15 +71,15 @@ export const generateMaterialPDF = async (material: any) => {
     }
   } else if (material.detailedNotes) {
      const formatXMLNotesForPDF = (xml: string): string => {
-       if (!xml || !/<eli5>|<deep>|<concepts>/i.test(xml)) {
+       if (!xml || !/<eli5[^>]*>|<deep[^>]*>|<concepts[^>]*>/i.test(xml)) {
          return xml;
        }
        
-       const eli5Match = xml.match(/<eli5>([\s\S]*?)<\/eli5>/i);
-       const conceptsMatch = xml.match(/<concepts>([\s\S]*?)<\/concepts>/i);
-       const deepMatch = xml.match(/<deep>([\s\S]*?)<\/deep>/i);
-       const examplesMatch = xml.match(/<examples>([\s\S]*?)<\/examples>/i);
-       const summaryMatch = xml.match(/<summary>([\s\S]*?)<\/summary>/i);
+       const eli5Match = xml.match(/<eli5[^>]*>([\s\S]*?)<\/eli5>/i);
+       const conceptsMatch = xml.match(/<concepts[^>]*>([\s\S]*?)<\/concepts>/i);
+       const deepMatch = xml.match(/<deep[^>]*>([\s\S]*?)<\/deep>/i);
+       const examplesMatch = xml.match(/<examples[^>]*>([\s\S]*?)<\/examples>/i);
+       const summaryMatch = xml.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i);
        
        let markdown = "";
        if (eli5Match) {

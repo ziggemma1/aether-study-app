@@ -32,11 +32,11 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
   const [revealedHints, setRevealedHints] = React.useState<Record<number, boolean>>({});
 
   // 1. Parsing Helper
-  const eli5Match = detailedNotes.match(/<eli5>([\s\S]*?)<\/eli5>/i);
-  const conceptsMatch = detailedNotes.match(/<concepts>([\s\S]*?)<\/concepts>/i);
-  const deepMatch = detailedNotes.match(/<deep>([\s\S]*?)<\/deep>/i);
-  const examplesMatch = detailedNotes.match(/<examples>([\s\S]*?)<\/examples>/i);
-  const summaryMatch = detailedNotes.match(/<summary>([\s\S]*?)<\/summary>/i);
+  const eli5Match = detailedNotes.match(/<eli5[^>]*>([\s\S]*?)<\/eli5>/i);
+  const conceptsMatch = detailedNotes.match(/<concepts[^>]*>([\s\S]*?)<\/concepts>/i);
+  const deepMatch = detailedNotes.match(/<deep[^>]*>([\s\S]*?)<\/deep>/i);
+  const examplesMatch = detailedNotes.match(/<examples[^>]*>([\s\S]*?)<\/examples>/i);
+  const summaryMatch = detailedNotes.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i);
 
   const rawEli5 = eli5Match ? eli5Match[1].trim() : "";
   const rawConcepts = conceptsMatch ? conceptsMatch[1].trim() : "";
