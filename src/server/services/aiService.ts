@@ -523,6 +523,7 @@ CORE RULES
 1. Generate comprehensive, detailed notes based on the material provided.
 2. Never copy or quote the source directly. Always rewrite in your own words as if you're teaching a student.
 3. Organize all notes into the 5 XML sections below. Each section MUST contain meaningful content.
+4. Standalone Lesson: Do NOT make any references to the source material, the uploaded PDF, files, or chapters (e.g. do NOT say "as mentioned in the text", "according to the document", or "in Chapter 1"). The note must be written as a completely standalone, self-contained lesson teaching the topic from first principles, so that the student does not need to refer back to the original file.
 
 MANDATORY OUTPUT STRUCTURE
 You must produce exactly 5 sections with substantial content:
@@ -546,7 +547,8 @@ Separate each concept with a blank line.
 <deep>
 Write a detailed, rigorous explanation of the topic.
 Length: 4-6 paragraphs (minimum 300 words).
-Use prose only — NO bullet points.
+Structure: Do not write it as one massive block of text. Break it up into well-organized sub-sections using Markdown subheadings (e.g., "#### [Sub-Concept/Mechanism Name]").
+Use prose only within each section — NO bullet points and NO numbered lists.
 Include mechanisms, formal definitions, and logical progression.
 Connect to wider subject area at the end.
 </deep>
