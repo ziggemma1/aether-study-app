@@ -181,9 +181,23 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
                 <span>ELI5 • Accessible Analogy</span>
               </div>
               
-              <div className="text-text-main text-xs sm:text-sm leading-relaxed prose prose-invert max-w-none space-y-3">
+              <div className="text-text-main text-xs sm:text-sm leading-relaxed max-w-none space-y-3">
                 {rawEli5 ? (
-                  <ReactMarkdown>{rawEli5}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => (
+                        <p className="text-text-main text-xs sm:text-sm leading-[1.85] mb-3 last:mb-0">{children}</p>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="text-blue-300 font-bold">{children}</strong>
+                      ),
+                      em: ({ children }) => (
+                        <em className="text-text-muted italic">{children}</em>
+                      ),
+                    }}
+                  >
+                    {rawEli5}
+                  </ReactMarkdown>
                 ) : (
                   <p className="italic text-text-muted">No analogy details available.</p>
                 )}
@@ -238,16 +252,73 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="p-5 sm:p-7 border-l-[6px] border-l-teal-500 bg-gradient-to-br from-teal-500/5 to-transparent rounded-3xl space-y-4 border border-border/10 shadow-lg"
+              className="p-5 sm:p-7 border-l-[6px] border-l-teal-500 bg-gradient-to-br from-teal-500/5 to-transparent rounded-3xl space-y-6 border border-border/10 shadow-lg"
             >
               <div className="flex items-center gap-2 text-teal-500 font-extrabold text-[10px] uppercase tracking-wider">
                 <Brain size={14} />
                 <span>Rigorous Concept Deconstruction</span>
               </div>
 
-              <div className="text-text-main text-xs sm:text-sm leading-relaxed prose prose-invert max-w-none space-y-3">
+              <div className="text-text-main text-xs sm:text-sm leading-relaxed max-w-none space-y-5">
                 {rawDeep ? (
-                  <ReactMarkdown>{rawDeep}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{
+                      h1: ({ children }) => (
+                        <h1 className="text-teal-400 font-black text-base mt-7 mb-3 pb-1.5 border-b border-teal-500/20 leading-snug">
+                          {children}
+                        </h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 className="text-teal-400 font-extrabold text-sm mt-6 mb-2.5 leading-snug">
+                          {children}
+                        </h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 className="text-teal-300 font-bold text-sm mt-5 mb-2 leading-snug">
+                          {children}
+                        </h3>
+                      ),
+                      h4: ({ children }) => (
+                        <h4 className="text-teal-300 font-bold text-xs uppercase tracking-wide mt-5 mb-2 flex items-center gap-1.5">
+                          <span className="w-1 h-3.5 bg-teal-500 rounded-full shrink-0 inline-block" />
+                          {children}
+                        </h4>
+                      ),
+                      p: ({ children }) => (
+                        <p className="text-text-main text-xs sm:text-sm leading-[1.85] mb-3 last:mb-0">
+                          {children}
+                        </p>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="text-teal-200 font-bold">{children}</strong>
+                      ),
+                      em: ({ children }) => (
+                        <em className="text-text-muted italic">{children}</em>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="space-y-1.5 my-3 pl-1">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="space-y-1.5 my-3 pl-1 list-decimal list-inside">{children}</ol>
+                      ),
+                      li: ({ children }) => (
+                        <li className="flex items-start gap-2 text-xs sm:text-sm leading-relaxed text-text-main">
+                          <span className="w-1.5 h-1.5 bg-teal-500/70 rounded-full mt-[0.45rem] shrink-0" />
+                          <span>{children}</span>
+                        </li>
+                      ),
+                      blockquote: ({ children }) => (
+                        <blockquote className="border-l-2 border-teal-500/40 pl-3 my-3 text-text-muted italic text-xs">
+                          {children}
+                        </blockquote>
+                      ),
+                      hr: () => (
+                        <hr className="border-teal-500/15 my-5" />
+                      ),
+                    }}
+                  >
+                    {rawDeep}
+                  </ReactMarkdown>
                 ) : (
                   <p className="italic text-text-muted">No deep deconstruction details available.</p>
                 )}
