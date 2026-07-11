@@ -124,6 +124,194 @@ const normalizeQuizQuestions = (questions: any) => {
   });
 };
 
+const ANTI_GRAVITY_SYSTEM_PROMPT = `You are the Antigravity Curator—an invisible mentor inside the
+Antigravity learning platform. You are not a generic AI assistant. You are a brilliant peer sitting
+next to the user, helping them transform raw information into mastery.
+
+## YOUR IDENTITY
+- You explain like someone who genuinely wants the user to understand, not like a professor lecturing.
+- You use analogies from unexpected domains (cooking, gaming, nature, coding, sports, music,
+construction).
+- You write conversationally: contractions, second person, sentence fragments, varied paragraph lengths.
+- You are warm but precise. You are slightly irreverent but never arrogant.
+- You NEVER reference "the uploaded material," "the source text," "the document," or "the provided
+content." The notes ARE the knowledge. The source is invisible.
+
+## YOUR OUTPUT STRUCTURE
+You MUST output structured XML that will be parsed into JSON. Follow this exact structure:
+
+<antigravity_notes>
+<hook>
+<!-- A provocative question or "What if..." scenario. Tied to real-world implication. NEVER starts
+with "This document discusses..." or "The material covers..." -->
+</hook>
+
+<eli5>
+<!-- One vivid metaphor from an unexpected domain. Real-world anchor. Explain it like the user is 5,
+but respect their intelligence. -->
+</eli5>
+
+<concepts>
+<!-- List of terms with core definitions. Frame them as "tools in your toolkit." Use bold for terms. -->
+</concepts>
+
+<deep>
+<!-- High-density explanation using markdown headers. Headers MUST be phrased as user questions, not
+topic labels. Example: "Why does this actually matter?" not "Significance" -->
+</deep>
+
+<examples>
+<!-- Step-by-step worked problems or conceptual walkthroughs. Narrate them. Show the MISTAKE first,
+then the fix. -->
+</examples>
+
+<watch_out>
+<!-- Insider advice from someone who's seen students fail this exact concept. Specific. Slightly
+irreverent. Bold the key warning. -->
+</watch_out>
+
+<antigravity_insight>
+<!-- A single bolded pro-tip that feels like it came from the app itself, not the material. Format:
+**🔥 Antigravity Insight:** [advice] -->
+</antigravity_insight>
+</antigravity_notes>
+
+## VOICE RULES (MANDATORY)
+1. NEVER start with "This document discusses...", "The material covers...", "The text explains...", or
+any variant.
+2. NEVER use "In conclusion," "Furthermore," "It is important to note," or robotic transitions.
+3. NEVER use "think of it like..." more than once per section. Rotate metaphors.
+4. NEVER reference the source material directly. The notes ARE the knowledge.
+5. ALWAYS use second person ("you'll notice," "your job here is").
+6. ALWAYS vary paragraph length. One-sentence paragraphs are encouraged.
+7. ALWAYS end with the 🔥 Antigravity Insight.
+
+## METAPHOR ROTATION (MANDATORY)
+You MUST rotate through different metaphor domains. Do not repeat the same domain within a single output.
+Allowed domains: cooking, gaming, nature, coding/tech, sports, music, construction.
+
+## TIME-OF-DAY ADAPTATION
+The current theme is: {{THEME}}
+Adapt your tone accordingly:
+- morning: Energetic, coffee-fueled enthusiasm. Quick wins. "Let's knock this out."
+- day: Clear, structured, methodical. "Let's build this together."
+- sunset: Reflective, narrative-driven, connecting dots across disciplines. "Here's something interesting..."
+- night: Deep, philosophical, unafraid of complexity. "Let's get weird with this."`;
+
+const getCurrentTheme = (): 'morning' | 'day' | 'sunset' | 'night' => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'day';
+  if (hour >= 17 && hour < 21) return 'sunset';
+  return 'night';
+};
+
+const getThemeAwareSystemPrompt = (): string => {
+  const theme = getCurrentTheme();
+  return ANTI_GRAVITY_SYSTEM_PROMPT.replace('{{THEME}}', theme);
+};
+
+export function sanitizeAntigravityOutput(rawOutput: string): string {
+  const stripPatterns = [
+    /^(This (document|text|material|source|content|passage|article|chapter|section))/gmi,
+    /^(The (uploaded|provided|given|attached|submitted|input))/gmi,
+    /^(Based on (the|this) (document|text|material|source|content))/gmi,
+    /^(According to (the|this) (document|text|material|source|content))/gmi,
+    /^(The (document|text|material|source|content) (discusses|covers|explains|describes|presents))/gmi,
+    /In conclusion[,;:]?/gmi,
+    /Furthermore[,;:]?/gmi,
+    /Moreover[,;:]?/gmi,
+    /It is important to note[,;:]?/gmi,
+    /It should be noted[,;:]?/gmi,
+    /As mentioned earlier[,;:]?/gmi,
+    /To summarize[,;:]?/gmi,
+    /In summary[,;:]?/gmi,
+    /Think of it like/gmi,
+    /Imagine that/gmi,
+    /Picture this/gmi,
+  ];
+
+  const replacePatterns = [
+    { from: /In addition[,;:]?/gmi, to: "Here's where it gets interesting:" },
+    { from: /Additionally[,;:]?/gmi, to: "But wait—there's more:" },
+    { from: /However[,;:]?/gmi, to: "Here's the twist:" },
+    { from: /Therefore[,;:]?/gmi, to: "So here's the payoff:" },
+    { from: /Thus[,;:]?/gmi, to: "Which means:" },
+    { from: /Consequently[,;:]?/gmi, to: "And here's what happens:" },
+    { from: /As a result[,;:]?/gmi, to: "Here's the result:" },
+    { from: /For example[,;:]?/gmi, to: "Real talk:" },
+    { from: /For instance[,;:]?/gmi, to: "Check this out:" },
+    { from: /Specifically[,;:]?/gmi, to: "Here's the exact thing:" },
+    { from: /In other words[,;:]?/gmi, to: "Translation:" },
+    { from: /To put it simply[,;:]?/gmi, to: "Bottom line:" },
+    { from: /Essentially[,;:]?/gmi, to: "At its core:" },
+    { from: /Basically[,;:]?/gmi, to: "The real deal:" },
+  ];
+
+  let cleaned = rawOutput;
+
+  // Strip patterns
+  for (const pattern of stripPatterns) {
+    cleaned = cleaned.replace(pattern, "");
+  }
+
+  // Replace patterns
+  for (const { from, to } of replacePatterns) {
+    cleaned = cleaned.replace(from, to);
+  }
+
+  // Clean up extra whitespace from removals
+  cleaned = cleaned.replace(/\n{3,}/g, "\n\n").trim();
+  return cleaned;
+}
+
+export function validateAntigravityOutput(output: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Check for source references
+  if (/(this document|the material|the source|the text|uploaded content)/gi.test(output)) {
+    errors.push("Output references source material directly");
+  }
+
+  // Check for generic transitions
+  if (/(in conclusion|furthermore|moreover|it is important to note)/gi.test(output)) {
+    errors.push("Output contains generic AI transitions");
+  }
+
+  // Check hook is question or "What if"
+  const hookMatch = output.match(/<hook>([\s\S]*?)<\/hook>/);
+  if (hookMatch && !/^\s*(What if|Why|How|When|Where|Who|Imagine|Picture|Consider)/i.test(hookMatch[1])) {
+    errors.push("Hook does not start with a question or provocative scenario");
+  }
+
+  // Check for Antigravity Insight
+  if (!/\*\*.*Antigravity Insight:/.test(output)) {
+    errors.push("Missing 🔥 Antigravity Insight");
+  }
+
+  // Check for bolded terms in concepts
+  const conceptsMatch = output.match(/<concepts>([\s\S]*?)<\/concepts>/);
+  if (conceptsMatch && !/\*\*.*?\*\*/.test(conceptsMatch[1])) {
+    errors.push("Concepts section missing bolded terms");
+  }
+
+  // Check for user-question headers in deep section
+  const deepMatch = output.match(/<deep>([\s\S]*?)<\/deep>/);
+  if (deepMatch) {
+    const headers = deepMatch[1].match(/^#{1,3}\s+(.+)$/gm);
+    if (headers) {
+      for (const header of headers) {
+        if (!/^#{1,3}\s+(Why|What|How|When|Where|Who|Which|Can|Could|Would|Should|Is|Are|Do|Does|Did|Will|Has|Have|Had)/i.test(header)) {
+          errors.push(`Deep section header is not a user question: ${header}`);
+        }
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+
 export const callOpenRouter = async (messages: any[], useJson = false): Promise<any> => {
   if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY missing');
   
@@ -516,106 +704,78 @@ export const generateStudyPlan = async (materials: any[], startDate: string, dur
 export const generateDetailedNotes = async (content: string, title: string) => {
   console.log(`[AI-Service] generateDetailedNotes called for: ${title}`);
   
-  const systemInstruction = `ROLE
-You are an expert study coach and master teacher. Your only job is to transform raw academic source material into a deeply educational, structured study note. You are NOT a summariser. You are a teacher.
-
-CORE RULES
-1. Generate comprehensive, detailed notes based on the material provided.
-2. Never copy or quote the source directly. Always rewrite in your own words as if you're teaching a student.
-3. Organize all notes into the 5 XML sections below. Each section MUST contain meaningful content.
-4. Standalone Lesson: Do NOT make any references to the source material, the uploaded PDF, files, or chapters (e.g. do NOT say "as mentioned in the text", "according to the document", or "in Chapter 1"). The note must be written as a completely standalone, self-contained lesson teaching the topic from first principles, so that the student does not need to refer back to the original file.
-
-MANDATORY OUTPUT STRUCTURE
-You must produce exactly 5 sections with substantial content:
-
-<eli5>
-Write a simple, beginner-friendly explanation using an analogy or real-world example.
-Length: 2-3 full paragraphs (minimum 100 words).
-Make it accessible to someone with no prior knowledge.
-End with a sentence that connects the analogy to the actual topic.
-</eli5>
-
-<concepts>
-List the 5-8 most important terms from the topic.
-For EACH term provide:
-  TERM: [term name]
-  DEFINITION: [your explanation in 1-2 sentences]
-  CONNECTS TO: [one other concept and why]
-Separate each concept with a blank line.
-</concepts>
-
-<deep>
-Write a detailed, rigorous explanation of the topic.
-Length: 4-6 paragraphs (minimum 300 words).
-Structure: Do not write it as one massive block of text. Break it up into well-organized sub-sections using Markdown subheadings (e.g., "#### [Sub-Concept/Mechanism Name]").
-Use prose only within each section — NO bullet points and NO numbered lists.
-Include mechanisms, formal definitions, and logical progression.
-Connect to wider subject area at the end.
-</deep>
-
-<examples>
-Provide 1 complete worked example with step-by-step solution.
-Then provide 2 practice problems with hints.
-Format:
-  PROBLEM: [clear problem statement]
-  APPROACH: [strategy]
-  SOLUTION:
-    Step 1 — [detailed step]
-    Step 2 — [detailed step]
-    ...
-  RESULT: [final answer + meaning]
-  
-  PRACTICE 1: [problem]
-  HINT: [nudge]
-  
-  PRACTICE 2 (stretch): [harder problem]
-  HINT: [nudge]
-</examples>
-
-<summary>
-Write exactly 5 takeaway sentences that capture the most important insights.
-Then add:
-  WATCH OUT: [the single most common mistake and why it happens]
-</summary>
-
-FORMATTING RULES
-1. Start directly with <eli5>. No preamble.
-2. All content must be inside the XML tags.
-3. Write in complete sentences. No fragments.
-4. Be thorough and comprehensive in each section.
-5. Generate as much detail as needed to fully teach the topic.
-
-QUALITY CHECK
-[ ] Did I fill ALL 5 sections with content?
-[ ] Is the eli5 genuinely accessible?
-[ ] Are the concepts fully defined?
-[ ] Is the deep section detailed and rigorous?
-[ ] Are the examples realistic and solvable?
-[ ] Does the summary capture key insights.`;
+  const systemInstruction = getThemeAwareSystemPrompt();
 
   const parseXmlToStructuredNote = (xml: string, noteTitle: string): any => {
+    const hookMatch = xml.match(/<hook[^>]*>([\s\S]*?)<\/hook>/i);
     const eli5Match = xml.match(/<eli5[^>]*>([\s\S]*?)<\/eli5>/i);
     const conceptsMatch = xml.match(/<concepts[^>]*>([\s\S]*?)<\/concepts>/i);
     const deepMatch = xml.match(/<deep[^>]*>([\s\S]*?)<\/deep>/i);
     const examplesMatch = xml.match(/<examples[^>]*>([\s\S]*?)<\/examples>/i);
-    const summaryMatch = xml.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i);
+    const watchOutMatch = xml.match(/<watch_out[^>]*>([\s\S]*?)<\/watch_out>/i);
+    const insightMatch = xml.match(/<antigravity_insight[^>]*>([\s\S]*?)<\/antigravity_insight>/i);
 
+    const hook = hookMatch ? hookMatch[1].trim() : "";
     const eli5 = eli5Match ? eli5Match[1].trim() : "";
     const conceptsText = conceptsMatch ? conceptsMatch[1].trim() : "";
     const deep = deepMatch ? deepMatch[1].trim() : "";
     const examples = examplesMatch ? examplesMatch[1].trim() : "";
-    const summaryText = summaryMatch ? summaryMatch[1].trim() : "";
+    const watchOut = watchOutMatch ? watchOutMatch[1].trim() : "";
+    const rawInsight = insightMatch ? insightMatch[1].trim() : "";
+    
+    // Clean up LaTeX or format nicely
+    let insight = rawInsight;
+    if (insight.includes("Antigravity Insight:")) {
+      const idx = insight.indexOf("Antigravity Insight:");
+      insight = insight.substring(idx).trim();
+      insight = insight.replace(/\*\*$/, "").trim();
+      insight = `**🔥 Antigravity Insight:** ${insight.substring("Antigravity Insight:".length).replace(/^[^a-zA-Z0-9]*/, "").trim()}`;
+    } else if (insight && !insight.startsWith("**")) {
+      insight = `**🔥 Antigravity Insight:** ${insight}`;
+    }
 
     const keyTerms: any[] = [];
     const keyConcepts: any[] = [];
-    
-    const deepParagraphs = deep.split(/\n\s*\n+/).filter(p => p.trim().length > 10);
 
+    // Parse conceptsText line by line
     if (conceptsText) {
+      const lines = conceptsText.split('\n');
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        const lineMatch = trimmed.match(/^\s*[-*•]?\s*\*\*(.*?)\*\*:\s*(.*)$/);
+        if (lineMatch) {
+          const term = lineMatch[1].trim();
+          const rawDef = lineMatch[2].trim();
+          
+          const connMatch = rawDef.match(/connects to\s*(?:\[|["'])?([^.\]]+)(?:\]|["'])?/i);
+          const connectsTo = connMatch ? connMatch[1].trim() : "";
+          
+          let definition = rawDef;
+          const connectsToIdx = rawDef.toLowerCase().indexOf("how it connects to");
+          if (connectsToIdx !== -1) {
+            definition = rawDef.substring(0, connectsToIdx).trim();
+            if (!definition.endsWith('.')) {
+              definition += '.';
+            }
+          }
+
+          keyTerms.push({
+            term,
+            definition,
+            memoryTip: connectsTo ? `Connects to: ${connectsTo}` : ""
+          });
+        }
+      });
+    }
+
+    // Legacy fallback
+    if (keyTerms.length === 0 && conceptsText) {
       const entries = conceptsText.split(/\n\s*\n+/);
-      entries.forEach((entry, idx) => {
-        const termMatch = entry.match(/TERM:\s*\[?([^\]\n]+)\]?/i) || entry.match(/TERM:\s*(.+)/i);
-        const defMatch = entry.match(/DEFINITION:\s*\[?([^\]\n]+)\]?/i) || entry.match(/DEFINITION:\s*(.+)/i);
+      entries.forEach((entry) => {
+        const termMatch = entry.match(/TERM:\s*\[?([^\]\n]+)\]?/i) || entry.match(/TERM:\s*(.+)/i) || entry.match(/^\s*\*\*(.*?)\*\*/);
+        const defMatch = entry.match(/DEFINITION:\s*\[?([^\]\n]+)\]?/i) || entry.match(/DEFINITION:\s*(.+)/i) || entry.match(/:\s*(.*)$/);
         const connMatch = entry.match(/CONNECTS TO:\s*\[?([^\]\n]+)\]?/i) || entry.match(/CONNECTS TO:\s*(.+)/i);
         if (termMatch && defMatch) {
           const term = termMatch[1].trim();
@@ -627,41 +787,77 @@ QUALITY CHECK
             definition,
             memoryTip: connectsTo ? `Connects to: ${connectsTo}` : ""
           });
-
-          let conceptDeepDive = "";
-          if (idx === entries.length - 1) {
-            conceptDeepDive = deepParagraphs.slice(idx).join('\n\n');
-          } else {
-            conceptDeepDive = deepParagraphs[idx] || "";
-          }
-
-          keyConcepts.push({
-            name: term,
-            definition,
-            keyPoints: connectsTo ? [`Connects to: ${connectsTo}`] : [],
-            example: "Application context from examples section.",
-            memoryTip: connectsTo ? `Links with ${connectsTo}` : "Review explanation details.",
-            deepDive: conceptDeepDive
-          });
         }
+      });
+    }
+
+    // Split deep section by headers (### or ####) to generate multiple pages/keyConcepts
+    const deepSections: { heading: string, content: string }[] = [];
+    const headerRegex = /^(#{1,4})\s+(.+)$/gm;
+    const matches = Array.from(deep.matchAll(headerRegex));
+
+    if (matches.length > 0) {
+      for (let i = 0; i < matches.length; i++) {
+        const start = matches[i].index!;
+        const end = i < matches.length - 1 ? matches[i + 1].index! : deep.length;
+        const headerText = matches[i][0];
+        const headerTitle = matches[i][2].trim();
+        const sectionContent = deep.substring(start + headerText.length, end).trim();
+        deepSections.push({ heading: headerTitle, content: sectionContent });
+      }
+    } else {
+      const paragraphs = deep.split(/\n\s*\n+/).filter(p => p.trim().length > 10);
+      paragraphs.forEach((p, idx) => {
+        deepSections.push({ heading: `Deep Dive Part ${idx + 1}`, content: p });
+      });
+    }
+
+    if (deepSections.length > 0) {
+      deepSections.forEach((sec, idx) => {
+        const keyPoints = sec.content
+          .split(/[.!?]/)
+          .map(s => s.replace(/^[-*•\s\d.]+\s*/, '').trim())
+          .filter(s => s.length > 15)
+          .slice(0, 3);
+
+        const memoryTip = idx === 0 && insight ? insight : `Review ${sec.heading} details carefully.`;
+        const exampleText = idx === 0 && examples ? examples : `Applying ${sec.heading} concepts in practice.`;
+
+        keyConcepts.push({
+          name: sec.heading,
+          definition: cleanSentenceTruncate(sec.content, 250),
+          keyPoints: keyPoints.length > 0 ? keyPoints : ["Core concept mechanics"],
+          example: exampleText,
+          memoryTip,
+          deepDive: sec.content
+        });
+      });
+    } else {
+      keyConcepts.push({
+        name: "Deep Dive Analysis",
+        definition: "Detailed deconstruction of the concepts.",
+        keyPoints: ["System mechanics", "Core definitions"],
+        example: examples || "Worked walkthroughs.",
+        memoryTip: insight || "Pay close attention to key definitions.",
+        deepDive: deep || "Review notes detail."
       });
     }
 
     const summaryLines: string[] = [];
-    let watchOut = "";
-    if (summaryText) {
-      const lines = summaryText.split('\n');
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-        if (trimmed.toUpperCase().startsWith("WATCH OUT:")) {
-          watchOut = trimmed.substring(10).trim();
-        } else {
-          const cleaned = trimmed.replace(/^[-*•\d.]+\s*/, '');
-          summaryLines.push(cleaned);
-        }
-      });
+    if (deep) {
+      const sentences = deep.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 20);
+      for (let i = 0; i < Math.min(5, sentences.length); i++) {
+        summaryLines.push(sentences[i] + ".");
+      }
     }
+    if (summaryLines.length === 0) {
+      summaryLines.push("Focus on core terms and deconstructed explanations.");
+    }
+    if (watchOut) {
+      summaryLines.push(`**WATCH OUT:** ${watchOut}`);
+    }
+
+    const execSummary = hook ? `${hook}\n\n${eli5}` : (eli5 || "Pedagogical study notes.");
 
     return {
       title: noteTitle || "Study Note",
@@ -672,11 +868,11 @@ QUALITY CHECK
       ],
       keyTerms,
       prerequisites: ["Review basic definitions and the ELI5 analogy first."],
-      executiveSummary: eli5 ? eli5.split('\n')[0] : "Pedagogical study notes.",
+      executiveSummary: execSummary,
       keyConcepts,
       summary: summaryLines,
       activeRecallQuestions: keyTerms.map(t => `What is the definition of ${t.term}?`),
-      mnemonic: watchOut ? `WATCH OUT: ${watchOut}` : undefined
+      mnemonic: insight || (watchOut ? `WATCH OUT: ${watchOut}` : undefined)
     };
   };
 
@@ -694,16 +890,21 @@ QUALITY CHECK
         config: {
           temperature: 0.4,
           maxOutputTokens: 8192,
-          systemInstruction
+          systemInstruction: systemInstruction
         }
       }));
 
       const text = response.text || "";
       if (text) {
         console.log(`[AI-Service] Gemini response received. Length: ${text.length}. Parsing XML...`);
-        const structuredNote = parseXmlToStructuredNote(text, title);
+        const sanitized = sanitizeAntigravityOutput(text);
+        const validation = validateAntigravityOutput(sanitized);
+        if (!validation.valid) {
+          console.warn(`[AI-Service] Output validation failed (Gemini):`, validation.errors);
+        }
+        const structuredNote = parseXmlToStructuredNote(sanitized, title);
         const validatedNote = validateAndFillNote(structuredNote, content, title);
-        return { structuredNote: validatedNote, detailedNotes: text };
+        return { structuredNote: validatedNote, detailedNotes: sanitized };
       }
     } catch (error: any) {
       console.warn(`[AI-Service] Gemini detailed notes failed, falling back to OpenRouter:`, error.message);
@@ -724,9 +925,14 @@ QUALITY CHECK
       const text = response.content || "";
       if (text) {
         console.log(`[AI-Service] OpenRouter response received. Length: ${text.length}. Parsing XML...`);
-        const structuredNote = parseXmlToStructuredNote(text, title);
+        const sanitized = sanitizeAntigravityOutput(text);
+        const validation = validateAntigravityOutput(sanitized);
+        if (!validation.valid) {
+          console.warn(`[AI-Service] Output validation failed (OpenRouter):`, validation.errors);
+        }
+        const structuredNote = parseXmlToStructuredNote(sanitized, title);
         const validatedNote = validateAndFillNote(structuredNote, content, title);
-        return { structuredNote: validatedNote, detailedNotes: text };
+        return { structuredNote: validatedNote, detailedNotes: sanitized };
       }
     } catch (err: any) {
       console.error(`[AI-Service] OpenRouter detailed notes fallback failed:`, err.message);
