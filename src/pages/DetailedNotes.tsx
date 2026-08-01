@@ -577,16 +577,23 @@ export default function DetailedNotes() {
         </div>
       </motion.div>
 
-      <StudyTimer 
-        materialId={material.id} 
-        title={material.title} 
-        readContent={sections.length > 0 ? sections[currentPage].content : material.detailedNotes}
-      />
+      {/* Both floating controls share one fixed stack so they're always
+          evenly spaced and equally sized, instead of each guessing its own
+          bottom offset independently. */}
+      <div className="fixed bottom-24 right-6 z-[90] flex flex-col items-center gap-3 lg:bottom-8 lg:right-8">
+        <TutorChat
+          variant="inline"
+          materialTitle={material.title}
+          materialContent={sections.length > 0 ? sections[currentPage].content : (material.detailedNotes || material.content || "")}
+        />
 
-      <TutorChat 
-        materialTitle={material.title}
-        materialContent={sections.length > 0 ? sections[currentPage].content : (material.detailedNotes || material.content || "")}
-      />
+        <StudyTimer
+          variant="inline"
+          materialId={material.id}
+          title={material.title}
+          readContent={sections.length > 0 ? sections[currentPage].content : material.detailedNotes}
+        />
+      </div>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>

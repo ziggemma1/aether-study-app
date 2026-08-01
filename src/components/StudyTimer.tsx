@@ -11,6 +11,10 @@ interface StudyTimerProps {
   materialId?: string;
   title: string;
   readContent?: string;
+  // 'floating' (default) self-positions in the corner for standalone use.
+  // 'inline' drops its own fixed positioning so a parent can stack it
+  // alongside other floating controls (see DetailedNotes.tsx).
+  variant?: 'floating' | 'inline';
 }
 
 const AMBIENT_TRACKS = [
@@ -23,7 +27,7 @@ const AMBIENT_TRACKS = [
   { id: 'forest', label: 'Forest Wind', url: 'https://assets.mixkit.co/sfx/preview/mixkit-forest-wind-and-birds-1222.mp3' }
 ];
 
-export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readContent }) => {
+export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readContent, variant = 'floating' }) => {
   const [seconds, setSeconds] = useState(0);
   const [targetSeconds, setTargetSeconds] = useState(25 * 60); // Default 25 min Pomodoro
   const [isActive, setIsActive] = useState(false);
@@ -397,7 +401,10 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
   }, []);
 
   return (
-    <div className="fixed bottom-40 right-6 z-[60] lg:bottom-8 lg:right-8 transition-transform hover:-translate-y-1 flex gap-2 items-end">
+    <div className={cn(
+      "flex gap-2 items-end transition-transform hover:-translate-y-1",
+      variant === 'floating' ? "fixed bottom-40 right-6 z-[60] lg:bottom-8 lg:right-8" : "relative"
+    )}>
       
       {isExpanded && (
         <motion.div 
@@ -514,7 +521,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
       <motion.div 
         layout
         className={cn(
-          "bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1 sm:p-3 shadow-2xl flex flex-col items-center relative overflow-hidden ring-1 ring-white/5 w-14 sm:w-[88px]",
+          "bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1 shadow-2xl flex flex-col items-center relative overflow-hidden ring-1 ring-white/5",
           seconds >= targetSeconds - 5 && seconds < targetSeconds && "animate-shake"
         )}
       >
@@ -526,7 +533,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
         {/* Time Display Toggle Button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex flex-col items-center justify-center bg-black/50 rounded-full w-12 h-12 sm:w-16 sm:h-16 border border-white/10 shadow-inner relative z-10 transition-colors hover:bg-white/5 active:scale-95"
+          className="flex flex-col items-center justify-center bg-black/50 rounded-full w-12 h-12 sm:w-14 sm:h-14 border border-white/10 shadow-inner relative z-10 transition-colors hover:bg-white/5 active:scale-95"
         >
           {/* Progress Ring */}
           <svg className="absolute inset-0 -rotate-90 w-full h-full">

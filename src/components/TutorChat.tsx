@@ -8,9 +8,14 @@ import { useAppContext } from '../context/AppContext';
 interface TutorChatProps {
   materialTitle: string;
   materialContent: string;
+  // 'floating' (default) self-positions the toggle button in the corner for
+  // standalone use. 'inline' drops its own fixed positioning so a parent can
+  // stack it alongside other floating controls (see DetailedNotes.tsx). The
+  // open chat panel itself always stays fixed regardless of variant.
+  variant?: 'floating' | 'inline';
 }
 
-export const TutorChat: React.FC<TutorChatProps> = ({ materialTitle, materialContent }) => {
+export const TutorChat: React.FC<TutorChatProps> = ({ materialTitle, materialContent, variant = 'floating' }) => {
   const { user } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; parts: { text: string }[] }[]>([
@@ -59,7 +64,10 @@ export const TutorChat: React.FC<TutorChatProps> = ({ materialTitle, materialCon
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-24 right-6 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-primary to-accent text-white rounded-full shadow-2xl flex items-center justify-center z-[100] border-2 border-white/20"
+            className={cn(
+              "w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-primary to-accent text-white rounded-full shadow-2xl flex items-center justify-center border-2 border-white/20",
+              variant === 'floating' ? "fixed bottom-24 right-6 z-[100]" : "relative z-10"
+            )}
           >
             <MessageCircle size={24} className="sm:hidden" />
             <MessageCircle size={28} className="hidden sm:block" />
