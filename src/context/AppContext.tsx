@@ -134,6 +134,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     disconnectSocket();
     localStorage.removeItem('user');
     localStorage.removeItem('cached_materials');
+    localStorage.removeItem('auth_token');
   };
 
   const fetchUserData = useCallback(async () => {

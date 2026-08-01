@@ -27,6 +27,8 @@ import achievementsRoutes from "./src/server/routes/achievementsRoutes.js";
 import studyPlanRoutes from "./src/server/routes/studyPlanRoutes.js";
 import googleCalendarRoutes from "./src/server/routes/googleCalendarRoutes.js";
 import { checkDbConnection } from "./src/server/middleware/dbMiddleware.js";
+import { csrfProtection } from "./src/server/middleware/csrfMiddleware.js";
+import { isAllowedOrigin } from "./src/server/lib/allowedOrigins.js";
 import { createServer } from "http";
 import { initSocket } from "./src/server/socket.js";
 
@@ -52,10 +54,13 @@ async function startServer() {
 
   // CORS Configuration - At the very top!
   app.use(cors({
-    origin: true, 
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) return callback(null, true);
+      callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-CSRF-Token']
   }));
 
   // Initialize Socket.io
@@ -149,6 +154,15 @@ async function startServer() {
   app.use(express.json({ limit: '5mb' })); 
   app.use(express.urlencoded({ limit: '5mb', extended: true }));
   app.use(cookieParser());
+
+  // CSRF protection for cookie-authenticated requests. /api/auth is excluded:
+  // those endpoints establish a session rather than act on an existing one,
+  // and login/register can't carry a CSRF cookie they haven't been issued yet.
+  app.use('/api', (req, res, next) => {
+    if (req.path.startsWith('/auth/')) return next();
+    return csrfProtection(req, res, next);
+  });
+
   const rawUri = process.env.MONGODB_URI;
   if (rawUri && rawUri.trim() !== '') {
     let MONGODB_URI = rawUri.trim();

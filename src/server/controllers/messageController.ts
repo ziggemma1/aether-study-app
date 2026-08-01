@@ -14,6 +14,10 @@ export const getMessages = async (req: Request, res: Response) => {
     
     let query: any = {};
     if (groupId) {
+      const group = await Group.findById(groupId);
+      if (!group || !group.members.includes(userId)) {
+        return res.status(403).json({ message: "You are not a member of this group" });
+      }
       query = { groupId };
     } else if (receiverId) {
       query = {

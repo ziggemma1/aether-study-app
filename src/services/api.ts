@@ -6,12 +6,26 @@ const api = axios.create({
   timeout: 120000, // 2 minute timeout for AI analysis
 });
 
+const getCookie = (name: string): string | undefined => {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : undefined;
+};
+
 // Add interceptor to include Authorization header if token exists in localStorage
 // this provides a fallback when httpOnly cookies are blocked in cross-domain previews
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  // Echo the CSRF cookie back as a header (double-submit pattern). Only
+  // matters when the Authorization header above is absent — the server skips
+  // the check entirely when a bearer token is present — but attaching it
+  // unconditionally keeps the cookie-only fallback path working too.
+  const csrfToken = getCookie('csrf_token');
+  if (csrfToken && config.headers) {
+    config.headers['X-CSRF-Token'] = csrfToken;
   }
   return config;
 });

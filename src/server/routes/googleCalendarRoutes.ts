@@ -1,10 +1,29 @@
 import express from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import { protect } from '../middleware/authMiddleware.js';
 import { User } from '../models/User.js';
+import { getJwtSecret } from '../lib/jwtSecret.js';
 
 const router = express.Router();
+
+const OAUTH_STATE_PURPOSE = 'google_calendar_oauth';
+
+// The state param round-trips through Google, so an attacker can complete
+// their own consent flow and hand back any state value they like. Signing it
+// (and checking the purpose + issuing user) means a forged state can no
+// longer point the callback at an arbitrary victim account.
+const signOAuthState = (userId: string) =>
+  jwt.sign({ userId, purpose: OAUTH_STATE_PURPOSE }, getJwtSecret(), { expiresIn: '10m' });
+
+const verifyOAuthState = (state: string): string => {
+  const decoded = jwt.verify(state, getJwtSecret()) as { userId: string; purpose: string };
+  if (decoded.purpose !== OAUTH_STATE_PURPOSE || !decoded.userId) {
+    throw new Error('Invalid state purpose');
+  }
+  return decoded.userId;
+};
 
 const getOAuthClient = () => {
   return new OAuth2Client(
@@ -17,9 +36,11 @@ const getOAuthClient = () => {
 // Initiate OAuth flow
 router.post('/auth', protect, async (req: any, res) => {
   try {
+    const state = signOAuthState(req.userId.toString());
+
     if (!process.env.GOOGLE_CLIENT_ID) {
       console.warn("Mocking Google Calendar Sync because GOOGLE_CLIENT_ID is missing.");
-      return res.json({ url: '/api/calendar/google/callback?code=mock_code&state=' + req.userId.toString() });
+      return res.json({ url: '/api/calendar/google/callback?code=mock_code&state=' + state });
     }
 
     const oAuth2Client = getOAuthClient();
@@ -27,9 +48,9 @@ router.post('/auth', protect, async (req: any, res) => {
       access_type: 'offline',
       scope: ['https://www.googleapis.com/auth/calendar.events'],
       prompt: 'consent',
-      state: req.userId.toString(), // Pass user ID as state to identify them on callback
+      state, // Signed, short-lived, bound to the initiating user
     });
-    
+
     res.json({ url: authorizeUrl });
   } catch (error: any) {
     console.error('Google Calendar Auth Error:', error);
@@ -44,8 +65,14 @@ router.get('/callback', async (req, res) => {
     if (!code || !state) {
       return res.status(400).send('Missing code or state');
     }
-    
-    const userId = state.toString();
+
+    let userId: string;
+    try {
+      userId = verifyOAuthState(state.toString());
+    } catch (err) {
+      console.warn('Google Calendar callback rejected: invalid or expired state');
+      return res.status(400).send('Invalid or expired state parameter');
+    }
 
     let tokens;
     if (!process.env.GOOGLE_CLIENT_ID || code === 'mock_code') {

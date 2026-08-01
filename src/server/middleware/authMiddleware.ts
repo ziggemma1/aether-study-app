@@ -1,21 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
-
-const getJwtSecret = () => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    const isVercel = !!process.env.VERCEL;
-    const isProduction = process.env.NODE_ENV === "production" || isVercel;
-
-    if (!isProduction) {
-      return 'dev_temporary_secret_key_12345';
-    }
-    console.error("❌ AUTH CONFIG ERROR: JWT_SECRET is not defined in production! Process exiting to prevent insecure authentication.");
-    process.exit(1);
-  }
-  return secret;
-};
+import { getJwtSecret } from '../lib/jwtSecret.js';
 
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
   try {

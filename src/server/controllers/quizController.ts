@@ -12,12 +12,32 @@ export const getResults = async (req: Request, res: Response) => {
   }
 };
 
+// Hard ceiling on a single quiz's question count — guards against point-farming
+// via absurd totalQuestions/score values, independent of any client-side limit.
+const MAX_QUIZ_QUESTIONS = 200;
+
 export const createResult = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
+    const { quizId, answers } = req.body;
+
+    const totalQuestions = Math.min(
+      MAX_QUIZ_QUESTIONS,
+      Math.max(1, Math.floor(Number(req.body.totalQuestions)) || 0)
+    );
+    if (!totalQuestions) {
+      return res.status(400).json({ message: 'totalQuestions must be a positive number' });
+    }
+
+    // Score can never exceed the number of questions in the quiz.
+    const score = Math.min(totalQuestions, Math.max(0, Math.floor(Number(req.body.score)) || 0));
+
     const result = new QuizResult({
       userId,
-      ...req.body
+      quizId,
+      score,
+      totalQuestions,
+      answers: Array.isArray(answers) ? answers : []
     });
     await result.save();
 
@@ -36,7 +56,7 @@ export const createResult = async (req: Request, res: Response) => {
           lowestQuizScore: lowest
         },
         $inc: {
-          aetherPoints: (req.body.score || 0) * 10
+          aetherPoints: score * 10
         }
       });
     }

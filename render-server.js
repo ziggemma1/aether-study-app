@@ -5,6 +5,8 @@ import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import { getJwtSecret } from './src/server/lib/jwtSecret.js';
+import { isAllowedOrigin } from './src/server/lib/allowedOrigins.js';
 
 dotenv.config();
 
@@ -13,8 +15,7 @@ const server = http.createServer(app);
 
 // Environment Variables
 const MONGODB_URI = process.env.MONGODB_URI;
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
-const FRONTEND_URL = process.env.FRONTEND_URL || '*';
+const JWT_SECRET = getJwtSecret();
 const PORT = process.env.PORT || 4000;
 
 if (!MONGODB_URI) {
@@ -52,24 +53,26 @@ const directMessageSchema = new mongoose.Schema({
   isRead: { type: Boolean, default: false }
 });
 
-const groupChatSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  createdAt: { type: Date, default: Date.now }
-});
-
 const groupMessageSchema = new mongoose.Schema({
-  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'GroupChat', required: true },
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
   fromUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   fromUserName: { type: String, required: true },
   text: { type: String, required: true },
   timestamp: { type: Date, default: Date.now }
 });
 
+// Membership lives in the main app's `groups` collection (see
+// src/server/models/Group.ts) — group chat here was previously checked
+// against a separate, never-populated `group_chats` collection that nothing
+// in the app ever wrote to, so it could never have enforced anything. This
+// points at the real collection instead.
+const groupMembershipSchema = new mongoose.Schema({
+  members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+}, { strict: false });
+
 // Models (Notice: collections names as requested)
 const DirectMessage = mongoose.model('direct_messages', directMessageSchema);
-const GroupChat = mongoose.model('group_chats', groupChatSchema);
+const Group = mongoose.model('Group', groupMembershipSchema, 'groups');
 const GroupMessage = mongoose.model('group_messages', groupMessageSchema);
 // We might need to reference the User model if it exists in the same DB
 const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema({ name: String }));
@@ -77,9 +80,12 @@ const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema(
 // Socket.IO Setup
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_URL,
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) return callback(null, true);
+      callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    },
     methods: ["GET", "POST"],
-    credentials: FRONTEND_URL !== '*'
+    credentials: true
   },
   pingTimeout: 60000,
 });
@@ -112,10 +118,14 @@ io.on('connection', (socket) => {
 
   // --- DM Events ---
 
-  socket.on('send-dm', async ({ toUserId, text, fromUserId, fromUserName }) => {
+  // Every handler below trusts only `userId` (resolved from the verified JWT
+  // at connection time) for "who is this" — never a client-supplied id field
+  // in the event payload, which a modified client could set to anyone.
+
+  socket.on('send-dm', async ({ toUserId, text, fromUserName }) => {
     try {
       if (!text.trim()) return;
-      
+
       const newMsg = new DirectMessage({
         fromUserId: userId,
         toUserId,
@@ -125,7 +135,7 @@ io.on('connection', (socket) => {
 
       const payload = {
         _id: newMsg._id,
-        fromUserId,
+        fromUserId: userId,
         toUserId,
         fromUserName,
         text,
@@ -134,21 +144,21 @@ io.on('connection', (socket) => {
       };
 
       // Emit to both the sender and the recipient rooms
-      io.to(String(fromUserId)).to(String(toUserId)).emit('receive-dm', payload);
-      
-      console.log(`[DM] From ${fromUserId} to ${toUserId}: ${text.slice(0, 20)}...`);
+      io.to(userId).to(String(toUserId)).emit('receive-dm', payload);
+
+      console.log(`[DM] From ${userId} to ${toUserId}: ${text.slice(0, 20)}...`);
     } catch (err) {
       console.error('[ERR] send-dm:', err);
       socket.emit('error', { message: 'Failed to send message' });
     }
   });
 
-  socket.on('load-dm-history', async ({ withUserId, currentUserId }) => {
+  socket.on('load-dm-history', async ({ withUserId }) => {
     try {
       const messages = await DirectMessage.find({
         $or: [
-          { fromUserId: currentUserId, toUserId: withUserId },
-          { fromUserId: withUserId, toUserId: currentUserId }
+          { fromUserId: userId, toUserId: withUserId },
+          { fromUserId: withUserId, toUserId: userId }
         ]
       })
       .sort({ timestamp: -1 })
@@ -160,17 +170,17 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('mark-dm-read', async ({ fromUserId, currentUserId }) => {
+  socket.on('mark-dm-read', async ({ fromUserId }) => {
     try {
       await DirectMessage.updateMany(
-        { fromUserId, toUserId: currentUserId, isRead: false },
+        { fromUserId, toUserId: userId, isRead: false },
         { $set: { isRead: true } }
       );
-      
+
       // Notify sender if online
       const senderSocketId = getSocketId(fromUserId);
       if (senderSocketId) {
-        io.to(senderSocketId).emit('messages-marked-read', { byUserId: currentUserId });
+        io.to(senderSocketId).emit('messages-marked-read', { byUserId: userId });
       }
     } catch (err) {
       console.error('[ERR] mark-dm-read:', err);
@@ -179,7 +189,15 @@ io.on('connection', (socket) => {
 
   // --- Group Chat Events ---
 
+  const isGroupMember = async (groupId) => {
+    const group = await Group.findById(groupId).select('members');
+    return !!group && group.members.some((m) => String(m) === userId);
+  };
+
   socket.on('join-group-chat', async ({ groupId }) => {
+    if (!(await isGroupMember(groupId))) {
+      return socket.emit('error', { message: 'You are not a member of this group' });
+    }
     socket.join(String(groupId));
     console.log(`[GROUP] User ${userId} joined room ${groupId}`);
   });
@@ -189,9 +207,12 @@ io.on('connection', (socket) => {
     console.log(`[GROUP] User ${userId} left room ${groupId}`);
   });
 
-  socket.on('send-group-message', async ({ groupId, text, userId: msgUserId, userName }) => {
+  socket.on('send-group-message', async ({ groupId, text, userName }) => {
     try {
       if (!text.trim()) return;
+      if (!(await isGroupMember(groupId))) {
+        return socket.emit('error', { message: 'You are not a member of this group' });
+      }
 
       const newMsg = new GroupMessage({
         groupId,
@@ -219,6 +240,9 @@ io.on('connection', (socket) => {
 
   socket.on('load-group-history', async ({ groupId }) => {
     try {
+      if (!(await isGroupMember(groupId))) {
+        return socket.emit('error', { message: 'You are not a member of this group' });
+      }
       const messages = await GroupMessage.find({ groupId })
         .sort({ timestamp: -1 })
         .limit(50);
@@ -231,10 +255,10 @@ io.on('connection', (socket) => {
 
   // --- Helper Events ---
 
-  socket.on('get-unread-counts', async ({ userId: currentUserId }) => {
+  socket.on('get-unread-counts', async () => {
     try {
       const counts = await DirectMessage.aggregate([
-        { $match: { toUserId: new mongoose.Types.ObjectId(currentUserId), isRead: false } },
+        { $match: { toUserId: new mongoose.Types.ObjectId(userId), isRead: false } },
         { $group: { _id: "$fromUserId", count: { $sum: 1 } } }
       ]);
       
@@ -249,15 +273,15 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('typing-dm', ({ toUserId, fromUserId, isTyping }) => {
+  socket.on('typing-dm', ({ toUserId, isTyping }) => {
     const targetSocketId = getSocketId(toUserId);
     if (targetSocketId) {
-      io.to(targetSocketId).emit('user-typing', { fromUserId, isTyping });
+      io.to(targetSocketId).emit('user-typing', { fromUserId: userId, isTyping });
     }
   });
 
-  socket.on('typing-group', ({ groupId, userId: typingUserId, isTyping }) => {
-    socket.to(String(groupId)).emit('group-typing', { groupId, userId: typingUserId, isTyping });
+  socket.on('typing-group', ({ groupId, isTyping }) => {
+    socket.to(String(groupId)).emit('group-typing', { groupId, userId, isTyping });
   });
 
   // --- Connection Management ---

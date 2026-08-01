@@ -4,12 +4,15 @@ import { Group } from "./models/Group.js";
 import { User } from "./models/User.js";
 import Room from "./models/Room.js";
 import jwt from "jsonwebtoken";
+import { getJwtSecret } from "./lib/jwtSecret.js";
+import { isAllowedOrigin } from "./lib/allowedOrigins.js";
 
 export const initSocket = (server: any) => {
   const io = new Server(server, {
     cors: {
       origin: function (origin, callback) {
-        callback(null, true);
+        if (isAllowedOrigin(origin)) return callback(null, true);
+        callback(new Error(`Origin not allowed by CORS: ${origin}`));
       },
       credentials: true
     }
@@ -36,7 +39,7 @@ export const initSocket = (server: any) => {
     }
 
     try {
-      const secret = process.env.JWT_SECRET || 'secret';
+      const secret = getJwtSecret();
       const decoded = jwt.verify(token, secret) as any;
       socket.data.userId = decoded.id; // Use official data property for cross-process access
       next();
@@ -232,7 +235,12 @@ export const initSocket = (server: any) => {
     });
     // END LIVE ROOMS LOGIC
 
-    socket.on("join_group", (groupId) => {
+    socket.on("join_group", async (groupId) => {
+      const group = await Group.findById(groupId);
+      if (!group || !group.members.includes(userId)) {
+        socket.emit("error_message", { message: "You are not a member of this group" });
+        return;
+      }
       socket.join(groupId);
       console.log(`User ${userId} joined group: ${groupId}`);
     });

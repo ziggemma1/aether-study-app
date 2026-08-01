@@ -298,7 +298,10 @@ export const cloneMaterial = async (req: Request, res: Response) => {
     const { id } = req.params;
     const userId = (req as any).userId;
 
-    const originalMaterial = await Material.findById(id);
+    const originalMaterial = await Material.findOne({
+      _id: id,
+      $or: [{ isPublic: true }, { userId }]
+    });
     if (!originalMaterial) {
       return res.status(404).json({ message: "Original material not found" });
     }

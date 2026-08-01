@@ -215,7 +215,8 @@ ${sub.quickCheck ? `\n* Quick Check drill: ${sub.quickCheck}` : ''}`).join('\n\n
 export const generateChapters = async (req: Request, res: Response) => {
   try {
     const { content, title, materialId, forceDemo = false } = req.body;
-    
+    const userId = (req as any).userId;
+
     // Check if we should use mock fallback (no keys and not production, or explicit demo)
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.OPENROUTER_API_KEY;
     const useMock = forceDemo || (!apiKey && process.env.NODE_ENV !== 'production');
@@ -226,7 +227,7 @@ export const generateChapters = async (req: Request, res: Response) => {
       const initialNoteSections = mapStructuredNoteToNoteSections(mockResult.structuredNote);
       
       if (materialId) {
-        await MaterialModel.findByIdAndUpdate(materialId, {
+        await MaterialModel.findOneAndUpdate({ _id: materialId, userId }, {
           detailedNotes: mockResult.detailedNotes,
           structuredNote: mockResult.structuredNote,
           noteSections: initialNoteSections,
@@ -254,13 +255,13 @@ export const generateChapters = async (req: Request, res: Response) => {
 
       if (materialId) {
         console.log(`[AI-Sync] Updating material ${materialId} after generation...`);
-        const updated = await MaterialModel.findByIdAndUpdate(materialId, {
+        const updated = await MaterialModel.findOneAndUpdate({ _id: materialId, userId }, {
           detailedNotes: notesResult.detailedNotes,
           structuredNote: notesResult.structuredNote,
           noteSections: initialNoteSections,
           generationStatus: 'completed'
         }, { new: true });
-        
+
         if (!updated) {
           throw new Error(`Failed to find material ${materialId} to update`);
         }
@@ -273,7 +274,7 @@ export const generateChapters = async (req: Request, res: Response) => {
       const mockFallback = generateMockChapters(title, content);
       const initialNoteSections = mapStructuredNoteToNoteSections(mockFallback.structuredNote);
       if (materialId) {
-        await MaterialModel.findByIdAndUpdate(materialId, {
+        await MaterialModel.findOneAndUpdate({ _id: materialId, userId }, {
           detailedNotes: mockFallback.detailedNotes,
           structuredNote: mockFallback.structuredNote,
           noteSections: initialNoteSections,
@@ -295,17 +296,18 @@ export const generateChapters = async (req: Request, res: Response) => {
 export const generateDeepDive = async (req: Request, res: Response) => {
   try {
     const { content, title, materialId } = req.body;
+    const userId = (req as any).userId;
     if (!content) {
       return res.status(400).json({ message: 'Content is required' });
     }
-    
+
     console.log(`[Deep-Dive-Ctrl] Starting intense academic generation for: ${title} (Material ID: ${materialId || 'none'})`);
-    
+
     const megaNotes = await generateAcademicMegaNotesSvc(content, title);
-    
+
     if (materialId) {
       console.log(`[Deep-Dive-Ctrl] Updating material ${materialId} noteSections with 8+ custom pages...`);
-      const updated = await MaterialModel.findByIdAndUpdate(materialId, {
+      const updated = await MaterialModel.findOneAndUpdate({ _id: materialId, userId }, {
         noteSections: megaNotes,
         generationStatus: 'completed'
       }, { new: true });

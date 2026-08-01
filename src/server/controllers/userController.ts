@@ -230,41 +230,58 @@ export const toggleLeaderboardOptIn = async (req: Request, res: Response) => {
   }
 };
 
+// Server-owned price catalog — never trust a client-supplied cost. Keep this
+// in sync with the items offered in src/pages/Shop.tsx.
+const SHOP_CATALOG: Record<string, { cost: number; isFreeze: boolean }> = {
+  'Cyberpunk Red': { cost: 200, isFreeze: false },
+  'Ocean Breeze': { cost: 150, isFreeze: false },
+  'Voice: Atlas (Deep UK)': { cost: 500, isFreeze: false },
+  'Voice: Nova (Bright US)': { cost: 300, isFreeze: false },
+  'Streak Freeze': { cost: 100, isFreeze: true },
+};
+
 export const purchaseShopItem = async (req: Request, res: Response) => {
   try {
-    const { cost, itemName, isFreeze } = req.body;
+    const { itemName } = req.body;
+    const item = SHOP_CATALOG[itemName];
+    if (!item) {
+      return res.status(400).json({ message: "Unknown shop item" });
+    }
+
     const user = await User.findById((req as any).userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.aetherPoints < cost) {
+    if (user.aetherPoints < item.cost) {
       return res.status(400).json({ message: "Insufficient Aether Points" });
     }
 
-    user.aetherPoints -= cost;
-    if (isFreeze) {
+    user.aetherPoints -= item.cost;
+    if (item.isFreeze) {
       user.freezeTokens += 1;
     } else {
       user.themeUnlocked.push(itemName);
     }
 
     await user.save();
-    res.json({ 
-      aetherPoints: user.aetherPoints, 
+    res.json({
+      aetherPoints: user.aetherPoints,
       freezeTokens: user.freezeTokens,
-      themeUnlocked: user.themeUnlocked 
+      themeUnlocked: user.themeUnlocked
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// Fixed server-side penalty — the client never gets to name its own amount.
+const STREAK_BREAK_PENALTY = 50;
+
 export const penalizePoints = async (req: Request, res: Response) => {
   try {
-    const { amount } = req.body;
     const user = await User.findById((req as any).userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.aetherPoints = Math.max(0, user.aetherPoints - (amount || 50));
+    user.aetherPoints = Math.max(0, user.aetherPoints - STREAK_BREAK_PENALTY);
     await user.save();
     res.json({ aetherPoints: user.aetherPoints });
   } catch (error: any) {

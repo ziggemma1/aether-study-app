@@ -4,21 +4,19 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { OAuth2Client } from 'google-auth-library';
+import { getJwtSecret } from '../lib/jwtSecret.js';
+import { generateCsrfToken } from '../middleware/csrfMiddleware.js';
 
-const getJwtSecret = () => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    const isVercel = !!process.env.VERCEL;
-    const isProduction = process.env.NODE_ENV === "production" || isVercel;
-
-    if (!isProduction) {
-      console.warn("⚠️ WARNING: JWT_SECRET environment variable is not set. Using a temporary fallback secret for development.");
-      return 'dev_temporary_secret_key_12345';
-    }
-    console.error("❌ CRITICAL ERROR: JWT_SECRET environment variable is not set! Process exiting to prevent insecure authentication in production.");
-    process.exit(1);
-  }
-  return secret;
+// Sets the httpOnly session cookie plus its paired, JS-readable CSRF cookie
+// (see csrfMiddleware.ts for why both are needed together).
+const setAuthCookies = (res: Response, token: string, isSecure: boolean) => {
+  const cookieOpts = {
+    secure: isSecure,
+    sameSite: (isSecure ? 'none' : 'lax') as 'none' | 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  };
+  res.cookie('token', token, { ...cookieOpts, httpOnly: true });
+  res.cookie('csrf_token', generateCsrfToken(), { ...cookieOpts, httpOnly: false });
 };
 
 export const getGoogleAuthUrl = (req: Request, res: Response) => {
@@ -77,12 +75,7 @@ export const googleCallback = async (req: Request, res: Response) => {
     const token = jwt.sign({ id: user._id }, getJwtSecret(), { expiresIn: '7d' });
     const isSecure = process.env.NODE_ENV === 'production' || req.secure || req.headers['x-forwarded-proto'] === 'https';
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: isSecure ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    setAuthCookies(res, token, isSecure);
 
     res.redirect('/dashboard');
   } catch (error: any) {
@@ -127,12 +120,7 @@ export const register = async (req: Request, res: Response) => {
     const isSecure = process.env.NODE_ENV === 'production' || req.secure || req.headers['x-forwarded-proto'] === 'https';
     console.log(`[REGISTER_DEBUG] JWT signed. Setting cookie (isSecure: ${isSecure})...`);
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: isSecure ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    setAuthCookies(res, token, isSecure);
 
     res.status(201).json({
       token,
@@ -222,12 +210,7 @@ export const login = async (req: Request, res: Response) => {
     const isSecure = process.env.NODE_ENV === 'production' || req.secure || req.headers['x-forwarded-proto'] === 'https';
     console.log(`[LOGIN_DEBUG] JWT signed. Setting cookie (isSecure: ${isSecure})...`);
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: isSecure ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    setAuthCookies(res, token, isSecure);
 
     res.json({
       token,
@@ -269,7 +252,7 @@ export const login = async (req: Request, res: Response) => {
                'Login failed due to an internal server error', 
       error: error.message || 'Unknown error',
       errorName: error.name,
-      stack: error.stack, // Always show stack for debugging
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
       hint: isAuthError ? 'Please check your MONGODB_URI credentials in Settings.' : undefined,
       debugInfo: {
         dbState: mongoose.connection.readyState,
@@ -283,6 +266,7 @@ export const login = async (req: Request, res: Response) => {
 
 export const logout = (req: Request, res: Response) => {
   res.clearCookie('token');
+  res.clearCookie('csrf_token');
   res.json({ message: 'Logged out successfully' });
 };
 
