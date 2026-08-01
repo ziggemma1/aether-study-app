@@ -272,28 +272,32 @@ export default function DetailedNotes() {
 
         {/* View Mode Tab Switcher (Visible only if both structured outline and pages exist) */}
         {material.structuredNote && sections.length > 0 && (
-          <div className="flex items-center justify-center p-1 bg-surface border border-border/10 rounded-2xl w-full max-w-sm mx-auto mb-6 shadow-md">
+          <div className="flex items-stretch justify-center gap-1 p-1 bg-surface border border-border/10 rounded-2xl w-full mb-6 shadow-md">
             <button
               onClick={() => setActiveViewMode('slides')}
               className={cn(
-                "flex-1 flex-in flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all",
-                activeViewMode === 'slides' 
-                  ? "bg-primary text-white shadow-md" 
+                "flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-xl font-bold text-center leading-tight transition-all",
+                activeViewMode === 'slides'
+                  ? "bg-primary text-white shadow-md"
                   : "text-text-muted hover:text-text-main"
               )}
             >
-              <Sparkles size={12} /> 📑 {totalPages}-Page Deep-Dive
+              <Sparkles size={14} className="shrink-0" />
+              <span className="text-[10px] sm:text-xs break-words">{totalPages}-Page Deep-Dive</span>
             </button>
             <button
               onClick={() => setActiveViewMode('structured')}
               className={cn(
-                "flex-grow flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-[10px] sm:text-xs transition-all",
-                activeViewMode === 'structured' 
-                  ? "bg-primary text-white shadow-md" 
+                "flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-xl font-bold text-center leading-tight transition-all",
+                activeViewMode === 'structured'
+                  ? "bg-primary text-white shadow-md"
                   : "text-text-muted hover:text-text-main"
               )}
             >
-              <FileText size={12} /> {material.detailedNotes && /<eli5>|<deep>|<concepts>/i.test(material.detailedNotes) ? '📋 Interactive Teacher Notes' : '📋 Structured Outline'}
+              <FileText size={14} className="shrink-0" />
+              <span className="text-[10px] sm:text-xs break-words">
+                {material.detailedNotes && /<eli5>|<deep>|<concepts>/i.test(material.detailedNotes) ? 'Interactive Teacher Notes' : 'Structured Outline'}
+              </span>
             </button>
           </div>
         )}
