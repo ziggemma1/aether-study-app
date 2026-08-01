@@ -113,11 +113,11 @@ export default function AppLayout() {
         <AnimatePresence>
           {showBackToTop && (
             <motion.button
-              initial={{ opacity: 0, scale: 0.5, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.5, y: 20 }}
+              initial={{ opacity: 0, scale: 0.5, y: 20, x: '-50%' }}
+              animate={{ opacity: 1, scale: 1, y: 0, x: '-50%' }}
+              exit={{ opacity: 0, scale: 0.5, y: 20, x: '-50%' }}
               onClick={scrollToTop}
-              className="fixed bottom-32 right-6 sm:bottom-12 sm:right-12 z-[1000] p-3 sm:p-4 bg-primary text-white rounded-full shadow-2xl shadow-primary/20 hover:scale-110 active:scale-95 transition-all border border-white/20"
+              className="fixed bottom-32 sm:bottom-12 left-1/2 z-[1000] p-3 sm:p-4 bg-primary text-white rounded-full shadow-2xl shadow-primary/20 hover:scale-110 active:scale-95 transition-all border border-white/20"
             >
               <ArrowUp size={24} />
             </motion.button>
