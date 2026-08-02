@@ -50,6 +50,12 @@ const userSchema = new mongoose.Schema({
   lastActiveDate: { type: Date },
   lastStreakResetDate: { type: Date },
   optedInLeaderboard: { type: Boolean, default: true },
+  visibility: { type: String, enum: ['public', 'friends', 'private'], default: 'public' },
+  notificationPrefs: {
+    push: { type: Boolean, default: true },
+    email: { type: Boolean, default: false },
+    aiInsights: { type: Boolean, default: true }
+  },
   createdAt: { type: Date, default: Date.now }
 });
 

@@ -16,12 +16,13 @@ import { useAppContext } from '../context/AppContext';
 import { cn } from '../lib/utils';
 
 export default function FindFriends() {
-  const { 
-    user, 
-    allProfiles, 
-    friendRequests, 
-    sendFriendRequest, 
-    respondToFriendRequest 
+  const {
+    user,
+    allProfiles,
+    friendRequests,
+    sentFriendRequests,
+    sendFriendRequest,
+    respondToFriendRequest
   } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -37,15 +38,9 @@ export default function FindFriends() {
     const isFriend = user?.following?.includes(targetId) && otherProfile?.following?.includes(user?.id || '');
     if (isFriend) return 'friend';
 
-    // 2. Check if pending request SENT
-    // Note: Our model has senderId and receiverId
-    // We should ideally have all request data or check if we are the sender
-    // For now, let's assume we can check friendRequests if we are the receiver
-    // But we need to know if WE sent one.
-    // I'll add a check for sent requests if the API supports it, or just rely on a optimistic state.
-    // Actually, I'll update the context to fetch all including SENT if needed, 
-    // but for now, let's just use what we have.
-    
+    // 2. Check if we've already sent a request that's still pending
+    if (sentFriendRequests.includes(targetId)) return 'pending';
+
     return 'none';
   };
 
@@ -149,8 +144,13 @@ export default function FindFriends() {
                         <UserCheck size={16} />
                         Connected
                       </div>
+                    ) : status === 'pending' ? (
+                      <div className="w-full py-2.5 text-xs flex items-center justify-center gap-2 text-text-muted font-bold bg-surface-alt rounded-xl cursor-default">
+                        <Clock size={16} />
+                        Pending
+                      </div>
                     ) : (
-                      <button 
+                      <button
                         onClick={() => sendFriendRequest(p.id)}
                         className="w-full btn-primary py-2.5 text-xs flex items-center justify-center gap-2"
                       >

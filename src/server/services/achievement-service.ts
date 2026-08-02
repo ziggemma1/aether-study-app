@@ -3,6 +3,7 @@ import { StudySession } from '../models/StudySession.js';
 import { QuizResult } from '../models/QuizResult.js';
 import { Material } from '../models/Material.js';
 import { FriendRequest } from '../models/FriendRequest.js';
+import { createNotifications } from './notification-service.js';
 
 export interface PredefinedBadge {
   id: string;
@@ -242,6 +243,19 @@ async function checkAchievementsInternal(userId: string, action?: string, client
 
   if (stateModified) {
     await user.save();
+  }
+
+  // Deliberately after the save: a VersionError here sends the whole function
+  // through a retry, and notifications written before that point would be
+  // duplicated on every attempt.
+  if (newlyUnlocked.length) {
+    await createNotifications(
+      userId,
+      newlyUnlocked.map(badge => ({
+        message: `Achievement unlocked: ${badge.title} — +${badge.points} Aether Points!`,
+        type: 'achievement' as const
+      }))
+    );
   }
 
   return newlyUnlocked;

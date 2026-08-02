@@ -61,9 +61,19 @@ export const createResult = async (req: Request, res: Response) => {
       });
     }
 
-    await checkAchievements(userId);
+    const newlyUnlockedAchievements = await checkAchievements(userId);
 
-    res.status(201).json(result);
+    // aetherPoints changes both from the score increment above and from any
+    // achievement bonus checkAchievements just applied — read back the final
+    // value so the client can update its cached user without a full refetch.
+    const updatedUser = await User.findById(userId).select('aetherPoints streak');
+
+    res.status(201).json({
+      ...result.toObject(),
+      aetherPoints: updatedUser?.aetherPoints,
+      streak: updatedUser?.streak,
+      newlyUnlockedAchievements
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

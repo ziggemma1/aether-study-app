@@ -48,40 +48,40 @@ export default function Explore() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto relative min-h-screen pb-32 bg-[#0B0E14] text-[#F0F3F8]">
-      
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto relative min-h-screen pb-32 bg-background text-text-main">
+
       {/* Decorative Header Spark */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#6C5CE7]/5 rounded-full blur-3xl pointer-events-none select-none" />
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none select-none" />
 
       {/* Hero Header Area */}
       <header className="mb-8 relative flex flex-col items-center text-center">
-        <motion.div 
+        <motion.div
           initial={{ rotate: -10, scale: 0.9 }}
           animate={{ rotate: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-          className="w-16 h-16 bg-[#6C5CE7]/10 rounded-full flex items-center justify-center text-[#6C5CE7] mb-5 border border-[#6C5CE7]/20 shadow-xl shadow-[#6C5CE7]/5"
+          className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-5 border border-primary/20 shadow-xl shadow-primary/5"
         >
           <Compass size={30} />
         </motion.div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#F0F3F8] mb-2 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-text-main mb-2 tracking-tight">
           🌐 Community Note Explorer
         </h1>
-        <p className="text-sm text-[#8E9AAF] max-w-lg leading-relaxed">
+        <p className="text-sm text-text-muted max-w-lg leading-relaxed">
           Discover top-rated notes, flashcards, and lectures from fellow students worldwide. Instant-clone them to your personal study library.
         </p>
       </header>
 
       {/* Floating Upload Trigger - Mobile Sticky Banner / Call to Action */}
-      <div className="mb-6 flex flex-col sm:flex-row items-center justify-between p-4 bg-[#6C5CE7]/10 border border-[#6C5CE7]/20 rounded-2xl gap-3">
+      <div className="mb-6 flex flex-col sm:flex-row items-center justify-between p-4 bg-primary/10 border border-primary/20 rounded-2xl gap-3">
         <div className="flex items-center gap-2.5">
           <span className="text-xl">💡</span>
-          <p className="text-xs text-[#8E9AAF] font-medium leading-relaxed">
+          <p className="text-xs text-text-muted font-medium leading-relaxed">
             Have high-quality study folders or flashcards? Publish them to earn achievement points!
           </p>
         </div>
         <button
           onClick={() => setIsUploadOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-[#6C5CE7] hover:bg-[#6C5CE7]/90 active:scale-95 text-[#F0F3F8] text-xs font-bold rounded-xl transition-all cursor-pointer min-h-[44px]"
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-primary hover:bg-primary/90 active:scale-95 text-white text-xs font-bold rounded-xl transition-all cursor-pointer min-h-[44px]"
         >
           <Upload size={14} />
           <span>Upload Material</span>
@@ -137,14 +137,14 @@ export default function Explore() {
               <div className="flex items-center justify-center mt-10">
                 <button
                   onClick={() => setPage(p => p + 1)}
-                  className="flex items-center gap-2 px-8 py-3.5 bg-[#141A24] hover:bg-[#141A24]/90 hover:border-[#6C5CE7]/30 border border-[#8E9AAF]/10 rounded-2xl text-xs font-bold uppercase tracking-wider text-[#F0F3F8] transition-all min-h-[44px] cursor-pointer"
+                  className="flex items-center gap-2 px-8 py-3.5 bg-surface-alt hover:bg-surface-alt/90 hover:border-primary/30 border border-border rounded-2xl text-xs font-bold uppercase tracking-wider text-text-main transition-all min-h-[44px] cursor-pointer"
                 >
                   <span>Load More Materials</span>
                   <ArrowRight size={14} />
                 </button>
               </div>
             ) : (
-              <p className="text-center text-xs text-[#8E9AAF]/40 mt-12 font-medium">
+              <p className="text-center text-xs text-text-muted/40 mt-12 font-medium">
                 Showing all {allFilteredCount} matching materials • You've reached the end
               </p>
             )}

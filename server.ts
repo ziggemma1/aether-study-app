@@ -106,6 +106,7 @@ async function startServer() {
   app.use("/api", globalLimiter);
   app.use("/api/auth/login", authLimiter);
   app.use("/api/auth/register", authLimiter);
+  app.use("/api/users/change-password", authLimiter);
   app.use("/api/materials/analyze", aiLimiter);
   app.use("/api/materials/generate-chapters", aiLimiter);
   app.use("/api/materials/generate-deep-dive", aiLimiter);

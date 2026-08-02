@@ -28,6 +28,7 @@ export default function DetailedNotes() {
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [isSharing, setIsSharing] = React.useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
+  const [shareUrl, setShareUrl] = React.useState('');
   
   const [isELI5, setIsELI5] = React.useState(false);
   const [activeViewMode, setActiveViewMode] = React.useState<'slides' | 'structured'>(
@@ -59,7 +60,22 @@ export default function DetailedNotes() {
     }
   };
   const handleShare = async () => {
-    setIsShareModalOpen(true);
+    // window.location.href is the private, authenticated route for this
+    // page — a logged-out recipient can't open it. Mint a real public share
+    // token the same way MaterialDetail.tsx does before showing the modal.
+    if (isSharing || !material) return;
+    setIsSharing(true);
+    try {
+      const matId = material.id || (material as any)._id;
+      const response = await api.post('/materials/share', { materialId: matId });
+      setShareUrl(response.data.shareUrl);
+      setIsShareModalOpen(true);
+    } catch (error) {
+      console.error('Share failed:', error);
+      showToast('Failed to generate share link', 'error');
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   const [eli5Content, setEli5Content] = React.useState<{ [pageId: number]: string }>({});
@@ -568,11 +584,12 @@ export default function DetailedNotes() {
             {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             {isDownloading ? 'Generating...' : t('download')}
           </button>
-          <button 
+          <button
             onClick={handleShare}
-            className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-xs font-bold text-text-main hover:border-primary transition-all"
+            disabled={isSharing}
+            className="flex items-center gap-2 px-6 py-3 bg-surface border border-border rounded-xl text-xs font-bold text-text-main hover:border-primary transition-all disabled:opacity-50"
           >
-            <Share2 size={16} /> {t('share')}
+            {isSharing ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />} {isSharing ? 'Generating...' : t('share')}
           </button>
         </div>
       </motion.div>
@@ -645,7 +662,7 @@ export default function DetailedNotes() {
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
           title={material.title}
-          url={window.location.href}
+          url={shareUrl}
         />
       )}
     </div>

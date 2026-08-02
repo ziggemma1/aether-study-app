@@ -71,30 +71,26 @@ router.post('/mark-read', async (req, res) => {
   }
 });
 
-// Helper endpoint to create some dummy notifications for initial test
+// Writes the one-time welcome notification for a brand-new account.
+//
+// This used to also fabricate an inbound friend request from a person who
+// doesn't exist, which made the bell show a badge for an event that never
+// happened. Real notifications are now written at their actual event sites
+// (friend requests, achievements, nudges), so the only thing seeded is a
+// message the app genuinely has to say.
 router.post('/seed', async (req, res) => {
   try {
     const userId = (req as any).userId;
     const count = await Notification.countDocuments({ userId });
     if (count === 0) {
-      await Notification.create([
-        {
-          userId,
-          message: 'Welcome to Aether Study! Your active study journey starts here. 📚',
-          type: 'general',
-          read: false,
-          createdAt: new Date(Date.now() - 3 * 3600 * 1000)
-        },
-        {
-          userId,
-          message: 'Akeredolu sent you a friend request. Accept to join his live sessions!',
-          type: 'friend_request',
-          read: false,
-          createdAt: new Date(Date.now() - 2 * 60 * 1000)
-        }
-      ]);
+      await Notification.create({
+        userId,
+        message: 'Welcome to Aether Study! Your active study journey starts here. 📚',
+        type: 'general',
+        read: false
+      });
     }
-    res.json({ success: true, message: 'Notifications seeded to kickstart dashboard integrations!' });
+    res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

@@ -2,12 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Loader2, RefreshCw, X, Check, ArrowRight, Settings } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, X, Check, ArrowRight, Settings, Trophy } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { generateFlashcardsOnClient } from '../lib/gemini';
 import { useMotionValue, useTransform } from 'framer-motion';
 import api from '../services/api';
 import { Flashcard } from '../types';
+import { useConfetti } from '../hooks/useConfetti';
+import { useHapticFeedback } from '../hooks/useHapticFeedback';
+import { sounds } from '../lib/sounds';
 
 export default function Flashcards() {
   const { id } = useParams();
@@ -15,12 +18,15 @@ export default function Flashcards() {
   const location = useLocation();
   const { materials, user, showToast, updateMaterialInContext } = useAppContext();
   const material = materials.find((m) => m.id === id);
+  const { burstConfetti, fireConfetti } = useConfetti();
+  const { success: hapticSuccess, light: hapticLight } = useHapticFeedback();
 
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFlipped, setIsFlipped] = useState(false);
   const [direction, setDirection] = useState(0);
   const [isGeneratingCustom, setIsGeneratingCustom] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
 
   // Motion values for swipe effect
   const x = useMotionValue(0);
@@ -137,7 +143,9 @@ export default function Flashcards() {
   const reviewAgain = async () => {
     setDirection(-1);
     setIsFlipped(false);
-    
+    hapticLight();
+    sounds.play('wrong');
+
     // Save "Again" (quality 0)
     await handleReview(0);
 
@@ -155,24 +163,75 @@ export default function Flashcards() {
     setDirection(1);
     setCompletedCount(prev => prev + 1);
     setIsFlipped(false);
-    
+    hapticSuccess();
+    burstConfetti();
+    sounds.play('correct');
+
     // Save "Good" (quality 5)
     await handleReview(5);
-    
+
     setTimeout(() => {
       if (cards.length > 1) {
         setCards(prev => prev.slice(1));
         setDirection(0);
       } else {
-        showToast("Session complete! You've mastered all cards.", "success");
-        navigate(-1);
+        fireConfetti();
+        sounds.play('levelup');
+        setIsFinished(true);
       }
     }, 200);
+  };
+
+  const restartSession = () => {
+    setIsFinished(false);
+    setCompletedCount(0);
+    setIsFlipped(false);
+    setIsLoading(true);
+    fetchOrGenerateCards();
   };
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
   };
+
+  if (isFinished) {
+    return (
+      <div className="p-4 sm:p-8 max-w-2xl mx-auto text-center">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          className="glass-card p-6 sm:p-12 border-b-8 border-emerald-500"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring" }}
+            className="w-16 h-16 sm:w-24 sm:h-24 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-8"
+          >
+            <Trophy size={32} className="sm:hidden" />
+            <Trophy size={48} className="hidden sm:block" />
+          </motion.div>
+          <h1 className="text-xl sm:text-3xl font-black uppercase tracking-tighter mb-1 sm:mb-2">Deck Mastered</h1>
+          <p className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest mb-6 sm:mb-8">
+            Every card in this session reviewed
+          </p>
+
+          <div className="text-5xl sm:text-7xl font-black text-emerald-500 mb-8 sm:mb-12 tabular-nums">
+            {completedCount}/{totalInitial}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <button onClick={() => navigate(-1)} className="btn-primary w-full">
+              Back to Material
+            </button>
+            <button onClick={restartSession} className="btn-secondary w-full">
+              Study Again
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isLoading || isGeneratingCustom) {
     return (
@@ -296,14 +355,20 @@ export default function Flashcards() {
                 </div>
                 
                 <div className="mt-8 grid grid-cols-2 gap-4 w-full">
-                  <div className="py-4 bg-rose-500 text-white rounded-2xl text-[10px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-rose-500/20 active:scale-95 transition-transform">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); reviewAgain(); }}
+                    className="py-4 bg-rose-500 text-white rounded-2xl text-[10px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-rose-500/20 active:scale-95 transition-transform"
+                  >
                     <X size={18} />
                     <span>Still Learning</span>
-                  </div>
-                  <div className="py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform">
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); markKnown(); }}
+                    className="py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
+                  >
                     <Check size={18} />
                     <span>Got it!</span>
-                  </div>
+                  </button>
                 </div>
               </div>
             </motion.div>

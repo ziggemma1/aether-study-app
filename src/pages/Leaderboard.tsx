@@ -46,8 +46,8 @@ export default function Leaderboard() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto pb-24 relative select-none min-h-screen">
       {/* Background Decor */}
-      <div className="fixed inset-0 bg-[#0B0E14] -z-10" />
-      <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-[#6C5CE7]/5 rounded-full blur-[150px] -z-10 pointer-events-none" />
+      <div className="fixed inset-0 bg-background -z-10" />
+      <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px] -z-10 pointer-events-none" />
       
       {!optedIn ? (
         <div className="max-w-2xl mx-auto pt-10 md:pt-20">
@@ -87,17 +87,17 @@ export default function Leaderboard() {
 
           <div className="mt-12 relative">
              <div className="flex items-center justify-between mb-6 px-4">
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white/50 flex items-center gap-2">
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-text-muted flex items-center gap-2">
                    <Sparkles size={16} className="text-[#00D2FF]" /> Top Performers
                 </h2>
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/30 uppercase tracking-widest bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-widest bg-surface-alt/40 px-2.5 py-1 rounded-lg border border-border/40">
                    <Trophy size={12} className="text-amber-400" /> Season 1 Active
                 </div>
              </div>
 
              {loading ? (
-                <div className="flex flex-col items-center justify-center py-32 bg-[#141A24]/40 rounded-[32px] border border-white/5 backdrop-blur-md">
-                   <Loader2 size={40} className="text-[#6C5CE7] animate-spin mb-6" />
+                <div className="flex flex-col items-center justify-center py-32 bg-surface-alt/40 rounded-[32px] border border-border/40 backdrop-blur-md">
+                   <Loader2 size={40} className="text-primary animate-spin mb-6" />
                    <p className="text-white/40 font-bold tracking-widest uppercase text-xs">Syncing rankings...</p>
                 </div>
              ) : (

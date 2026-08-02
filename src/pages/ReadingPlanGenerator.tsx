@@ -91,7 +91,7 @@ export default function ReadingPlanGenerator() {
   };
 
   return (
-    <div className="relative min-h-screen bg-transparent text-[#F0F3F8] pb-24 font-sans px-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen bg-transparent text-text-main pb-24 font-sans px-4 sm:px-6 lg:px-8">
       {/* Centered Main Page Container */}
       <div className="max-w-7xl mx-auto pt-6">
         
@@ -99,25 +99,25 @@ export default function ReadingPlanGenerator() {
         <div className="flex items-center justify-between mb-8">
           <button 
             onClick={() => navigate('/dashboard')}
-            className="w-10 h-10 flex items-center justify-center bg-[#141A24] border border-gray-800 rounded-xl active:scale-95 transition-transform cursor-pointer hover:border-gray-700"
+            className="w-10 h-10 flex items-center justify-center bg-surface-alt border border-border rounded-xl active:scale-95 transition-transform cursor-pointer hover:border-primary/40"
             title="Back to Dashboard"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-400" />
+            <ArrowLeft className="w-5 h-5 text-text-muted" />
           </button>
-          <span className="text-xs font-bold text-[#6C5CE7] tracking-wider uppercase font-mono bg-[#6C5CE7]/15 px-3 py-1 rounded-full border border-[#6C5CE7]/20">
+          <span className="text-xs font-bold text-primary tracking-wider uppercase font-mono bg-primary/15 px-3 py-1 rounded-full border border-primary/20">
             Aether pedagogical Engine
           </span>
-          <div className="w-10 h-10 bg-[#6C5CE7]/10 border border-[#6C5CE7]/20 rounded-xl flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-[#6C5CE7]" />
+          <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-primary" />
           </div>
         </div>
 
         {/* Title Block */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#F0F3F8] tracking-tight flex items-center gap-1.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-text-main tracking-tight flex items-center gap-1.5">
             📅 AI Study Planner
           </h1>
-          <p className="text-xs sm:text-sm text-[#8E9AAF] mt-1 pr-12 max-w-2xl">
+          <p className="text-xs sm:text-sm text-text-muted mt-1 pr-12 max-w-2xl">
             Auto-generate day-by-day customized learning roadmaps structured natively around your syllabus or uploaded materials.
           </p>
         </div>
@@ -175,7 +175,7 @@ export default function ReadingPlanGenerator() {
         </div>
 
         {/* Active Plans List (Full Width) */}
-        <div className="mt-8 border-t border-gray-800/80 pt-6">
+        <div className="mt-8 border-t border-border/80 pt-6">
           <ActivePlans
             plans={studyPlans}
             loading={loadingPlans}
@@ -193,49 +193,49 @@ export default function ReadingPlanGenerator() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg bg-[#141A24] border border-gray-800 rounded-2xl p-6 shadow-2xl relative"
+              className="w-full max-w-lg bg-surface-alt border border-border rounded-2xl p-6 shadow-2xl relative"
             >
               <button
                 onClick={() => setIsPreviewModalOpen(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-900 hover:bg-gray-850 cursor-pointer text-gray-400 hover:text-white"
+                className="absolute top-4 right-4 p-1.5 rounded-full bg-surface-alt hover:bg-surface cursor-pointer text-text-muted hover:text-text-main"
               >
                 <X className="w-4 h-4" />
               </button>
 
               <div className="mb-4">
-                <h3 className="text-base font-extrabold text-[#F0F3F8] flex items-center gap-1.5">
+                <h3 className="text-base font-extrabold text-text-main flex items-center gap-1.5">
                   <Lightbulb className="w-5 h-5 text-[#00E5A0]" />
                   Roadmap Structure Preview
                 </h3>
-                <p className="text-[11px] text-[#8E9AAF] mt-0.5">
+                <p className="text-[11px] text-text-muted mt-0.5">
                   Here is an illustrative output structure compiled by our pedagogical prompt template.
                 </p>
               </div>
 
               {/* Box illustrating JSON format / bullet points */}
-              <div className="bg-[#0B0E14] border border-gray-950 p-4 rounded-xl space-y-3.5 max-h-[350px] overflow-y-auto">
+              <div className="bg-background border border-border p-4 rounded-xl space-y-3.5 max-h-[350px] overflow-y-auto">
                 <div>
-                  <h4 className="text-xs font-bold text-[#6C5CE7] uppercase font-mono">Day 1: Theoretical Axioms</h4>
-                  <p className="text-[11px] text-gray-500 font-medium">Est. study review: {commitment} minutes</p>
-                  <ul className="text-xs text-gray-300 mt-1.5 space-y-1 list-disc pl-4.5 font-medium leading-relaxed">
+                  <h4 className="text-xs font-bold text-primary uppercase font-mono">Day 1: Theoretical Axioms</h4>
+                  <p className="text-[11px] text-text-muted font-medium">Est. study review: {commitment} minutes</p>
+                  <ul className="text-xs text-text-muted mt-1.5 space-y-1 list-disc pl-4.5 font-medium leading-relaxed">
                     <li>Analyze chapters introducing set operators and Cartesian spaces.</li>
                     <li>Conduct interactive 5-minute quiz testing nomenclature comprehension.</li>
                   </ul>
                 </div>
 
-                <div className="border-t border-gray-900 pt-3">
-                  <h4 className="text-xs font-bold text-[#6C5CE7] uppercase font-mono">Day 2: Union & Relations mapping</h4>
-                  <p className="text-[11px] text-gray-500 font-medium font-semibold">Est. study review: {commitment} minutes</p>
-                  <ul className="text-xs text-gray-300 mt-1.5 space-y-1 list-disc pl-4.5 font-medium leading-relaxed">
+                <div className="border-t border-border pt-3">
+                  <h4 className="text-xs font-bold text-primary uppercase font-mono">Day 2: Union & Relations mapping</h4>
+                  <p className="text-[11px] text-text-muted font-medium font-semibold">Est. study review: {commitment} minutes</p>
+                  <ul className="text-xs text-text-muted mt-1.5 space-y-1 list-disc pl-4.5 font-medium leading-relaxed">
                     <li>Run custom practice questions on material subset partitions.</li>
                     <li>Read flashcards reviewing subset exclusions.</li>
                   </ul>
                 </div>
 
-                <div className="border-t border-gray-900 pt-3">
-                  <h4 className="text-xs font-bold text-[#6C5CE7] uppercase font-mono">Day 3: Practice Problem Matrices</h4>
-                  <p className="text-[11px] text-gray-500 font-medium font-semibold">Est. study review: {commitment} minutes</p>
-                  <ul className="text-xs text-gray-300 mt-1.5 space-y-1 list-disc pl-4.5 font-medium leading-relaxed">
+                <div className="border-t border-border pt-3">
+                  <h4 className="text-xs font-bold text-primary uppercase font-mono">Day 3: Practice Problem Matrices</h4>
+                  <p className="text-[11px] text-text-muted font-medium font-semibold">Est. study review: {commitment} minutes</p>
+                  <ul className="text-xs text-text-muted mt-1.5 space-y-1 list-disc pl-4.5 font-medium leading-relaxed">
                     <li>Complete complex active-recall inquiries centered on target chapters.</li>
                     <li>Listen to synthesized study voice summaries.</li>
                   </ul>
@@ -244,7 +244,7 @@ export default function ReadingPlanGenerator() {
 
               <button
                 onClick={() => setIsPreviewModalOpen(false)}
-                className="w-full bg-[#6C5CE7] text-white text-xs font-extrabold py-3.5 rounded-xl mt-5 shadow-lg active:scale-98 cursor-pointer min-h-[44px]"
+                className="w-full bg-primary text-white text-xs font-extrabold py-3.5 rounded-xl mt-5 shadow-lg active:scale-98 cursor-pointer min-h-[44px]"
               >
                 Close Preview
               </button>

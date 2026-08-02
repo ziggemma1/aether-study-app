@@ -16,7 +16,7 @@ export default function QuizInterface() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { materials, setQuizResults, isLoading: isAppLoading, fetchAppData, user, updateMaterialInContext } = useAppContext();
+  const { materials, setQuizResults, isLoading: isAppLoading, fetchAppData, user, setUser, updateMaterialInContext } = useAppContext();
   const { burstConfetti, fireConfetti } = useConfetti();
   const { success: hapticSuccess, error: hapticError, light: hapticLight } = useHapticFeedback();
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -144,9 +144,27 @@ export default function QuizInterface() {
         ...response.data,
         id: response.data._id || response.data.id
       };
-      
+
       setQuizResults(prev => [...prev, newResult]);
-      
+
+      // The server just recomputed aetherPoints/streak (and possibly unlocked
+      // achievements) — apply them directly instead of waiting on a full
+      // refetch, which fetchAppData below doesn't actually cover (it never
+      // re-hits /auth/me).
+      if (response.data.aetherPoints !== undefined && user) {
+        setUser({
+          ...user,
+          aetherPoints: response.data.aetherPoints,
+          streak: response.data.streak ?? user.streak
+        });
+      }
+
+      if (Array.isArray(response.data.newlyUnlockedAchievements)) {
+        response.data.newlyUnlockedAchievements.forEach((badge: any) => {
+          window.dispatchEvent(new CustomEvent('achievement:unlocked', { detail: badge }));
+        });
+      }
+
       if (fetchAppData) {
         await fetchAppData();
       }

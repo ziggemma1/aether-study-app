@@ -6,7 +6,14 @@ export interface NotificationItem {
   message: string;
   time: string;
   read: boolean;
-  type: 'friend_request' | 'streak_milestone' | 'quiz_complete' | 'general';
+  type:
+    | 'friend_request'
+    | 'friend_accepted'
+    | 'achievement'
+    | 'nudge'
+    | 'streak_milestone'
+    | 'quiz_complete'
+    | 'general';
 }
 
 export function useNotifications() {
@@ -14,6 +21,7 @@ export function useNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const isFetchingRef = useRef(false);
+  const hasSeededRef = useRef(false);
 
   const fetchNotifications = useCallback(async (showLoading = false) => {
     if (isFetchingRef.current) return;
@@ -21,9 +29,14 @@ export function useNotifications() {
     if (showLoading) setLoading(true);
     
     try {
-      // First try to seed if no notifications exist to make the visual UI extremely immersive
-      await api.post('/notifications/seed').catch(() => {});
-      
+      // Writes the welcome notification for a new account. It's a no-op once
+      // any notification exists, so it only needs to run on the first fetch —
+      // not on every 30s poll for the life of the session.
+      if (!hasSeededRef.current) {
+        hasSeededRef.current = true;
+        await api.post('/notifications/seed').catch(() => {});
+      }
+
       const response = await api.get('/notifications/unread');
       setNotifications(response.data.notifications || []);
       setUnreadCount(response.data.unreadCount || 0);

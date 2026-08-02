@@ -131,7 +131,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
             <div className="pt-4">
               <p className="text-[10px] leading-relaxed text-center text-text-muted italic opacity-60">
-                Join our community of over 50k active students hacking their way to success.
+                Share your study guide and help a friend learn faster.
               </p>
             </div>
           </div>

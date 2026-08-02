@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { FileText, Youtube, BookOpen, Sparkles, Award, Share2, ClipboardCheck, Clock, Trash2, CheckCircle2, Circle, Combine } from 'lucide-react';
 import { LibraryMaterial } from '../../hooks/useLibrary';
 import { useAppContext } from '../../context/AppContext';
+import api from '../../services/api';
 
 interface LibraryCardProps {
   material: LibraryMaterial;
@@ -17,21 +18,29 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
   const navigate = useNavigate();
   const { showToast } = useAppContext();
   const [copied, setCopied] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
-  const handleShare = (e: React.MouseEvent) => {
+  const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     const id = material.id || (material as any)._id;
-    if (!id) return;
-    
+    if (!id || isSharing) return;
+
+    setIsSharing(true);
     try {
-      const shareUrl = `${window.location.origin}/share/${id}`;
-      navigator.clipboard.writeText(shareUrl);
+      // The material's own id is never a valid share token — the backend
+      // mints a distinct random token via /materials/share. A link built
+      // from the id directly 404s for whoever opens it.
+      const response = await api.post('/materials/share', { materialId: id });
+      const { shareUrl } = response.data;
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       showToast('Share link copied to clipboard! 📤', 'success');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      showToast('Failed to copy link', 'error');
+      showToast('Failed to generate share link', 'error');
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -186,8 +195,9 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
 
                   <button
                     onClick={handleShare}
+                    disabled={isSharing}
                     id={`lib-share-${material.id || (material as any)._id}`}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#6C5CE7]/10 text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white active:scale-95 transition-all outline-none border border-[#6C5CE7]/20 shadow-sm cursor-pointer"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#6C5CE7]/10 text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white active:scale-95 transition-all outline-none border border-[#6C5CE7]/20 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                     title="Share study material"
                   >
                     {copied ? <ClipboardCheck size={20} className="text-white" /> : <Share2 size={20} />}

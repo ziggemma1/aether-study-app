@@ -358,8 +358,9 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
     if (currentSeconds < 60) return; // Only save meaningful study sessions (at least 1 minute)
     
     const durationMinutes = Math.max(1, Math.ceil(currentSeconds / 60));
-    // Let's say 1 minute = 10 Aether points
-    let earnedPoints = durationMinutes * 10;
+    // Fallback for the toast if the server response is somehow missing the
+    // real total — the actual points come from the response below.
+    const estimatedPoints = durationMinutes * 10;
 
     try {
       const response = await api.post('/sessions', {
@@ -370,22 +371,37 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
         completed: true
       });
       console.log('Study session saved automatically:', title);
-      
+
       const newSession = {
         ...response.data,
         id: response.data._id || response.data.id
       };
       setStudySessions(prev => [...prev, newSession]);
-      
+
+      // The server just recomputed aetherPoints/streak (and possibly
+      // unlocked achievements) — apply them directly, same pattern already
+      // used in the penalize-points flow below.
+      if (response.data.aetherPoints !== undefined && user) {
+        setUser({
+          ...user,
+          aetherPoints: response.data.aetherPoints,
+          streak: response.data.streak ?? user.streak,
+          totalStudyTime: response.data.totalStudyTime ?? user.totalStudyTime
+        });
+      }
+
+      if (Array.isArray(response.data.newlyUnlockedAchievements)) {
+        response.data.newlyUnlockedAchievements.forEach((badge: any) => {
+          window.dispatchEvent(new CustomEvent('achievement:unlocked', { detail: badge }));
+        });
+      }
+
       // Refresh global app data (including leaderboard)
       if (fetchAppData) {
         await fetchAppData();
       }
-      
-      // Update points locally. In a real backend, the session creation might trigger this.
-      if (typeof window !== 'undefined') {
-          showToast(`Session saved! Earned ${earnedPoints} Aether Points ⚡`);
-      }
+
+      showToast(`Session saved! Earned ${estimatedPoints} Aether Points ⚡`);
     } catch (error) {
       console.error('Failed to save study session:', error);
     }

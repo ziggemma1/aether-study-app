@@ -46,9 +46,16 @@ export const createSession = async (req: Request, res: Response) => {
     }
 
     // Update achievements on the and send response
-    await checkAchievements(userId);
+    const newlyUnlockedAchievements = await checkAchievements(userId);
+    const updatedUser = await User.findById(userId).select('aetherPoints streak totalStudyTime');
 
-    res.status(201).json(session);
+    res.status(201).json({
+      ...session.toObject(),
+      aetherPoints: updatedUser?.aetherPoints,
+      streak: updatedUser?.streak,
+      totalStudyTime: updatedUser?.totalStudyTime,
+      newlyUnlockedAchievements
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -97,9 +104,16 @@ export const updateSession = async (req: Request, res: Response) => {
       }
     }
 
-    await checkAchievements(userId);
+    const newlyUnlockedAchievements = await checkAchievements(userId);
+    const updatedUser = await User.findById(userId).select('aetherPoints streak totalStudyTime');
 
-    res.json(session);
+    res.json({
+      ...(session?.toObject() || {}),
+      aetherPoints: updatedUser?.aetherPoints,
+      streak: updatedUser?.streak,
+      totalStudyTime: updatedUser?.totalStudyTime,
+      newlyUnlockedAchievements
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

@@ -34,6 +34,12 @@ export interface User {
   lastActiveDate?: string;
   lastStreakResetDate?: string;
   optedInLeaderboard?: boolean;
+  visibility?: 'public' | 'friends' | 'private';
+  notificationPrefs?: {
+    push: boolean;
+    email: boolean;
+    aiInsights: boolean;
+  };
 }
 
 export interface FriendRequest {

@@ -6,6 +6,7 @@ import Room from "./models/Room.js";
 import jwt from "jsonwebtoken";
 import { getJwtSecret } from "./lib/jwtSecret.js";
 import { isAllowedOrigin } from "./lib/allowedOrigins.js";
+import { createNotification } from "./services/notification-service.js";
 
 export const initSocket = (server: any) => {
   const io = new Server(server, {
@@ -231,7 +232,12 @@ export const initSocket = (server: any) => {
 
     socket.on("send_nudge", async ({ targetUserId }) => {
       const sender = await User.findById(userId).select('name');
-      io.to(targetUserId).emit("received_nudge", { fromUserId: userId, fromUserName: sender?.name || 'A friend' });
+      const senderName = sender?.name || 'A friend';
+      io.to(targetUserId).emit("received_nudge", { fromUserId: userId, fromUserName: senderName });
+
+      // The live shake only lands if the target has the room open — persist it
+      // so a nudge sent to someone who's away isn't silently lost.
+      await createNotification(targetUserId, `${senderName} nudged you to get studying!`, 'nudge');
     });
     // END LIVE ROOMS LOGIC
 

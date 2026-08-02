@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNotifications, NotificationItem } from '../hooks/useNotifications';
-import { Bell, Sparkles, Trophy, UserPlus, Info, Check, Trash } from 'lucide-react';
+import { Bell, Sparkles, Trophy, UserPlus, Info, Check, Trash, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -24,9 +24,13 @@ export default function NotificationBell() {
   const getIcon = (type: string) => {
     switch (type) {
       case 'friend_request':
+      case 'friend_accepted':
         return <UserPlus size={14} className="text-[#00D2FF]" />;
+      case 'achievement':
       case 'streak_milestone':
         return <Trophy size={14} className="text-amber-500" />;
+      case 'nudge':
+        return <Zap size={14} className="text-amber-500" />;
       case 'quiz_complete':
         return <Sparkles size={14} className="text-primary" />;
       default:
@@ -39,8 +43,10 @@ export default function NotificationBell() {
     setIsOpen(false);
     
     // Route redirects according to notification context
-    if (notif.type === 'friend_request') {
+    if (notif.type === 'friend_request' || notif.type === 'friend_accepted' || notif.type === 'nudge') {
       navigate('/community');
+    } else if (notif.type === 'achievement') {
+      navigate('/achievements');
     } else if (notif.type === 'quiz_complete' || notif.type === 'streak_milestone') {
       navigate('/reports');
     }

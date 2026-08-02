@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   User, 
   Mail, 
@@ -26,6 +26,7 @@ import api from '../services/api';
 export default function Settings() {
   const { user, setUser, theme, toggleTheme, signOut, showToast, t } = useAppContext();
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = React.useState<'account' | 'social' | 'security' | 'billing'>('account');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isLocating, setIsLocating] = React.useState(false);
@@ -45,8 +46,17 @@ export default function Settings() {
     curriculum: user?.curriculum || 'SAT / AP',
     bio: user?.bio || '',
     location: user?.location || '',
-    handle: user?.handle || user?.name?.toLowerCase()?.replace(/\s+/g, '_') || ''
+    handle: user?.handle || user?.name?.toLowerCase()?.replace(/\s+/g, '_') || '',
+    visibility: user?.visibility || 'public',
+    notificationPrefs: {
+      push: user?.notificationPrefs?.push ?? true,
+      email: user?.notificationPrefs?.email ?? false,
+      aiInsights: user?.notificationPrefs?.aiInsights ?? true
+    }
   });
+
+  const [passwordForm, setPasswordForm] = React.useState({ current: '', next: '', confirm: '' });
+  const [isChangingPassword, setIsChangingPassword] = React.useState(false);
 
   const tabs = [
     { id: 'account', label: t('account_info'), icon: User },
@@ -67,7 +77,9 @@ export default function Settings() {
       curriculum: formData.curriculum,
       bio: formData.bio,
       location: formData.location,
-      handle: formData.handle
+      handle: formData.handle,
+      visibility: formData.visibility,
+      notificationPrefs: formData.notificationPrefs
     };
 
     try {
@@ -85,6 +97,33 @@ export default function Settings() {
       showToast('Failed to update profile: ' + (err.response?.data?.message || err.message), 'error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    const { current, next, confirm } = passwordForm;
+    if (!current || !next || !confirm) {
+      showToast('Fill in all three password fields.', 'error');
+      return;
+    }
+    if (next.length < 8) {
+      showToast('New password must be at least 8 characters.', 'error');
+      return;
+    }
+    if (next !== confirm) {
+      showToast("New password and confirmation don't match.", 'error');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await api.put('/users/change-password', { currentPassword: current, newPassword: next });
+      setPasswordForm({ current: '', next: '', confirm: '' });
+      showToast('Password updated successfully!');
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to update password', 'error');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -345,30 +384,49 @@ export default function Settings() {
                     Notifications
                   </h3>
                   <div className="space-y-3 sm:space-y-4">
-                    {[
-                      { title: 'Push Notifications', desc: 'Study reminders', active: true },
-                      { title: 'Email Updates', desc: 'Weekly reports', active: false },
-                      { title: 'AI Insights', desc: 'Personalized tips', active: true },
-                    ].map((pref, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 sm:p-5 bg-surface-alt/30 rounded-xl sm:rounded-2xl border border-border/40 hover:border-primary/30 transition-all cursor-pointer group">
-                        <div>
-                          <p className="font-bold text-[10px] sm:text-sm text-text-main group-hover:text-primary transition-colors">{pref.title}</p>
-                          <p className="text-[8px] sm:text-xs text-text-muted">{pref.desc}</p>
-                        </div>
-                        <motion.div 
-                          initial={false}
-                          animate={{ backgroundColor: pref.active ? "var(--color-primary)" : "var(--color-border)" }}
-                          className="w-10 h-5 sm:w-12 sm:h-6 rounded-full relative transition-all"
+                    {([
+                      { key: 'push', title: 'Push Notifications', desc: 'Study reminders' },
+                      { key: 'email', title: 'Email Updates', desc: 'Weekly reports' },
+                      { key: 'aiInsights', title: 'AI Insights', desc: 'Personalized tips' },
+                    ] as const).map((pref) => {
+                      const active = formData.notificationPrefs[pref.key];
+                      return (
+                        <div
+                          key={pref.key}
+                          onClick={() => setFormData({
+                            ...formData,
+                            notificationPrefs: { ...formData.notificationPrefs, [pref.key]: !active }
+                          })}
+                          className="flex items-center justify-between p-4 sm:p-5 bg-surface-alt/30 rounded-xl sm:rounded-2xl border border-border/40 hover:border-primary/30 transition-all cursor-pointer group"
                         >
-                          <motion.div 
+                          <div>
+                            <p className="font-bold text-[10px] sm:text-sm text-text-main group-hover:text-primary transition-colors">{pref.title}</p>
+                            <p className="text-[8px] sm:text-xs text-text-muted">{pref.desc}</p>
+                          </div>
+                          <motion.div
                             initial={false}
-                            animate={{ x: pref.active ? (window.innerWidth < 640 ? 20 : 24) : 4 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            className="absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                          />
-                        </motion.div>
-                      </div>
-                    ))}
+                            animate={{ backgroundColor: active ? "var(--color-primary)" : "var(--color-border)" }}
+                            className="w-10 h-5 sm:w-12 sm:h-6 rounded-full relative transition-all shrink-0"
+                          >
+                            <motion.div
+                              initial={false}
+                              animate={{ x: active ? (window.innerWidth < 640 ? 20 : 24) : 4 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              className="absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                            />
+                          </motion.div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-border/40 flex justify-end">
+                    <button
+                      onClick={() => handleSave()}
+                      disabled={isSaving}
+                      className="btn-primary py-2 px-6 sm:py-3 sm:px-10 text-[10px] sm:text-sm flex items-center gap-2"
+                    >
+                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : t('save_changes')}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -410,10 +468,14 @@ export default function Settings() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-text-muted uppercase tracking-widest">{t('visibility_scope')}</label>
-                        <select className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all">
-                          <option>Public (Everyone)</option>
-                          <option>Friends Only</option>
-                          <option>Private (Only Me)</option>
+                        <select
+                          value={formData.visibility}
+                          onChange={(e) => setFormData({ ...formData, visibility: e.target.value as typeof formData.visibility })}
+                          className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all"
+                        >
+                          <option value="public">Public (Everyone)</option>
+                          <option value="friends">Friends Only</option>
+                          <option value="private">Private (Only Me)</option>
                         </select>
                       </div>
                     </div>
@@ -427,6 +489,37 @@ export default function Settings() {
                       {isSaving ? <Loader2 size={16} className="animate-spin" /> : t('update_social_profile')}
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'billing' && (
+              <div className="space-y-6">
+                <div className="glass-card p-8">
+                  <h3 className="text-xl font-bold mb-8 text-text-main flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                      <CreditCard size={20} />
+                    </div>
+                    {t('billing')}
+                  </h3>
+                  <div className="flex items-center justify-between p-5 bg-surface-alt/30 rounded-2xl border border-border/40 mb-6">
+                    <div>
+                      <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Current Plan</p>
+                      <p className="text-lg font-bold text-text-main capitalize">{user?.plan || 'free'}</p>
+                    </div>
+                    {user?.plan === 'pro' && (
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1.5 rounded-full">Active</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-text-muted mb-6">
+                    Manage plan changes, view usage, and see billing details on the subscription page.
+                  </p>
+                  <button
+                    onClick={() => navigate('/subscription')}
+                    className="btn-primary px-10"
+                  >
+                    Manage Subscription
+                  </button>
                 </div>
               </div>
             )}
@@ -445,6 +538,8 @@ export default function Settings() {
                       <label className="text-xs font-bold text-text-muted uppercase tracking-widest">Current Password</label>
                       <input
                         type="password"
+                        value={passwordForm.current}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
                         className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
                       />
                     </div>
@@ -453,6 +548,8 @@ export default function Settings() {
                         <label className="text-xs font-bold text-text-muted uppercase tracking-widest">New Password</label>
                         <input
                           type="password"
+                          value={passwordForm.next}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, next: e.target.value })}
                           className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
                         />
                       </div>
@@ -460,13 +557,21 @@ export default function Settings() {
                         <label className="text-xs font-bold text-text-muted uppercase tracking-widest">Confirm New Password</label>
                         <input
                           type="password"
+                          value={passwordForm.confirm}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
                           className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
                         />
                       </div>
                     </div>
                   </div>
                   <div className="mt-10 pt-8 border-t border-border/40 flex justify-end">
-                    <button className="btn-primary px-10">Update Password</button>
+                    <button
+                      onClick={handleChangePassword}
+                      disabled={isChangingPassword}
+                      className="btn-primary px-10 flex items-center gap-2"
+                    >
+                      {isChangingPassword ? <Loader2 size={16} className="animate-spin" /> : 'Update Password'}
+                    </button>
                   </div>
                 </div>
               </div>

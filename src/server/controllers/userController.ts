@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User.js';
 import { FriendRequest } from '../models/FriendRequest.js';
+import { createNotification } from '../services/notification-service.js';
 
 export const getAllProfiles = async (req: Request, res: Response) => {
   try {
@@ -50,6 +51,12 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
     const request = new FriendRequest({ senderId, receiverId, status: 'pending' });
     await request.save();
 
+    await createNotification(
+      receiverId,
+      `${sender?.name || 'Someone'} sent you a friend request.`,
+      'friend_request'
+    );
+
     res.status(201).json(request);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -59,12 +66,29 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
 export const getFriendRequests = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
-    const requests = await FriendRequest.find({ 
-      receiverId: userId, 
-      status: 'pending' 
+    const requests = await FriendRequest.find({
+      receiverId: userId,
+      status: 'pending'
     }).populate('senderId', 'name avatar streak');
-    
+
     res.json(requests);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Requests the current user has sent that are still awaiting a response —
+// lets the client show "Pending" instead of letting a user spam repeated
+// requests with no feedback that one is already outstanding.
+export const getSentFriendRequests = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const requests = await FriendRequest.find({
+      senderId: userId,
+      status: 'pending'
+    }).select('receiverId');
+
+    res.json(requests.map(r => r.receiverId));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -105,6 +129,14 @@ export const respondToFriendRequest = async (req: Request, res: Response) => {
 
         await sender.save();
         await receiver.save();
+
+        // Only the sender gets told — the receiver just performed the action
+        // themselves and doesn't need to be notified about their own click.
+        await createNotification(
+          String(request.senderId),
+          `${receiver.name || 'Someone'} accepted your friend request.`,
+          'friend_accepted'
+        );
       }
     }
 
@@ -163,9 +195,9 @@ export const toggleFollow = async (req: Request, res: Response) => {
 
 export const updateProfile = async (req: Request, res: Response) => {
   try {
-    const { name, language, curriculum, avatar, bio, location, handle } = req.body;
+    const { name, language, curriculum, avatar, bio, location, handle, visibility, notificationPrefs } = req.body;
     const user = await User.findById((req as any).userId);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -176,7 +208,17 @@ export const updateProfile = async (req: Request, res: Response) => {
     if (avatar !== undefined) user.avatar = avatar;
     if (bio !== undefined) user.bio = bio;
     if (location !== undefined) user.location = location;
-    
+    if (visibility !== undefined && ['public', 'friends', 'private'].includes(visibility)) {
+      (user as any).visibility = visibility;
+    }
+    if (notificationPrefs !== undefined) {
+      (user as any).notificationPrefs = {
+        push: !!notificationPrefs.push,
+        email: !!notificationPrefs.email,
+        aiInsights: !!notificationPrefs.aiInsights
+      };
+    }
+
     if (handle !== undefined) {
       // Check if handle is already taken
       if (handle !== user.handle) {
@@ -202,6 +244,8 @@ export const updateProfile = async (req: Request, res: Response) => {
       bio: user.bio,
       location: user.location,
       handle: user.handle,
+      visibility: (user as any).visibility,
+      notificationPrefs: (user as any).notificationPrefs,
       points: user.points,
       aetherPoints: user.aetherPoints,
       freezeTokens: user.freezeTokens,
@@ -212,6 +256,36 @@ export const updateProfile = async (req: Request, res: Response) => {
       achievements: user.achievements
     });
 
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters' });
+    }
+
+    const user = await User.findById((req as any).userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isMatch = await (user as any).comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+
+    // Triggers the pre('save') hash hook on User.ts — never set the hash directly.
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

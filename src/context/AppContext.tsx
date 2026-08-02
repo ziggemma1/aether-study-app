@@ -17,6 +17,10 @@ interface AppContextType {
   setGroups: React.Dispatch<React.SetStateAction<Group[]>>;
   friendRequests: FriendRequest[];
   setFriendRequests: React.Dispatch<React.SetStateAction<FriendRequest[]>>;
+  // Ids of users this account has an outstanding (unanswered) friend request
+  // sent to — lets FindFriends show "Pending" instead of letting a user spam
+  // repeated requests with no feedback.
+  sentFriendRequests: string[];
   studySessions: StudySession[];
   setStudySessions: React.Dispatch<React.SetStateAction<StudySession[]>>;
   achievements: Achievement[];
@@ -66,6 +70,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [sentFriendRequests, setSentFriendRequests] = useState<string[]>([]);
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
@@ -175,6 +180,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post('/users/friend-request', { receiverId });
       if (res.data) {
+        setSentFriendRequests(prev => prev.includes(receiverId) ? prev : [...prev, receiverId]);
         showToast('Friend request sent!', 'success');
       }
     } catch (err: any) {
@@ -289,7 +295,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     try {
-      await Promise.all(endpoints.map(async ({ url, setter }) => {
+      await Promise.all([
+        ...endpoints.map(async ({ url, setter }) => {
         try {
           const res = await api.get(url);
           if (Array.isArray(res.data)) {
@@ -302,9 +309,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } catch (err) {
           console.warn(`Failed to fetch ${url}:`, err);
         }
-      }));
+        }),
+        (async () => {
+          // Returns a plain string[] of receiverIds, not objects — doesn't
+          // fit the generic mapId() shape above, so it's fetched separately.
+          try {
+            const res = await api.get('/users/sent-friend-requests');
+            if (Array.isArray(res.data)) setSentFriendRequests(res.data);
+          } catch (err) {
+            console.warn('Failed to fetch /users/sent-friend-requests:', err);
+          }
+        })()
+      ]);
     } catch (err) {
-      console.error('Fetch App Data error:', err);
+      console.error('fetchAppData failed:', err);
     }
   }, []);
 
@@ -405,6 +423,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setGroups,
       friendRequests,
       setFriendRequests,
+      sentFriendRequests,
       studySessions,
       setStudySessions,
       achievements,
