@@ -75,7 +75,7 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
           </div>
           <div>
             <h2 className="text-lg font-bold text-text-main leading-tight">Smart Schedule</h2>
-            <p className="text-[10px] font-bold text-text-muted/70 uppercase tracking-wider">AI-Optimized for You</p>
+            <p className="text-[11px] font-bold text-text-muted/70 uppercase tracking-wider">AI-Optimized for You</p>
           </div>
         </div>
         
@@ -83,7 +83,7 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
           onClick={regenerateSchedule}
           disabled={isRegenerating}
           className={cn(
-            "text-[10px] font-bold text-primary hover:text-primary/80 transition-all uppercase tracking-widest flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/10",
+            "text-[11px] font-bold text-primary hover:text-primary/80 transition-all uppercase tracking-widest flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/10",
             isRegenerating && "opacity-50 cursor-not-allowed"
           )}
         >
@@ -143,17 +143,17 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
                     "text-sm font-bold text-text-main truncate transition-all",
                     event.completed && "line-through text-text-muted"
                   )}>{event.title}</h4>
-                  <span className="text-[10px] font-medium text-text-muted">
+                  <span className="text-[11px] font-medium text-text-muted">
                     {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] text-text-muted flex items-center gap-1">
+                  <span className="text-[11px] text-text-muted flex items-center gap-1">
                     <Clock size={10} /> {event.durationMinutes} min
                   </span>
                   {!event.completed && (
                     <span className={cn(
-                      "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                      "text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
                       event.priority === 'high' ? "bg-red-500/10 text-red-500" :
                       event.priority === 'medium' ? "bg-orange-500/10 text-orange-500" :
                       "bg-primary/10 text-primary"

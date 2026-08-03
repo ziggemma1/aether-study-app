@@ -305,21 +305,21 @@ export default function StudyPlanDetail() {
           <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-border/80 print:hidden">
             <button 
               onClick={() => setIsRescheduleOpen(true)}
-              className="flex flex-col items-center gap-1.5 py-2.5 bg-surface-alt/40 rounded-xl hover:bg-surface-alt text-[10px] font-bold text-text-muted min-h-[44px]"
+              className="flex flex-col items-center gap-1.5 py-2.5 bg-surface-alt/40 rounded-xl hover:bg-surface-alt text-[11px] font-bold text-text-muted min-h-[44px]"
             >
               <Sliders className="w-4 h-4 text-[#00D2FF]" />
               <span>Reschedule</span>
             </button>
             <button 
               onClick={handleSharePlan}
-              className="flex flex-col items-center gap-1.5 py-2.5 bg-surface-alt/40 rounded-xl hover:bg-surface-alt text-[10px] font-bold text-text-muted min-h-[44px]"
+              className="flex flex-col items-center gap-1.5 py-2.5 bg-surface-alt/40 rounded-xl hover:bg-surface-alt text-[11px] font-bold text-text-muted min-h-[44px]"
             >
               <Share2 className="w-4 h-4 text-primary" />
               <span>Share</span>
             </button>
             <button 
               onClick={handlePrintPlan}
-              className="flex flex-col items-center gap-1.5 py-2.5 bg-surface-alt/40 rounded-xl hover:bg-surface-alt text-[10px] font-bold text-text-muted min-h-[44px]"
+              className="flex flex-col items-center gap-1.5 py-2.5 bg-surface-alt/40 rounded-xl hover:bg-surface-alt text-[11px] font-bold text-text-muted min-h-[44px]"
             >
               <Printer className="w-4 h-4 text-[#00E5A0]" />
               <span>Export PDF / Print</span>
@@ -375,7 +375,7 @@ export default function StudyPlanDetail() {
                       <h4 className="text-xs font-mono font-bold text-primary uppercase">
                         Day {day.day}
                       </h4>
-                      <p className="text-[10px] text-text-muted font-medium">
+                      <p className="text-[11px] text-text-muted font-medium">
                         {formattedDayDate}
                       </p>
                     </div>
@@ -488,7 +488,7 @@ export default function StudyPlanDetail() {
                     </p>
 
                     {/* Time estimate */}
-                    <div className="flex items-center gap-1 text-[10px] text-text-muted font-mono mt-1.5">
+                    <div className="flex items-center gap-1 text-[11px] text-text-muted font-mono mt-1.5">
                       <Clock className="w-3 h-3 text-[#00D2FF]" />
                       <span>{day.estimatedTime || plan.dailyCommitment || 60} minutes study review</span>
                     </div>
@@ -538,7 +538,7 @@ export default function StudyPlanDetail() {
                     <Sliders className="w-4 h-4 text-[#00D2FF]" />
                     Reschedule Studies Project
                   </h3>
-                  <p className="text-[10px] text-text-muted mt-1">
+                  <p className="text-[11px] text-text-muted mt-1">
                     Relocate dates or commitment structure smoothly.
                   </p>
                 </div>

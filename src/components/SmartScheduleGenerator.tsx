@@ -125,7 +125,7 @@ export default function SmartScheduleGenerator() {
         </div>
         <div>
           <h3 className="text-sm font-bold text-text-main">Smart Schedule</h3>
-          <p className="text-[10px] text-text-muted">Based on your own study history</p>
+          <p className="text-[11px] text-text-muted">Based on your own study history</p>
         </div>
       </div>
 
@@ -163,13 +163,13 @@ export default function SmartScheduleGenerator() {
                 {isPersonalized ? 'Your Most Productive Hours' : 'Starter Suggestion'}
               </h4>
               {!isPersonalized && (
-                <p className="text-[9px] text-text-muted mb-2">
+                <p className="text-[11px] text-text-muted mb-2">
                   Not enough session history yet for a personalized flow — here's a sensible starting point.
                 </p>
               )}
               <ul className="space-y-2">
                 {blocks.map((block, i) => (
-                  <li key={i} className="flex justify-between items-center text-[10px]">
+                  <li key={i} className="flex justify-between items-center text-[11px]">
                     <span className="text-text-muted">{block.label}</span>
                     <span className="font-medium text-text-main flex items-center gap-1">
                       <Clock size={10} /> {formatHourRange(block.hour)}
@@ -183,7 +183,7 @@ export default function SmartScheduleGenerator() {
               <button
                 onClick={handleApply}
                 disabled={isApplying || applied}
-                className="flex-1 py-2 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                className="flex-1 py-2 bg-primary text-white text-[11px] font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
               >
                 {isApplying ? (
                   <Loader2 size={12} className="animate-spin" />
@@ -195,7 +195,7 @@ export default function SmartScheduleGenerator() {
               </button>
               <button
                 onClick={() => { setShowResult(false); setApplied(false); }}
-                className="flex-1 py-2 bg-surface-alt text-text-main text-[10px] font-bold rounded-lg border border-border/50 hover:bg-surface transition-colors"
+                className="flex-1 py-2 bg-surface-alt text-text-main text-[11px] font-bold rounded-lg border border-border/50 hover:bg-surface transition-colors"
               >
                 Discard
               </button>

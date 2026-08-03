@@ -188,7 +188,7 @@ export default function Achievements() {
 
         <div className="flex items-center justify-between text-[11px] text-text-muted">
           <span>{unlockedCount} of {totalCount} badges unlocked</span>
-          <span className="flex items-center gap-1 text-[10px] text-primary font-bold">
+          <span className="flex items-center gap-1 text-[11px] text-primary font-bold">
             Mastery level {Math.floor(unlockedCount / 5) + 1}
           </span>
         </div>
@@ -256,10 +256,10 @@ export default function Achievements() {
       {!loading && nextMilestone && (
         <div className="glass-card p-5 rounded-[24px] border-border/10 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#F5B042] bg-[#F5B042]/10 px-2 rounded-md">
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#F5B042] bg-[#F5B042]/10 px-2 rounded-md">
               Suggested Target
             </span>
-            <span className="text-[10px] font-bold text-text-muted flex items-center gap-0.5">
+            <span className="text-[11px] font-bold text-text-muted flex items-center gap-0.5">
               <TrendingUp size={12} /> Upcoming
             </span>
           </div>
@@ -269,7 +269,7 @@ export default function Achievements() {
             </div>
             <div className="flex-grow min-w-0">
               <h4 className="font-bold text-xs text-text-main truncate leading-tight">{nextMilestone.title}</h4>
-              <p className="text-[10px] text-text-muted mt-0.5 truncate leading-tight">{nextMilestone.description}</p>
+              <p className="text-[11px] text-text-muted mt-0.5 truncate leading-tight">{nextMilestone.description}</p>
             </div>
             <button 
               onClick={() => navigate('/dashboard')}
@@ -303,7 +303,7 @@ export default function Achievements() {
               className="w-full max-w-sm bg-surface border-t border-border/10 rounded-t-[32px] p-6 shadow-soft pointer-events-auto flex flex-col gap-5 border-l border-r"
             >
               <div className="flex justify-between items-center">
-                <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">
+                <span className="text-[11px] font-black uppercase tracking-widest text-text-muted">
                   Badge Specifications
                 </span>
                 <button 
@@ -359,7 +359,7 @@ export default function Achievements() {
                         style={{ width: `${Math.round((selectedBadge.currentProgress / selectedBadge.target) * 100)}%` }}
                       />
                     </div>
-                    <p className="text-[10px] text-text-muted leading-relaxed">
+                    <p className="text-[11px] text-text-muted leading-relaxed">
                       Study consistency, quiz metrics, active reading summaries, or partner followers count are tracked automatically. Keep going to claim badge reward points!
                     </p>
                   </div>

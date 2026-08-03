@@ -50,7 +50,7 @@ export function BuddiesList({ buddies, onNudge, onJoin }: BuddiesListProps) {
               <div>
                 <span className="block text-sm font-bold text-white mb-0.5">{buddy.name}</span>
                 <span className={cn(
-                  "block text-[10px] uppercase tracking-widest font-bold",
+                  "block text-[11px] uppercase tracking-widest font-bold",
                   buddy.status === 'online' ? "text-[#00E5A0]" : 
                   buddy.status === 'away' ? "text-yellow-400" : "text-white/40"
                 )}>

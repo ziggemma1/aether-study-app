@@ -115,7 +115,7 @@ export default function ProgressTracking() {
             <div className="w-full flex items-center justify-between">
               <div>
                 <p className="text-xl font-bold text-text-main">20%</p>
-                <p className="text-[10px] text-text-muted font-bold uppercase tracking-tighter">Last week</p>
+                <p className="text-[11px] text-text-muted font-bold uppercase tracking-tighter">Last week</p>
               </div>
               <div className="flex items-end gap-1 h-8">
                 <div className="w-1.5 h-4 bg-secondary/20 rounded-full" />

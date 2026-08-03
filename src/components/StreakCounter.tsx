@@ -37,7 +37,7 @@ export function StreakCounter({ days, onStreakUpdate }: StreakCounterProps) {
         <span className="text-xl filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.5)] animate-pulse">🔥</span>
         <div>
           <div className="text-sm font-black text-amber-500 leading-none">{days} Days</div>
-          <div className="text-[9px] font-bold text-text-muted uppercase tracking-wider mt-0.5">Study Streak</div>
+          <div className="text-[11px] font-bold text-text-muted uppercase tracking-wider mt-0.5">Study Streak</div>
         </div>
       </motion.div>
       

@@ -41,7 +41,7 @@ export default function PlanSummary({
         <div className="bg-[#0B0E14] border border-gray-800/80 p-3 rounded-xl flex items-center gap-3">
           <Clock className="w-4 h-4 text-[#6C5CE7] shrink-0" />
           <div>
-            <span className="block text-[9px] text-gray-500 uppercase font-mono">Total Time</span>
+            <span className="block text-[11px] text-gray-500 uppercase font-mono">Total Time</span>
             <span className="text-xs font-extrabold text-[#F0F3F8]">~{totalHours} Hours</span>
           </div>
         </div>
@@ -49,7 +49,7 @@ export default function PlanSummary({
         <div className="bg-[#0B0E14] border border-gray-800/80 p-3 rounded-xl flex items-center gap-3">
           <BookOpen className="w-4 h-4 text-[#00D2FF] shrink-0" />
           <div>
-            <span className="block text-[9px] text-gray-500 uppercase font-mono">Materials</span>
+            <span className="block text-[11px] text-gray-500 uppercase font-mono">Materials</span>
             <span className="text-xs font-extrabold text-[#F0F3F8]">
               {selectedMaterialsCount} checked
             </span>
@@ -59,7 +59,7 @@ export default function PlanSummary({
         <div className="bg-[#0B0E14] border border-gray-800/80 p-3 rounded-xl flex items-center gap-3">
           <Target className="w-4 h-4 text-[#00E5A0] shrink-0" />
           <div>
-            <span className="block text-[9px] text-gray-500 uppercase font-mono">Goal Focus</span>
+            <span className="block text-[11px] text-gray-500 uppercase font-mono">Goal Focus</span>
             <span className="text-xs font-extrabold text-[#F0F3F8] truncate block max-w-[80px]">
               {goal}
             </span>
@@ -69,7 +69,7 @@ export default function PlanSummary({
         <div className="bg-[#0B0E14] border border-gray-800/80 p-3 rounded-xl flex items-center gap-3">
           <ShieldAlert className="w-4 h-4 text-slate-400 shrink-0" />
           <div>
-            <span className="block text-[9px] text-gray-500 uppercase font-mono">Difficulty</span>
+            <span className="block text-[11px] text-gray-500 uppercase font-mono">Difficulty</span>
             <span className="text-xs font-extrabold text-[#F0F3F8] truncate block max-w-[80px]">
               {complexity}
             </span>

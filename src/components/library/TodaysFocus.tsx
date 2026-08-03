@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight, CheckCircle2, ChevronRight, BookOpen } from 'lucide-react';
 import { LibraryMaterial } from '../../hooks/useLibrary';
 import { useNavigate } from 'react-router-dom';
+import { getMasteryColor } from '../../lib/utils';
 
 interface TodaysFocusProps {
   materials: LibraryMaterial[];
@@ -39,10 +40,12 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
       {/* Decorative Warm Backglow */}
       <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#6C5CE7]/10 blur-3xl pointer-events-none" />
 
-      {/* Header Info */}
+      {/* Header Info. Was brand pink, which bought a fifth accent on a screen
+          where nothing already read as primary — and matched neither the card's
+          own violet backglow nor anything it was trying to say. */}
       <div className="flex items-center gap-2 mb-3 px-1">
-        <Sparkles className="h-4 w-4 text-[#FF55D2]" />
-        <h3 className="text-xs font-bold uppercase text-[#FF55D2] tracking-widest">
+        <Sparkles className="h-4 w-4 text-[#6C5CE7]" />
+        <h3 className="text-xs font-bold uppercase text-[#6C5CE7] tracking-widest">
           Today's Recommendation Focus
         </h3>
       </div>
@@ -76,11 +79,16 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
                       {item.title}
                     </p>
                     <div className="flex items-center gap-2 mt-1.5">
-                      {/* Mini indicator badge */}
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[#FF5E7E]/10 text-[#FF5E7E]">
+                      {/* This badge is identical on every row, so it carried no
+                          information — only alarm-red weight. Neutral chrome
+                          here; the colour moves to mastery, which does vary. */}
+                      <span className="px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-[#8E9AAF]/10 text-[#8E9AAF]">
                         Review Focus
                       </span>
-                      <span className="text-[10px] text-[#8E9AAF] font-medium font-mono">
+                      <span
+                        className="text-[11px] font-medium font-mono"
+                        style={{ color: getMasteryColor(mastery) }}
+                      >
                         {mastery}% Mastery
                       </span>
                     </div>
@@ -93,7 +101,7 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
                       e.stopPropagation();
                       navigateTo(`/quiz/${item.id}`);
                     }}
-                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#6C5CE7] text-[#F0F3F8] text-[10px] font-bold uppercase transition-all hover:bg-[#6C5CE7]/90 cursor-pointer"
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#6C5CE7] text-[#F0F3F8] text-[11px] font-bold uppercase transition-all hover:bg-[#6C5CE7]/90 cursor-pointer"
                   >
                     Take Quiz
                   </button>
@@ -109,7 +117,7 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
               <p className="text-xs font-bold text-[#F0F3F8]">
                 All study courses at peak mastery!
               </p>
-              <p className="text-[10px] text-[#8E9AAF] mt-0.5">
+              <p className="text-[11px] text-[#8E9AAF] mt-0.5">
                 Stellar progress, scholar! You have mastered 100% of your materials. Keep adding folders to your hub!
               </p>
             </div>

@@ -77,7 +77,7 @@ export default function FindFriends() {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-text-main">{req.senderId.name}</p>
-                    <p className="text-[10px] text-text-muted">Wants to be friends</p>
+                    <p className="text-[11px] text-text-muted">Wants to be friends</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -135,7 +135,7 @@ export default function FindFriends() {
                   <h3 className="font-bold text-text-main mb-1">{p.name}</h3>
                   <div className="flex items-center gap-2 mb-4">
                     <Sparkles size={12} className="text-secondary" />
-                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{p.streak} Day Streak</span>
+                    <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">{p.streak} Day Streak</span>
                   </div>
                   
                   <div className="w-full mt-auto pt-4 border-t border-border/30">

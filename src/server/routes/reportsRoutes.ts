@@ -35,11 +35,13 @@ router.get('/summary', async (req, res) => {
       averageQuizScore = user.avgQuizScore || 0;
     }
 
-    // Dynamic leaderboard rank
+    // Dynamic leaderboard rank. A user who is not in the ranked set (opted out,
+    // or not yet counted) has no rank — say so with null rather than falling
+    // back to a stock "#12" that the leaderboard itself would contradict.
     const allUsers = await User.find({ optedInLeaderboard: { $ne: false } }).sort({ aetherPoints: -1 }).select('_id');
-    const totalLearners = allUsers.length || 1;
+    const totalLearners = allUsers.length;
     const rankIndex = allUsers.findIndex(u => u._id.toString() === userId.toString());
-    const globalRank = rankIndex !== -1 ? rankIndex + 1 : (user.globalRank || 12);
+    const globalRank = rankIndex !== -1 ? rankIndex + 1 : null;
 
     res.json({
       totalStudyTimeMinutes,
@@ -47,9 +49,11 @@ router.get('/summary', async (req, res) => {
       globalRank,
       totalLearners,
       studyStreak: user.streak || 0,
+      // These default to 0 on the model. `|| 12` / `|| 4.2` turned "no movement
+      // yet" into an invented double-digit gain on every new account.
       weeklyChange: {
-        studyTime: user.timeTrend || 12,
-        quizScore: user.quizTrend || 4.2
+        studyTime: user.timeTrend ?? 0,
+        quizScore: user.quizTrend ?? 0
       }
     });
   } catch (error: any) {

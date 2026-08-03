@@ -11,7 +11,7 @@ import { TodaysFocus } from '../components/library/TodaysFocus';
 import { EmptyState } from '../components/library/EmptyState';
 import { MaterialCardSkeleton } from '../components/ui/Skeleton';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, Combine, CheckSquare, X, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Combine, CheckSquare, X, CheckCircle2, RefreshCw, LibraryBig } from 'lucide-react';
 
 export default function Library() {
   const { user, showToast, fetchAppData } = useAppContext();
@@ -120,28 +120,30 @@ export default function Library() {
       <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-[#6C5CE7]/5 blur-[120px] pointer-events-none select-none" />
       <div className="absolute bottom-1/4 left-1/4 w-80 h-80 rounded-full bg-[#00D2FF]/5 blur-[120px] pointer-events-none select-none" />
 
-      {/* 1. Header Section (Engaging & Personal) */}
-      <header className="mb-6 relative flex items-center justify-between gap-4 mt-2">
+      {/* 1. Header Section (Engaging & Personal).
+          Stacks on mobile: sharing a row with "Bulk Select" + "Add" squeezed
+          the title into three lines at 390px. */}
+      <header className="mb-6 relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mt-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-2xl animate-bounce">📚</span>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-[#F0F3F8] tracking-tight">
+            <LibraryBig size={22} className="text-[#6C5CE7] shrink-0" />
+            <h1 className="font-heading text-xl sm:text-2xl font-bold text-[#F0F3F8] tracking-tight">
               Your Learning Hub
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-[#8E9AAF] mt-1 font-semibold leading-relaxed">
-            Welcome back, <span className="text-[#6C5CE7] font-extrabold">{firstName}</span>! 👋 You have{' '}
-            <span className="text-[#F0F3F8] font-black">{targetMaterialsCount}</span>{' '}
+          <p className="text-xs sm:text-sm text-[#8E9AAF] mt-1 font-medium leading-relaxed">
+            Welcome back, <span className="text-[#6C5CE7] font-bold">{firstName}</span>. You have{' '}
+            <span className="text-[#F0F3F8] font-bold">{targetMaterialsCount}</span>{' '}
             {targetMaterialsCount === 1 ? 'material' : 'materials'} ready to study.
           </p>
         </div>
 
         {/* Action Buttons - Touch Minimum 44px */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {selectionMode && (
             <button
               onClick={handleSelectAll}
-              className="flex h-11 items-center gap-2 px-4 rounded-xl font-extrabold text-[10px] sm:text-xs transition-all outline-none border-2 bg-white/10 text-white border-white/20"
+              className="flex h-11 items-center gap-2 px-4 rounded-xl font-extrabold text-[11px] sm:text-xs transition-all outline-none border-2 bg-white/10 text-white border-white/20"
               title="Select all items"
             >
               <CheckSquare size={16} strokeWidth={3} />
@@ -155,7 +157,7 @@ export default function Library() {
                 setSelectionMode(!selectionMode);
                 if (!selectionMode) setSelectedIds([]);
               }}
-              className={`flex h-11 items-center gap-2 px-3 sm:px-4 rounded-xl font-extrabold text-[10px] sm:text-xs transition-all outline-none border-2 shadow-lg backdrop-blur-md ${
+              className={`flex h-11 items-center gap-2 px-3 sm:px-4 rounded-xl font-extrabold text-[11px] sm:text-xs transition-all outline-none border-2 shadow-lg backdrop-blur-md ${
                 selectionMode 
                   ? 'bg-red-500 text-white border-red-500' 
                   : 'bg-[#6C5CE7] text-white border-[#6C5CE7] shadow-[#6C5CE7]/30'
@@ -170,7 +172,7 @@ export default function Library() {
 
           <Link
             to="/upload"
-            className="flex h-11 items-center gap-2 px-3 sm:px-4 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-[10px] sm:text-xs font-bold transition-all outline-none border border-white/20"
+            className="flex h-11 items-center gap-2 px-3 sm:px-4 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-[11px] sm:text-xs font-bold transition-all outline-none border border-white/20"
             id="library-upload-quick-action"
           >
             <Plus size={16} strokeWidth={3} />
@@ -197,7 +199,7 @@ export default function Library() {
                 <p className="text-xs font-black text-white leading-none">
                   {selectedIds.length} {selectedIds.length === 1 ? 'Item' : 'Items'} Selected
                 </p>
-                <p className="text-[10px] text-white/70 mt-1 font-bold">Ready for bulk action</p>
+                <p className="text-[11px] text-white/70 mt-1 font-bold">Ready for bulk action</p>
               </div>
             </div>
 
@@ -205,7 +207,7 @@ export default function Library() {
               <button
                 onClick={handleMerge}
                 disabled={isProcessing || selectedIds.length < 2}
-                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-40 transition-all text-white text-[10px] font-black uppercase tracking-tight border border-white/10"
+                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-40 transition-all text-white text-[11px] font-black uppercase tracking-tight border border-white/10"
               >
                 <Combine size={14} />
                 <span>Merge</span>
@@ -214,7 +216,7 @@ export default function Library() {
               <button
                 onClick={handleBulkDelete}
                 disabled={isProcessing}
-                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 transition-all text-white text-[10px] font-black uppercase tracking-tight shadow-md shadow-red-900/20"
+                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 transition-all text-white text-[11px] font-black uppercase tracking-tight shadow-md shadow-red-900/20"
               >
                 {isProcessing ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
                 <span>Delete</span>

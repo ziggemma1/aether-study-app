@@ -142,7 +142,7 @@ export default function LandingPage() {
               className="w-full max-w-[280px] sm:max-w-[320px] bg-gradient-to-br from-[#FF55D2] to-[#FF9F68] rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 shadow-xl relative z-20 mb-6 sm:mb-8 mx-auto lg:ml-auto"
             >
               <div className="flex flex-col gap-1 mb-3 sm:mb-4">
-                <span className="text-white/70 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Concepts Mastered</span>
+                <span className="text-white/70 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Concepts Mastered</span>
                 <span className="text-white text-2xl sm:text-4xl font-extrabold">1,240</span>
               </div>
               <p className="text-white/90 text-xs sm:text-sm">Aether helps you track exactly what you know and what you don't.</p>
@@ -155,7 +155,7 @@ export default function LandingPage() {
               className="w-full max-w-[280px] sm:max-w-[320px] bg-gradient-to-br from-primary to-violet-700 rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 shadow-xl relative z-10 mx-auto lg:ml-auto lg:mr-8"
             >
               <div className="flex flex-col gap-1 mb-3 sm:mb-4">
-                <span className="text-white/70 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Study Sessions</span>
+                <span className="text-white/70 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Study Sessions</span>
                 <span className="text-white text-2xl sm:text-4xl font-extrabold">12k+</span>
               </div>
               <p className="text-white/90 text-xs sm:text-sm">Join thousands of students optimizing their study time today.</p>
@@ -169,11 +169,11 @@ export default function LandingPage() {
                   <User size={20} className="hidden sm:block" />
                 </div>
                 <div>
-                  <p className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Students</p>
+                  <p className="text-[11px] sm:text-[11px] text-slate-400 font-bold uppercase tracking-wider">Active Students</p>
                   <p className="text-lg sm:text-xl font-bold text-white">10,482</p>
                 </div>
               </div>
-              <p className="text-slate-500 text-[10px] sm:text-[11px] font-medium">Master your courses with AI-powered insights.</p>
+              <p className="text-slate-500 text-[11px] sm:text-[11px] font-medium">Master your courses with AI-powered insights.</p>
             </div>
           </motion.div>
         </section>

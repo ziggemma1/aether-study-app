@@ -74,10 +74,10 @@ export function QuizCard({ question, options, correctAnswer, onAnswer }: QuizCar
             >
               <span className="flex-1 pr-4">{option}</span>
               {answered && idx === correctAnswer && (
-                <span className="text-accent text-[10px] uppercase font-black tracking-widest shrink-0">✓ Correct</span>
+                <span className="text-accent text-[11px] uppercase font-black tracking-widest shrink-0">✓ Correct</span>
               )}
               {answered && idx === selectedIdx && idx !== correctAnswer && (
-                <span className="text-red-500 text-[10px] uppercase font-black tracking-widest shrink-0">✗ Wrong</span>
+                <span className="text-red-500 text-[11px] uppercase font-black tracking-widest shrink-0">✗ Wrong</span>
               )}
             </button>
           );

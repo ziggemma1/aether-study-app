@@ -110,7 +110,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
           </div>
           <div>
             <h2 className="text-sm sm:text-lg font-bold text-text-main leading-tight">{t('calendar')}</h2>
-            <p className="text-[8px] sm:text-[10px] font-bold text-text-muted/70 uppercase tracking-wider">Management</p>
+            <p className="text-[11px] sm:text-[11px] font-bold text-text-muted/70 uppercase tracking-wider">Management</p>
           </div>
         </div>
 
@@ -118,7 +118,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
           <div className="relative">
             <button 
               onClick={() => setShowMonthPicker(!showMonthPicker)}
-              className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 bg-surface-alt/40 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-medium text-text-main border border-border/30 hover:border-primary/20 transition-all"
+              className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 bg-surface-alt/40 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-medium text-text-main border border-border/30 hover:border-primary/20 transition-all"
             >
               {format(currentDate, 'MMM yyyy')}
               <ChevronDown size={12} className={cn("transition-transform opacity-60", showMonthPicker && "rotate-180")} />
@@ -140,7 +140,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
                         setShowMonthPicker(false);
                       }}
                       className={cn(
-                        "text-[10px] font-bold py-2 rounded-lg transition-all",
+                        "text-[11px] font-bold py-2 rounded-lg transition-all",
                         currentDate.getMonth() === i 
                           ? "bg-primary text-white" 
                           : "text-text-muted hover:bg-surface-alt/40 hover:text-text-main"
@@ -158,7 +158,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
                         setShowMonthPicker(false);
                       }}
                       className={cn(
-                        "text-[10px] font-bold py-2 rounded-lg transition-all",
+                        "text-[11px] font-bold py-2 rounded-lg transition-all",
                         getYear(currentDate) === y 
                           ? "bg-primary text-white" 
                           : "text-text-muted hover:bg-surface-alt/40 hover:text-text-main"
@@ -188,7 +188,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
         <div className="grid grid-cols-7 mb-2 sm:mb-4 shrink-0">
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
             <span key={i} className={cn(
-              "text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-center transition-colors",
+              "text-[11px] sm:text-[11px] font-black uppercase tracking-widest text-center transition-colors",
               (i === 0 || i === 6) ? "text-primary/60" : "text-text-muted"
             )}>
               {day}
@@ -234,7 +234,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
                 )}
 
                 <span className={cn(
-                  "relative z-10 text-[10px] sm:text-xs font-medium w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full transition-all",
+                  "relative z-10 text-[11px] sm:text-xs font-medium w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full transition-all",
                   isToday(day) && !isMissed && data?.status !== 'attended' && "bg-primary text-white shadow-sm shadow-primary/20",
                   data?.status === 'attended' && "bg-green-500 text-white shadow-sm shadow-green-500/20",
                   data?.status === 'missed' && "bg-red-500 text-white shadow-sm shadow-red-500/20",
@@ -266,7 +266,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
             <div className="flex items-center justify-between mb-4 sm:mb-8">
               <div>
                 <h3 className="font-bold text-sm sm:text-base text-text-main">{format(selectedDate, 'EEEE')}</h3>
-                <p className="text-[10px] sm:text-xs text-text-muted">{format(selectedDate, 'MMMM d, yyyy')}</p>
+                <p className="text-[11px] sm:text-xs text-text-muted">{format(selectedDate, 'MMMM d, yyyy')}</p>
               </div>
               <button 
                 onClick={() => setSelectedDate(null)}
@@ -278,7 +278,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
 
             <div className="space-y-6 flex-grow">
               <div className="p-4 rounded-2xl bg-surface-alt/30 border border-border/50">
-                <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">{t('status')}</p>
+                <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2">{t('status')}</p>
                 <div className="flex items-center gap-3">
                   {dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'attended' ? (
                     <div className="flex items-center gap-2 text-green-500 font-bold text-sm">
@@ -296,7 +296,7 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
 
               {dayData[format(selectedDate, 'yyyy-MM-dd')]?.time && (
                 <div className="p-4 rounded-2xl bg-surface-alt/30 border border-border/50">
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2">{t('time')}</p>
+                  <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2">{t('time')}</p>
                   <div className="flex items-center gap-2 text-text-main font-bold text-sm">
                     <Clock size={18} /> {dayData[format(selectedDate, 'yyyy-MM-dd')]?.time}
                   </div>

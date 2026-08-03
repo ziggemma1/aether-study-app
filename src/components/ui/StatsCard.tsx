@@ -17,14 +17,14 @@ export function StatsCard({ title, value, description, accentColor = 'text-prima
       className="p-4 bg-surface border border-border/10 rounded-2xl flex items-center justify-between gap-4 select-none relative"
     >
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">
+        <p className="text-[11px] font-black uppercase tracking-widest text-text-muted">
           {title}
         </p>
         <h3 className={`text-xl font-black tracking-tight mt-1 leading-none ${accentColor}`}>
           {value}
         </h3>
         {description && (
-          <p className="text-[10px] text-text-muted mt-1 truncate leading-tight">
+          <p className="text-[11px] text-text-muted mt-1 truncate leading-tight">
             {description}
           </p>
         )}

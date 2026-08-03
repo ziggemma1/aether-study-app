@@ -159,7 +159,7 @@ export default function Profile() {
                   </Link>
                 </div>
                 <p className="text-primary font-bold text-sm sm:text-lg mb-1 sm:mb-2">@{user?.handle || user?.name?.toLowerCase()?.replace(/\s+/g, '_')}</p>
-                <div className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 text-text-muted font-medium text-[10px] sm:text-sm">
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 text-text-muted font-medium text-[11px] sm:text-sm">
                   <MapPin size={12} className="text-primary" />
                   <span>{user?.location || 'Location not set'}</span>
                 </div>
@@ -212,7 +212,7 @@ export default function Profile() {
             </p>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {[user?.curriculum || 'General', 'Learning', 'Student', materials.length > 5 ? 'Power User' : 'Newcomer'].map((tag) => (
-                <span key={tag} className="px-2 py-0.5 sm:px-3 sm:py-1 bg-surface-alt/50 border border-border/50 rounded-lg text-[10px] sm:text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                <span key={tag} className="px-2 py-0.5 sm:px-3 sm:py-1 bg-surface-alt/50 border border-border/50 rounded-lg text-[11px] sm:text-[11px] font-bold uppercase tracking-wider text-text-muted">
                   #{tag.replace(/\s+/g, '')}
                 </span>
               ))}
@@ -249,7 +249,7 @@ export default function Profile() {
                   ))}
                 </div>
               </div>
-              <div className="flex justify-end items-center gap-1.5 text-[10px] sm:text-xs text-text-muted mt-2">
+              <div className="flex justify-end items-center gap-1.5 text-[11px] sm:text-xs text-text-muted mt-2">
                 <span>Less</span>
                 <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-sm bg-surface border border-border/50" />
                 <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-sm bg-primary/30" />
@@ -314,8 +314,8 @@ export default function Profile() {
                   </div>
                   <div>
                     <h4 className="font-bold text-text-main text-xs sm:text-sm">{achievement.title}</h4>
-                    <p className="text-xs sm:text-[10px] text-text-muted mb-0.5 sm:mb-1">{achievement.description || achievement.desc}</p>
-                    <p className="text-[10px] font-bold text-primary/60 uppercase tracking-widest">{achievement.unlockedAt || achievement.date}</p>
+                    <p className="text-xs sm:text-[11px] text-text-muted mb-0.5 sm:mb-1">{achievement.description || achievement.desc}</p>
+                    <p className="text-[11px] font-bold text-primary/60 uppercase tracking-widest">{achievement.unlockedAt || achievement.date}</p>
                   </div>
                 </div>
               ))}

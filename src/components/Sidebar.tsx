@@ -246,7 +246,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                           <sub.icon size={14} className="group-hover/sub:scale-110 transition-transform" />
                                           <span>{sub.label}</span>
                                         </div>
-                                        <span className="bg-surface-alt px-1.5 py-0.5 rounded-md text-[9px] border border-border group-hover/sub:border-primary/30 transition-colors">
+                                        <span className="bg-surface-alt px-1.5 py-0.5 rounded-md text-[11px] border border-border group-hover/sub:border-primary/30 transition-colors">
                                           {sub.count}
                                         </span>
                                       </Link>

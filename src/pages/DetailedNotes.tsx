@@ -229,7 +229,7 @@ export default function DetailedNotes() {
         <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-1 text-text-muted hover:text-primary transition-colors text-[10px] sm:text-sm font-bold uppercase tracking-wider"
+            className="flex items-center gap-1 text-text-muted hover:text-primary transition-colors text-[11px] sm:text-sm font-bold uppercase tracking-wider"
           >
             <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" /> back
           </button>
@@ -238,18 +238,18 @@ export default function DetailedNotes() {
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-accent/10 text-accent hover:bg-accent/20 rounded-xl transition-all font-bold text-[9px] sm:text-sm disabled:opacity-50 border border-accent/20"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-accent/10 text-accent hover:bg-accent/20 rounded-xl transition-all font-bold text-[11px] sm:text-sm disabled:opacity-50 border border-accent/20"
               title={t('deep_analysis_tooltip')}
             >
               {isRegenerating ? <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" /> : <Sparkles size={14} className="sm:w-4 sm:h-4" />}
               <div className="flex flex-col items-start leading-none text-left">
                 <span>{t('deep_analysis')}</span>
-                <span className="hidden sm:block text-[8px] opacity-60 font-medium">{t('beta_intensive')}</span>
+                <span className="hidden sm:block text-[11px] opacity-60 font-medium">{t('beta_intensive')}</span>
               </div>
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-all font-bold text-[10px] sm:text-sm"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-all font-bold text-[11px] sm:text-sm"
             >
               <Trash2 size={14} className="sm:w-[18px] sm:h-[18px]" />
               <span className="hidden sm:inline">{t('delete')}</span>
@@ -263,7 +263,7 @@ export default function DetailedNotes() {
             <div className="p-1.5 bg-secondary/10 text-secondary rounded-lg">
               <BookOpen size={16} />
             </div>
-            <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em]">{t('detailed_study_notes')}</span>
+            <span className="text-primary text-[11px] font-bold uppercase tracking-[0.2em]">{t('detailed_study_notes')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-text-main mb-4 tracking-tighter leading-tight drop-shadow-sm">
             {material.title}
@@ -279,7 +279,7 @@ export default function DetailedNotes() {
                   className="h-full bg-primary"
                 />
               </div>
-              <span className="text-[10px] font-bold text-text-muted uppercase shrink-0">
+              <span className="text-[11px] font-bold text-text-muted uppercase shrink-0">
                 Page {currentPage + 1} of {totalPages}
               </span>
             </div>
@@ -299,7 +299,7 @@ export default function DetailedNotes() {
               )}
             >
               <Sparkles size={14} className="shrink-0" />
-              <span className="text-[10px] sm:text-xs break-words">{totalPages}-Page Deep-Dive</span>
+              <span className="text-[11px] sm:text-xs break-words">{totalPages}-Page Deep-Dive</span>
             </button>
             <button
               onClick={() => setActiveViewMode('structured')}
@@ -311,7 +311,7 @@ export default function DetailedNotes() {
               )}
             >
               <FileText size={14} className="shrink-0" />
-              <span className="text-[10px] sm:text-xs break-words">
+              <span className="text-[11px] sm:text-xs break-words">
                 {material.detailedNotes && /<eli5>|<deep>|<concepts>/i.test(material.detailedNotes) ? 'Interactive Teacher Notes' : 'Structured Outline'}
               </span>
             </button>
@@ -330,7 +330,7 @@ export default function DetailedNotes() {
                   <AlertCircle size={24} />
                 </div>
                 <h3 className="text-lg font-bold text-text-main mb-1">Generation Failed</h3>
-                <p className="text-[10px] text-text-muted mb-4 max-w-sm mx-auto">
+                <p className="text-[11px] text-text-muted mb-4 max-w-sm mx-auto">
                   We encountered an issue while generating your detailed notes. This might be due to a temporary model outage.
                 </p>
                 <button
@@ -370,7 +370,7 @@ export default function DetailedNotes() {
                   <div className="glass-card shadow-2xl p-4 sm:p-8 border-l-[6px] border-l-amber-500/80 bg-gradient-to-br from-amber-500/5 to-transparent rounded-3xl space-y-6">
                     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/15 pb-4">
                       <div>
-                        <div className="flex items-center gap-2 text-amber-500 font-bold text-[10px] uppercase tracking-wider mb-1">
+                        <div className="flex items-center gap-2 text-amber-500 font-bold text-[11px] uppercase tracking-wider mb-1">
                           <GraduationCap size={14} />
                           <span>Cornell Note Sheet (Exam prep)</span>
                         </div>
@@ -383,7 +383,7 @@ export default function DetailedNotes() {
                         onClick={() => handleToggleELI5(sections[currentPage].content, currentPage)}
                         disabled={isLoadingELI5}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all border self-start sm:self-center",
+                          "flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border self-start sm:self-center",
                           isELI5 
                             ? "bg-amber-500/20 border-amber-500/50 text-amber-500" 
                             : "bg-surface border-border text-text-muted hover:border-amber-500/30 hover:text-amber-500"
@@ -396,7 +396,7 @@ export default function DetailedNotes() {
 
                     {/* Cornell Concept Focus Pin */}
                     {sections[currentPage].conceptAnalyzed && (
-                      <div className="bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-bold inline-block">
+                      <div className="bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] font-bold inline-block">
                         🎯 Study Objective: {sections[currentPage].conceptAnalyzed}
                       </div>
                     )}
@@ -433,7 +433,7 @@ export default function DetailedNotes() {
                       >
                         <ChevronLeft size={16} /> Prev
                       </button>
-                      <span className="text-[10px] text-text-muted font-bold">
+                      <span className="text-[11px] text-text-muted font-bold">
                         {currentPage + 1} / {totalPages}
                       </span>
                       <button
@@ -453,7 +453,7 @@ export default function DetailedNotes() {
                   <div className="glass-card shadow-2xl p-4 sm:p-8 border-l-[6px] border-l-sky-500/80 bg-gradient-to-br from-sky-500/5 to-transparent rounded-3xl space-y-6">
                     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/15 pb-4">
                       <div>
-                        <div className="flex items-center gap-2 text-sky-500 font-bold text-[10px] uppercase tracking-wider mb-1">
+                        <div className="flex items-center gap-2 text-sky-500 font-bold text-[11px] uppercase tracking-wider mb-1">
                           <Brain size={14} />
                           <span>Feynman Masterclass (Concept Mastery)</span>
                         </div>
@@ -466,7 +466,7 @@ export default function DetailedNotes() {
                         onClick={() => handleToggleELI5(sections[currentPage].content, currentPage)}
                         disabled={isLoadingELI5}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all border self-start sm:self-center",
+                          "flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border self-start sm:self-center",
                           isELI5 
                             ? "bg-sky-500/20 border-sky-500/50 text-sky-500" 
                             : "bg-surface border-border text-text-muted hover:border-sky-500/30 hover:text-sky-500"
@@ -479,7 +479,7 @@ export default function DetailedNotes() {
 
                     {/* Feynman concept block */}
                     {sections[currentPage].conceptAnalyzed && (
-                      <div className="bg-sky-500/10 px-3 py-1.5 rounded-xl border border-sky-500/20 text-sky-800 dark:text-sky-300 text-[10px] font-bold inline-block">
+                      <div className="bg-sky-500/10 px-3 py-1.5 rounded-xl border border-sky-500/20 text-sky-800 dark:text-sky-300 text-[11px] font-bold inline-block">
                         🧠 Conceptual Core: {sections[currentPage].conceptAnalyzed}
                       </div>
                     )}
@@ -516,7 +516,7 @@ export default function DetailedNotes() {
                       >
                         <ChevronLeft size={16} /> Prev
                       </button>
-                      <span className="text-[10px] text-text-muted font-bold">
+                      <span className="text-[11px] text-text-muted font-bold">
                         {currentPage + 1} / {totalPages}
                       </span>
                       <button
@@ -541,7 +541,7 @@ export default function DetailedNotes() {
               >
                 <div className="flex items-center gap-2 mb-8 opacity-60">
                   <BookOpen size={16} />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.3em]">{t('core_concept_review')}</span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.3em]">{t('core_concept_review')}</span>
                 </div>
                 <div className="markdown-body text-text-main leading-relaxed prose prose-invert max-w-none">
                   <ReactMarkdown>{material.detailedNotes}</ReactMarkdown>

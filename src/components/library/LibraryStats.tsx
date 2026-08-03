@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Target, Flame, Award } from 'lucide-react';
 import { LibraryMaterial } from '../../hooks/useLibrary';
 import { User } from '../../types';
+import { getMasteryColor } from '../../lib/utils';
 
 interface LibraryStatsProps {
   materials: LibraryMaterial[];
@@ -22,94 +23,97 @@ export function LibraryStats({ materials, user }: LibraryStatsProps) {
     return Math.round(total / materials.length);
   }, [materials]);
 
-  // 3. Streak from user or fallback
-  const streak = user?.streak ?? 7;
+  // 3. Streak from user. No fallback — inventing a 7-day streak for a user who
+  //    has none is a lie the rest of the app then contradicts.
+  const streak = user?.streak ?? 0;
 
-  // 4. Badges unlocked (from user achievements index or default)
+  // 4. Badges unlocked
   const badgesCount = React.useMemo(() => {
     if (user?.achievements && user.achievements.length > 0) {
       return user.achievements.filter(a => a.isUnlocked).length;
     }
-    return 2; // Warm mock starter achievements count
+    return 0;
   }, [user]);
 
-  // Mastery health color definition
-  const getMasteryColor = (pct: number) => {
-    if (pct < 30) return '#FF5E7E'; // Ruby Red
-    if (pct < 60) return '#F5B042'; // Amber Yellow
-    if (pct < 80) return '#00D2FF'; // Cyan
-    return '#00E5A0'; // Neon Emerald
-  };
+  const totalBadges = user?.achievements?.length ?? 0;
 
   const masteryThemeColor = getMasteryColor(avgMastery);
 
+  // These four cards used to carry four competing accents (violet / rose /
+  // amber / pink), so nothing read as primary. Now the card chrome is uniform
+  // and colour is spent only where it encodes something: mastery health, and a
+  // streak that is actually running. `valueColor` left undefined = default ink.
   const statsCards = [
     {
-      icon: <BookOpen className="h-5 w-5 text-[#6C5CE7]" />,
+      icon: BookOpen,
       label: 'Unread Materials',
       value: unreadCount,
-      color: '#6C5CE7',
-      desc: 'Ready for study session',
+      desc: unreadCount > 0 ? 'Ready for study session' : 'Nothing waiting',
     },
     {
-      icon: <Target className="h-5 w-5" style={{ color: masteryThemeColor }} />,
+      icon: Target,
       label: 'Average Mastery',
       value: `${avgMastery}%`,
-      color: masteryThemeColor,
-      desc: avgMastery >= 80 ? 'Mastered!' : avgMastery >= 50 ? 'Developing' : 'Starter level',
+      valueColor: masteryThemeColor,
+      desc: avgMastery >= 80 ? 'Mastered' : avgMastery >= 50 ? 'Developing' : 'Starter level',
     },
     {
-      icon: <Flame className="h-5 w-5 text-[#FF9F68] animate-pulse" />,
+      icon: Flame,
       label: 'Study Streak',
-      value: `${streak} days`,
-      color: '#FF9F68',
-      desc: '🔥 Streak is alive!',
+      value: `${streak} ${streak === 1 ? 'day' : 'days'}`,
+      valueColor: streak > 0 ? '#FF9F68' : undefined,
+      live: streak > 0,
+      desc: streak > 0 ? 'Streak is alive' : 'Study today to start one',
     },
     {
-      icon: <Award className="h-5 w-5 text-[#FF55D2]" />,
+      icon: Award,
       label: 'Badges Unlocked',
       value: badgesCount,
-      color: '#FF55D2',
-      desc: `Out of ${user?.achievements?.length || 8} achievements`,
+      desc: totalBadges > 0 ? `Out of ${totalBadges} achievements` : 'None unlocked yet',
     },
   ];
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full">
-      {statsCards.map((stat, i) => (
-        <motion.div
-          key={stat.label}
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: i * 0.05 }}
-          className="relative overflow-hidden rounded-2xl bg-[#141A24]/90 p-4 border border-[#8E9AAF]/5 backdrop-blur-md transition-all duration-300 active:scale-[0.98] select-none shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex flex-col justify-between min-h-[110px]"
-          style={{ borderLeft: `4px solid ${stat.color}` }}
-        >
-          {/* Subtle Background Glow Accent matching stat color */}
-          <div 
-            className="absolute top-0 right-0 w-20 h-20 rounded-full blur-3xl opacity-5 pointer-events-none"
-            style={{ backgroundColor: stat.color }}
-          />
-
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-semibold text-[#8E9AAF] tracking-tight leading-tight line-clamp-1">
-              {stat.label}
-            </span>
-            <div className="p-1.5 rounded-lg bg-[#0B0E14]/60 pointer-events-none shrink-0">
-              {stat.icon}
+      {statsCards.map((stat, i) => {
+        const Icon = stat.icon;
+        return (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: i * 0.05 }}
+            className="relative overflow-hidden rounded-2xl bg-[#141A24]/90 p-4 border border-[#8E9AAF]/10 backdrop-blur-md transition-all duration-300 active:scale-[0.98] select-none shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex flex-col justify-between min-h-[118px]"
+          >
+            <div className="flex items-start justify-between gap-2.5">
+              {/* Two lines of room, so "Unread Materials" and "Badges Unlocked"
+                  stop clipping to "Unread…" / "Badges…" in the 2-up mobile grid.
+                  min-h keeps all four cards aligned when a label needs one. */}
+              <span className="text-[11px] font-semibold text-[#8E9AAF] tracking-tight leading-snug line-clamp-2 min-h-[2.2em]">
+                {stat.label}
+              </span>
+              <div className="p-1.5 rounded-lg bg-[#0B0E14]/60 pointer-events-none shrink-0">
+                <Icon
+                  className={`h-5 w-5 ${stat.live ? 'animate-pulse' : ''}`}
+                  style={{ color: stat.valueColor ?? '#6C5CE7' }}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="mt-2.5">
-            <div className="text-lg font-extrabold text-[#F0F3F8] tracking-tight">
-              {stat.value}
+            <div className="mt-2.5">
+              <div
+                className="text-lg font-extrabold tracking-tight"
+                style={{ color: stat.valueColor ?? '#F0F3F8' }}
+              >
+                {stat.value}
+              </div>
+              <p className="text-[11px] font-medium text-[#8E9AAF]/70 mt-0.5">
+                {stat.desc}
+              </p>
             </div>
-            <p className="text-[10px] font-medium text-[#8E9AAF]/60 mt-0.5 mt-auto">
-              {stat.desc}
-            </p>
-          </div>
-        </motion.div>
-      ))}
+          </motion.div>
+        );
+      })}
     </div>
   );
 }

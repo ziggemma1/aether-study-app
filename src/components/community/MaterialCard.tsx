@@ -93,7 +93,7 @@ export function MaterialCard({ material, onPreview, onClone }: MaterialCardProps
 
           <div className="flex items-center gap-1">
             {renderStars(material.rating || 4.7)}
-            <span className="text-[10px] text-[#8E9AAF] font-medium">({material.likes + 2})</span>
+            <span className="text-[11px] text-[#8E9AAF] font-medium">({material.likes + 2})</span>
           </div>
         </div>
 
@@ -124,7 +124,7 @@ export function MaterialCard({ material, onPreview, onClone }: MaterialCardProps
             {material.keyTopics.slice(0, 3).map((tag, idx) => (
               <span
                 key={`${tag}-${idx}`}
-                className="text-[10px] font-bold text-[#8E9AAF]/90 bg-[#8E9AAF]/5 px-2.5 py-1 rounded-lg border border-[#8E9AAF]/10 whitespace-nowrap"
+                className="text-[11px] font-bold text-[#8E9AAF]/90 bg-[#8E9AAF]/5 px-2.5 py-1 rounded-lg border border-[#8E9AAF]/10 whitespace-nowrap"
               >
                 #{tag}
               </span>

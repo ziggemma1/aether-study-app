@@ -446,7 +446,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
                {voiceOptions.length > 1 && (
                  <button
                    onClick={cycleVoice}
-                   className="mt-1 bg-white/10 hover:bg-white/20 active:bg-white/5 border border-white/10 text-white rounded-full py-1 px-2 text-[10px] sm:text-xs font-semibold cursor-pointer w-[68px] truncate drop-shadow-md text-center max-w-[100px]"
+                   className="mt-1 bg-white/10 hover:bg-white/20 active:bg-white/5 border border-white/10 text-white rounded-full py-1 px-2 text-[11px] sm:text-xs font-semibold cursor-pointer w-[68px] truncate drop-shadow-md text-center max-w-[100px]"
                    title="Tap to change Voice"
                  >
                    {voiceOptions[currentVoiceIndex]?.name || 'Auto'}
@@ -470,7 +470,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
                 <Music className="w-4 h-4" />
               )}
             </button>
-            <span className="text-[10px] text-white/50 w-[68px] text-center leading-tight truncate">{ambientTrack.label}</span>
+            <span className="text-[11px] text-white/50 w-[68px] text-center leading-tight truncate">{ambientTrack.label}</span>
 
             {isSelectingAmbient && (
               <motion.div 
@@ -480,8 +480,8 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
               >
                 <div className="flex flex-col gap-1.5 border-b border-white/10 pb-3 mb-2">
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter">Volume</span>
-                    <span className="text-[10px] font-bold text-cyan-400">{Math.round(ambientVolume * 100)}%</span>
+                    <span className="text-[11px] font-bold text-white/40 uppercase tracking-tighter">Volume</span>
+                    <span className="text-[11px] font-bold text-cyan-400">{Math.round(ambientVolume * 100)}%</span>
                   </div>
                   <input 
                     type="range" 
@@ -527,7 +527,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
             >
               <ShieldAlert className="w-4 h-4" />
             </button>
-            <span className={cn("text-[10px] text-center leading-tight w-[68px]", deepFocus ? "text-red-400" : "text-white/50")}>
+            <span className={cn("text-[11px] text-center leading-tight w-[68px]", deepFocus ? "text-red-400" : "text-white/50")}>
               Strict Mode
             </span>
           </div>
@@ -577,7 +577,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
           </svg>
 
           <Clock className={cn("text-primary sm:mb-0.5 w-[10px] h-[10px] sm:w-3.5 sm:h-3.5 relative z-10", isActive ? "animate-pulse" : "opacity-30")} />
-          <span className="text-[10px] sm:text-sm font-mono font-semibold text-white tracking-tight leading-none mt-0.5 sm:mt-0 relative z-10">
+          <span className="text-[11px] sm:text-sm font-mono font-semibold text-white tracking-tight leading-none mt-0.5 sm:mt-0 relative z-10">
             {formatTime(seconds)}
           </span>
           <motion.div

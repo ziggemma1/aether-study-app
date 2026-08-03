@@ -212,7 +212,7 @@ export default function Flashcards() {
             <Trophy size={48} className="hidden sm:block" />
           </motion.div>
           <h1 className="text-xl sm:text-3xl font-black uppercase tracking-tighter mb-1 sm:mb-2">Deck Mastered</h1>
-          <p className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest mb-6 sm:mb-8">
+          <p className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest mb-6 sm:mb-8">
             Every card in this session reviewed
           </p>
 
@@ -237,7 +237,7 @@ export default function Flashcards() {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-        <p className="text-text-muted font-black uppercase tracking-[0.2em] text-[10px] animate-pulse">
+        <p className="text-text-muted font-black uppercase tracking-[0.2em] text-[11px] animate-pulse">
           {isGeneratingCustom ? "Crafting custom flashcards..." : "Syncing your study cards..."}
         </p>
       </div>
@@ -265,7 +265,7 @@ export default function Flashcards() {
           <ArrowLeft size={18} /> Back
         </button>
         <div className="flex flex-col items-end">
-          <span className="text-[10px] font-black uppercase text-primary tracking-widest mb-0.5">Progress</span>
+          <span className="text-[11px] font-black uppercase text-primary tracking-widest mb-0.5">Progress</span>
           <span className="text-xs font-bold text-text-muted">
             {completedCount} / {totalInitial} Mastered
           </span>
@@ -327,7 +327,7 @@ export default function Flashcards() {
                     {activeCard.question}
                   </h2>
                 </div>
-                <div className="mt-8 py-3 px-8 bg-primary/10 rounded-full text-[10px] text-primary font-black tracking-[0.2em] uppercase flex items-center gap-3 border border-primary/20 backdrop-blur-sm group-hover:scale-105 transition-transform">
+                <div className="mt-8 py-3 px-8 bg-primary/10 rounded-full text-[11px] text-primary font-black tracking-[0.2em] uppercase flex items-center gap-3 border border-primary/20 backdrop-blur-sm group-hover:scale-105 transition-transform">
                   <RefreshCw size={14} className="animate-spin-slow" /> Tap to reveal
                 </div>
               </div>
@@ -357,14 +357,14 @@ export default function Flashcards() {
                 <div className="mt-8 grid grid-cols-2 gap-4 w-full">
                   <button
                     onClick={(e) => { e.stopPropagation(); reviewAgain(); }}
-                    className="py-4 bg-rose-500 text-white rounded-2xl text-[10px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-rose-500/20 active:scale-95 transition-transform"
+                    className="py-4 bg-rose-500 text-white rounded-2xl text-[11px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-rose-500/20 active:scale-95 transition-transform"
                   >
                     <X size={18} />
                     <span>Still Learning</span>
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); markKnown(); }}
-                    className="py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
+                    className="py-4 bg-emerald-500 text-white rounded-2xl text-[11px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
                   >
                     <Check size={18} />
                     <span>Got it!</span>
@@ -385,7 +385,7 @@ export default function Flashcards() {
           <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2 border border-rose-500/20 group-hover:bg-rose-500 group-hover:text-white transition-all">
             <X size={20} />
           </div>
-          <span className="text-[10px] font-black uppercase text-text-muted tracking-tighter">Review</span>
+          <span className="text-[11px] font-black uppercase text-text-muted tracking-tighter">Review</span>
         </button>
 
         <div className="h-0.5 flex-1 mx-8 bg-gradient-to-r from-rose-500/20 via-transparent to-emerald-500/20 rounded-full opacity-30" />
@@ -397,7 +397,7 @@ export default function Flashcards() {
           <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-2 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
             <Check size={20} />
           </div>
-          <span className="text-[10px] font-black uppercase text-text-muted tracking-tighter">I Know This</span>
+          <span className="text-[11px] font-black uppercase text-text-muted tracking-tighter">I Know This</span>
         </button>
       </div>
     </div>

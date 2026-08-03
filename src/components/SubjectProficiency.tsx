@@ -42,7 +42,7 @@ export default function SubjectProficiency({ subjects }: SubjectProficiencyProps
                 <span className="text-sm font-semibold text-[#F0F3F8] block">
                   {sub.name}
                 </span>
-                <span className="text-[10px] text-gray-400 font-medium">
+                <span className="text-[11px] text-gray-400 font-medium">
                   {sub.quizCount} quiz{sub.quizCount !== 1 ? 'zes' : ''} completed
                 </span>
               </div>
@@ -58,7 +58,7 @@ export default function SubjectProficiency({ subjects }: SubjectProficiencyProps
               />
             </div>
             
-            <div className="flex justify-between text-[9px] text-gray-500 font-bold uppercase tracking-wider">
+            <div className="flex justify-between text-[11px] text-gray-500 font-bold uppercase tracking-wider">
               <span>Novice</span>
               <span>Exp</span>
               <span>Proficient</span>

@@ -71,7 +71,7 @@ export default function Leaderboard() {
               <button 
                 onClick={toggleOptIn}
                 disabled={isUpdating}
-                className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-red-400 transition-colors flex items-center gap-2"
+                className="text-[11px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-red-400 transition-colors flex items-center gap-2"
               >
                 {isUpdating ? <Loader2 size={12} className="animate-spin" /> : 'Leave Arena'}
               </button>
@@ -90,7 +90,7 @@ export default function Leaderboard() {
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-text-muted flex items-center gap-2">
                    <Sparkles size={16} className="text-[#00D2FF]" /> Top Performers
                 </h2>
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-widest bg-surface-alt/40 px-2.5 py-1 rounded-lg border border-border/40">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-text-muted uppercase tracking-widest bg-surface-alt/40 px-2.5 py-1 rounded-lg border border-border/40">
                    <Trophy size={12} className="text-amber-400" /> Season 1 Active
                 </div>
              </div>

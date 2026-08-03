@@ -62,10 +62,10 @@ export function RecentItem({ title, date, type, progress = 0, onClick }: RecentI
           </h4>
           
           <div className="flex gap-1.5 items-center mt-1">
-            <span className={`text-[9px] font-black tracking-widest border px-1.5 py-0.5 rounded uppercase ${info.badgeClass}`}>
+            <span className={`text-[11px] font-black tracking-widest border px-1.5 py-0.5 rounded uppercase ${info.badgeClass}`}>
               {info.label}
             </span>
-            <span className="text-[10px] text-text-muted font-bold font-mono">
+            <span className="text-[11px] text-text-muted font-bold font-mono">
               • Uploaded {date}
             </span>
           </div>
@@ -79,7 +79,7 @@ export function RecentItem({ title, date, type, progress = 0, onClick }: RecentI
                   style={{ width: `${progress}%` }} 
                 />
               </div>
-              <span className="text-[9px] font-black text-text-muted">{progress}%</span>
+              <span className="text-[11px] font-black text-text-muted">{progress}%</span>
             </div>
           )}
         </div>

@@ -304,7 +304,7 @@ export default function MaterialDetail() {
                   >
                     <div className="flex flex-col text-left">
                       <span className="text-sm font-bold text-white">AI Practice Quiz</span>
-                      <span className="text-[10px] text-white/50 font-medium">Test your knowledge</span>
+                      <span className="text-[11px] text-white/50 font-medium">Test your knowledge</span>
                     </div>
                   </Link>
                   <button
@@ -324,7 +324,7 @@ export default function MaterialDetail() {
                   >
                     <div className="flex flex-col text-left">
                       <span className="text-sm font-bold text-white">Smart Flashcards</span>
-                      <span className="text-[10px] text-white/50 font-medium">Spaced repetition</span>
+                      <span className="text-[11px] text-white/50 font-medium">Spaced repetition</span>
                     </div>
                   </Link>
                   <button
@@ -346,7 +346,7 @@ export default function MaterialDetail() {
                   </div>
                   <div className="flex flex-col text-left">
                     <span className="text-sm font-bold text-white">Create Study Plan</span>
-                    <span className="text-[10px] text-white/50 font-medium">Personalized roadmap</span>
+                    <span className="text-[11px] text-white/50 font-medium">Personalized roadmap</span>
                   </div>
                 </Link>
 
@@ -361,7 +361,7 @@ export default function MaterialDetail() {
                   </div>
                   <div className="flex flex-col text-left">
                     <span className="text-sm font-bold text-white">Regenerate Insights</span>
-                    <span className="text-[10px] text-white/50 font-medium">Update smart analysis</span>
+                    <span className="text-[11px] text-white/50 font-medium">Update smart analysis</span>
                   </div>
                 </button>
               </div>

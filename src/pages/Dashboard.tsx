@@ -181,13 +181,13 @@ export default function Dashboard() {
             size="lg" 
           />
           <div className="min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#00D2FF]">
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#00D2FF]">
               {getGreeting()}, {userName.split(' ')[0]}! ☀️
             </span>
             <h1 className="text-base sm:text-lg font-black text-text-main leading-tight mt-0.5 truncate uppercase">
               <TruncatedText text={userName} maxLength={24} />
             </h1>
-            <p className="text-[10px] sm:text-xs text-text-muted mt-1 italic leading-tight">
+            <p className="text-[11px] sm:text-xs text-text-muted mt-1 italic leading-tight">
               "{randomQuote}"
             </p>
           </div>
@@ -207,7 +207,7 @@ export default function Dashboard() {
         title={t('overview')} 
         subtitle="Analytical insights, focus charts and material tracking."
         action={
-          <Link to="/reports" className="text-[10px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
+          <Link to="/reports" className="text-[11px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
             {t('reports')} <ArrowRight size={10} />
           </Link>
         }
@@ -237,9 +237,16 @@ export default function Dashboard() {
           onActionClick={() => navigate('/rooms')}
         />
 
-        <MetricCard 
-          label="Rivals Rank" 
-          value={`#${user?.rank || 1} of ${user?.totalLearners || 124}`}
+        {/* `|| 1` and `|| 124` showed an unranked account a confident "#1 of
+            124" that the leaderboard then contradicted. */}
+        <MetricCard
+          label="Rivals Rank"
+          value={user?.rank ? `#${user.rank}` : 'Unranked'}
+          note={
+            user?.rank
+              ? `Of ${(user?.totalLearners ?? 0).toLocaleString()} ranked learners`
+              : 'Opt in on the leaderboard to be ranked'
+          }
           icon={<Compass size={16} />}
           tooltip="Your highlighted rank position among active course leaderboard members."
           onClick={() => navigate('/leaderboard')}
@@ -277,7 +284,7 @@ export default function Dashboard() {
           <h2 className="text-xs font-black text-text-main uppercase tracking-widest">
             {t('recent_materials')}
           </h2>
-          <Link to="/library" className="text-[10px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
+          <Link to="/library" className="text-[11px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
             {t('view_all')} <ArrowRight size={10} />
           </Link>
         </div>
@@ -334,7 +341,7 @@ export default function Dashboard() {
                       <h4 className="text-[11px] font-bold text-text-main truncate">
                         {session.title || "Active focus"}
                       </h4>
-                      <p className="text-[9px] text-text-muted mt-0.5">
+                      <p className="text-[11px] text-text-muted mt-0.5">
                         {session.durationMinutes} mins • {session.startTime ? new Date(session.startTime).toLocaleDateString() : 'Today'}
                       </p>
                     </div>
@@ -343,15 +350,15 @@ export default function Dashboard() {
               ) : (
                 <div className="flex flex-col items-center justify-center text-center py-10 opacity-70">
                   <Inbox size={26} className="text-text-muted opacity-40 mb-2" />
-                  <p className="text-[10px] font-black uppercase text-text-muted tracking-wider">No recent sessions</p>
-                  <p className="text-[9px] text-text-muted max-w-[150px] mt-1">Daily active recall sessions accumulate here.</p>
+                  <p className="text-[11px] font-black uppercase text-text-muted tracking-wider">No recent sessions</p>
+                  <p className="text-[11px] text-text-muted max-w-[150px] mt-1">Daily active recall sessions accumulate here.</p>
                 </div>
               )}
             </div>
             
             <button 
               onClick={() => navigate('/community')}
-              className="w-full mt-3 btn-ripple py-2.5 bg-surface-alt hover:bg-primary/10 border border-border/10 text-text-main hover:text-primary rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
+              className="w-full mt-3 btn-ripple py-2.5 bg-surface-alt hover:bg-primary/10 border border-border/10 text-text-main hover:text-primary rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all"
             >
               Solve Doubts with Friends
             </button>
@@ -387,7 +394,7 @@ export default function Dashboard() {
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tool.color}`}>
                 <tool.icon size={18} />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-text-main font-sans">
+              <span className="text-[11px] font-black uppercase tracking-wider text-text-main font-sans">
                 {tool.label}
               </span>
             </Link>

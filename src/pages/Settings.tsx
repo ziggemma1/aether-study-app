@@ -183,7 +183,7 @@ export default function Settings() {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
         <div>
           <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-2 text-text-main tracking-tight">{t('settings')}</h1>
-          <p className="text-[10px] sm:text-base text-text-muted">Manage your account and preferences.</p>
+          <p className="text-[11px] sm:text-base text-text-muted">Manage your account and preferences.</p>
         </div>
         
         {/* Tab Navigation */}
@@ -193,7 +193,7 @@ export default function Settings() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
+                "flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
                 activeTab === tab.id
                   ? "bg-primary text-white shadow-lg"
                   : "text-text-muted hover:text-text-main"
@@ -238,35 +238,35 @@ export default function Settings() {
             </div>
             
             <h2 className="text-lg sm:text-2xl font-bold mb-0.5 sm:mb-1 text-text-main tracking-tight">{user?.name}</h2>
-            <p className="text-[10px] sm:text-sm text-text-muted mb-4 sm:mb-6 font-medium">@{user?.handle || user?.name?.toLowerCase()?.replace(/\s+/g, '_')}</p>
+            <p className="text-[11px] sm:text-sm text-text-muted mb-4 sm:mb-6 font-medium">@{user?.handle || user?.name?.toLowerCase()?.replace(/\s+/g, '_')}</p>
             
             <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-dashed border-border/40">
               <div className="text-center">
                 <p className="text-sm sm:text-lg font-bold text-text-main">{user?.followersCount || 0}</p>
-                <p className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('followers')}</p>
+                <p className="text-[11px] sm:text-[11px] font-bold text-text-muted uppercase tracking-widest">{t('followers')}</p>
               </div>
               <div className="text-center">
                 <p className="text-sm sm:text-lg font-bold text-text-main">{user?.friendsCount || 0}</p>
-                <p className="text-[8px] sm:text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('friends')}</p>
+                <p className="text-[11px] sm:text-[11px] font-bold text-text-muted uppercase tracking-widest">{t('friends')}</p>
               </div>
             </div>
           </div>
 
           <div className="glass-card p-4 sm:p-6 bg-primary/5 border-primary/20">
-            <h4 className="text-[10px] sm:text-xs font-bold text-primary uppercase tracking-widest mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
+            <h4 className="text-[11px] sm:text-xs font-bold text-primary uppercase tracking-widest mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
               <ShieldCheck size={12} className="sm:hidden" />
               <ShieldCheck size={14} className="hidden sm:block" /> Status
             </h4>
             <div className="space-y-3 sm:space-y-4">
-              <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold">
+              <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold">
                 <span className="text-text-muted">Plan</span>
                 <span className="text-primary uppercase">{user?.plan}</span>
               </div>
-              <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold">
+              <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold">
                 <span className="text-text-muted">{t('verified')}</span>
                 <span className="text-green-500 uppercase">Yes</span>
               </div>
-              <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold">
+              <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold">
                 <span className="text-text-muted">Joined</span>
                 <span className="text-text-main uppercase">Apr 2024</span>
               </div>
@@ -275,7 +275,7 @@ export default function Settings() {
 
           <button 
             onClick={signOut}
-            className="w-full p-3 sm:p-4 glass-card border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all flex items-center justify-center gap-2 sm:gap-3 font-bold uppercase tracking-widest text-[10px] sm:text-xs"
+            className="w-full p-3 sm:p-4 glass-card border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all flex items-center justify-center gap-2 sm:gap-3 font-bold uppercase tracking-widest text-[11px] sm:text-xs"
           >
             <LogOut size={16} className="sm:hidden" />
             <LogOut size={18} className="hidden sm:block" /> Sign Out
@@ -302,29 +302,29 @@ export default function Settings() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                     <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('full_name')}</label>
+                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('full_name')}</label>
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
                       />
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('email')}</label>
+                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('email')}</label>
                       <input
                         type="email"
                         value={formData.email}
                         disabled
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[10px] sm:text-sm text-text-main opacity-50 cursor-not-allowed outline-none transition-all"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main opacity-50 cursor-not-allowed outline-none transition-all"
                       />
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('language')}</label>
+                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('language')}</label>
                       <select 
                         value={formData.language}
                         onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all"
                       >
                         <option>English (US)</option>
                         <option>English (UK)</option>
@@ -332,11 +332,11 @@ export default function Settings() {
                       </select>
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('curriculum')}</label>
+                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('curriculum')}</label>
                       <select 
                         value={formData.curriculum}
                         onChange={(e) => setFormData({ ...formData, curriculum: e.target.value })}
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all"
                       >
                         <option>SAT / AP</option>
                         <option>WAEC / NECO</option>
@@ -344,7 +344,7 @@ export default function Settings() {
                       </select>
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest flex items-center justify-between">
+                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest flex items-center justify-between">
                         {t('location')}
                         <button 
                           onClick={detectLocation}
@@ -360,7 +360,7 @@ export default function Settings() {
                         value={formData.location}
                         onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                         placeholder="e.g. Lagos, Nigeria"
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
+                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
                       />
                     </div>
                   </div>
@@ -368,7 +368,7 @@ export default function Settings() {
                     <button 
                       onClick={() => handleSave()}
                       disabled={isSaving}
-                      className="btn-primary py-2 px-6 sm:py-3 sm:px-10 text-[10px] sm:text-sm flex items-center gap-2"
+                      className="btn-primary py-2 px-6 sm:py-3 sm:px-10 text-[11px] sm:text-sm flex items-center gap-2"
                     >
                       {isSaving ? <Loader2 size={16} className="animate-spin" /> : t('save_changes')}
                     </button>
@@ -400,8 +400,8 @@ export default function Settings() {
                           className="flex items-center justify-between p-4 sm:p-5 bg-surface-alt/30 rounded-xl sm:rounded-2xl border border-border/40 hover:border-primary/30 transition-all cursor-pointer group"
                         >
                           <div>
-                            <p className="font-bold text-[10px] sm:text-sm text-text-main group-hover:text-primary transition-colors">{pref.title}</p>
-                            <p className="text-[8px] sm:text-xs text-text-muted">{pref.desc}</p>
+                            <p className="font-bold text-[11px] sm:text-sm text-text-main group-hover:text-primary transition-colors">{pref.title}</p>
+                            <p className="text-[11px] sm:text-xs text-text-muted">{pref.desc}</p>
                           </div>
                           <motion.div
                             initial={false}
@@ -423,7 +423,7 @@ export default function Settings() {
                     <button
                       onClick={() => handleSave()}
                       disabled={isSaving}
-                      className="btn-primary py-2 px-6 sm:py-3 sm:px-10 text-[10px] sm:text-sm flex items-center gap-2"
+                      className="btn-primary py-2 px-6 sm:py-3 sm:px-10 text-[11px] sm:text-sm flex items-center gap-2"
                     >
                       {isSaving ? <Loader2 size={16} className="animate-spin" /> : t('save_changes')}
                     </button>
@@ -504,11 +504,11 @@ export default function Settings() {
                   </h3>
                   <div className="flex items-center justify-between p-5 bg-surface-alt/30 rounded-2xl border border-border/40 mb-6">
                     <div>
-                      <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Current Plan</p>
+                      <p className="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Current Plan</p>
                       <p className="text-lg font-bold text-text-main capitalize">{user?.plan || 'free'}</p>
                     </div>
                     {user?.plan === 'pro' && (
-                      <span className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1.5 rounded-full">Active</span>
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1.5 rounded-full">Active</span>
                     )}
                   </div>
                   <p className="text-sm text-text-muted mb-6">

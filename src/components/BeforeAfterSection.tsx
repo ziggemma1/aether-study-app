@@ -42,7 +42,7 @@ const SectionHeader = ({ eyebrow, title, subtitle }: { eyebrow: string; title: s
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="inline-block text-[10px] sm:text-sm font-bold tracking-wider text-primary uppercase mb-2 sm:mb-4"
+      className="inline-block text-[11px] sm:text-sm font-bold tracking-wider text-primary uppercase mb-2 sm:mb-4"
     >
       {eyebrow}
     </motion.span>
@@ -240,10 +240,10 @@ const BeforeAfterSlider = () => {
                 animate={{ rotate: -5, x: -5, y: 5 }}
                 className="glass-card bg-white/5 border-white/10 p-3 sm:p-4 h-24 sm:h-32 flex flex-col gap-1.5 sm:gap-2 relative"
               >
-                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 sm:w-6 sm:h-6 bg-rose-500 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[10px] font-bold">!</div>
+                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 sm:w-6 sm:h-6 bg-rose-500 rounded-full flex items-center justify-center text-white text-[11px] sm:text-[11px] font-bold">!</div>
                 <FileText size={14} className="text-rose-400 sm:hidden" />
                 <FileText size={16} className="text-rose-400 hidden sm:block" />
-                <div className="text-[8px] sm:text-[10px] text-rose-400 font-bold uppercase truncate">Final_v2.pdf</div>
+                <div className="text-[11px] sm:text-[11px] text-rose-400 font-bold uppercase truncate">Final_v2.pdf</div>
                 <div className="h-1 w-full bg-rose-400/20 rounded" />
                 <div className="h-1 w-2/3 bg-rose-400/20 rounded" />
               </motion.div>
@@ -254,7 +254,7 @@ const BeforeAfterSlider = () => {
               >
                 <Youtube size={14} className="text-rose-400 sm:hidden" />
                 <Youtube size={16} className="text-rose-400 hidden sm:block" />
-                <div className="text-[8px] sm:text-[10px] text-rose-400 font-bold uppercase truncate">Lecture_10</div>
+                <div className="text-[11px] sm:text-[11px] text-rose-400 font-bold uppercase truncate">Lecture_10</div>
                 <div className="aspect-video bg-rose-400/10 rounded flex items-center justify-center">
                   <XCircle size={16} className="text-rose-400/30 sm:hidden" />
                   <XCircle size={20} className="text-rose-400/30 hidden sm:block" />
@@ -268,7 +268,7 @@ const BeforeAfterSlider = () => {
               >
                 <MessageSquare size={14} className="text-rose-400 sm:hidden" />
                 <MessageSquare size={16} className="text-rose-400 hidden sm:block" />
-                <div className="text-[8px] sm:text-[10px] text-rose-400 font-bold uppercase truncate">Article</div>
+                <div className="text-[11px] sm:text-[11px] text-rose-400 font-bold uppercase truncate">Article</div>
                 <div className="h-1 w-1/2 bg-rose-400/20 rounded" />
               </motion.div>
 
@@ -278,7 +278,7 @@ const BeforeAfterSlider = () => {
               >
                 <CloudOff size={14} className="text-rose-400 sm:hidden" />
                 <CloudOff size={16} className="text-rose-400 hidden sm:block" />
-                <div className="text-[8px] sm:text-[10px] text-rose-400 font-bold uppercase truncate">Broken.txt</div>
+                <div className="text-[11px] sm:text-[11px] text-rose-400 font-bold uppercase truncate">Broken.txt</div>
                 <div className="h-1 w-full bg-rose-400/20 rounded" />
                 <div className="h-1 w-full bg-rose-400/20 rounded" />
               </motion.div>
@@ -286,11 +286,11 @@ const BeforeAfterSlider = () => {
 
             {/* Floating Error Badges */}
             <div className="absolute bottom-6 sm:bottom-12 right-6 sm:right-12 flex flex-col gap-1.5 sm:gap-2">
-              <div className="bg-rose-500/20 text-rose-400 text-[8px] sm:text-[10px] font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-rose-500/30 flex items-center gap-1.5 sm:gap-2">
+              <div className="bg-rose-500/20 text-rose-400 text-[11px] sm:text-[11px] font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-rose-500/30 flex items-center gap-1.5 sm:gap-2">
                 <AlertCircle size={8} className="sm:hidden" />
                 <AlertCircle size={10} className="hidden sm:block" /> MISSING FILES
               </div>
-              <div className="bg-rose-500/20 text-rose-400 text-[8px] sm:text-[10px] font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-rose-500/30 flex items-center gap-1.5 sm:gap-2">
+              <div className="bg-rose-500/20 text-rose-400 text-[11px] sm:text-[11px] font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-rose-500/30 flex items-center gap-1.5 sm:gap-2">
                 <History size={8} className="sm:hidden" />
                 <History size={10} className="hidden sm:block" /> HOURS WASTED
               </div>
@@ -303,7 +303,7 @@ const BeforeAfterSlider = () => {
               key={beforeText}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/5 backdrop-blur-md border border-white/10 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-medium shadow-xl"
+              className="bg-white/5 backdrop-blur-md border border-white/10 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-medium shadow-xl"
             >
               {beforeText}
             </motion.div>
@@ -323,7 +323,7 @@ const BeforeAfterSlider = () => {
                 <div className="glass-card p-4 h-full bg-white/10 border-white/20">
                   <div className="flex items-center gap-2 mb-6">
                     <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-                      <span className="text-white font-bold text-[10px]">A</span>
+                      <span className="text-white font-bold text-[11px]">A</span>
                     </div>
                     <div className="h-2 w-16 bg-white/20 rounded" />
                   </div>
@@ -349,15 +349,15 @@ const BeforeAfterSlider = () => {
                     </div>
                     <div>
                       <div className="text-white font-bold text-sm sm:text-lg">Biology 101: Summary</div>
-                      <div className="text-emerald-400/80 text-[8px] sm:text-xs font-medium flex items-center gap-1">
+                      <div className="text-emerald-400/80 text-[11px] sm:text-xs font-medium flex items-center gap-1">
                         <CheckCircle2 size={10} className="sm:hidden" />
                         <CheckCircle2 size={12} className="hidden sm:block" /> Ready to study
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-1.5 sm:gap-2">
-                    <div className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/5 rounded-md sm:rounded-lg border border-white/10 text-[8px] sm:text-[10px] text-white/60 font-bold">GENETICS</div>
-                    <div className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/5 rounded-md sm:rounded-lg border border-white/10 text-[8px] sm:text-[10px] text-white/60 font-bold">EVOLUTION</div>
+                    <div className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/5 rounded-md sm:rounded-lg border border-white/10 text-[11px] sm:text-[11px] text-white/60 font-bold">GENETICS</div>
+                    <div className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/5 rounded-md sm:rounded-lg border border-white/10 text-[11px] sm:text-[11px] text-white/60 font-bold">EVOLUTION</div>
                   </div>
                 </div>
 
@@ -367,17 +367,17 @@ const BeforeAfterSlider = () => {
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
                       <Calendar size={14} className="text-primary sm:hidden" />
                       <Calendar size={16} className="text-primary hidden sm:block" />
-                      <span className="text-[8px] sm:text-[10px] font-bold text-white/40 uppercase">Session</span>
+                      <span className="text-[11px] sm:text-[11px] font-bold text-white/40 uppercase">Session</span>
                     </div>
                     <div className="text-white font-bold text-xs sm:text-sm mb-0.5 sm:mb-1">Cell Division</div>
-                    <div className="text-white/40 text-[8px] sm:text-[10px]">Today, 4:00 PM</div>
+                    <div className="text-white/40 text-[11px] sm:text-[11px]">Today, 4:00 PM</div>
                   </div>
 
                   <div className="glass-card p-3 sm:p-4 bg-white/10 border-white/20">
                     <div className="flex justify-between items-start mb-2 sm:mb-4">
                       <Trophy size={14} className="text-accent sm:hidden" />
                       <Trophy size={16} className="text-accent hidden sm:block" />
-                      <span className="text-[8px] sm:text-[10px] font-bold text-white/40 uppercase">Mastery</span>
+                      <span className="text-[11px] sm:text-[11px] font-bold text-white/40 uppercase">Mastery</span>
                     </div>
                     <div className="text-white font-bold text-xs sm:text-sm mb-0.5 sm:mb-1">92% Score</div>
                     <div className="h-1 sm:h-1.5 w-full bg-white/10 rounded mt-1.5 sm:mt-2 overflow-hidden">
@@ -388,10 +388,10 @@ const BeforeAfterSlider = () => {
                   <div className="glass-card p-3 sm:p-4 bg-white/10 border-white/20 hidden sm:block">
                     <div className="flex justify-between items-start mb-4">
                       <Zap size={16} className="text-emerald-400" />
-                      <span className="text-[10px] font-bold text-white/40 uppercase">Retention</span>
+                      <span className="text-[11px] font-bold text-white/40 uppercase">Retention</span>
                     </div>
                     <div className="text-white font-bold text-sm mb-1">+35% Increase</div>
-                    <div className="text-emerald-400/60 text-[10px]">Since last week</div>
+                    <div className="text-emerald-400/60 text-[11px]">Since last week</div>
                   </div>
                 </div>
               </div>
@@ -404,7 +404,7 @@ const BeforeAfterSlider = () => {
               key={afterText}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-medium shadow-xl"
+              className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-medium shadow-xl"
             >
               {afterText}
             </motion.div>
@@ -426,7 +426,7 @@ const BeforeAfterSlider = () => {
               }}
               className="px-3 py-1 sm:px-4 sm:py-1.5 rounded-full backdrop-blur-md border border-white/20 shadow-2xl whitespace-nowrap"
             >
-              <span className="text-white font-black tracking-tighter text-[10px] sm:text-sm">
+              <span className="text-white font-black tracking-tighter text-[11px] sm:text-sm">
                 {sliderPos > 50 ? 'AFTER' : 'BEFORE'}
               </span>
             </motion.div>
@@ -443,7 +443,7 @@ const BeforeAfterSlider = () => {
         </div>
       </div>
       
-      <div className="mt-6 sm:mt-8 flex justify-center items-center gap-3 sm:gap-4 text-slate-500 text-[10px] sm:text-sm italic">
+      <div className="mt-6 sm:mt-8 flex justify-center items-center gap-3 sm:gap-4 text-slate-500 text-[11px] sm:text-sm italic">
         <MousePointer2 size={14} className="sm:hidden" />
         <MousePointer2 size={16} className="hidden sm:block" />
         Drag to see the transformation
@@ -668,14 +668,14 @@ const TransformationTimeline = () => {
                 )}>
                   <step.icon size={28} />
                 </div>
-                <div className="absolute -top-3 -right-3 bg-surface shadow-md rounded-full px-2 py-0.5 text-[10px] font-bold border border-white/10 text-white">
+                <div className="absolute -top-3 -right-3 bg-surface shadow-md rounded-full px-2 py-0.5 text-[11px] font-bold border border-white/10 text-white">
                   {step.day}
                 </div>
               </div>
               
               <div className="glass-card p-6 bg-white/5 border-white/10 w-full flex-grow">
                 <div className={cn(
-                  "text-[10px] font-bold uppercase tracking-widest mb-2",
+                  "text-[11px] font-bold uppercase tracking-widest mb-2",
                   i === 0 ? "text-rose-400" : i === 3 ? "text-accent" : "text-primary"
                 )}>
                   {step.status}
@@ -722,7 +722,7 @@ export default function BeforeAfterSection() {
                 key={opt.id}
                 onClick={() => setActiveOption(opt.id)}
                 className={cn(
-                  "flex items-center gap-1.5 sm:gap-2 px-3 md:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all",
+                  "flex items-center gap-1.5 sm:gap-2 px-3 md:px-6 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-sm font-semibold transition-all",
                   activeOption === opt.id 
                     ? "bg-primary text-white shadow-lg" 
                     : "text-slate-400 hover:text-white"

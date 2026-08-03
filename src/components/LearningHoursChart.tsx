@@ -95,7 +95,7 @@ export default function LearningHoursChart() {
             </div>
             <div>
               <p className="text-xs font-bold text-text-main leading-none mb-1">{stat.label}</p>
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">{stat.duration}</p>
+              <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">{stat.duration}</p>
             </div>
           </div>
         ))}

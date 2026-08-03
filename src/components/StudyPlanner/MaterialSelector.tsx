@@ -125,7 +125,7 @@ export default function MaterialSelector({
                       <p className="text-xs font-bold text-[#F0F3F8] truncate leading-tight">
                         {mat.title}
                       </p>
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500 font-medium">
+                      <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-500 font-medium">
                         <span className="capitalize">{mat.type || 'Document'}</span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
@@ -142,7 +142,7 @@ export default function MaterialSelector({
 
           {/* Active Chips area */}
           <div className="pt-3 border-t border-gray-800/50">
-            <p className="text-[10px] text-[#8E9AAF] font-semibold uppercase font-mono tracking-wider mb-2">
+            <p className="text-[11px] text-[#8E9AAF] font-semibold uppercase font-mono tracking-wider mb-2">
               Selected ({selectedMaterialIds.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -156,7 +156,7 @@ export default function MaterialSelector({
                   return (
                     <div
                       key={id}
-                      className="inline-flex items-center gap-1.5 bg-[#6C5CE7]/15 border border-[#6C5CE7]/30 text-gray-200 text-[10px] font-semibold px-2.5 py-1 rounded-full text-left"
+                      className="inline-flex items-center gap-1.5 bg-[#6C5CE7]/15 border border-[#6C5CE7]/30 text-gray-200 text-[11px] font-semibold px-2.5 py-1 rounded-full text-left"
                     >
                       <span className="max-w-[130px] truncate">{m?.title || 'Material'}</span>
                       <button

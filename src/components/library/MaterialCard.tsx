@@ -141,7 +141,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
             id={`btn-study-${material.id}`}
           >
             <BookOpen size={16} />
-            <span className="text-[10px] font-bold mt-1 tracking-tight">Study</span>
+            <span className="text-[11px] font-bold mt-1 tracking-tight">Study</span>
           </button>
           <button
             onClick={() => navigateTo(`/materials/${material.id}/notes`)}
@@ -149,7 +149,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
             id={`btn-notes-${material.id}`}
           >
             <FileText size={16} />
-            <span className="text-[10px] font-bold mt-1 tracking-tight">Notes</span>
+            <span className="text-[11px] font-bold mt-1 tracking-tight">Notes</span>
           </button>
           <button
             onClick={() => navigateTo(`/quiz/${material.id}`)}
@@ -157,7 +157,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
             id={`btn-quiz-${material.id}`}
           >
             <Award size={16} />
-            <span className="text-[10px] font-bold mt-1 tracking-tight">Quiz</span>
+            <span className="text-[11px] font-bold mt-1 tracking-tight">Quiz</span>
           </button>
           <button
             onClick={() => navigateTo(`/flashcards/${material.id}`)}
@@ -165,7 +165,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
             id={`btn-flash-${material.id}`}
           >
             <Sparkles size={16} />
-            <span className="text-[10px] font-bold mt-1 tracking-tight">Flash</span>
+            <span className="text-[11px] font-bold mt-1 tracking-tight">Flash</span>
           </button>
         </div>
       </div>

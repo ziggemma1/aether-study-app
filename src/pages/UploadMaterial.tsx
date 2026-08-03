@@ -353,7 +353,7 @@ export default function UploadMaterial() {
     <div className="p-3 sm:p-8 lg:p-12 w-full max-w-full lg:max-w-3xl mx-auto pb-40 lg:pb-12 overflow-x-hidden box-border">
       <header className="mb-6 sm:mb-12 text-center w-full">
         <h1 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2 text-text-main">Upload Material</h1>
-        <p className="text-[10px] sm:text-base text-text-muted">Upload a file, paste a link, or scan your notes.</p>
+        <p className="text-[11px] sm:text-base text-text-muted">Upload a file, paste a link, or scan your notes.</p>
       </header>
 
       {/* Tabs */}
@@ -371,7 +371,7 @@ export default function UploadMaterial() {
               setImagePreview(null);
             }}
             className={cn(
-              "flex flex-shrink-0 items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap border border-border shadow-sm",
+              "flex flex-shrink-0 items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 rounded-full text-[11px] sm:text-sm font-semibold transition-all whitespace-nowrap border border-border shadow-sm",
               activeTab === tab.id
                 ? "bg-primary text-white shadow-md border-primary"
                 : "bg-surface text-text-muted hover:bg-surface/80 hover:border-primary/30"
@@ -397,7 +397,7 @@ export default function UploadMaterial() {
               <CheckCircle2 size={40} className="hidden sm:block" />
             </div>
             <h2 className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2 text-text-main">Success!</h2>
-            <p className="text-[10px] sm:text-base text-text-muted mb-6 sm:mb-8">Material processed and summarized.</p>
+            <p className="text-[11px] sm:text-base text-text-muted mb-6 sm:mb-8">Material processed and summarized.</p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <button
                 onClick={() => navigate('/library')}
@@ -436,7 +436,7 @@ export default function UploadMaterial() {
                   transition={{ ease: "easeOut" }}
                 />
               </div>
-              <p className="text-[10px] sm:text-sm text-text-muted mt-6 sm:mt-8 font-medium max-w-xs mx-auto leading-relaxed">
+              <p className="text-[11px] sm:text-sm text-text-muted mt-6 sm:mt-8 font-medium max-w-xs mx-auto leading-relaxed">
                 The AI is extracting key topics and preparing your explained notes.
               </p>
             </div>
@@ -456,7 +456,7 @@ export default function UploadMaterial() {
                   >
                     <Camera className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4 shrink-0" />
                     <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">📸 Scan Notes</h3>
-                    <p className="text-[10px] sm:text-sm text-text-muted">Take a photo of your notes</p>
+                    <p className="text-[11px] sm:text-sm text-text-muted">Take a photo of your notes</p>
                     <input 
                       ref={ocrInputRef}
                       type="file" 
@@ -481,21 +481,21 @@ export default function UploadMaterial() {
                     {isOcrProcessing ? (
                       <div className="text-center py-6 sm:py-8">
                         <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-primary animate-spin mx-auto mb-3 sm:mb-4" />
-                        <p className="text-[10px] sm:text-sm font-medium text-text-muted">Extracting text...</p>
+                        <p className="text-[11px] sm:text-sm font-medium text-text-muted">Extracting text...</p>
                       </div>
                     ) : ocrText ? (
                       <div className="space-y-3 sm:space-y-4">
                         <div>
-                          <label className="block text-[10px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main flex items-center justify-between">
+                          <label className="block text-[11px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main flex items-center justify-between">
                             <span>Review Extracted Text</span>
-                            <span className="text-secondary font-medium text-[9px] sm:text-[10px] bg-secondary/10 px-2 py-0.5 rounded-full">Correct Handwriting Errors Here</span>
+                            <span className="text-secondary font-medium text-[11px] sm:text-[11px] bg-secondary/10 px-2 py-0.5 rounded-full">Correct Handwriting Errors Here</span>
                           </label>
                           <textarea
                             rows={8}
                             value={ocrText}
                             onChange={(e) => setOcrText(e.target.value)}
                             placeholder="Review and correct any mistaken words before analyzing..."
-                            className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-secondary/30 bg-surface/80 text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-secondary outline-none resize-y shadow-inner"
+                            className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-secondary/30 bg-surface/80 text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-secondary outline-none resize-y shadow-inner"
                           />
                         </div>
                         <button 
@@ -515,13 +515,13 @@ export default function UploadMaterial() {
             {activeTab === 'file' && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="block text-[10px] sm:text-sm font-bold text-text-main">Material Title</label>
+                  <label className="block text-[11px] sm:text-sm font-bold text-text-main">Material Title</label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Biology Chapter 1"
-                    className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none"
+                    className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none"
                   />
                 </div>
                 <div 
@@ -530,7 +530,7 @@ export default function UploadMaterial() {
                 >
                   <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-primary/40 mx-auto mb-3 sm:mb-4 shrink-0" />
                   <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">Upload PDF / Text</h3>
-                  <p className="text-[10px] sm:text-sm text-text-muted">Max file size: 20MB</p>
+                  <p className="text-[11px] sm:text-sm text-text-muted">Max file size: 20MB</p>
                   <input 
                     ref={fileInputRef}
                     type="file" 
@@ -541,7 +541,7 @@ export default function UploadMaterial() {
                   {isPdfProcessing ? (
                     <div className="mt-6 sm:mt-8 flex flex-col items-center gap-2">
                       <Loader2 className="w-6 h-6 text-primary animate-spin shrink-0" />
-                      <p className="text-[10px] sm:text-xs font-medium text-text-muted">Extracting text from PDF...</p>
+                      <p className="text-[11px] sm:text-xs font-medium text-text-muted">Extracting text from PDF...</p>
                     </div>
                   ) : (
                     <button 
@@ -559,13 +559,13 @@ export default function UploadMaterial() {
             {activeTab === 'youtube' && (
               <div className="space-y-4 sm:space-y-6">
                 <div>
-                  <label className="block text-[10px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">YouTube URL</label>
+                  <label className="block text-[11px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">YouTube URL</label>
                   <input
                     type="text"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://youtube.com/..."
-                    className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none placeholder:text-text-muted"
+                    className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none placeholder:text-text-muted"
                   />
                 </div>
                 <button 
@@ -581,13 +581,13 @@ export default function UploadMaterial() {
             {activeTab === 'article' && (
               <div className="space-y-4 sm:space-y-6">
                 <div>
-                  <label className="block text-[10px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">Article Content</label>
+                  <label className="block text-[11px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">Article Content</label>
                   <textarea
                     rows={5}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Paste article content..."
-                    className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none resize-none placeholder:text-text-muted"
+                    className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none resize-none placeholder:text-text-muted"
                   />
                 </div>
                 <button 
@@ -616,19 +616,19 @@ export default function UploadMaterial() {
                   <h3 className="text-sm sm:text-base font-bold mb-1 sm:mb-2 text-text-main">
                     {isRecording ? "Recording Notes..." : "Dictate Audio Notes"}
                   </h3>
-                  <p className="text-[10px] sm:text-sm text-text-muted">
+                  <p className="text-[11px] sm:text-sm text-text-muted">
                     {isRecording ? "Tap to stop." : "Talk out loud to synthesize your thoughts."}
                   </p>
                 </div>
                 
                 {dictationText && (
                   <div className="space-y-4">
-                    <label className="block text-[10px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">Transcribed Text</label>
+                    <label className="block text-[11px] sm:text-sm font-bold mb-1.5 sm:mb-2 text-text-main">Transcribed Text</label>
                     <textarea
                       rows={6}
                       value={dictationText}
                       onChange={(e) => setDictationText(e.target.value)}
-                      className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-secondary/30 bg-surface/80 text-[10px] sm:text-sm text-text-main focus:ring-2 focus:ring-secondary outline-none resize-y"
+                      className="w-full box-border px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border border-secondary/30 bg-surface/80 text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-secondary outline-none resize-y"
                     />
                     <button 
                       onClick={() => handleUpload('Audio Dictation Notes', 'audio', dictationText)} 

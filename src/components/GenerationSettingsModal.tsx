@@ -72,7 +72,7 @@ export const GenerationSettingsModal: React.FC<GenerationSettingsModalProps> = (
                 onChange={(e) => setCount(parseInt(e.target.value))}
                 className="w-full h-2 bg-surface-alt rounded-full appearance-none cursor-pointer accent-primary border border-border/50"
               />
-              <div className="flex justify-between text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">
+              <div className="flex justify-between text-[11px] font-bold text-text-muted uppercase tracking-widest px-1">
                 <span>5</span>
                 <span>{type === 'Quiz' ? '30' : '50'}</span>
               </div>
@@ -117,7 +117,7 @@ export const GenerationSettingsModal: React.FC<GenerationSettingsModalProps> = (
                       key={level}
                       onClick={() => setComplexity(level)}
                       className={cn(
-                        "py-3 px-2 rounded-xl text-[10px] font-bold transition-all border-2",
+                        "py-3 px-2 rounded-xl text-[11px] font-bold transition-all border-2",
                         complexity === level 
                           ? "bg-accent/10 border-accent text-accent shadow-lg shadow-accent/5" 
                           : "bg-surface-alt border-border text-text-muted hover:border-accent/30"

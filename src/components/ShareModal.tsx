@@ -84,7 +84,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           <div className="space-y-6">
             {/* Copy Link Section */}
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted px-1">Quick Link</label>
+              <label className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted px-1">Quick Link</label>
               <div className="flex items-center gap-2 p-2 bg-background rounded-2xl border border-border/50 group focus-within:border-primary/50 transition-colors">
                 <input 
                   type="text" 
@@ -107,7 +107,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
             {/* Social Links */}
             <div className="space-y-3 pt-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted px-1">Share To</label>
+              <label className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted px-1">Share To</label>
               <div className="grid grid-cols-3 gap-3">
                 {shareLinks.map((link) => (
                   <a
@@ -123,14 +123,14 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                     )}>
                       {link.icon}
                     </div>
-                    <span className="text-[10px] font-bold text-text-muted">{link.name}</span>
+                    <span className="text-[11px] font-bold text-text-muted">{link.name}</span>
                   </a>
                 ))}
               </div>
             </div>
 
             <div className="pt-4">
-              <p className="text-[10px] leading-relaxed text-center text-text-muted italic opacity-60">
+              <p className="text-[11px] leading-relaxed text-center text-text-muted italic opacity-60">
                 Share your study guide and help a friend learn faster.
               </p>
             </div>

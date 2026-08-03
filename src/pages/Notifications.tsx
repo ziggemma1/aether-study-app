@@ -68,19 +68,19 @@ export default function Notifications() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-3xl font-bold text-text-main tracking-tight">Notifications</h1>
-          <p className="text-[10px] sm:text-sm text-text-muted mt-0.5 sm:mt-1">Stay updated with your latest study activities.</p>
+          <p className="text-[11px] sm:text-sm text-text-muted mt-0.5 sm:mt-1">Stay updated with your latest study activities.</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <button 
             onClick={markAllAsRead}
-            className="px-3 sm:px-4 py-1.5 sm:py-2 text-[8px] sm:text-xs font-bold text-text-muted hover:text-primary transition-colors uppercase tracking-widest flex items-center gap-1.5 sm:gap-2"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-text-muted hover:text-primary transition-colors uppercase tracking-widest flex items-center gap-1.5 sm:gap-2"
           >
             <Check size={12} className="sm:hidden" />
             <Check size={14} className="hidden sm:block" /> Mark all
           </button>
           <button 
             onClick={clearAll}
-            className="px-3 sm:px-4 py-1.5 sm:py-2 text-[8px] sm:text-xs font-bold text-red-500 hover:text-red-600 transition-colors uppercase tracking-widest flex items-center gap-1.5 sm:gap-2"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-red-500 hover:text-red-600 transition-colors uppercase tracking-widest flex items-center gap-1.5 sm:gap-2"
           >
             <Trash2 size={12} className="sm:hidden" />
             <Trash2 size={14} className="hidden sm:block" /> Clear all
@@ -112,24 +112,24 @@ export default function Notifications() {
                       <h3 className="text-xs sm:text-base font-bold text-text-main truncate">
                         Friend Request
                       </h3>
-                      <span className="text-[8px] sm:text-[10px] font-medium text-text-muted flex items-center gap-1 shrink-0">
+                      <span className="text-[11px] sm:text-[11px] font-medium text-text-muted flex items-center gap-1 shrink-0">
                         <Clock size={8} className="sm:hidden" />
                         <Clock size={10} className="hidden sm:block" /> Recently
                       </span>
                     </div>
-                    <p className="text-[10px] sm:text-sm text-text-muted leading-relaxed">
+                    <p className="text-[11px] sm:text-sm text-text-muted leading-relaxed">
                       <span className="font-bold text-text-main">{req.senderId?.name || 'Someone'}</span> wants to be friends with you.
                     </p>
                     <div className="flex gap-2 mt-3">
                       <button 
                         onClick={() => respondToFriendRequest(req.id, 'accepted')}
-                        className="px-4 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+                        className="px-4 py-1.5 bg-primary text-white text-[11px] font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
                       >
                         <Check size={12} /> Accept
                       </button>
                       <button 
                         onClick={() => respondToFriendRequest(req.id, 'declined')}
-                        className="px-4 py-1.5 bg-surface-alt text-text-muted text-[10px] font-bold rounded-lg hover:bg-surface-alt/80 transition-colors flex items-center gap-2"
+                        className="px-4 py-1.5 bg-surface-alt text-text-muted text-[11px] font-bold rounded-lg hover:bg-surface-alt/80 transition-colors flex items-center gap-2"
                       >
                         <X size={12} /> Decline
                       </button>
@@ -175,12 +175,12 @@ export default function Notifications() {
                     )}>
                       {notification.title}
                     </h3>
-                    <span className="text-[8px] sm:text-[10px] font-medium text-text-muted flex items-center gap-1 shrink-0">
+                    <span className="text-[11px] sm:text-[11px] font-medium text-text-muted flex items-center gap-1 shrink-0">
                       <Clock size={8} className="sm:hidden" />
                       <Clock size={10} className="hidden sm:block" /> {notification.time}
                     </span>
                   </div>
-                  <p className="text-[10px] sm:text-sm text-text-muted leading-relaxed">
+                  <p className="text-[11px] sm:text-sm text-text-muted leading-relaxed">
                     {notification.message}
                   </p>
                 </div>
@@ -215,7 +215,7 @@ export default function Notifications() {
               <Bell size={40} className="hidden sm:block" />
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-text-main mb-1 sm:mb-2">No notifications</h3>
-            <p className="text-[10px] sm:text-sm text-text-muted max-w-xs">
+            <p className="text-[11px] sm:text-sm text-text-muted max-w-xs">
               We'll notify you when something important happens.
             </p>
           </div>

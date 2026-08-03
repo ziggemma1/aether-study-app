@@ -114,7 +114,7 @@ export const AchievementBadge: React.FC<AchievementBadgeProps> = ({
     >
       {/* Points indicator top right */}
       <span className={cn(
-        "absolute top-3 right-3 text-[10px] font-black uppercase px-2 py-0.5 rounded-full",
+        "absolute top-3 right-3 text-[11px] font-black uppercase px-2 py-0.5 rounded-full",
         isUnlocked ? style.bgClass + " " + style.textClass : "bg-border/20 text-text-muted"
       )}>
         +{points} AP
@@ -145,13 +145,13 @@ export const AchievementBadge: React.FC<AchievementBadgeProps> = ({
       <div className="w-full mt-2">
         {isUnlocked ? (
           <div className="text-center">
-            <span className="text-[9px] font-bold text-green-500 bg-green-500/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+            <span className="text-[11px] font-bold text-green-500 bg-green-500/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
               Unlocked
             </span>
           </div>
         ) : (
           <div className="space-y-1 w-full px-1">
-            <div className="flex items-center justify-between text-[9px] font-black uppercase text-text-muted">
+            <div className="flex items-center justify-between text-[11px] font-black uppercase text-text-muted">
               <span>Progress</span>
               <span>{currentProgress}/{target}</span>
             </div>

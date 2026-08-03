@@ -1,41 +1,68 @@
 import React, { useState } from 'react';
-import { 
-  Clock, 
-  Target, 
-  Award, 
-  Flame, 
-  TrendingUp, 
-  Users, 
-  ArrowUpRight, 
-  Compass, 
-  BookOpen 
+import {
+  Clock,
+  Target,
+  Award,
+  Flame,
+  TrendingUp,
+  Users,
+  BookOpen
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useReports } from '../hooks/useReports';
 import GrowthChart from '../components/GrowthChart';
 import SubjectProficiency from '../components/SubjectProficiency';
 import DateRangeFilter from '../components/DateRangeFilter';
+import { MetricCard } from '../components/ui/MetricCard';
 
 export default function Reports() {
-  const { theme, t } = useAppContext();
+  const { theme, t, user } = useAppContext();
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
   const { summary, trends, subjects, leaderboard, loading } = useReports(period);
 
-  // Safe checks & Defaults
+  // Zero is a real reading here; the previous `?? 12` / `?? 4.2` fallbacks
+  // showed a brand-new account a double-digit weekly gain it had not earned.
   const totalStudyTimeMinutes = summary?.totalStudyTimeMinutes ?? 0;
   const averageQuizScore = summary?.averageQuizScore ?? 0;
-  const globalRank = summary?.globalRank ?? 12;
-  const totalLearners = summary?.totalLearners ?? 100;
   const studyStreak = summary?.studyStreak ?? 0;
-  const studyTimeChange = summary?.weeklyChange?.studyTime ?? 12;
-  const quizScoreChange = summary?.weeklyChange?.quizScore ?? 4.2;
+
+  // null = not on the leaderboard at all, which is different from rank 0.
+  const globalRank: number | null = summary?.globalRank ?? null;
+  const totalLearners: number = summary?.totalLearners ?? 0;
+
+  // A trend only earns a badge once it has actually moved. `direction` follows
+  // the sign, so a decline no longer renders as a green arrow pointing up.
+  const toTrend = (raw: unknown) => {
+    const value = typeof raw === 'number' ? raw : 0;
+    if (value === 0) return undefined;
+    return {
+      value: Math.abs(Math.round(value * 10) / 10),
+      direction: value > 0 ? ('up' as const) : ('down' as const),
+    };
+  };
+
+  const studyTimeTrend = toTrend(summary?.weeklyChange?.studyTime);
+  const quizScoreTrend = toTrend(summary?.weeklyChange?.quizScore);
 
   // Formatting hours/minutes spent
   const displayHours = Math.floor(totalStudyTimeMinutes / 60);
   const displayMinutes = totalStudyTimeMinutes % 60;
-  const formattedStudyTime = displayHours > 0 
-    ? `${displayHours}h ${displayMinutes > 0 ? `${displayMinutes}m` : ''}` 
+  const formattedStudyTime = displayHours > 0
+    ? `${displayHours}h ${displayMinutes > 0 ? `${displayMinutes}m` : ''}`
     : `${displayMinutes}m`;
+
+  // "TOP 5%" was printed on every account regardless of standing. Compute it,
+  // and only claim a percentile when the cohort is big enough for one to mean
+  // anything — below that, the raw position is the more honest statement.
+  const percentile = globalRank && totalLearners >= 20
+    ? Math.max(1, Math.ceil((globalRank / totalLearners) * 100))
+    : null;
+
+  const rankNote = globalRank === null
+    ? 'Opt in on the leaderboard to be ranked'
+    : percentile !== null
+      ? `Top ${percentile}% of ${totalLearners.toLocaleString()} learners`
+      : `Of ${totalLearners.toLocaleString()} ranked learner${totalLearners === 1 ? '' : 's'}`;
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
@@ -68,89 +95,43 @@ export default function Reports() {
         </div>
       ) : (
         <>
-          {/* Metrics Grid - Optimized as a 2x2 grid on mobile screens */}
+          {/* Metrics Grid — 2x2 on mobile. These were four bespoke cards in four
+              competing accents (cyan / violet / amber / red) with two badges
+              that were hardcoded rather than measured. They are now the same
+              MetricCard the Dashboard uses, so the two analytics screens read
+              as one system and colour is spent only on the trend. */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Study Time Card */}
-            <div className="bg-surface-alt p-4 rounded-2xl border border-border/40 shadow-md flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <div className="w-9 h-9 rounded-xl bg-[#00D2FF]/10 flex items-center justify-center">
-                  <Clock className="text-[#00D2FF]" size={18} />
-                </div>
-                <span className="text-[10px] text-[#00E5A0] font-bold flex items-center gap-0.5">
-                  <ArrowUpRight size={10} />
-                  {studyTimeChange}%
-                </span>
-              </div>
-              <div className="mt-4">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-text-muted block">
-                  {t?.('time_on_platform') || 'Study Time'}
-                </span>
-                <span className="text-lg font-bold text-text-main mt-1 block">
-                  {totalStudyTimeMinutes > 0 ? formattedStudyTime : '0m'}
-                </span>
-              </div>
-            </div>
+            <MetricCard
+              label={t?.('time_on_platform') || 'Study Time'}
+              value={formattedStudyTime}
+              trend={studyTimeTrend}
+              icon={<Clock size={16} />}
+              tooltip="Total focused study time recorded in the selected period."
+            />
 
-            {/* Quiz Accuracy Card */}
-            <div className="bg-surface-alt p-4 rounded-2xl border border-border/40 shadow-md flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Target className="text-primary" size={18} />
-                </div>
-                <span className="text-[10px] text-[#00E5A0] font-bold flex items-center gap-0.5">
-                  <ArrowUpRight size={10} />
-                  {quizScoreChange}%
-                </span>
-              </div>
-              <div className="mt-4">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-text-muted block">
-                  {t?.('avg_quiz_score') || 'Quiz Score'}
-                </span>
-                <span className="text-lg font-bold text-text-main mt-1 block">
-                  {averageQuizScore > 0 ? `${averageQuizScore}%` : '0%'}
-                </span>
-              </div>
-            </div>
+            <MetricCard
+              label={t?.('avg_quiz_score') || 'Quiz Score'}
+              value={`${averageQuizScore}%`}
+              trend={quizScoreTrend}
+              icon={<Target size={16} />}
+              tooltip="Average correctness across every quiz you have completed."
+            />
 
-            {/* Global Rank Card */}
-            <div className="bg-surface-alt p-4 rounded-2xl border border-border/40 shadow-md flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <div className="w-9 h-9 rounded-xl bg-[#F5B042]/10 flex items-center justify-center">
-                  <Award className="text-[#F5B042]" size={18} />
-                </div>
-                <span className="text-[9px] text-[#F5B042] font-semibold bg-[#F5B042]/10 px-1.5 py-0.5 rounded-md">
-                  TOP 5%
-                </span>
-              </div>
-              <div className="mt-4">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-text-muted block">
-                  {t?.('global_rank') || 'Global Rank'}
-                </span>
-                <span className="text-lg font-bold text-text-main mt-1 block">
-                  #{globalRank}
-                </span>
-              </div>
-            </div>
+            <MetricCard
+              label={t?.('global_rank') || 'Global Rank'}
+              value={globalRank === null ? 'Unranked' : `#${globalRank}`}
+              note={rankNote}
+              icon={<Award size={16} />}
+              tooltip="Your position among learners who opted into the leaderboard."
+            />
 
-            {/* Streak Card */}
-            <div className="bg-surface-alt p-4 rounded-2xl border border-border/40 shadow-md flex flex-col justify-between">
-              <div className="flex justify-between items-start">
-                <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center">
-                  <Flame className="text-red-500 animate-pulse" size={18} />
-                </div>
-                <span className="text-[9px] text-red-400 font-semibold bg-red-400/10 px-1.5 py-0.5 rounded-md">
-                  ACTIVE
-                </span>
-              </div>
-              <div className="mt-4">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-text-muted block">
-                  {t?.('streak') || 'Streak'}
-                </span>
-                <span className="text-lg font-bold text-text-main mt-1 block">
-                  {studyStreak} Day{studyStreak !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
+            <MetricCard
+              label={t?.('streak') || 'Streak'}
+              value={`${studyStreak} Day${studyStreak !== 1 ? 's' : ''}`}
+              note={studyStreak > 0 ? 'Keep it alive — study today' : 'Study today to start one'}
+              icon={<Flame size={16} />}
+              tooltip="Consecutive days with at least one study session."
+            />
           </div>
 
           {/* Growth Over Time Chart Block */}
@@ -205,7 +186,7 @@ export default function Reports() {
               {!leaderboard || !leaderboard.leaderboard || leaderboard.leaderboard.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-6 text-center">
                   <span className="text-xs font-semibold text-text-muted">Invite friends to compete</span>
-                  <p className="text-[10px] text-text-muted mt-1 max-w-[220px]">
+                  <p className="text-[11px] text-text-muted mt-1 max-w-[220px]">
                     Leaderboard is currently quiet. Encourage friends to sign up to view real rankings!
                   </p>
                 </div>
@@ -214,7 +195,10 @@ export default function Reports() {
                   {/* Leaderboard Competitors */}
                   <div className="space-y-2 max-h-[280px] overflow-y-auto">
                     {leaderboard.leaderboard.map((item: any) => {
-                      const isCurrentUser = item.name === leaderboard.currentUser?.name;
+                      // The endpoint returns `currentUserRank`, not a
+                      // `currentUser` object — matching on a name that was
+                      // always undefined meant nobody was ever marked "You".
+                      const isCurrentUser = item.rank === leaderboard.currentUserRank;
                       return (
                         <div 
                           key={item.rank} 
@@ -226,7 +210,7 @@ export default function Reports() {
                         >
                           <div className="flex items-center gap-3">
                             {/* Rank circle */}
-                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
                               item.rank === 1 ? 'bg-[#F5B042] text-[#0B0E14]' :
                               item.rank === 2 ? 'bg-gray-300 text-[#0B0E14]' :
                               item.rank === 3 ? 'bg-[#CD7F32] text-[#0B0E14]' :
@@ -256,34 +240,40 @@ export default function Reports() {
                                 {item.name}
                               </span>
                               {isCurrentUser && (
-                                <span className="text-[9px] text-[#00D2FF] font-semibold uppercase tracking-wider block">
+                                <span className="text-[11px] text-[#00D2FF] font-semibold uppercase tracking-wider block">
                                   You
                                 </span>
                               )}
                             </div>
                           </div>
 
+                          {/* `points` is an object ({ total, studyTime,
+                              quizzes, streak }) — calling toLocaleString on it
+                              printed a literal "[object Object] pts" on every
+                              row. LeaderboardCard already reads `.total`. */}
                           <span className="text-xs font-extrabold text-[#00E5A0]">
-                            {item.points.toLocaleString()} pts
+                            {(item.points?.total ?? 0).toLocaleString()} pts
                           </span>
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* Current User Floating Footer / Standings (if rank is outside top 5) */}
-                  {leaderboard.currentUser && leaderboard.currentUser.rank > leaderboard.leaderboard.length && (
+                  {/* Your standing, when you place outside the top five. Keyed
+                      off `currentUserRank`; the old `currentUser` object is not
+                      part of this response, so this never used to render. */}
+                  {leaderboard.currentUserRank > leaderboard.leaderboard.length && (
                     <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/20 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-primary">
-                          #{leaderboard.currentUser.rank}
+                          #{leaderboard.currentUserRank}
                         </span>
                         <span className="text-xs font-bold text-text-main">
-                          {leaderboard.currentUser.name} (You)
+                          {user?.name ? `${user.name} (You)` : 'You'}
                         </span>
                       </div>
                       <span className="text-xs font-extrabold text-primary">
-                        {leaderboard.currentUser.points.toLocaleString()} pts
+                        of {leaderboard.totalUsers?.toLocaleString()} learners
                       </span>
                     </div>
                   )}

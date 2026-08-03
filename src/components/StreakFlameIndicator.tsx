@@ -56,7 +56,7 @@ export default function StreakFlameIndicator({
 
       {/* Header Label and Help Tooltip */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-1.5">
+        <span className="text-[11px] font-black uppercase tracking-widest text-text-muted flex items-center gap-1.5">
           Recall Streak
           <span 
             className="relative cursor-help shrink-0"
@@ -74,7 +74,7 @@ export default function StreakFlameIndicator({
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 5 }}
-                  className="absolute z-50 bottom-5 left-1/2 -translate-x-1/2 w-48 p-2 bg-[#0F172A]/95 border border-border/20 text-[9px] font-medium leading-normal text-text-main rounded-xl shadow-2xl backdrop-blur-md"
+                  className="absolute z-50 bottom-5 left-1/2 -translate-x-1/2 w-48 p-2 bg-[#0F172A]/95 border border-border/20 text-[11px] font-medium leading-normal text-text-main rounded-xl shadow-2xl backdrop-blur-md"
                 >
                   Consecutive active recall study days. Maintaining streaks boosts study constellation brightness.
                 </motion.div>
@@ -108,11 +108,11 @@ export default function StreakFlameIndicator({
             {days > 0 ? `${days} Days` : 'Unkindled'}
           </span>
           {days > 0 ? (
-            <span className="text-[8px] text-text-muted font-bold mt-1 uppercase tracking-wider">
+            <span className="text-[11px] text-text-muted font-bold mt-1 uppercase tracking-wider">
               {isCold ? 'Studies frozen today' : 'Consistently learning!'}
             </span>
           ) : (
-            <span className="text-[8px] text-amber-500 font-bold mt-1 uppercase tracking-wider">
+            <span className="text-[11px] text-amber-500 font-bold mt-1 uppercase tracking-wider">
               No active streak
             </span>
           )}

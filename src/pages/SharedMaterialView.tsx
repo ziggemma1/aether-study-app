@@ -102,7 +102,7 @@ export default function SharedMaterialView() {
             <div className="min-w-0">
               <h2 className="text-sm font-bold truncate leading-tight">{material.title}</h2>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Shared Material</span>
+                <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Shared Material</span>
               </div>
             </div>
           </div>
@@ -128,7 +128,7 @@ export default function SharedMaterialView() {
           <div className="bg-white rounded-[32px] border border-slate-200/60 shadow-xl shadow-slate-200/40 overflow-hidden mb-8">
             <div className="p-8 md:p-12 border-b border-slate-50">
               <div className="flex flex-wrap items-center gap-3 mb-6">
-                <span className="px-3 py-1 bg-primary/5 text-primary rounded-lg text-[10px] font-black uppercase tracking-[0.1em]">
+                <span className="px-3 py-1 bg-primary/5 text-primary rounded-lg text-[11px] font-black uppercase tracking-[0.1em]">
                   {material.type}
                 </span>
                 <div className="h-1 w-1 rounded-full bg-slate-300" />
@@ -258,7 +258,7 @@ export default function SharedMaterialView() {
                <div className="bg-primary/5 rounded-[32px] p-8 border border-primary/10">
                   <div className="flex items-center gap-2 mb-4 text-primary">
                     <BookOpen size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">About Aether Study</span>
+                    <span className="text-[11px] font-black uppercase tracking-widest">About Aether Study</span>
                   </div>
                   <p className="text-xs text-slate-600 font-medium leading-relaxed">
                     Aether is an intelligent study assistant that helps you synthesize complex information from PDFs, Videos, and Articles into actionable knowledge.

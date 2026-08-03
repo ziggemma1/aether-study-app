@@ -28,10 +28,10 @@ export function OptInToggle({ isOptedIn, onToggle, isLoading }: OptInToggleProps
             </p>
             
             <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-6">
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#00D2FF]/60 bg-[#00D2FF]/5 px-3 py-1.5 rounded-lg border border-[#00D2FF]/10">
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#00D2FF]/60 bg-[#00D2FF]/5 px-3 py-1.5 rounded-lg border border-[#00D2FF]/10">
                 <Rocket size={12} /> Global Exposure
               </div>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#6C5CE7]/60 bg-[#6C5CE7]/5 px-3 py-1.5 rounded-lg border border-[#6C5CE7]/10">
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#6C5CE7]/60 bg-[#6C5CE7]/5 px-3 py-1.5 rounded-lg border border-[#6C5CE7]/10">
                 <Shield size={12} /> Verify Recall
               </div>
             </div>

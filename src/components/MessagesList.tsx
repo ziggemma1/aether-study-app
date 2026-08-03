@@ -123,7 +123,7 @@ export default function MessagesList({ className }: MessagesListProps) {
                     className="w-12 h-12 rounded-full border-2 border-border shadow-sm object-cover"
                   />
                   {chat.type === 'group' && (
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[10px] text-white border-2 border-background">
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[11px] text-white border-2 border-background">
                       <Users size={10} />
                     </div>
                   )}
@@ -132,7 +132,7 @@ export default function MessagesList({ className }: MessagesListProps) {
                   <p className="text-sm font-bold text-text-main mb-0.5 truncate">{chat.name}</p>
                   <div className="flex items-center gap-1.5 overflow-hidden">
                     {chat.type === 'private' && !chat.isFriend && (
-                      <span className="shrink-0 text-[8px] bg-surface-alt text-text-muted px-1 rounded uppercase font-bold">Not Friend</span>
+                      <span className="shrink-0 text-[11px] bg-surface-alt text-text-muted px-1 rounded uppercase font-bold">Not Friend</span>
                     )}
                     <p className={cn(
                       "text-xs truncate",
@@ -144,7 +144,7 @@ export default function MessagesList({ className }: MessagesListProps) {
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <span className="text-[10px] text-text-muted whitespace-nowrap">
+                <span className="text-[11px] text-text-muted whitespace-nowrap">
                   {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">

@@ -47,7 +47,7 @@ export default function GoogleCalendarSync() {
           </div>
           <div>
             <h3 className="text-sm font-bold text-text-main">Google Calendar</h3>
-            <p className="text-[10px] text-text-muted">Two-way synchronization</p>
+            <p className="text-[11px] text-text-muted">Two-way synchronization</p>
           </div>
         </div>
         

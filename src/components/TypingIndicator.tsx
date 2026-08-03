@@ -6,7 +6,7 @@ export function TypingIndicator() {
       <div className="typing-dot bg-primary"></div>
       <div className="typing-dot bg-primary"></div>
       <div className="typing-dot bg-primary"></div>
-      <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1.5">
+      <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider ml-1.5">
         AI Tutor is analyzing...
       </span>
     </div>

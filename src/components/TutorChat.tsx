@@ -90,7 +90,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ materialTitle, materialCon
                 </div>
                 <div>
                   <h3 className="font-bold text-text-main text-sm">AI Tutor</h3>
-                  <p className="text-[10px] text-primary font-medium tracking-widest uppercase">Online</p>
+                  <p className="text-[11px] text-primary font-medium tracking-widest uppercase">Online</p>
                 </div>
               </div>
               <button onClick={() => setIsOpen(false)} className="p-2 text-text-muted hover:bg-white/10 rounded-full transition-colors">

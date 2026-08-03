@@ -205,7 +205,7 @@ export default function SettingsForm({
                 type="button"
                 onClick={() => setPreferredTime(opt)}
                 className={cn(
-                  "py-2.5 rounded-xl border text-center transition-all font-bold select-none cursor-pointer min-h-[40px] text-[10px]",
+                  "py-2.5 rounded-xl border text-center transition-all font-bold select-none cursor-pointer min-h-[40px] text-[11px]",
                   preferredTime === opt
                     ? "bg-slate-300 border-slate-300 text-slate-900 shadow-md shadow-white/5"
                     : "bg-[#0B0E14] border-gray-800 text-gray-400 hover:text-white"
@@ -245,7 +245,7 @@ export default function SettingsForm({
               {focusAreas.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 bg-gray-800 border border-gray-700 text-gray-300 text-[10px] px-2.5 py-1 rounded-full font-medium"
+                  className="inline-flex items-center gap-1 bg-gray-800 border border-gray-700 text-gray-300 text-[11px] px-2.5 py-1 rounded-full font-medium"
                 >
                   {tag}
                   <button
@@ -268,7 +268,7 @@ export default function SettingsForm({
               <CalendarDays className="w-4 h-4 text-[#00E5A0]" />
               Enable Calendar Sync
             </p>
-            <p className="text-[10px] text-gray-500 font-medium">Auto-add scheduled study sessions to calendar</p>
+            <p className="text-[11px] text-gray-500 font-medium">Auto-add scheduled study sessions to calendar</p>
           </div>
           <button
             type="button"

@@ -38,7 +38,7 @@ export default function StudyReminders() {
         </div>
         <div>
           <h3 className="text-sm font-bold text-text-main">Study Reminders</h3>
-          <p className="text-[10px] text-text-muted flex items-center gap-1">
+          <p className="text-[11px] text-text-muted flex items-center gap-1">
             <Smartphone size={10} /> Browser & Mobile push
           </p>
         </div>

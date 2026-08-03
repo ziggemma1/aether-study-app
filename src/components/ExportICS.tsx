@@ -64,7 +64,7 @@ export default function ExportICS() {
         </div>
         <div>
           <h3 className="text-sm font-bold text-text-main">Export iCal</h3>
-          <p className="text-[10px] text-text-muted">For Apple Calendar, Outlook</p>
+          <p className="text-[11px] text-text-muted">For Apple Calendar, Outlook</p>
         </div>
       </div>
 

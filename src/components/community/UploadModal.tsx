@@ -178,13 +178,13 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
                   <div className="flex flex-col items-center gap-1.5 select-none">
                     <CheckCircle2 className="h-8 w-8 text-[#00E5A0]" />
                     <span className="text-xs font-bold text-[#F0F3F8] max-w-[250px] truncate">{fileName}</span>
-                    <span className="text-[10px] text-[#8E9AAF]">Ready to upload public copy</span>
+                    <span className="text-[11px] text-[#8E9AAF]">Ready to upload public copy</span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-1.5 select-none">
                     <Upload className="h-8 w-8 text-[#8E9AAF]" />
                     <span className="text-xs font-bold text-[#F0F3F8]">Drag & Drop or Click to Upload</span>
-                    <span className="text-[10px] text-[#8E9AAF]/60">Supports PDF, Lecture Notes, Images, or Text files</span>
+                    <span className="text-[11px] text-[#8E9AAF]/60">Supports PDF, Lecture Notes, Images, or Text files</span>
                   </div>
                 )}
               </div>

@@ -41,7 +41,7 @@ export function RoomCard({ room, onJoin }: RoomCardProps) {
           </div>
           <div className="z-10 bg-black/40 px-3 py-1 rounded-full border border-white/5 flex items-center gap-2">
             <div className={cn("w-2 h-2 rounded-full", isActive ? "bg-[#00E5A0] animate-pulse" : "bg-[#4A5568]")} />
-            <span className={cn("text-[10px] font-bold uppercase tracking-wider", isActive ? "text-[#00E5A0]" : "text-[#4A5568]")}>
+            <span className={cn("text-[11px] font-bold uppercase tracking-wider", isActive ? "text-[#00E5A0]" : "text-[#4A5568]")}>
               {isActive ? 'Live' : 'Waiting'}
             </span>
           </div>
@@ -63,7 +63,7 @@ export function RoomCard({ room, onJoin }: RoomCardProps) {
               </div>
             ))}
             {participants.length > 5 && (
-              <div className="w-10 h-10 rounded-full border-2 border-[#0B0E14] -ml-2 bg-[#2D3436] flex items-center justify-center text-[10px] font-bold text-white" style={{ zIndex: 0 }}>
+              <div className="w-10 h-10 rounded-full border-2 border-[#0B0E14] -ml-2 bg-[#2D3436] flex items-center justify-center text-[11px] font-bold text-white" style={{ zIndex: 0 }}>
                 +{participants.length - 5}
               </div>
             )}
@@ -82,7 +82,7 @@ export function RoomCard({ room, onJoin }: RoomCardProps) {
           {participants.length === 0 ? 'Start Room' : 'Join Room'} <Play size={16} className="fill-white" />
         </button>
 
-        <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-white/30 px-1">
+        <div className="flex justify-between items-center text-[11px] uppercase font-bold tracking-widest text-white/30 px-1">
           <span>Created {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}</span>
           {participants.length > 0 && <span className="text-[#00D2FF]/60 flex items-center gap-1">🎯 Active Focus</span>}
         </div>

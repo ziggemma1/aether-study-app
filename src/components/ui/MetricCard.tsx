@@ -8,10 +8,13 @@ interface MetricCardProps {
   trend?: { value: number; direction: 'up' | 'down' };
   icon?: React.ReactNode;
   tooltip?: string;
+  /** Muted supporting line under the value — context the number alone lacks
+   *  ("Top 5% of 240 learners"). Omit it and the card keeps its old shape. */
+  note?: string;
   onClick?: () => void;
 }
 
-export function MetricCard({ label, value, trend, icon, tooltip, onClick }: MetricCardProps) {
+export function MetricCard({ label, value, trend, icon, tooltip, note, onClick }: MetricCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
@@ -26,7 +29,7 @@ export function MetricCard({ label, value, trend, icon, tooltip, onClick }: Metr
       <div className="absolute top-0 right-0 w-16 h-16 bg-radial from-primary/10 to-transparent rounded-full pointer-events-none opacity-40" />
 
       <div className="flex items-center justify-between">
-        <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-1">
+        <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-1">
           {label}
           {tooltip && (
             <span 
@@ -45,7 +48,7 @@ export function MetricCard({ label, value, trend, icon, tooltip, onClick }: Metr
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 5 }}
-                    className="absolute z-50 bottom-5 left-1/2 -translate-x-1/2 w-48 p-2 bg-[#0F172A] border border-border/20 text-[9px] font-medium leading-normal text-text-main rounded-xl shadow-2xl backdrop-blur-md"
+                    className="absolute z-50 bottom-5 left-1/2 -translate-x-1/2 w-48 p-2 bg-[#0F172A] border border-border/20 text-[11px] font-medium leading-normal text-text-main rounded-xl shadow-2xl backdrop-blur-md"
                   >
                     {tooltip}
                   </motion.div>
@@ -66,7 +69,7 @@ export function MetricCard({ label, value, trend, icon, tooltip, onClick }: Metr
           {value}
         </span>
         {trend && (
-          <div className={`flex items-center gap-0.5 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+          <div className={`flex items-center gap-0.5 text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
             trend.direction === 'up' 
               ? 'bg-emerald-500/10 text-emerald-500' 
               : 'bg-rose-500/10 text-rose-500'
@@ -76,6 +79,12 @@ export function MetricCard({ label, value, trend, icon, tooltip, onClick }: Metr
           </div>
         )}
       </div>
+
+      {note && (
+        <p className="text-[11px] font-medium text-text-muted leading-snug -mt-1">
+          {note}
+        </p>
+      )}
     </motion.div>
   );
 }

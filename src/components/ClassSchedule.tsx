@@ -119,7 +119,7 @@ export default function ClassSchedule() {
                   <p className={cn("text-xs font-bold leading-none mb-1", isLight ? schedule.lightTextColor : schedule.textColor)}>
                     {schedule.title}
                   </p>
-                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                  <p className="text-[11px] font-bold text-text-muted uppercase tracking-widest">
                     {schedule.time}
                   </p>
                 </div>
@@ -135,7 +135,7 @@ export default function ClassSchedule() {
 
       <div className="flex justify-between mt-6 px-4">
         {timelineDates.map((date) => (
-          <span key={date} className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+          <span key={date} className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
             {date}
           </span>
         ))}

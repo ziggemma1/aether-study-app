@@ -87,9 +87,9 @@ export default function CalendarAnalytics() {
               <stat.icon size={20} />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">{stat.label}</p>
+              <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">{stat.label}</p>
               <h3 className="text-xl sm:text-2xl font-bold text-text-main mt-0.5">{stat.value}</h3>
-              <p className="text-[10px] font-medium text-text-muted mt-1">{stat.trend}</p>
+              <p className="text-[11px] font-medium text-text-muted mt-1">{stat.trend}</p>
             </div>
           </div>
         ))}
@@ -153,7 +153,7 @@ export default function CalendarAnalytics() {
         {/* Subject Breakdown */}
         <div className="glass-card p-5 sm:p-6 rounded-2xl flex flex-col">
           <h3 className="font-bold text-text-main mb-1">Subject Proficiency</h3>
-          <p className="text-[10px] text-text-muted mb-6">Average quiz score by material category</p>
+          <p className="text-[11px] text-text-muted mb-6">Average quiz score by material category</p>
 
           {loading ? (
             <div className="flex-1 flex items-center justify-center">

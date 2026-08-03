@@ -48,7 +48,7 @@ export function ProgressRing({ percentage, size = 64, strokeWidth = 5, accentCol
         {icon ? (
           <div className="text-text-main text-xs">{icon}</div>
         ) : (
-          <span className="text-[10px] font-black leading-none text-text-main">
+          <span className="text-[11px] font-black leading-none text-text-main">
             {Math.round(clampedPercentage)}%
           </span>
         )}

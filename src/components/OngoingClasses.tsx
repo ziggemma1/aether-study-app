@@ -55,7 +55,7 @@ export default function OngoingClasses() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-text-main">Ongoing Class</h2>
-          <span className="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">+4 Class</span>
+          <span className="bg-primary text-white text-[11px] font-bold px-2 py-0.5 rounded-full">+4 Class</span>
         </div>
         <div className="flex items-center gap-2">
           <button className="p-1.5 hover:bg-surface rounded-full transition-colors border border-transparent hover:border-border text-text-muted">

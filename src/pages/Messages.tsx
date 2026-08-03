@@ -165,7 +165,7 @@ export default function Messages() {
               >
                 <UserPlus size={18} />
                 {friendRequests.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border-2 border-surface animate-pulse">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[11px] flex items-center justify-center rounded-full border-2 border-surface animate-pulse">
                     {friendRequests.length}
                   </span>
                 )}
@@ -199,8 +199,8 @@ export default function Messages() {
                     className="w-full bg-surface border border-border rounded-xl py-2 px-3 text-xs outline-none focus:border-primary/50 text-text-main"
                   />
                   <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-primary text-white text-[10px] font-bold py-2 rounded-lg">Create</button>
-                    <button type="button" onClick={() => setShowCreateGroup(false)} className="flex-1 bg-surface-alt text-text-muted text-[10px] font-bold py-2 rounded-lg">Cancel</button>
+                    <button type="submit" className="flex-1 bg-primary text-white text-[11px] font-bold py-2 rounded-lg">Create</button>
+                    <button type="button" onClick={() => setShowCreateGroup(false)} className="flex-1 bg-surface-alt text-text-muted text-[11px] font-bold py-2 rounded-lg">Cancel</button>
                   </div>
                 </form>
               </motion.div>
@@ -214,7 +214,7 @@ export default function Messages() {
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold transition-all capitalize",
+                  "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-bold transition-all capitalize",
                   activeTab === tab ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-text-muted hover:text-text-main"
                 )}
               >
@@ -265,14 +265,14 @@ export default function Messages() {
                   <div className="flex-grow min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                       <p className="text-xs sm:text-sm font-bold text-text-main truncate">{chat.name}</p>
-                      <span className="text-[8px] sm:text-[10px] text-text-muted">{chat.time}</span>
+                      <span className="text-[11px] sm:text-[11px] text-text-muted">{chat.time}</span>
                     </div>
                     <div className="flex items-center gap-1.5 overflow-hidden">
                       {chat.type === 'private' && !chat.isFriend && (
-                        <span className="shrink-0 text-[8px] bg-surface-alt text-text-muted px-1 rounded uppercase font-bold">Not Friend</span>
+                        <span className="shrink-0 text-[11px] bg-surface-alt text-text-muted px-1 rounded uppercase font-bold">Not Friend</span>
                       )}
                       <p className={cn(
-                        "text-[10px] sm:text-xs truncate",
+                        "text-[11px] sm:text-xs truncate",
                         chat.isTyping ? "text-primary italic" : "text-text-muted"
                       )}>
                         {chat.isTyping ? 'typing...' : chat.lastMsg}
@@ -307,7 +307,7 @@ export default function Messages() {
                 </div>
                 <div>
                   <h2 className="text-sm sm:text-lg font-bold text-text-main truncate max-w-[120px] sm:max-w-none">{selectedChat.name}</h2>
-                  <p className="text-[10px] sm:text-xs text-primary font-medium flex items-center gap-1">
+                  <p className="text-[11px] sm:text-xs text-primary font-medium flex items-center gap-1">
                     {isTyping ? 'typing...' : (selectedChat.type === 'group' ? 'Group Study' : (isChatBlocked ? 'Mutual friends only' : (isConnected ? 'Online' : 'Reconnecting...')))}
                   </p>
                 </div>
@@ -339,7 +339,7 @@ export default function Messages() {
                     )}
                   >
                     {selectedChat.type === 'group' && msg.fromUserId !== user?.id && (
-                      <p className="text-[10px] font-bold text-primary ml-1">{msg.fromUserName || 'Member'}</p>
+                      <p className="text-[11px] font-bold text-primary ml-1">{msg.fromUserName || 'Member'}</p>
                     )}
                     <div className={cn(
                       "p-3 rounded-2xl text-xs sm:text-sm shadow-sm",
@@ -349,7 +349,7 @@ export default function Messages() {
                     )}>
                       {msg.text}
                       <div className={cn(
-                        "flex items-center gap-1 mt-1 opacity-70 text-[8px]",
+                        "flex items-center gap-1 mt-1 opacity-70 text-[11px]",
                         msg.fromUserId === user?.id ? "justify-end" : "justify-start"
                       )}>
                         <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>

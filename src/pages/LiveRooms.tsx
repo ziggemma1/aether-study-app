@@ -203,7 +203,7 @@ export default function LiveRooms() {
                 
                 <form onSubmit={handleCreateRoom} className="space-y-6 relative z-10">
                   <div>
-                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3">Room Name</label>
+                    <label className="block text-[11px] font-black text-white/40 uppercase tracking-[0.2em] mb-3">Room Name</label>
                     <input 
                       type="text" 
                       value={newRoom.name}
@@ -214,7 +214,7 @@ export default function LiveRooms() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3">Subject focus</label>
+                    <label className="block text-[11px] font-black text-white/40 uppercase tracking-[0.2em] mb-3">Subject focus</label>
                     <select 
                       value={newRoom.subject}
                       onChange={e => setNewRoom({...newRoom, subject: e.target.value})}

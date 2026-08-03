@@ -176,7 +176,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
               transition={{ duration: 0.25, ease: "easeOut" }}
               className="p-5 sm:p-7 border-l-[6px] border-l-blue-500 bg-gradient-to-br from-blue-500/5 to-transparent rounded-3xl space-y-4 border border-border/10 shadow-lg"
             >
-              <div className="flex items-center gap-2 text-blue-500 font-extrabold text-[10px] uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-blue-500 font-extrabold text-[11px] uppercase tracking-wider">
                 <Sparkles size={14} />
                 <span>ELI5 • Accessible Analogy</span>
               </div>
@@ -214,7 +214,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
               transition={{ duration: 0.25, ease: "easeOut" }}
               className="p-5 sm:p-7 border-l-[6px] border-l-purple-500 bg-gradient-to-br from-purple-500/5 to-transparent rounded-3xl space-y-4 border border-border/10 shadow-lg"
             >
-              <div className="flex items-center gap-2 text-purple-500 font-extrabold text-[10px] uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-purple-500 font-extrabold text-[11px] uppercase tracking-wider">
                 <BookOpen size={14} />
                 <span>Vocabulary & Connected Core Ideas</span>
               </div>
@@ -229,7 +229,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
                       <h4 className="text-purple-400 font-black text-sm">{item.term}</h4>
                       <p className="text-text-main text-xs leading-relaxed">{item.definition}</p>
                       {item.connectsTo && (
-                        <div className="flex gap-1.5 items-start bg-purple-500/10 text-purple-300 rounded-xl p-2.5 text-[10px] font-medium leading-normal">
+                        <div className="flex gap-1.5 items-start bg-purple-500/10 text-purple-300 rounded-xl p-2.5 text-[11px] font-medium leading-normal">
                           <Brain size={12} className="shrink-0 mt-0.5" />
                           <span><strong>Links with:</strong> {item.connectsTo}</span>
                         </div>
@@ -254,7 +254,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
               transition={{ duration: 0.25, ease: "easeOut" }}
               className="p-5 sm:p-7 border-l-[6px] border-l-teal-500 bg-gradient-to-br from-teal-500/5 to-transparent rounded-3xl space-y-6 border border-border/10 shadow-lg"
             >
-              <div className="flex items-center gap-2 text-teal-500 font-extrabold text-[10px] uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-teal-500 font-extrabold text-[11px] uppercase tracking-wider">
                 <Brain size={14} />
                 <span>Rigorous Concept Deconstruction</span>
               </div>
@@ -335,7 +335,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
               transition={{ duration: 0.25, ease: "easeOut" }}
               className="p-5 sm:p-7 border-l-[6px] border-l-amber-500 bg-gradient-to-br from-amber-500/5 to-transparent rounded-3xl space-y-5 border border-border/10 shadow-lg"
             >
-              <div className="flex items-center gap-2 text-amber-500 font-extrabold text-[10px] uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-amber-500 font-extrabold text-[11px] uppercase tracking-wider">
                 <GraduationCap size={14} />
                 <span>Worked Example & Exercises</span>
               </div>
@@ -344,7 +344,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
                 <div className="space-y-4">
                   {/* Worked Example */}
                   <div className="p-4 bg-surface/50 border border-amber-500/10 rounded-2xl space-y-3">
-                    <span className="font-extrabold text-amber-500 text-[10px] uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full">Worked Example</span>
+                    <span className="font-extrabold text-amber-500 text-[11px] uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full">Worked Example</span>
                     <div className="space-y-2">
                       <p className="text-xs font-black text-text-main leading-relaxed">PROBLEM: {examplesData.worked.problem}</p>
                       {examplesData.worked.approach && (
@@ -352,7 +352,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
                       )}
                       {examplesData.worked.solution && (
                         <div className="text-[11px] text-text-main leading-relaxed bg-surface/30 p-3 rounded-xl border border-border/5 space-y-1">
-                          <span className="font-bold text-amber-500 block text-[9px] uppercase tracking-wider mb-1">Step-by-Step Solution</span>
+                          <span className="font-bold text-amber-500 block text-[11px] uppercase tracking-wider mb-1">Step-by-Step Solution</span>
                           <ReactMarkdown>{examplesData.worked.solution}</ReactMarkdown>
                         </div>
                       )}
@@ -367,12 +367,12 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
                   {/* Practice Problems */}
                   {examplesData.practices.length > 0 && (
                     <div className="space-y-3">
-                      <span className="font-bold text-text-muted text-[10px] uppercase tracking-wider block">Active Practice Problems</span>
+                      <span className="font-bold text-text-muted text-[11px] uppercase tracking-wider block">Active Practice Problems</span>
                       {examplesData.practices.map((practice, index) => (
                         <div key={index} className="p-4 bg-surface/30 border border-border/5 rounded-2xl space-y-3">
                           <h4 className="text-xs font-bold text-text-main flex items-center justify-between">
                             <span>{practice.title}</span>
-                            <span className="text-[9px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full font-bold">Challenge</span>
+                            <span className="text-[11px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full font-bold">Challenge</span>
                           </h4>
                           <p className="text-xs text-text-muted leading-relaxed">{practice.problem}</p>
                           
@@ -381,7 +381,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
                               <button
                                 onClick={() => toggleHint(index)}
                                 className={cn(
-                                  "flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all min-h-[44px]",
+                                  "flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all min-h-[44px]",
                                   revealedHints[index] 
                                     ? "bg-amber-500 text-white shadow-md shadow-amber-500/25" 
                                     : "bg-surface border border-amber-500/20 text-amber-500 hover:bg-amber-500/5"
@@ -436,7 +436,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
               transition={{ duration: 0.25, ease: "easeOut" }}
               className="p-5 sm:p-7 border-l-[6px] border-l-emerald-500 bg-gradient-to-br from-emerald-500/5 to-transparent rounded-3xl space-y-4 border border-border/10 shadow-lg"
             >
-              <div className="flex items-center gap-2 text-emerald-500 font-extrabold text-[10px] uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-emerald-500 font-extrabold text-[11px] uppercase tracking-wider">
                 <CheckCircle2 size={14} />
                 <span>Retention & Key Takeaways</span>
               </div>
@@ -448,7 +448,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
                       key={index} 
                       className="bg-surface/30 border border-border/5 rounded-2xl flex items-start gap-3.5 p-3.5"
                     >
-                      <span className="w-5 h-5 shrink-0 flex items-center justify-center bg-emerald-500 rounded-lg text-white font-black text-[10px]">
+                      <span className="w-5 h-5 shrink-0 flex items-center justify-center bg-emerald-500 rounded-lg text-white font-black text-[11px]">
                         {index + 1}
                       </span>
                       <p className="text-xs text-text-main leading-relaxed m-0 font-medium">{point}</p>
@@ -458,7 +458,7 @@ export const XMLNoteRenderer: React.FC<Props> = ({ detailedNotes }) => {
                   {/* Warning Callout Box for WATCH OUT */}
                   {summaryData.watchOut && (
                     <div className="mt-4 p-4 border border-red-500/20 bg-gradient-to-br from-red-500/10 to-transparent rounded-2xl space-y-2 shadow-inner">
-                      <div className="flex items-center gap-2 text-red-400 font-black text-[10px] uppercase tracking-wider">
+                      <div className="flex items-center gap-2 text-red-400 font-black text-[11px] uppercase tracking-wider">
                         <AlertCircle size={14} />
                         <span>⚠️ Watch Out (Common Student Error)</span>
                       </div>

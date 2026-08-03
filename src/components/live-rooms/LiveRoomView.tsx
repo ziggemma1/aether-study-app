@@ -82,7 +82,7 @@ export function LiveRoomView({
           </div>
           <div>
             <h2 className="text-white font-black text-xl md:text-2xl tracking-tight">{roomName}</h2>
-            <p className="text-[#00D2FF]/80 text-[10px] md:text-xs font-bold uppercase tracking-widest mt-1">
+            <p className="text-[#00D2FF]/80 text-[11px] md:text-xs font-bold uppercase tracking-widest mt-1">
               Live Session • {participants.length} Participant{participants.length !== 1 && 's'}
             </p>
           </div>
@@ -126,7 +126,7 @@ export function LiveRoomView({
                       className="w-16 h-16 md:w-20 md:h-20 rounded-full border-[3px] border-[#141A24] object-cover group-hover:scale-105 transition-transform duration-500 shadow-xl" 
                     />
                     <div className="absolute inset-0 rounded-full ring-2 ring-white/10" />
-                    {p.isMe && <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#00D2FF] rounded-full border-2 border-[#141A24] flex items-center justify-center text-[10px] font-black pointer-events-none">Me</div>}
+                    {p.isMe && <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#00D2FF] rounded-full border-2 border-[#141A24] flex items-center justify-center text-[11px] font-black pointer-events-none">Me</div>}
                   </div>
                   
                   <span className="text-sm font-bold text-white tracking-wide">{p.name}</span>
@@ -144,7 +144,7 @@ export function LiveRoomView({
                     </button>
                   )}
 
-                  <div className="absolute bottom-3 left-3 bg-[#0B0E14]/80 backdrop-blur px-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-white/70 border border-white/10 flex items-center gap-1.5">
+                  <div className="absolute bottom-3 left-3 bg-[#0B0E14]/80 backdrop-blur px-2.5 py-1 rounded-lg text-[11px] font-black uppercase text-white/70 border border-white/10 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#00E5A0] animate-pulse" /> 
                     Focusing
                   </div>
@@ -172,7 +172,7 @@ export function LiveRoomView({
                       animate={{ opacity: 1, y: 0 }}
                       className="flex justify-center my-3"
                     >
-                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30 bg-white/5 px-4 py-1.5 rounded-full border border-white/5">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/30 bg-white/5 px-4 py-1.5 rounded-full border border-white/5">
                         {msg.content}
                       </span>
                     </motion.div>
@@ -199,7 +199,7 @@ export function LiveRoomView({
                         : "bg-[#141A24]/90 border-white/10 rounded-tl-sm"
                     )}>
                         <div className={cn(
-                          "text-[10px] font-bold mb-1 uppercase tracking-wider flex items-center gap-2",
+                          "text-[11px] font-bold mb-1 uppercase tracking-wider flex items-center gap-2",
                           isMe ? "text-[#00D2FF] justify-end" : "text-[#6C5CE7]"
                         )}>
                           {!isMe && <span>{msg.senderName}</span>}
@@ -221,7 +221,7 @@ export function LiveRoomView({
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 text-[10px] font-bold text-[#00D2FF]/60 uppercase tracking-widest pl-12"
+                className="flex items-center gap-2 text-[11px] font-bold text-[#00D2FF]/60 uppercase tracking-widest pl-12"
               >
                 <div className="flex gap-1 mr-1">
                   <span className="w-1.5 h-1.5 bg-[#00D2FF] rounded-full animate-bounce" />

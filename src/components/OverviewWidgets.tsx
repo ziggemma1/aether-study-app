@@ -46,14 +46,14 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary opacity-80" />
       
       <div className="flex justify-between items-start mb-1">
-        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('avg_quiz_score')}</p>
+        <p className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('avg_quiz_score')}</p>
       </div>
       
       <div className="flex items-baseline gap-1 mb-2">
         <span className="text-xl sm:text-3xl font-extrabold text-white tracking-tighter leading-none">{Math.round(score)}%</span>
         {trend !== 0 && (
           <span className={cn(
-            "text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-sm ml-auto",
+            "text-[11px] sm:text-[11px] font-black px-1.5 py-0.5 rounded-sm ml-auto",
             trend > 0 ? "text-emerald-400 bg-emerald-500/20" : "text-rose-400 bg-rose-500/20"
           )}>
             {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
@@ -63,7 +63,7 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
 
       <div className="flex-1 flex flex-col justify-end space-y-3 mt-4 sm:mt-6">
         <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70">
+          <div className="flex justify-between text-[11px] sm:text-[11px] font-black uppercase tracking-wider text-white/70">
             <span>Peak</span>
             <span className="text-primary font-black">{highest}%</span>
           </div>
@@ -76,7 +76,7 @@ export function QuizScoreCard({ score = 0, trend = 0, highest = 0, lowest = 0 }:
           </div>
         </div>
         <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70">
+          <div className="flex justify-between text-[11px] sm:text-[11px] font-black uppercase tracking-wider text-white/70">
             <span>Floor</span>
             <span className="text-orange-500 font-black">{lowest}%</span>
           </div>
@@ -116,14 +116,14 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 opacity-80" />
       
       <div className="flex justify-between items-start mb-1">
-        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('total_time')}</p>
+        <p className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('total_time')}</p>
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
         <span className="text-xl sm:text-2xl font-extrabold text-white tracking-tighter leading-none shrink-0">{displayTime}</span>
         {trend !== 0 && (
           <span className={cn(
-            "text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-sm ml-auto shadow-sm",
+            "text-[11px] sm:text-[11px] font-black px-1.5 py-0.5 rounded-sm ml-auto shadow-sm",
             trend > 0 ? "text-emerald-400 bg-emerald-500/30" : "text-rose-400 bg-rose-500/30"
           )}>
             {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
@@ -132,7 +132,7 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
       </div>
 
       <div className="flex-1 flex flex-col justify-end mt-4 sm:mt-6">
-        <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-[0.1em] text-white/80 mb-3">
+        <div className="flex justify-between text-[11px] sm:text-[11px] font-black uppercase tracking-[0.1em] text-white/80 mb-3">
           <span>Focus Metrics</span>
           <span className="text-orange-400 font-black">{weeklyData.reduce((acc, curr) => acc + curr.hours, 0).toFixed(1)}h</span>
         </div>
@@ -146,7 +146,7 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
             return (
               <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group/bar">
                 <span className={cn(
-                  "text-[8px] font-black uppercase leading-none mb-1 transition-colors",
+                  "text-[11px] font-black uppercase leading-none mb-1 transition-colors",
                   isToday ? "text-orange-400 font-black" : "text-white/30"
                 )}>
                   {d.day[0]}
@@ -154,7 +154,7 @@ export function TimeSpentCard({ totalMinutes = 0, trend = 0, weeklyData = [] }: 
                 
                 <div className="relative w-full flex items-end justify-center h-full">
                   {hasData && (
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-sm font-black whitespace-nowrap z-10 shadow-lg border border-orange-400/20">
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none bg-orange-500 text-white text-[11px] px-1.5 py-0.5 rounded-sm font-black whitespace-nowrap z-10 shadow-lg border border-orange-400/20">
                       {d.hours}h
                     </div>
                   )}
@@ -241,23 +241,23 @@ export function StreakCard({ currentStreak = 0, longestStreak = 0 }: { currentSt
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 opacity-80" />
       
       <div className="flex justify-between items-start mb-1">
-        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('weekly_streak')}</p>
+        <p className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('weekly_streak')}</p>
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
         <span className="text-xl sm:text-3xl font-extrabold text-white tracking-tighter leading-none">{finalCurrentStreak}</span>
-        <span className="text-[10px] sm:text-[11px] font-black text-orange-400 uppercase tracking-widest ml-1">{t('days_label')}</span>
+        <span className="text-[11px] sm:text-[11px] font-black text-orange-400 uppercase tracking-widest ml-1">{t('days_label')}</span>
       </div>
 
       <div className="flex-1 flex flex-col justify-end mt-4 sm:mt-6">
-        <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70 mb-2">
+        <div className="flex justify-between text-[11px] sm:text-[11px] font-black uppercase tracking-wider text-white/70 mb-2">
           <span>Records</span>
           <span className="text-orange-400 font-black">PB: {finalLongestStreak}d</span>
         </div>
         <div className="flex justify-between items-end gap-1.5 h-10 sm:h-12">
           {displayDays.map((day, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-              <span className="text-[8px] font-black text-text-muted opacity-60 leading-none">{day.label}</span>
+              <span className="text-[11px] font-black text-text-muted opacity-60 leading-none">{day.label}</span>
               <div className={cn(
                 "w-full rounded-sm transition-all duration-500",
                 day.active 
@@ -298,7 +298,7 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
       />
 
       <div className="flex justify-between items-start mb-1">
-        <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('global_rank')}</p>
+        <p className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-white/90">{t('global_rank')}</p>
       </div>
 
       <div className="flex items-baseline gap-1 mb-2">
@@ -308,18 +308,18 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
             <motion.span 
               initial={{ opacity: 0, x: -5 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-[10px] font-black text-emerald-400"
+              className="text-[11px] font-black text-emerald-400"
             >
               <TrendingUp size={10} className="inline mr-0.5" /> 2
             </motion.span>
           </div>
-          <span className="text-[9px] font-medium text-white/50 tracking-tight mt-0.5 whitespace-nowrap">of {total.toLocaleString()} learners</span>
+          <span className="text-[11px] font-medium text-white/50 tracking-tight mt-0.5 whitespace-nowrap">of {total.toLocaleString()} learners</span>
         </div>
-        <span className="text-[10px] sm:text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-auto">Top 2%</span>
+        <span className="text-[11px] sm:text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-auto">Top 2%</span>
       </div>
 
       <div className="flex-1 flex flex-col justify-end mt-2 sm:mt-4 overflow-hidden">
-        <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white/70 mb-2">
+        <div className="flex justify-between text-[11px] sm:text-[11px] font-black uppercase tracking-wider text-white/70 mb-2">
           <span>Rivals Leaderboard</span>
         </div>
         <div className="space-y-2 overflow-y-auto custom-scrollbar max-h-[110px] pr-1.5 -mr-1">
@@ -331,10 +331,10 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
                 isMe ? "bg-primary/20 border-primary/40 shadow-[0_0_10px_rgba(var(--primary-rgb),0.15)]" : "bg-surface-alt/50 border-border/50"
               )}>
                 <span className={cn(
-                  "text-[9px] font-black w-4 text-center shrink-0",
+                  "text-[11px] font-black w-4 text-center shrink-0",
                   i < 3 ? "text-emerald-400" : "text-text-muted"
                 )}>#{i + 1}</span>
-                <div className="w-5 h-5 rounded-full bg-surface border border-border overflow-hidden flex items-center justify-center text-[8px] font-black shrink-0 shadow-inner">
+                <div className="w-5 h-5 rounded-full bg-surface border border-border overflow-hidden flex items-center justify-center text-[11px] font-black shrink-0 shadow-inner">
                   {learner.avatar ? (
                     <img src={learner.avatar} alt={learner.name} className="w-full h-full object-cover" />
                   ) : (
@@ -342,7 +342,7 @@ export function RankingCard({ rank = 0, total = 0, topLearnersData = [] }: { ran
                   )}
                 </div>
                 <span className={cn(
-                  "text-[10px] font-bold truncate flex-1",
+                  "text-[11px] font-bold truncate flex-1",
                   isMe ? "text-text-main shadow-sm" : "text-text-main/80"
                 )}>{learner.name}</span>
                 <div className="flex items-center gap-1 shrink-0">

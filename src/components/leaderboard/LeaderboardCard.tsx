@@ -76,12 +76,12 @@ export function LeaderboardCard({ rank, user, isCurrentUser, index }: Leaderboar
           <h4 className="font-bold text-white text-sm truncate flex items-center gap-2">
             {user.name}
             {isCurrentUser && (
-              <span className="text-[9px] font-black uppercase text-[#6C5CE7] bg-[#6C5CE7]/10 px-1.5 py-0.5 rounded border border-[#6C5CE7]/20">
+              <span className="text-[11px] font-black uppercase text-[#6C5CE7] bg-[#6C5CE7]/10 px-1.5 py-0.5 rounded border border-[#6C5CE7]/20">
                 You
               </span>
             )}
           </h4>
-          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-0.5 truncate">
+          <p className="text-[11px] text-white/40 font-bold uppercase tracking-widest mt-0.5 truncate">
             {user.subject || 'All Subjects'}
           </p>
         </div>
@@ -95,13 +95,13 @@ export function LeaderboardCard({ rank, user, isCurrentUser, index }: Leaderboar
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 text-[9px] font-bold text-white/30 uppercase tracking-tighter">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-white/30 uppercase tracking-tighter">
             <BookOpen size={10} /> {user.points.studyTime}
           </div>
-          <div className="flex items-center gap-1 text-[9px] font-bold text-white/30 uppercase tracking-tighter">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-white/30 uppercase tracking-tighter">
             <CheckCircle size={10} /> {user.points.quizzes}
           </div>
-          <div className="flex items-center gap-1 text-[9px] font-bold text-[#FF7675] uppercase tracking-tighter">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-[#FF7675] uppercase tracking-tighter">
             <Flame size={10} /> {user.points.streak}
           </div>
         </div>

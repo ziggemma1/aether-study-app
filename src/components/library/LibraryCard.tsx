@@ -163,7 +163,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
             {/* Status Indicator */}
             <div className="flex items-center gap-1.5">
               <span 
-                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 ${
                   statusConfig.pulse ? 'animate-pulse' : ''
                 }`}
                 style={{ backgroundColor: statusConfig.bg, color: statusConfig.color }}
@@ -172,9 +172,9 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
                 {statusConfig.label}
               </span>
 
-              <span className="text-[10px] text-[#8E9AAF]/40">•</span>
+              <span className="text-[11px] text-[#8E9AAF]/40">•</span>
               
-              <span className="text-[10px] font-bold text-[#8E9AAF]/80 uppercase font-mono">
+              <span className="text-[11px] font-bold text-[#8E9AAF]/80 uppercase font-mono">
                 {badge.label}
               </span>
             </div>
@@ -185,22 +185,28 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
                 null
               ) : (
                 <>
-                  <button
-                    onClick={handleDelete}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95 outline-none border border-red-500/20 shadow-sm cursor-pointer"
-                    title="Delete study material"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-
+                  {/* Share leads; delete follows. Delete keeps its 44px target
+                      but rests in muted grey and only turns red on intent —
+                      it used to sit first and shout as loudly as the action
+                      people actually came to use. */}
                   <button
                     onClick={handleShare}
                     disabled={isSharing}
                     id={`lib-share-${material.id || (material as any)._id}`}
                     className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#6C5CE7]/10 text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white active:scale-95 transition-all outline-none border border-[#6C5CE7]/20 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                     title="Share study material"
+                    aria-label={`Share ${material.title}`}
                   >
                     {copied ? <ClipboardCheck size={20} className="text-white" /> : <Share2 size={20} />}
+                  </button>
+
+                  <button
+                    onClick={handleDelete}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-transparent text-[#8E9AAF]/70 hover:bg-red-500/10 hover:text-red-400 focus-visible:bg-red-500/10 focus-visible:text-red-400 transition-all active:scale-95 outline-none border border-transparent hover:border-red-500/20 cursor-pointer"
+                    title="Delete study material"
+                    aria-label={`Delete ${material.title}`}
+                  >
+                    <Trash2 size={18} />
                   </button>
                 </>
               )}
@@ -235,7 +241,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
               {material.tags.slice(0, 3).map((tag, idx) => (
                 <span
                   key={`${tag}-${idx}`}
-                  className="text-[10px] font-bold text-[#8E9AAF]/80 bg-[#8E9AAF]/5 px-2.5 py-1 rounded-lg border border-[#8E9AAF]/5"
+                  className="text-[11px] font-bold text-[#8E9AAF]/80 bg-[#8E9AAF]/5 px-2.5 py-1 rounded-lg border border-[#8E9AAF]/5"
                 >
                   #{tag}
                 </span>
@@ -249,7 +255,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
           {/* Progress / Mastery Bar */}
           <div className="pt-3.5 border-t border-[#8E9AAF]/5 mb-4 select-none">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-extrabold uppercase text-[#8E9AAF]/80 tracking-wider">
+              <span className="text-[11px] font-extrabold uppercase text-[#8E9AAF]/80 tracking-wider">
                 Concept Mastery
               </span>
               <span className="text-xs font-bold font-mono text-[#F0F3F8]">
@@ -278,7 +284,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
                 title="Study Materials"
               >
                 <BookOpen size={15} />
-                <span className="text-[9px] font-black uppercase tracking-tight mt-1">Study</span>
+                <span className="text-[11px] font-black uppercase tracking-tight mt-1">Study</span>
               </button>
 
               {/* NOTES SNEAK */}
@@ -292,7 +298,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
                 title="Detailed Notes"
               >
                 <FileText size={15} />
-                <span className="text-[9px] font-black uppercase tracking-tight mt-1">Notes</span>
+                <span className="text-[11px] font-black uppercase tracking-tight mt-1">Notes</span>
               </button>
 
               {/* QUIZ */}
@@ -311,7 +317,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
                 disabled={!material.hasQuiz}
               >
                 <Award size={15} />
-                <span className="text-[9px] font-black uppercase tracking-tight mt-1">Quiz</span>
+                <span className="text-[11px] font-black uppercase tracking-tight mt-1">Quiz</span>
               </button>
 
               {/* FLASHCARDS */}
@@ -330,7 +336,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
                 disabled={!material.hasFlashcards}
               >
                 <Sparkles size={15} />
-                <span className="text-[9px] font-black uppercase tracking-tight mt-1">Flash</span>
+                <span className="text-[11px] font-black uppercase tracking-tight mt-1">Flash</span>
               </button>
             </div>
           )}

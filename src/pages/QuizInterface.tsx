@@ -66,7 +66,7 @@ export default function QuizInterface() {
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
           <div className="absolute inset-0 bg-primary/20 blur-xl animate-pulse -z-10" />
         </div>
-        <p className="text-text-muted font-black uppercase tracking-[0.2em] text-[10px] animate-pulse">
+        <p className="text-text-muted font-black uppercase tracking-[0.2em] text-[11px] animate-pulse">
           {isGenerating ? "Crafting your custom AI quiz..." : "Syncing smart quiz..."}
         </p>
       </div>
@@ -194,7 +194,7 @@ export default function QuizInterface() {
             <Trophy size={48} className="hidden sm:block" />
           </motion.div>
           <h1 className="text-xl sm:text-3xl font-black uppercase tracking-tighter mb-1 sm:mb-2">Session Complete</h1>
-          <p className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-widest mb-6 sm:mb-8">
+          <p className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest mb-6 sm:mb-8">
             Accuracy: {Math.round((score / questions.length) * 100)}%
           </p>
           
@@ -241,7 +241,7 @@ export default function QuizInterface() {
     <div className="p-4 sm:p-8 max-w-3xl mx-auto animate-fade-in">
       <header className="mb-6 sm:mb-12 flex items-center justify-between">
         <div>
-          <span className="text-[10px] font-black uppercase text-text-muted tracking-[0.2em]">Step {currentQuestion + 1} / {questions.length}</span>
+          <span className="text-[11px] font-black uppercase text-text-muted tracking-[0.2em]">Step {currentQuestion + 1} / {questions.length}</span>
           <div className="w-32 sm:w-48 h-2 bg-white/5 rounded-full mt-2 overflow-hidden ring-1 ring-white/10">
             <motion.div
               initial={{ width: 0 }}
@@ -252,7 +252,7 @@ export default function QuizInterface() {
         </div>
         <div className="flex items-center gap-2 text-primary">
           <Clock size={16} className="animate-pulse" />
-          <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Active Focus</span>
+          <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest">Active Focus</span>
         </div>
       </header>
 

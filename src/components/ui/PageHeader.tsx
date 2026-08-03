@@ -16,7 +16,7 @@ export function PageHeader({ title, subtitle, action, breadcrumbs }: PageHeaderP
       className="mb-6 flex flex-col gap-2 shrink-0 select-none pb-4 border-b border-white/5"
     >
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-text-muted">
+        <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-text-muted">
           {breadcrumbs.map((bc, idx) => (
             <React.Fragment key={idx}>
               {idx > 0 && <span>/</span>}

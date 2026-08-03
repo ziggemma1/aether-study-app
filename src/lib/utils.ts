@@ -15,6 +15,18 @@ export function formatTime(minutes: number): string {
   return `${remainingMinutes}m`;
 }
 
+/**
+ * Mastery health scale. Colour is one of the few accents the revamp keeps,
+ * because here it encodes something — how well a topic is known. Shared so the
+ * library stats row and the focus list cannot drift to different thresholds.
+ */
+export function getMasteryColor(pct: number): string {
+  if (pct < 30) return '#FF5E7E'; // Ruby red
+  if (pct < 60) return '#F5B042'; // Amber
+  if (pct < 80) return '#00D2FF'; // Cyan
+  return '#00E5A0';               // Emerald
+}
+
 export function getGreeting(): string {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) return 'Good morning';

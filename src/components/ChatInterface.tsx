@@ -72,7 +72,7 @@ export default function ChatInterface({ chatId, type, name, avatar, onBack, clas
             </div>
             <div>
               <p className="text-sm font-bold text-text-main leading-tight">{name}</p>
-              <p className="text-[10px] text-text-muted flex items-center gap-1">
+              <p className="text-[11px] text-text-muted flex items-center gap-1">
                 {isTyping ? <span className="text-primary font-medium animate-pulse italic">typing...</span> : (type === 'group' ? 'Group Chat' : (isBlocked ? 'Mutual friends only' : 'Active now'))}
               </p>
             </div>
@@ -104,7 +104,7 @@ export default function ChatInterface({ chatId, type, name, avatar, onBack, clas
               )}>
                 {m.content}
               </div>
-              <span className="text-[10px] text-text-muted mt-1 px-1">
+              <span className="text-[11px] text-text-muted mt-1 px-1">
                 {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </motion.div>

@@ -93,15 +93,15 @@ export const AchievementNotification: React.FC = () => {
 
           {/* Texts */}
           <div className="flex-grow min-w-0" onClick={viewAchievements}>
-            <p className="text-[10px] font-black uppercase tracking-widest text-primary leading-none mb-1">Badge Unlocked!</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-primary leading-none mb-1">Badge Unlocked!</p>
             <h5 className="font-extrabold text-sm text-text-main truncate leading-tight">{activeNotification.title}</h5>
-            <p className="text-[10px] text-text-muted truncate leading-none mt-1">+{activeNotification.points} study points earned</p>
+            <p className="text-[11px] text-text-muted truncate leading-none mt-1">+{activeNotification.points} study points earned</p>
           </div>
 
           {/* View Badge button */}
           <button 
             onClick={viewAchievements}
-            className="flex-shrink-0 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-xl cursor-pointer"
+            className="flex-shrink-0 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[11px] uppercase tracking-wider px-3 py-1.5 rounded-xl cursor-pointer"
           >
             View
           </button>

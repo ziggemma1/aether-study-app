@@ -18,7 +18,9 @@ router.get('/profile', async (req, res) => {
 
     // Calculate leaderboard rank and total learners dynamically using fast index counts
     const totalLearners = await User.countDocuments({ optedInLeaderboard: { $ne: false } });
-    let rank = 1;
+    // Opted-out users have no rank. This used to leave the initial `rank = 1`
+    // in place, so opting out of the leaderboard promoted you to first place.
+    let rank: number | null = null;
     if (user.optedInLeaderboard !== false) {
       rank = await User.countDocuments({
         optedInLeaderboard: { $ne: false },

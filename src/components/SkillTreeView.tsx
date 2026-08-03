@@ -75,7 +75,7 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({ subject, topics, o
 
                    <div className="pl-6">
                      <h4 className="font-bold text-text-main leading-tight mb-1">{topic.chapter}</h4>
-                     <p className="text-[10px] sm:text-xs text-text-muted line-clamp-2">{topic.content}</p>
+                     <p className="text-[11px] sm:text-xs text-text-muted line-clamp-2">{topic.content}</p>
                    </div>
                 </button>
                 

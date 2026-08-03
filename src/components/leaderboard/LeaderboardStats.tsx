@@ -45,7 +45,7 @@ function StatCard({ icon, label, value, highlight = false }: { icon: React.React
     )}>
       <div className="flex items-center gap-2">
         {icon}
-        <span className="text-[9px] font-black uppercase text-white/30 tracking-[0.15em]">{label}</span>
+        <span className="text-[11px] font-black uppercase text-white/30 tracking-[0.15em]">{label}</span>
       </div>
       <div className={cn(
         "text-lg font-black tracking-tight",

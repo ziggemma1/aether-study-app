@@ -14,7 +14,7 @@ export function UserAvatar({ name, avatarUrl, streakCount = 0, size = 'md' }: Us
   };
 
   const dims = {
-    sm: 'w-8 h-8 text-[10px] rounded-lg',
+    sm: 'w-8 h-8 text-[11px] rounded-lg',
     md: 'w-10 h-10 text-xs rounded-xl',
     lg: 'w-12 h-12 text-sm rounded-2xl'
   }[size];

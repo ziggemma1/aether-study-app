@@ -62,7 +62,7 @@ export default function NotificationBell() {
       >
         <Bell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 rounded-full text-[9px] font-black text-white flex items-center justify-center px-1 border border-surface leading-none">
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 rounded-full text-[11px] font-black text-white flex items-center justify-center px-1 border border-surface leading-none">
             {unreadCount}
           </span>
         )}
@@ -85,13 +85,13 @@ export default function NotificationBell() {
                 <h4 className="text-xs font-black text-text-main uppercase tracking-widest flex items-center gap-1.5">
                   Alerts {unreadCount > 0 && <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />}
                 </h4>
-                <p className="text-[9px] text-text-muted mt-0.5">Systems sync & active metrics</p>
+                <p className="text-[11px] text-text-muted mt-0.5">Systems sync & active metrics</p>
               </div>
               
               {unreadCount > 0 && (
                 <button
                    onClick={() => markAsRead()}
-                   className="text-[9px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1"
+                   className="text-[11px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1"
                 >
                   <Check size={10} /> Read All
                 </button>
@@ -117,7 +117,7 @@ export default function NotificationBell() {
                       <p className={cn("text-[11px] leading-relaxed text-text-main", !notif.read ? "font-bold text-text-main" : "text-text-muted")}>
                         {notif.message}
                       </p>
-                      <span className="text-[9px] text-text-muted mt-1 block font-mono">
+                      <span className="text-[11px] text-text-muted mt-1 block font-mono">
                         {notif.time}
                       </span>
                     </div>
@@ -126,8 +126,8 @@ export default function NotificationBell() {
               ) : (
                 <div className="p-10 text-center flex flex-col items-center justify-center bg-background">
                   <Info size={24} className="text-text-muted opacity-30 mb-2" />
-                  <p className="text-[10px] font-black text-text-muted uppercase tracking-wider">All caught up!</p>
-                  <p className="text-[9px] text-text-muted/75 mt-0.5 max-w-[180px]">No unread system alerts or study warnings.</p>
+                  <p className="text-[11px] font-black text-text-muted uppercase tracking-wider">All caught up!</p>
+                  <p className="text-[11px] text-text-muted/75 mt-0.5 max-w-[180px]">No unread system alerts or study warnings.</p>
                 </div>
               )}
             </div>
@@ -136,7 +136,7 @@ export default function NotificationBell() {
             <div className="p-2 border-t border-border/20 bg-background text-center">
               <button 
                 onClick={() => { setIsOpen(false); refetch(); }}
-                className="w-full text-[9px] font-bold text-text-muted hover:text-text-main uppercase tracking-widest py-1 transition-colors"
+                className="w-full text-[11px] font-bold text-text-muted hover:text-text-main uppercase tracking-widest py-1 transition-colors"
               >
                 Sync with Cloud Server
               </button>

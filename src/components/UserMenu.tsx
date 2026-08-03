@@ -70,7 +70,7 @@ export default function UserMenu() {
         </div>
         <div className="hidden sm:block max-w-[100px] truncate leading-none">
           <p className="text-xs font-black text-text-main truncate uppercase tracking-tight">{displayName.split(' ')[0]}</p>
-          <span className="text-[9px] text-text-muted">Online</span>
+          <span className="text-[11px] text-text-muted">Online</span>
         </div>
         <ChevronDown size={14} className={cn("text-text-muted transition-transform duration-200", isOpen && "rotate-180")} />
       </button>
@@ -102,7 +102,7 @@ export default function UserMenu() {
               )}
               <div className="min-w-0">
                 <h4 className="text-xs font-black text-text-main truncate uppercase tracking-tight">{displayName}</h4>
-                <p className="text-[10px] text-text-muted truncate mt-0.5">{displayEmail}</p>
+                <p className="text-[11px] text-text-muted truncate mt-0.5">{displayEmail}</p>
               </div>
             </div>
 

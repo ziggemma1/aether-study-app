@@ -44,7 +44,7 @@ export default function ActivePlans({ plans, loading, onDelete }: ActivePlansPro
         <div className="bg-[#0B0E14] border border-gray-800 rounded-xl p-6 text-center text-xs text-[#8E9AAF] min-h-[140px] flex flex-col justify-center items-center">
           <Award className="w-8 h-8 text-gray-700 mb-2" />
           <p className="font-bold text-gray-400">No active study plans yet.</p>
-          <p className="mt-1 text-[10px] text-gray-500">
+          <p className="mt-1 text-[11px] text-gray-500">
             Select files above, customize your schedule requirements, and click Assemble!
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function ActivePlans({ plans, loading, onDelete }: ActivePlansPro
                       <h4 className="text-xs font-extrabold text-[#F0F3F8] line-clamp-1 group-hover:text-[#6C5CE7] transition-colors">
                         {plan.title || 'Personal Study Roadmap'}
                       </h4>
-                      <p className="text-[10px] text-[#8E9AAF] font-semibold mt-0.5">
+                      <p className="text-[11px] text-[#8E9AAF] font-semibold mt-0.5">
                         {plan.goal} • {plan.complexity} Level
                       </p>
                     </div>
@@ -93,7 +93,7 @@ export default function ActivePlans({ plans, loading, onDelete }: ActivePlansPro
                   </div>
 
                   <div className="space-y-1.5 mt-3">
-                    <div className="flex items-center justify-between text-[10px] font-bold font-mono">
+                    <div className="flex items-center justify-between text-[11px] font-bold font-mono">
                       <span className="text-gray-400">Syllabus Progress</span>
                       <span className="text-[#00E5A0]">{progress}%</span>
                     </div>
@@ -107,7 +107,7 @@ export default function ActivePlans({ plans, loading, onDelete }: ActivePlansPro
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mt-4.5 pt-3 border-t border-gray-850 text-[10px] text-gray-500 font-semibold uppercase font-mono">
+                <div className="flex items-center justify-between mt-4.5 pt-3 border-t border-gray-850 text-[11px] text-gray-500 font-semibold uppercase font-mono">
                   <span className="flex items-center gap-1">
                     <CalendarDays className="w-3.5 h-3.5 text-[#6C5CE7]" />
                     {dateRangeStr}
