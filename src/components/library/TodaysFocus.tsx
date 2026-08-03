@@ -35,7 +35,7 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.1 }}
-      className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1A1030]/90 to-[#141A24]/90 p-5 border border-[#6C5CE7]/15 shadow-xl select-none"
+      className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-surface-alt/90 to-surface/90 p-5 border border-[#6C5CE7]/15 shadow-xl select-none"
     >
       {/* Decorative Warm Backglow */}
       <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#6C5CE7]/10 blur-3xl pointer-events-none" />
@@ -51,10 +51,10 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
       </div>
 
       <div className="px-1">
-        <h4 className="text-sm font-bold text-[#F0F3F8] tracking-tight leading-snug">
+        <h4 className="text-sm font-bold text-text-main tracking-tight leading-snug">
           Recommended daily reviews to boost your academic goals
         </h4>
-        <p className="text-xs text-[#8E9AAF]/85 mt-1 leading-relaxed">
+        <p className="text-xs text-text-muted/85 mt-1 leading-relaxed">
           Based on cognitive interval recall, studying these items now increases long-term retention.
         </p>
       </div>
@@ -68,21 +68,21 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
               <div
                 key={item.id}
                 onClick={() => navigateTo(`/library/${item.id}`)}
-                className="flex items-center justify-between p-3.5 rounded-2xl bg-[#0B0E14]/60 border border-[#8E9AAF]/5 active:bg-[#0B0E14]/95 transition-all cursor-pointer group"
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-background/60 border border-border active:bg-background/95 transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6C5CE7]/10 text-[#6C5CE7] font-semibold text-lg">
                     📚
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-[#F0F3F8] truncate leading-tight group-hover:text-[#6C5CE7] transition-colors pr-2">
+                    <p className="text-xs font-semibold text-text-main truncate leading-tight group-hover:text-[#6C5CE7] transition-colors pr-2">
                       {item.title}
                     </p>
                     <div className="flex items-center gap-2 mt-1.5">
                       {/* This badge is identical on every row, so it carried no
                           information — only alarm-red weight. Neutral chrome
                           here; the colour moves to mastery, which does vary. */}
-                      <span className="px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-[#8E9AAF]/10 text-[#8E9AAF]">
+                      <span className="px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-text-muted/10 text-text-muted">
                         Review Focus
                       </span>
                       <span
@@ -101,11 +101,11 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
                       e.stopPropagation();
                       navigateTo(`/quiz/${item.id}`);
                     }}
-                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#6C5CE7] text-[#F0F3F8] text-[11px] font-bold uppercase transition-all hover:bg-[#6C5CE7]/90 cursor-pointer"
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#6C5CE7] text-white text-[11px] font-bold uppercase transition-all hover:bg-[#6C5CE7]/90 cursor-pointer"
                   >
                     Take Quiz
                   </button>
-                  <ChevronRight size={16} className="text-[#8E9AAF] group-hover:text-[#F0F3F8] transition-colors" />
+                  <ChevronRight size={16} className="text-text-muted group-hover:text-text-main transition-colors" />
                 </div>
               </div>
             );
@@ -114,10 +114,10 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
           <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#00E5A0]/5 border border-[#00E5A0]/10 text-[#00E5A0]">
             <CheckCircle2 className="h-5 w-5 shrink-0" />
             <div>
-              <p className="text-xs font-bold text-[#F0F3F8]">
+              <p className="text-xs font-bold text-text-main">
                 All study courses at peak mastery!
               </p>
-              <p className="text-[11px] text-[#8E9AAF] mt-0.5">
+              <p className="text-[11px] text-text-muted mt-0.5">
                 Stellar progress, scholar! You have mastered 100% of your materials. Keep adding folders to your hub!
               </p>
             </div>

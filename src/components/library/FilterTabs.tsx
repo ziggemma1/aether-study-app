@@ -49,10 +49,10 @@ export function FilterTabs({ activeFilter, onChange }: FilterTabsProps) {
                 onClick={() => onChange(tab)}
                 id={`tab-${tab.toLowerCase()}`}
                 aria-pressed={isActive}
-                className={`relative px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 shrink-0 min-h-[44px] flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-[#6C5CE7] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0E14] ${
+                className={`relative px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 shrink-0 min-h-[44px] flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-[#6C5CE7] focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                   isActive
-                    ? "text-[#F0F3F8] bg-[#6C5CE7]"
-                    : "text-[#8E9AAF] bg-[#141A24] border border-[#8E9AAF]/10 hover:text-[#F0F3F8] active:bg-[#141A24]/60"
+                    ? "text-white bg-[#6C5CE7]"
+                    : "text-text-muted bg-surface border border-border hover:text-text-main active:bg-surface/60"
                 }`}
               >
                 {tab}
@@ -64,13 +64,13 @@ export function FilterTabs({ activeFilter, onChange }: FilterTabsProps) {
 
       <div
         aria-hidden
-        className={`pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#141A24] to-transparent transition-opacity duration-200 ${
+        className={`pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-surface to-transparent transition-opacity duration-200 ${
           overflow.start ? 'opacity-100' : 'opacity-0'
         }`}
       />
       <div
         aria-hidden
-        className={`pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#141A24] to-transparent transition-opacity duration-200 ${
+        className={`pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface to-transparent transition-opacity duration-200 ${
           overflow.end ? 'opacity-100' : 'opacity-0'
         }`}
       />

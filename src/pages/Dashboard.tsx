@@ -181,7 +181,9 @@ export default function Dashboard() {
             size="lg" 
           />
           <div className="min-w-0">
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#00D2FF]">
+            {/* was hardcoded #00D2FF — a neon cyan that fails contrast on paper.
+                The token is the darkened cyan that holds AA on a light surface. */}
+            <span className="text-[11px] font-black uppercase tracking-widest text-secondary">
               {getGreeting()}, {userName.split(' ')[0]}! ☀️
             </span>
             <h1 className="text-base sm:text-lg font-black text-text-main leading-tight mt-0.5 truncate uppercase">

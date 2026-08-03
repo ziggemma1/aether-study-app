@@ -114,7 +114,7 @@ export default function Library() {
   const targetMaterialsCount = allMaterials.length || materials.length;
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-[#0B0E14] via-[#141A24] to-[#1A1030] text-[#F0F3F8] p-4 sm:p-6 pb-32 select-none overflow-x-hidden">
+    <div className="relative min-h-screen bg-gradient-to-br from-background via-surface to-surface-alt text-text-main p-4 sm:p-6 pb-32 select-none overflow-x-hidden">
       
       {/* Absolute Ambient Sphere Background Accent Glow */}
       <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-[#6C5CE7]/5 blur-[120px] pointer-events-none select-none" />
@@ -127,13 +127,13 @@ export default function Library() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <LibraryBig size={22} className="text-[#6C5CE7] shrink-0" />
-            <h1 className="font-heading text-xl sm:text-2xl font-bold text-[#F0F3F8] tracking-tight">
+            <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-main tracking-tight">
               Your Learning Hub
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-[#8E9AAF] mt-1 font-medium leading-relaxed">
+          <p className="text-xs sm:text-sm text-text-muted mt-1 font-medium leading-relaxed">
             Welcome back, <span className="text-[#6C5CE7] font-bold">{firstName}</span>. You have{' '}
-            <span className="text-[#F0F3F8] font-bold">{targetMaterialsCount}</span>{' '}
+            <span className="text-text-main font-bold">{targetMaterialsCount}</span>{' '}
             {targetMaterialsCount === 1 ? 'material' : 'materials'} ready to study.
           </p>
         </div>
@@ -143,7 +143,7 @@ export default function Library() {
           {selectionMode && (
             <button
               onClick={handleSelectAll}
-              className="flex h-11 items-center gap-2 px-4 rounded-xl font-extrabold text-[11px] sm:text-xs transition-all outline-none border-2 bg-white/10 text-white border-white/20"
+              className="flex h-11 items-center gap-2 px-4 rounded-xl font-semibold text-xs transition-all outline-none bg-surface text-text-main border border-border shadow-[var(--shadow-card)] hover:border-primary/30"
               title="Select all items"
             >
               <CheckSquare size={16} strokeWidth={3} />
@@ -172,7 +172,7 @@ export default function Library() {
 
           <Link
             to="/upload"
-            className="flex h-11 items-center gap-2 px-3 sm:px-4 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-[11px] sm:text-xs font-bold transition-all outline-none border border-white/20"
+            className="flex h-11 items-center gap-2 px-3 sm:px-4 rounded-xl bg-surface hover:border-primary/30 active:scale-95 text-text-main text-xs font-semibold transition-all outline-none border border-border shadow-[var(--shadow-card)]"
             id="library-upload-quick-action"
           >
             <Plus size={16} strokeWidth={3} />
@@ -234,7 +234,7 @@ export default function Library() {
         <TodaysFocus materials={allMaterials.length > 0 ? allMaterials : materials} />
 
         {/* 4. Controls Section (Search + Tab filters + Sorting dropdown) */}
-        <div className="flex flex-col gap-3 bg-[#141A24]/40 border border-[#8E9AAF]/5 rounded-3xl p-4 shadow-sm">
+        <div className="flex flex-col gap-3 bg-surface/40 border border-border rounded-3xl p-4 shadow-sm">
           {/* Search and Sort row */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-grow">

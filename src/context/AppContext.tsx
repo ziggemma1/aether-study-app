@@ -78,7 +78,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [isLoading, setIsLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  // Bright is the app's identity now; dark is the opt-in. Persisted so the
+  // toggle survives a reload, which it never used to.
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = typeof localStorage !== 'undefined' && localStorage.getItem('aether-theme');
+    return saved === 'dark' || saved === 'light' ? saved : 'light';
+  });
   const [timeTheme, setTimeTheme] = useState('');
 
   // Determine time-of-day theme
@@ -266,6 +271,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
+    localStorage.setItem('aether-theme', theme);
   }, [theme]);
 
   useEffect(() => {

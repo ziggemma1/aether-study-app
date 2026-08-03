@@ -4,6 +4,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* Bind the `dark:` variant to our .dark class. Without this, Tailwind v4 wires
+   `dark:` to prefers-color-scheme, so the handful of dark: utilities in the app
+   followed the OS while every token followed our toggle — the two could
+   disagree on the same screen. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Lexend", ui-sans-serif, system-ui, sans-serif;
@@ -19,8 +25,16 @@
   --color-border: var(--border);
   --color-text-main: var(--text-main);
   --color-text-muted: var(--text-muted);
-  --color-brand-pink: #FF55D2;
-  --color-brand-orange: #FF9F68;
+  /* were hardcoded, so they alone ignored the theme and stayed neon on paper */
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-orange: var(--brand-orange);
+
+  /* Pastel category scale, exposed to Tailwind as bg-pastel-mint etc. */
+  --color-pastel-pink: var(--pastel-pink);
+  --color-pastel-sky: var(--pastel-sky);
+  --color-pastel-lavender: var(--pastel-lavender);
+  --color-pastel-mint: var(--pastel-mint);
+  --color-pastel-peach: var(--pastel-peach);
   
   --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 10px -4px rgba(0, 0, 0, 0.05);
   
@@ -72,13 +86,54 @@
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Bright pastel is now the app's identity, so it lives in :root and dark is the
+   opt-in override. It used to be the reverse, which is why the old .light theme
+   never really worked — components hardcoded dark hexes over the top of it.
+
+   Violet is deliberately NOT the background any more. It is spent on exactly
+   three things: the active nav item, primary buttons, and progress fills.
+   Everything else is paper, ink, and the pastel category scale below.
+   --------------------------------------------------------------------------- */
 :root {
-  /* Aether's brand accent is a pair — violet + cyan — used together as
-     linear-gradient(135deg, #6C5CE7, #00D2FF). The ~300 hardcoded #6C5CE7
-     sites are the brand, not drift, so --primary now matches them instead of
-     sitting one shade off (#8B5CF6) and reading as a rendering bug.
-     --secondary is the cyan half, so it means the same thing in every theme. */
-  --primary: #6C5CE7;
+  --primary: #6C5CE7;   /* violet — active nav, primary buttons, progress only */
+  --secondary: #0089B0; /* cyan, darkened to hold AA on a light surface */
+  --accent: #0E9F6E;    /* success green, darkened for the same reason */
+
+  --background: #F7F5FF; /* lavender-tinted paper, not white */
+  --surface: #FFFFFF;
+  --surface-alt: #F1EEFB;
+  --border: rgba(28, 25, 51, 0.09);
+  --text-main: #1C1933;  /* near-black with a violet cast, never pure #000 */
+  --text-muted: #6B6785;
+
+  --brand-pink: #D6367F;
+  --brand-orange: #C2610C;
+
+  /* Pastel category scale, taken verbatim from the 21st.dev "Soft Pastel Blend"
+     palette so the page wash and the cards are literally the same colours.
+     These are assigned per material TYPE, never chosen decoratively — the point
+     is that a colour still tells you something. See pastelForType(). */
+  --pastel-pink: #FBE9F0;
+  --pastel-sky: #CDE7F0;
+  --pastel-lavender: #E6D6F5;
+  --pastel-mint: #D6F0E4;
+  --pastel-peach: #FDEBD9;
+
+  /* Saturated siblings for icons/text sitting on those tints (AA on pastel). */
+  --pastel-pink-ink: #A32B62;
+  --pastel-sky-ink: #1F6B85;
+  --pastel-lavender-ink: #6B3FA0;
+  --pastel-mint-ink: #1E7A56;
+  --pastel-peach-ink: #9A5410;
+
+  --radius-card: 20px;
+  --shadow-card: 0 1px 2px rgba(28, 25, 51, 0.04), 0 8px 24px -12px rgba(28, 25, 51, 0.10);
+  --shadow-card-hover: 0 2px 4px rgba(28, 25, 51, 0.05), 0 16px 36px -14px rgba(108, 92, 231, 0.20);
+}
+
+.dark {
+  --primary: #8B7BFF;
   --secondary: #00D2FF;
   --accent: #10B981;
   --background: #0F172A;
@@ -89,19 +144,23 @@
   --text-muted: #94A3B8;
   --brand-pink: #FF55D2;
   --brand-orange: #FF9F68;
-}
 
-.light {
-  --background: #F8FAFC;
-  --surface: rgba(255, 255, 255, 0.82);
-  --surface-alt: #F1F5F9;
-  --border: rgba(0, 0, 0, 0.08);
-  --text-main: #0F172A;
-  --text-muted: #64748B;
-  --primary: #5B4CD6;   /* violet, darkened for AA on a light surface */
-  --secondary: #0089B0; /* cyan, darkened for AA on a light surface */
-  --brand-pink: #FF55D2;
-  --brand-orange: #FF9F68;
+  /* Pastels are unreadable as fills on dark, so they invert to deep tints and
+     the ink becomes the light end. Same token names, so components don't care. */
+  --pastel-pink: rgba(251, 233, 240, 0.10);
+  --pastel-sky: rgba(205, 231, 240, 0.10);
+  --pastel-lavender: rgba(230, 214, 245, 0.10);
+  --pastel-mint: rgba(214, 240, 228, 0.10);
+  --pastel-peach: rgba(253, 235, 217, 0.10);
+
+  --pastel-pink-ink: #F8B9D4;
+  --pastel-sky-ink: #9AD5EA;
+  --pastel-lavender-ink: #C9AEEE;
+  --pastel-mint-ink: #8FDCBB;
+  --pastel-peach-ink: #F3C48C;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 36px -14px rgba(0, 0, 0, 0.6);
 }
 
 @layer base {
@@ -141,63 +200,49 @@
     animation: breathe 4s ease-in-out infinite;
   }
 
+  /* Kept for the screens not yet converted, but retuned for paper: shadow-2xl
+     under a white card on a pale background just looks like dirt. */
   .glass-card {
-    @apply backdrop-blur-xl bg-surface border border-border rounded-[32px] shadow-2xl overflow-hidden transition-all duration-300 ease-out;
+    @apply bg-surface border border-border rounded-[var(--radius-card)] shadow-[var(--shadow-card)] overflow-hidden transition-all duration-300 ease-out;
   }
-  
+
   .glass-card:hover {
-    @apply -translate-y-1 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border-primary/30;
+    @apply -translate-y-0.5 shadow-[var(--shadow-card-hover)] border-primary/25;
   }
 
   .glass-nav {
     @apply bg-surface/80 backdrop-blur-md border-b border-border;
   }
 
-  /* Time-of-day themes shift --primary only. --secondary stays a bold companion
-     accent in every theme so a component author can rely on it meaning one
-     thing; it used to be a pale tint here and a saturated accent there. */
+  /* Time-of-day themes now warm or cool the PAPER by a few degrees and nothing
+     else. They used to swap --background wholesale, and two of the four
+     (sunset, night) were fully dark — so a bright app would black itself out
+     every evening. Brightness is the identity; the hour only tints it. */
   .theme-morning {
-    --primary: #F59E0B; /* Warm orange */
-    --secondary: #0089B0;
-    --accent: #10B981;
-    --background: #FFFBEB;
-    --surface: rgba(255, 255, 255, 0.7);
-    --text-main: #92400E;
-    --text-muted: #B45309;
-    --border: rgba(245, 158, 11, 0.1);
+    --background: #FFFAF3; /* warm sunrise paper */
+    --surface-alt: #FCEFE2;
   }
 
   .theme-day {
-    --primary: #3B82F6; /* Sky blue */
-    --secondary: #0089B0;
-    --accent: #F43F5E;
-    --background: #F8FAFC;
-    --surface: rgba(255, 255, 255, 0.82);
-    --text-main: #0F172A;
-    --text-muted: #64748B;
-    --border: rgba(0, 0, 0, 0.08);
+    --background: #F7F5FF; /* the neutral default */
+    --surface-alt: #F1EEFB;
   }
 
   .theme-sunset {
-    --primary: #EC4899; /* Pinkish sunset */
-    --secondary: #00D2FF;
-    --accent: #F59E0B;
-    --background: #1E1B4B;
-    --surface: rgba(49, 46, 129, 0.7);
-    --text-main: #FFFFFF;
-    --text-muted: #A5B4FC;
-    --border: rgba(255, 255, 255, 0.1);
+    --background: #FFF6F6; /* faint rose paper */
+    --surface-alt: #FBE9F0;
   }
 
   .theme-night {
-    --primary: #A78BFA; /* Neon purple */
-    --secondary: #00D2FF;
-    --accent: #34D399;
-    --background: #020617; /* Deep abyss black */
-    --surface: rgba(15, 23, 42, 0.8);
-    --text-main: #F1F5F9;
-    --text-muted: #94A3B8;
-    --border: rgba(255, 255, 255, 0.1);
+    --background: #F4F6FF; /* cool blue paper — still light */
+    --surface-alt: #E9EEFB;
+  }
+
+  /* Dark mode wins over the hour, so the toggle always means what it says. */
+  .dark.theme-morning, .dark.theme-day,
+  .dark.theme-sunset, .dark.theme-night {
+    --background: #0F172A;
+    --surface-alt: #0F172A;
   }
 
   .shimmer-bg {
@@ -206,16 +251,31 @@
     animation: shimmer 1.5s infinite;
   }
 
+  /* The buttons lost the shouty uppercase + heavy letter-spacing. At 11px,
+     black uppercase tracked to 0.15em is a legibility tax, and on pale paper it
+     read as aggressive rather than friendly. Sentence case, softer weight. */
   .btn-primary {
-    @apply bg-primary text-white px-8 py-3.5 rounded-2xl font-black uppercase tracking-[0.15em] text-[11px] sm:text-xs shadow-[0_8px_30px_rgb(139,92,246,0.3)] transition-all duration-200 hover:bg-primary/90 hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgb(139,92,246,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none border-b-4 border-indigo-900/30;
+    @apply bg-primary text-white px-6 py-3 rounded-2xl font-semibold text-sm shadow-[0_8px_20px_-6px_rgba(108,92,231,0.5)] transition-all duration-200 hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-8px_rgba(108,92,231,0.6)] active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .btn-secondary {
-    @apply bg-surface/50 backdrop-blur-md border border-border text-text-main px-6 py-2.5 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all duration-200 hover:bg-surface hover:-translate-y-0.5 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none border-b-2;
+    @apply bg-surface border border-border text-text-main px-5 py-2.5 rounded-2xl font-semibold text-sm shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .btn-outline {
-    @apply border border-border text-text-muted px-6 py-2.5 rounded-full font-semibold transition-all duration-200 hover:bg-slate-50/5 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-[0.98];
+    @apply border border-border text-text-muted px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all duration-200 hover:bg-surface-alt hover:text-text-main active:scale-[0.98];
+  }
+
+  /* The friendly card: white paper, soft shadow, generous radius. Replaces the
+     dark glass-card look as the default surface. */
+  .soft-card {
+    @apply bg-surface border border-border rounded-[var(--radius-card)] shadow-[var(--shadow-card)] transition-all duration-200;
+  }
+
+  /* Repeats the base rather than @apply-ing .soft-card — in Tailwind v4 a class
+     defined in @layer components is not a utility, so @apply cannot see it. */
+  .soft-card-interactive {
+    @apply bg-surface border border-border rounded-[var(--radius-card)] shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)] hover:border-primary/25 active:translate-y-0 active:scale-[0.995] cursor-pointer;
   }
 
   .typing-dot {
@@ -250,6 +310,11 @@
   }
   .custom-scrollbar {
     scrollbar-width: thin;
+    /* was a hardcoded white thumb — invisible on paper */
+    scrollbar-color: rgba(28, 25, 51, 0.2) transparent;
+  }
+
+  .dark .custom-scrollbar {
     scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
   }
 }

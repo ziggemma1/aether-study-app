@@ -15,6 +15,41 @@ export function formatTime(minutes: number): string {
   return `${remainingMinutes}m`;
 }
 
+export type PastelTone = 'pink' | 'sky' | 'lavender' | 'mint' | 'peach';
+
+/**
+ * Pastel category scale. The tints come from the 21st.dev "Soft Pastel Blend"
+ * palette (see SoftPastelBlend.tsx) and are assigned by material TYPE, never
+ * picked for looks — so the colour still answers "what kind of thing is this?"
+ * rather than going back to being decoration.
+ */
+export function pastelForType(type?: string): PastelTone {
+  switch ((type || '').toLowerCase()) {
+    case 'pdf':
+    case 'document':
+      return 'pink';
+    case 'video':
+      return 'sky';
+    case 'quiz':
+      return 'mint';
+    case 'flashcards':
+    case 'flashcard':
+      return 'peach';
+    case 'notes':
+    case 'note':
+    default:
+      return 'lavender';
+  }
+}
+
+/** Inline style pair for a pastel tone: tinted fill + AA-safe ink. */
+export function pastelStyle(tone: PastelTone): { backgroundColor: string; color: string } {
+  return {
+    backgroundColor: `var(--pastel-${tone})`,
+    color: `var(--pastel-${tone}-ink)`,
+  };
+}
+
 /**
  * Mastery health scale. Colour is one of the few accents the revamp keeps,
  * because here it encodes something — how well a topic is known. Shared so the

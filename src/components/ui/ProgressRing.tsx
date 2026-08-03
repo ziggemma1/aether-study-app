@@ -9,7 +9,7 @@ interface ProgressRingProps {
   icon?: React.ReactNode;
 }
 
-export function ProgressRing({ percentage, size = 64, strokeWidth = 5, accentColor = '#8B5CF6', icon }: ProgressRingProps) {
+export function ProgressRing({ percentage, size = 64, strokeWidth = 5, accentColor = 'var(--primary)', icon }: ProgressRingProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
@@ -20,7 +20,7 @@ export function ProgressRing({ percentage, size = 64, strokeWidth = 5, accentCol
       <svg className="transform -rotate-90" width={size} height={size}>
         {/* Background track circle */}
         <circle
-          className="text-[#1E293B]"
+          className="text-surface-alt"
           strokeWidth={strokeWidth}
           stroke="currentColor"
           fill="transparent"

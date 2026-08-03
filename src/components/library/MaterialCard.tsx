@@ -55,7 +55,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
       layout
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="group relative flex flex-col justify-between rounded-2xl bg-[#141A24] p-5 border border-[#8E9AAF]/5 transition-shadow hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] w-full h-full min-h-[280px]"
+      className="group relative flex flex-col justify-between rounded-2xl bg-surface p-5 border border-border transition-shadow hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] w-full h-full min-h-[280px]"
     >
       <div>
         {/* Header Section */}
@@ -73,7 +73,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
           <button
             onClick={handleShare}
             id={`share-${material.id}`}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#8E9AAF]/5 text-[#8E9AAF] transition-all active:scale-90 active:bg-[#8E9AAF]/10 shrink-0 cursor-pointer"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-text-muted/5 text-text-muted transition-all active:scale-90 active:bg-text-muted/10 shrink-0 cursor-pointer"
             title="Share material"
           >
             <Share2 size={16} className={copied ? 'text-[#00E5A0]' : ''} />
@@ -81,16 +81,16 @@ export function MaterialCard({ material }: MaterialCardProps) {
         </div>
 
         {/* Content Section */}
-        <h3 className="text-base font-bold text-[#F0F3F8] line-clamp-1 mb-1 tracking-tight">
+        <h3 className="text-base font-bold text-text-main line-clamp-1 mb-1 tracking-tight">
           {material.title}
         </h3>
         
-        <p className="text-xs text-[#8E9AAF] mb-3 line-clamp-1 font-medium">
+        <p className="text-xs text-text-muted mb-3 line-clamp-1 font-medium">
           Uploaded: {material.date}
         </p>
 
         {material.description && (
-          <p className="text-sm text-[#8E9AAF] line-clamp-2 leading-relaxed mb-4">
+          <p className="text-sm text-text-muted line-clamp-2 leading-relaxed mb-4">
             {material.description}
           </p>
         )}
@@ -101,7 +101,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
             {material.tags.slice(0, 3).map((tag, idx) => (
               <span
                 key={`${tag}-${idx}`}
-                className="text-[11px] font-semibold text-[#8E9AAF] bg-[#8E9AAF]/5 px-2.5 py-1 rounded-lg border border-[#8E9AAF]/10 whitespace-nowrap"
+                className="text-[11px] font-semibold text-text-muted bg-text-muted/5 px-2.5 py-1 rounded-lg border border-border whitespace-nowrap"
               >
                 #{tag}
               </span>
@@ -113,17 +113,17 @@ export function MaterialCard({ material }: MaterialCardProps) {
       <div>
         {/* Mastery Progress */}
         {material.mastery > 0 && (
-          <div className="pt-3 border-t border-[#8E9AAF]/5 mb-4 selectors-progress">
+          <div className="pt-3 border-t border-border mb-4 selectors-progress">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold uppercase text-[#8E9AAF] tracking-wider">
+                <span className="text-[11px] font-bold uppercase text-text-muted tracking-wider">
                   Mastery Progress
                 </span>
                 <span className="text-xs font-semibold text-[#6C5CE7]">
                   {material.mastery}%
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-[#141A24]/50 border border-[#8E9AAF]/5 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-surface/50 border border-border rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-[#6C5CE7] to-[#00D2FF] rounded-full transition-all duration-500"
                   style={{ width: `${material.mastery}%` }}
@@ -134,7 +134,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
         )}
 
         {/* Quick Action Interactive Buttons (Touch Target: min 44px) */}
-        <div className="grid grid-cols-4 gap-2 border-t border-[#8E9AAF]/5 pt-3">
+        <div className="grid grid-cols-4 gap-2 border-t border-border pt-3">
           <button
             onClick={() => navigateTo(`/library/${material.id}`)}
             className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#6C5CE7]/5 hover:bg-[#6C5CE7]/10 active:scale-95 text-[#6C5CE7] transition-all min-h-[44px] cursor-pointer"

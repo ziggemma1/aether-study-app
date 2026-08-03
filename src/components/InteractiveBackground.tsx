@@ -54,7 +54,7 @@ export default function InteractiveBackground() {
           {/* 2. Interactive Aurora Glows */}
           <motion.div 
             style={{ x: translateX1, y: translateY1 }}
-            className="absolute top-[-20%] left-[-15%] w-[80%] h-[80%] blur-[120px] rounded-full will-change-transform mix-blend-screen opacity-50 dark:opacity-[0.35]"
+            className="absolute top-[-20%] left-[-15%] w-[80%] h-[80%] blur-[120px] rounded-full will-change-transform mix-blend-multiply dark:mix-blend-screen opacity-20 dark:opacity-[0.35]"
             animate={{
               scale: [1, 1.1, 1],
             }}
@@ -65,7 +65,7 @@ export default function InteractiveBackground() {
 
           <motion.div 
             style={{ x: translateX2, y: translateY2 }}
-            className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] blur-[120px] rounded-full will-change-transform mix-blend-screen opacity-40 dark:opacity-30"
+            className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] blur-[120px] rounded-full will-change-transform mix-blend-multiply dark:mix-blend-screen opacity-[0.18] dark:opacity-30"
             animate={{
               scale: [1, 1.2, 1],
             }}
@@ -77,7 +77,7 @@ export default function InteractiveBackground() {
           {/* 3. Slow Rotating Central Core */}
           <motion.div 
             style={{ x: translateX3, y: translateY3 }}
-            className="absolute top-[20%] left-[20%] w-[60%] h-[60%] blur-[140px] rounded-full mix-blend-screen opacity-30 dark:opacity-[0.25]"
+            className="absolute top-[20%] left-[20%] w-[60%] h-[60%] blur-[140px] rounded-full mix-blend-multiply dark:mix-blend-screen opacity-[0.15] dark:opacity-[0.25]"
             animate={{ 
               rotate: [0, 360],
               scale: [0.9, 1.1, 0.9]

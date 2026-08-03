@@ -39,29 +39,36 @@ export function LibraryStats({ materials, user }: LibraryStatsProps) {
 
   const masteryThemeColor = getMasteryColor(avgMastery);
 
-  // These four cards used to carry four competing accents (violet / rose /
-  // amber / pink), so nothing read as primary. Now the card chrome is uniform
-  // and colour is spent only where it encodes something: mastery health, and a
-  // streak that is actually running. `valueColor` left undefined = default ink.
+  // The card chrome stays uniform white paper. Each stat gets one fixed pastel
+  // for its icon chip, tied to what the stat *is* — so the colour is a stable
+  // label you learn once, not decoration that changes meaning per screen. The
+  // value itself only takes colour when the number encodes health (mastery) or
+  // a streak that is actually running.
   const statsCards = [
     {
       icon: BookOpen,
       label: 'Unread Materials',
       value: unreadCount,
+      tone: 'lavender' as const,
+      valueColor: undefined as string | undefined,
+      live: false,
       desc: unreadCount > 0 ? 'Ready for study session' : 'Nothing waiting',
     },
     {
       icon: Target,
       label: 'Average Mastery',
       value: `${avgMastery}%`,
+      tone: 'mint' as const,
       valueColor: masteryThemeColor,
+      live: false,
       desc: avgMastery >= 80 ? 'Mastered' : avgMastery >= 50 ? 'Developing' : 'Starter level',
     },
     {
       icon: Flame,
       label: 'Study Streak',
       value: `${streak} ${streak === 1 ? 'day' : 'days'}`,
-      valueColor: streak > 0 ? '#FF9F68' : undefined,
+      tone: 'peach' as const,
+      valueColor: streak > 0 ? '#C2610C' : undefined,
       live: streak > 0,
       desc: streak > 0 ? 'Streak is alive' : 'Study today to start one',
     },
@@ -69,6 +76,9 @@ export function LibraryStats({ materials, user }: LibraryStatsProps) {
       icon: Award,
       label: 'Badges Unlocked',
       value: badgesCount,
+      tone: 'pink' as const,
+      valueColor: undefined as string | undefined,
+      live: false,
       desc: totalBadges > 0 ? `Out of ${totalBadges} achievements` : 'None unlocked yet',
     },
   ];
@@ -83,19 +93,22 @@ export function LibraryStats({ materials, user }: LibraryStatsProps) {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
-            className="relative overflow-hidden rounded-2xl bg-[#141A24]/90 p-4 border border-[#8E9AAF]/10 backdrop-blur-md transition-all duration-300 active:scale-[0.98] select-none shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex flex-col justify-between min-h-[118px]"
+            className="relative overflow-hidden soft-card p-4 active:scale-[0.98] select-none flex flex-col justify-between min-h-[118px]"
           >
             <div className="flex items-start justify-between gap-2.5">
               {/* Two lines of room, so "Unread Materials" and "Badges Unlocked"
                   stop clipping to "Unread…" / "Badges…" in the 2-up mobile grid.
                   min-h keeps all four cards aligned when a label needs one. */}
-              <span className="text-[11px] font-semibold text-[#8E9AAF] tracking-tight leading-snug line-clamp-2 min-h-[2.2em]">
+              <span className="text-[11px] font-semibold text-text-muted tracking-tight leading-snug line-clamp-2 min-h-[2.2em]">
                 {stat.label}
               </span>
-              <div className="p-1.5 rounded-lg bg-[#0B0E14]/60 pointer-events-none shrink-0">
+              <div
+                className="p-1.5 rounded-xl pointer-events-none shrink-0"
+                style={{ backgroundColor: `var(--pastel-${stat.tone})` }}
+              >
                 <Icon
                   className={`h-5 w-5 ${stat.live ? 'animate-pulse' : ''}`}
-                  style={{ color: stat.valueColor ?? '#6C5CE7' }}
+                  style={{ color: stat.valueColor ?? `var(--pastel-${stat.tone}-ink)` }}
                 />
               </div>
             </div>
@@ -103,11 +116,11 @@ export function LibraryStats({ materials, user }: LibraryStatsProps) {
             <div className="mt-2.5">
               <div
                 className="text-lg font-extrabold tracking-tight"
-                style={{ color: stat.valueColor ?? '#F0F3F8' }}
+                style={{ color: stat.valueColor ?? 'var(--text-main)' }}
               >
                 {stat.value}
               </div>
-              <p className="text-[11px] font-medium text-[#8E9AAF]/70 mt-0.5">
+              <p className="text-[11px] font-medium text-text-muted/70 mt-0.5">
                 {stat.desc}
               </p>
             </div>

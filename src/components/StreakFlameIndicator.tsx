@@ -74,7 +74,7 @@ export default function StreakFlameIndicator({
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 5 }}
-                  className="absolute z-50 bottom-5 left-1/2 -translate-x-1/2 w-48 p-2 bg-[#0F172A]/95 border border-border/20 text-[11px] font-medium leading-normal text-text-main rounded-xl shadow-2xl backdrop-blur-md"
+                  className="absolute z-50 bottom-5 left-1/2 -translate-x-1/2 w-48 p-2 bg-background/95 border border-border/20 text-[11px] font-medium leading-normal text-text-main rounded-xl shadow-2xl backdrop-blur-md"
                 >
                   Consecutive active recall study days. Maintaining streaks boosts study constellation brightness.
                 </motion.div>

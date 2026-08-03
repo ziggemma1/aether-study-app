@@ -115,8 +115,8 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
       layout
       whileHover={{ y: -5 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className={`group relative flex rounded-3xl bg-[#141A24]/90 border ${
-        selected ? 'border-[#6C5CE7] shadow-[0_0_20px_rgba(108,92,231,0.2)]' : 'border-[#8E9AAF]/5'
+      className={`group relative flex rounded-3xl bg-surface/90 border ${
+        selected ? 'border-[#6C5CE7] shadow-[0_0_20px_rgba(108,92,231,0.2)]' : 'border-border'
       } hover:border-[#6C5CE7]/30 hover:shadow-[0_12px_36px_rgba(108,92,231,0.12)] transition-all overflow-hidden w-full min-h-[290px] select-none shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex-col cursor-pointer`}
       onClick={handleCardClick}
     >
@@ -172,9 +172,9 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
                 {statusConfig.label}
               </span>
 
-              <span className="text-[11px] text-[#8E9AAF]/40">•</span>
+              <span className="text-[11px] text-text-muted/40">•</span>
               
-              <span className="text-[11px] font-bold text-[#8E9AAF]/80 uppercase font-mono">
+              <span className="text-[11px] font-bold text-text-muted/80 uppercase font-mono">
                 {badge.label}
               </span>
             </div>
@@ -202,7 +202,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
 
                   <button
                     onClick={handleDelete}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-transparent text-[#8E9AAF]/70 hover:bg-red-500/10 hover:text-red-400 focus-visible:bg-red-500/10 focus-visible:text-red-400 transition-all active:scale-95 outline-none border border-transparent hover:border-red-500/20 cursor-pointer"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-transparent text-text-muted/70 hover:bg-red-500/10 hover:text-red-400 focus-visible:bg-red-500/10 focus-visible:text-red-400 transition-all active:scale-95 outline-none border border-transparent hover:border-red-500/20 cursor-pointer"
                     title="Delete study material"
                     aria-label={`Delete ${material.title}`}
                   >
@@ -214,23 +214,23 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
           </div>
 
           {/* Title */}
-          <h4 className="text-base font-extrabold text-[#F0F3F8] line-clamp-2 md:line-clamp-1 mb-1 tracking-tight leading-snug group-hover:text-[#6C5CE7] transition-colors">
+          <h4 className="text-base font-extrabold text-text-main line-clamp-2 md:line-clamp-1 mb-1 tracking-tight leading-snug group-hover:text-[#6C5CE7] transition-colors">
             {material.title}
           </h4>
 
           {/* Date bar */}
-          <div className="flex items-center gap-1.5 text-xs text-[#8E9AAF]/70 mb-3 font-semibold select-none">
-            <Clock size={12} className="text-[#8E9AAF]/40" />
+          <div className="flex items-center gap-1.5 text-xs text-text-muted/70 mb-3 font-semibold select-none">
+            <Clock size={12} className="text-text-muted/40" />
             <span>Updated: {material.date || 'June 15, 2026'}</span>
           </div>
 
           {/* Summary / Description preview */}
           {material.description ? (
-            <p className="text-xs text-[#8E9AAF] line-clamp-2 leading-relaxed mb-4 leading-normal font-normal">
+            <p className="text-xs text-text-muted line-clamp-2 leading-relaxed mb-4 leading-normal font-normal">
               {material.description}
             </p>
           ) : (
-            <p className="text-xs italic text-[#8E9AAF]/40 mb-4 select-none">
+            <p className="text-xs italic text-text-muted/40 mb-4 select-none">
               Double-click to expand and synthesize direct quiz reviews.
             </p>
           )}
@@ -241,7 +241,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
               {material.tags.slice(0, 3).map((tag, idx) => (
                 <span
                   key={`${tag}-${idx}`}
-                  className="text-[11px] font-bold text-[#8E9AAF]/80 bg-[#8E9AAF]/5 px-2.5 py-1 rounded-lg border border-[#8E9AAF]/5"
+                  className="text-[11px] font-bold text-text-muted/80 bg-text-muted/5 px-2.5 py-1 rounded-lg border border-border"
                 >
                   #{tag}
                 </span>
@@ -253,16 +253,16 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
         {/* Outer bottom actions/progress container wrapper */}
         <div>
           {/* Progress / Mastery Bar */}
-          <div className="pt-3.5 border-t border-[#8E9AAF]/5 mb-4 select-none">
+          <div className="pt-3.5 border-t border-border mb-4 select-none">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-extrabold uppercase text-[#8E9AAF]/80 tracking-wider">
+              <span className="text-[11px] font-extrabold uppercase text-text-muted/80 tracking-wider">
                 Concept Mastery
               </span>
-              <span className="text-xs font-bold font-mono text-[#F0F3F8]">
+              <span className="text-xs font-bold font-mono text-text-main">
                 {pct}%
               </span>
             </div>
-            <div className="h-1.5 w-full bg-[#141A24]/40 border border-[#8E9AAF]/5 rounded-full overflow-hidden">
+            <div className="h-1.5 w-full bg-surface/40 border border-border rounded-full overflow-hidden">
               <div
                 className={`h-full bg-gradient-to-r ${getProgressColor(pct)} rounded-full transition-all duration-700 ease-out`}
                 style={{ width: `${pct || 4}%` }}
@@ -272,7 +272,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
 
           {/* Interaction Touch Buttons (min size 44px) */}
           {!selectionMode && (
-            <div className="grid grid-cols-4 gap-2 pt-1 border-t border-[#8E9AAF]/5">
+            <div className="grid grid-cols-4 gap-2 pt-1 border-t border-border">
               {/* STUDY */}
               <button
                 onClick={(e) => {
@@ -310,7 +310,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
                 className={`flex flex-col items-center justify-center py-2.5 rounded-xl active:scale-95 transition-all min-h-[44px] cursor-pointer ${
                   material.hasQuiz
                     ? 'bg-[#F5B042]/10 hover:bg-[#F5B042]/20 text-[#F5B042]'
-                    : 'bg-[#8E9AAF]/5 hover:bg-[#8E9AAF]/10 text-[#8E9AAF]/40 disabled:opacity-40'
+                    : 'bg-text-muted/5 hover:bg-text-muted/10 text-text-muted/40 disabled:opacity-40'
                 }`}
                 id={`lib-card-quiz-${material.id}`}
                 title="Interactive Quiz"
@@ -329,7 +329,7 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
                 className={`flex flex-col items-center justify-center py-2.5 rounded-xl active:scale-95 transition-all min-h-[44px] cursor-pointer ${
                   material.hasFlashcards
                     ? 'bg-[#00E5A0]/10 hover:bg-[#00E5A0]/20 text-[#00E5A0]'
-                    : 'bg-[#8E9AAF]/5 hover:bg-[#8E9AAF]/10 text-[#8E9AAF]/40 disabled:opacity-40'
+                    : 'bg-text-muted/5 hover:bg-text-muted/10 text-text-muted/40 disabled:opacity-40'
                 }`}
                 id={`lib-card-flash-${material.id}`}
                 title="Active Recall Flashcards"
