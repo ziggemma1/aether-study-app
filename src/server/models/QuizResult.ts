@@ -6,7 +6,9 @@ const quizResultSchema = new mongoose.Schema({
   score: { type: Number, required: true },
   totalQuestions: { type: Number, required: true },
   answers: [{ type: Number }],
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  /** See User.isDemoData — same seed/teardown marker, same rules. */
+  isDemoData: { type: Boolean, default: false }
 });
 
 quizResultSchema.index({ userId: 1, createdAt: -1 });

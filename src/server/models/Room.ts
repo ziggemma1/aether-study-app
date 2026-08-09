@@ -6,7 +6,9 @@ const roomSchema = new mongoose.Schema({
   activeCount: { type: Number, default: 0 },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   isPublic: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  /** See User.isDemoData — same seed/teardown marker, same rules. */
+  isDemoData: { type: Boolean, default: false }
 });
 
 const Room = mongoose.model('Room', roomSchema);

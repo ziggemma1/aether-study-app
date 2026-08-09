@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "remotion": "remotion studio src/remotion/index.ts"
+    "remotion": "remotion studio src/remotion/index.ts",
+    "seed:demo": "tsx scripts/seedDemo.ts",
+    "seed:demo:reset": "tsx scripts/seedDemo.ts --reset"
   },
   "dependencies": {
     "@google/genai": "^1.49.0",

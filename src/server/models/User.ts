@@ -62,6 +62,10 @@ const userSchema = new mongoose.Schema({
   lastActiveDate: { type: Date },
   lastStreakResetDate: { type: Date },
   optedInLeaderboard: { type: Boolean, default: true },
+  /** Set only by scripts/seedDemo.ts — marks a doc as safe to wipe on
+   *  `npm run seed:demo:reset` without touching real accounts. Always false
+   *  in production; nothing else in the app reads this field. */
+  isDemoData: { type: Boolean, default: false },
   visibility: { type: String, enum: ['public', 'friends', 'private'], default: 'public' },
   notificationPrefs: {
     push: { type: Boolean, default: true },

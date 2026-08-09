@@ -84,7 +84,9 @@ const materialSchema = new mongoose.Schema({
   authorName: { type: String },
   category: { type: String },
   rating: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  /** See User.isDemoData — same seed/teardown marker, same rules. */
+  isDemoData: { type: Boolean, default: false }
 });
 
 // Handle id virtual

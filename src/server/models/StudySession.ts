@@ -8,7 +8,9 @@ const studySessionSchema = new mongoose.Schema({
   type: { type: String, enum: ['study', 'break', 'review'], default: 'study' },
   priority: { type: String, enum: ['high', 'medium', 'low'], default: 'medium' },
   completed: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  /** See User.isDemoData — same seed/teardown marker, same rules. */
+  isDemoData: { type: Boolean, default: false }
 });
 
 studySessionSchema.index({ userId: 1, startTime: 1 });
