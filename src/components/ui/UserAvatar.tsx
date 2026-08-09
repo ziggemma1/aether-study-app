@@ -31,7 +31,7 @@ export function UserAvatar({ name, avatarUrl, streakCount = 0, size = 'md' }: Us
           src={avatarUrl}
           alt={name}
           referrerPolicy="no-referrer"
-          className={`${dims} object-cover ring-1 ring-white/10`}
+          className={`${dims} object-cover ring-1 ring-border`}
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.display = 'none';
             const sibling = e.currentTarget.nextElementSibling as HTMLElement;
@@ -41,7 +41,7 @@ export function UserAvatar({ name, avatarUrl, streakCount = 0, size = 'md' }: Us
       ) : null}
       
       <div
-        className={`${dims} flex items-center justify-center font-black text-white px-1 tracking-tight shadow-md ring-1 ring-white/10`}
+        className={`${dims} flex items-center justify-center font-black text-white px-1 tracking-tight shadow-md ring-1 ring-border`}
         style={{ 
           backgroundColor: backgroundHash,
           display: avatarUrl ? 'none' : 'flex' 
@@ -51,7 +51,7 @@ export function UserAvatar({ name, avatarUrl, streakCount = 0, size = 'md' }: Us
       </div>
 
       {streakCount > 0 && (
-        <span className="absolute -top-1 -right-1 bg-amber-500 text-neutral-950 font-black text-[7px] w-4.5 h-4.5 rounded-full flex items-center justify-center border border-[#0B0E14] shadow-md animate-pulse">
+        <span className="absolute -top-1 -right-1 bg-brand-orange text-neutral-950 font-black text-[7px] w-4.5 h-4.5 rounded-full flex items-center justify-center border border-[#0B0E14] shadow-md animate-pulse">
           🔥
         </span>
       )}

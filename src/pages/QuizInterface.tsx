@@ -61,7 +61,7 @@ export default function QuizInterface() {
 
   if ((isAppLoading && !material) || isGenerating) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-background">
+      <div className="min-h-full flex flex-col items-center justify-center p-6 text-center bg-background">
         <div className="relative">
           <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
           <div className="absolute inset-0 bg-primary/20 blur-xl animate-pulse -z-10" />
@@ -242,7 +242,7 @@ export default function QuizInterface() {
       <header className="mb-6 sm:mb-12 flex items-center justify-between">
         <div>
           <span className="text-[11px] font-black uppercase text-text-muted tracking-[0.2em]">Step {currentQuestion + 1} / {questions.length}</span>
-          <div className="w-32 sm:w-48 h-2 bg-white/5 rounded-full mt-2 overflow-hidden ring-1 ring-white/10">
+          <div className="w-32 sm:w-48 h-2 bg-surface-alt rounded-full mt-2 overflow-hidden ring-1 ring-border">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
@@ -287,9 +287,9 @@ export default function QuizInterface() {
                   disabled={!!feedback || selectedAnswers[currentQuestion] !== undefined}
                   className={cn(
                     "w-full p-4 sm:p-6 rounded-2xl border-2 text-left transition-all flex items-center justify-between group relative overflow-hidden",
-                    isSelected ? "border-primary bg-primary/10" : "border-white/5 hover:border-white/20 bg-white/5",
+                    isSelected ? "border-primary bg-primary/10" : "border-border hover:border-border bg-surface-alt",
                     showCorrect && "border-accent bg-accent/10 correct-flash",
-                    showWrong && "border-red-500 bg-red-500/10 shake-wrong wrong-flash"
+                    showWrong && "border-brand-pink bg-brand-pink/10 shake-wrong wrong-flash"
                   )}
                 >
                   <span className={cn(
@@ -301,12 +301,12 @@ export default function QuizInterface() {
                   
                   <div className="flex items-center gap-2 z-10">
                     {showCorrect && <CheckCircle2 className="text-accent w-5 h-5 sm:w-6 sm:h-6" />}
-                    {showWrong && <XCircle className="text-red-500 w-5 h-5 sm:w-6 sm:h-6" />}
+                    {showWrong && <XCircle className="text-brand-pink w-5 h-5 sm:w-6 sm:h-6" />}
                     <div className={cn(
                       "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                      isSelected || showCorrect ? "border-primary bg-primary" : "border-white/10 group-hover:border-primary/50",
+                      isSelected || showCorrect ? "border-primary bg-primary" : "border-border group-hover:border-primary/50",
                       showCorrect && "border-accent bg-accent",
-                      showWrong && "border-red-500 bg-red-500"
+                      showWrong && "border-brand-pink bg-brand-pink"
                     )}>
                       {(isSelected || isFeedback) && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />}
                     </div>

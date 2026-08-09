@@ -41,6 +41,16 @@ export default function SettingsForm({
 }: SettingsFormProps) {
   const [focusInput, setFocusInput] = useState('');
 
+  // One definition of "selected", shared by all four option groups. They had
+  // drifted into three different treatments on the same form — Learning Goal
+  // was violet, Complexity was cyan, and Preferred Study Time was a flat slate
+  // grey that barely read as chosen at all. Same control, same meaning, so the
+  // same appearance.
+  const OPTION_BASE =
+    'py-2.5 rounded-xl border text-center transition-all font-semibold select-none cursor-pointer min-h-[44px] text-xs';
+  const OPTION_ON = 'bg-primary border-primary text-white';
+  const OPTION_OFF = 'bg-background border-border text-text-muted hover:text-text-main hover:border-primary/40';
+
   const handleAddFocusArea = (e: React.FormEvent) => {
     e.preventDefault();
     if (focusInput.trim() && !focusAreas.includes(focusInput.trim())) {
@@ -54,37 +64,37 @@ export default function SettingsForm({
   };
 
   return (
-    <div className="bg-[#141A24] border border-[rgba(255,255,255,0.06)] rounded-2xl p-5 shadow-xl">
-      <h3 className="text-sm font-extrabold text-[#F0F3F8] flex items-center gap-2 mb-4 pb-3 border-b border-gray-800/65">
-        <Sliders className="w-5 h-5 text-[#00D2FF]" />
+    <div className="bg-surface border border-border rounded-2xl p-5 shadow-[var(--shadow-card)]">
+      <h3 className="text-sm font-extrabold text-text-main flex items-center gap-2 mb-4 pb-3 border-b border-border">
+        <Sliders className="w-5 h-5 text-secondary" />
         Configure Study Settings
       </h3>
 
-      <div className="space-y-4 text-xs font-semibold text-[#F0F3F8]">
+      <div className="space-y-4 text-xs font-semibold text-text-main">
         {/* Row for Date and Duration */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Start Date */}
           <div>
-            <label className="block text-[#8E9AAF] text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
+            <label className="block text-text-muted text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
               Start Date
             </label>
-            <div className="flex items-center bg-[#0B0E14] border border-gray-800 rounded-xl px-3 py-2 min-h-[44px]">
-              <Calendar className="w-4 h-4 text-[#6C5CE7] mr-2" />
+            <div className="flex items-center bg-background border border-border rounded-xl px-3 py-2 min-h-[44px]">
+              <Calendar className="w-4 h-4 text-primary mr-2" />
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="bg-transparent text-xs text-[#F0F3F8] outline-none flex-grow"
+                className="bg-transparent text-xs text-text-main outline-none flex-grow"
               />
             </div>
           </div>
 
           {/* Duration in Days */}
           <div>
-            <label className="block text-[#8E9AAF] text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
+            <label className="block text-text-muted text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
               Study Duration (1-90 Days)
             </label>
-            <div className="flex items-center bg-[#0B0E14] border border-gray-800 rounded-xl px-3 py-1 min-h-[44px]">
+            <div className="flex items-center bg-background border border-border rounded-xl px-3 py-1 min-h-[44px]">
               <input
                 type="number"
                 min="1"
@@ -94,20 +104,20 @@ export default function SettingsForm({
                   const val = parseInt(e.target.value, 10);
                   setDuration(isNaN(val) ? 7 : Math.min(90, Math.max(1, val)));
                 }}
-                className="w-full bg-transparent text-xs text-[#F0F3F8] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full bg-transparent text-xs text-text-main outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
-              <div className="flex flex-col border-l border-gray-800 pl-2 ml-1">
+              <div className="flex flex-col border-l border-border pl-2 ml-1">
                 <button
                   type="button"
                   onClick={() => setDuration(Math.min(90, duration + 1))}
-                  className="p-1 text-gray-400 hover:text-white min-h-[16px]"
+                  className="p-1 text-text-muted hover:text-text-main min-h-[16px]"
                 >
                   ▲
                 </button>
                 <button
                   type="button"
                   onClick={() => setDuration(Math.max(1, duration - 1))}
-                  className="p-1 text-gray-400 hover:text-white min-h-[16px]"
+                  className="p-1 text-text-muted hover:text-text-main min-h-[16px]"
                 >
                   ▼
                 </button>
@@ -118,7 +128,7 @@ export default function SettingsForm({
 
         {/* Learning Goal */}
         <div>
-          <label className="block text-[#8E9AAF] text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
+          <label className="block text-text-muted text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
             Learning Goal
           </label>
           <div className="grid grid-cols-3 gap-1.5">
@@ -128,10 +138,10 @@ export default function SettingsForm({
                 type="button"
                 onClick={() => setGoal(opt)}
                 className={cn(
-                  "py-2.5 rounded-xl border text-center transition-all font-bold select-none cursor-pointer min-h-[40px] text-[11px]",
+                  OPTION_BASE,
                   goal === opt
-                    ? "bg-[#6C5CE7] border-[#6C5CE7] text-white shadow-lg shadow-[#6C5CE7]/20"
-                    : "bg-[#0B0E14] border-gray-800 text-gray-400 hover:text-white"
+                    ? OPTION_ON
+                    : OPTION_OFF
                 )}
               >
                 {opt}
@@ -142,7 +152,7 @@ export default function SettingsForm({
 
         {/* Complexity Level */}
         <div>
-          <label className="block text-[#8E9AAF] text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
+          <label className="block text-text-muted text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
             Complexity Level
           </label>
           <div className="grid grid-cols-3 gap-1.5">
@@ -152,10 +162,10 @@ export default function SettingsForm({
                 type="button"
                 onClick={() => setComplexity(opt)}
                 className={cn(
-                  "py-2.5 rounded-xl border text-center transition-all font-bold select-none cursor-pointer min-h-[40px] text-[11px]",
+                  OPTION_BASE,
                   complexity === opt
-                    ? "bg-[#00D2FF] border-[#00D2FF] text-[#0B0E14] shadow-lg shadow-[#00D2FF]/20"
-                    : "bg-[#0B0E14] border-gray-800 text-gray-400 hover:text-white"
+                    ? OPTION_ON
+                    : OPTION_OFF
                 )}
               >
                 {opt}
@@ -166,7 +176,7 @@ export default function SettingsForm({
 
         {/* Daily Commitment */}
         <div>
-          <label className="block text-[#8E9AAF] text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
+          <label className="block text-text-muted text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
             Daily commitment
           </label>
           <div className="grid grid-cols-4 gap-1.5">
@@ -181,10 +191,10 @@ export default function SettingsForm({
                 type="button"
                 onClick={() => setCommitment(opt.value)}
                 className={cn(
-                  "py-2.5 rounded-xl border text-center transition-all font-bold select-none cursor-pointer min-h-[40px] text-xs",
+                  OPTION_BASE,
                   commitment === opt.value
-                    ? "bg-[#6C5CE7] border-[#6C5CE7] text-white shadow-lg shadow-[#6C5CE7]/20"
-                    : "bg-[#0B0E14] border-gray-800 text-gray-400 hover:text-white"
+                    ? OPTION_ON
+                    : OPTION_OFF
                 )}
               >
                 {opt.label}
@@ -195,7 +205,7 @@ export default function SettingsForm({
 
         {/* Preferred Study Time */}
         <div>
-          <label className="block text-[#8E9AAF] text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
+          <label className="block text-text-muted text-xs font-bold mb-1.5 uppercase font-mono tracking-wider">
             Preferred Study Time (optional)
           </label>
           <div className="grid grid-cols-4 gap-1.5">
@@ -205,10 +215,10 @@ export default function SettingsForm({
                 type="button"
                 onClick={() => setPreferredTime(opt)}
                 className={cn(
-                  "py-2.5 rounded-xl border text-center transition-all font-bold select-none cursor-pointer min-h-[40px] text-[11px]",
+                  OPTION_BASE,
                   preferredTime === opt
-                    ? "bg-slate-300 border-slate-300 text-slate-900 shadow-md shadow-white/5"
-                    : "bg-[#0B0E14] border-gray-800 text-gray-400 hover:text-white"
+                    ? OPTION_ON
+                    : OPTION_OFF
                 )}
               >
                 {opt}
@@ -219,23 +229,23 @@ export default function SettingsForm({
 
         {/* Focus Areas */}
         <div>
-          <label className="block text-[#8E9AAF] text-xs font-bold mb-1 uppercase font-mono tracking-wider">
+          <label className="block text-text-muted text-xs font-bold mb-1 uppercase font-mono tracking-wider">
             Focus Areas (optional)
           </label>
           <form
             onSubmit={handleAddFocusArea}
-            className="flex bg-[#0B0E14] border border-gray-800 rounded-xl overflow-hidden px-1 py-1 min-h-[44px]"
+            className="flex bg-background border border-border rounded-xl overflow-hidden px-1 py-1 min-h-[44px]"
           >
             <input
               type="text"
               placeholder="e.g., Set Notation, Calculus..."
               value={focusInput}
               onChange={(e) => setFocusInput(e.target.value)}
-              className="flex-grow bg-transparent text-xs text-[#F0F3F8] outline-none px-2.5 placeholder-gray-700"
+              className="flex-grow bg-transparent text-xs text-text-main outline-none px-2.5 placeholder-text-muted"
             />
             <button
               type="submit"
-              className="bg-[#6C5CE7] text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-[#6C5CE7]/95 transition-all min-h-[36px] cursor-pointer"
+              className="bg-primary text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-primary/95 transition-all min-h-[36px] cursor-pointer"
             >
               Add
             </button>
@@ -245,15 +255,15 @@ export default function SettingsForm({
               {focusAreas.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 bg-gray-800 border border-gray-700 text-gray-300 text-[11px] px-2.5 py-1 rounded-full font-medium"
+                  className="inline-flex items-center gap-1 bg-surface border border-border text-text-muted text-[11px] px-2.5 py-1 rounded-full font-medium"
                 >
                   {tag}
                   <button
                     type="button"
                     onClick={() => handleRemoveFocusArea(tag)}
-                    className="p-0.5 rounded-full hover:bg-gray-700 cursor-pointer"
+                    className="p-0.5 rounded-full hover:bg-primary/20 cursor-pointer"
                   >
-                    <X className="w-2.5 h-2.5 text-gray-500 hover:text-white" />
+                    <X className="w-2.5 h-2.5 text-text-muted hover:text-text-main" />
                   </button>
                 </span>
               ))}
@@ -262,20 +272,26 @@ export default function SettingsForm({
         </div>
 
         {/* Calendar Sync Toggle */}
-        <div className="flex items-center justify-between bg-[#0B0E14] border border-gray-800 rounded-xl p-3 mt-2">
+        <div className="flex items-center justify-between bg-background border border-border rounded-xl p-3 mt-2">
           <div>
-            <p className="text-xs font-bold text-[#F0F3F8] flex items-center gap-1.5">
-              <CalendarDays className="w-4 h-4 text-[#00E5A0]" />
+            <p className="text-xs font-bold text-text-main flex items-center gap-1.5">
+              <CalendarDays className="w-4 h-4 text-accent" />
               Enable Calendar Sync
             </p>
-            <p className="text-[11px] text-gray-500 font-medium">Auto-add scheduled study sessions to calendar</p>
+            <p className="text-[11px] text-text-muted font-medium">Adds each day to your Google Calendar</p>
           </div>
           <button
             type="button"
+            role="switch"
+            aria-checked={calendarSync}
+            aria-label="Add this plan to Google Calendar"
             onClick={() => setCalendarSync(!calendarSync)}
+            /* The off state was `bg-surface` — white, on a white card, inside a
+               transparent border. The control was effectively invisible until
+               switched on. */
             className={cn(
-              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-              calendarSync ? "bg-[#00E5A0]" : "bg-gray-800"
+              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-2 focus-visible:outline-primary",
+              calendarSync ? "bg-accent" : "bg-[var(--ring-track)]"
             )}
           >
             <span

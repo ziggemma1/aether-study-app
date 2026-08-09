@@ -15,9 +15,9 @@ export default function ProgressTracking() {
   ];
 
   const progressStats = [
-    { label: 'Completed', value: 8, icon: CheckCircle2, color: 'bg-purple-500', textColor: 'text-purple-500' },
-    { label: 'In Progress', value: 12, icon: RefreshCw, color: 'bg-orange-500', textColor: 'text-orange-500' },
-    { label: 'Upcoming', value: 14, icon: Calendar, color: 'bg-red-500', textColor: 'text-red-500' },
+    { label: 'Completed', value: 8, icon: CheckCircle2, color: 'bg-primary', textColor: 'text-primary' },
+    { label: 'In Progress', value: 12, icon: RefreshCw, color: 'bg-brand-orange', textColor: 'text-brand-orange' },
+    { label: 'Upcoming', value: 14, icon: Calendar, color: 'bg-brand-pink', textColor: 'text-brand-pink' },
   ];
 
   return (

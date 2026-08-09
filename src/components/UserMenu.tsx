@@ -66,7 +66,7 @@ export default function UserMenu() {
               {getInitials(displayName)}
             </div>
           )}
-          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-surface" />
+          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-accent rounded-full border-2 border-surface" />
         </div>
         <div className="hidden sm:block max-w-[100px] truncate leading-none">
           <p className="text-xs font-black text-text-main truncate uppercase tracking-tight">{displayName.split(' ')[0]}</p>
@@ -126,7 +126,7 @@ export default function UserMenu() {
             <div className="p-2 border-t border-border/20 bg-background">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-black text-red-500 hover:bg-red-500/10 transition-all"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-black text-brand-pink hover:bg-brand-pink/10 transition-all"
                 id="user-menu-logout-btn"
               >
                 <LogOut size={15} />

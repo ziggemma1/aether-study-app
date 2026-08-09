@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import { getJwtSecret } from "./lib/jwtSecret.js";
 import { isAllowedOrigin } from "./lib/allowedOrigins.js";
 import { createNotification } from "./services/notification-service.js";
+import { isGroupMember } from "./lib/groupMembership.js";
 
 export const initSocket = (server: any) => {
   const io = new Server(server, {
@@ -51,6 +52,34 @@ export const initSocket = (server: any) => {
   });
 
 
+  /**
+   * Who is actually online, derived from live sockets.
+   *
+   * The client used to invent this: the buddies list assigned
+   * `Math.random() > 0.5 ? 'online' : 'away'` per render, so the badges were
+   * coin flips that changed on every re-render. The User schema has a
+   * `lastActiveDate` field but nothing has ever written to it, so there was no
+   * real source to read either. Every authenticated socket already carries its
+   * userId, so presence is simply the set of userIds with >=1 open socket.
+   */
+  const getOnlineUserIds = async (): Promise<string[]> => {
+    const sockets = await io.fetchSockets();
+    const ids = new Set<string>();
+    for (const s of sockets) {
+      const id = (s.data as any)?.userId;
+      if (id) ids.add(String(id));
+    }
+    return Array.from(ids);
+  };
+
+  const broadcastPresence = async () => {
+    try {
+      io.emit("presence_update", { online: await getOnlineUserIds() });
+    } catch (err) {
+      console.error("Error broadcasting presence:", err);
+    }
+  };
+
   io.on("connection", async (socket) => {
     const userId = socket.data.userId;
     console.log(`User connected: ${userId}`);
@@ -74,6 +103,13 @@ export const initSocket = (server: any) => {
 
     // Join personal room for 1-on-1 messages
     socket.join(userId);
+
+    // Tell everyone this user is now online, and tell this socket who else is.
+    await broadcastPresence();
+
+    socket.on("presence_request", async () => {
+      socket.emit("presence_update", { online: await getOnlineUserIds() });
+    });
 
     // LIVE ROOMS LOGIC
     const broadcastRoomParticipants = async (roomId: string) => {
@@ -148,8 +184,29 @@ export const initSocket = (server: any) => {
       return participants;
     };
 
-    socket.on("join_live_room", async (roomId) => {
+    /**
+     * The client emits `join_live_room` as an object — `{ roomId, user }` —
+     * but `leave_live_room` as a bare id string. This handler took whatever it
+     * was given and interpolated it straight into the channel name, so a join
+     * produced `live_room:[object Object]`.
+     *
+     * Two consequences, and they are the reason occupancy never worked:
+     *  - `Room.findByIdAndUpdate([object Object])` threw CastError every time,
+     *    so `activeCount` and `participants` were never written.
+     *  - Every room shared one channel literally named
+     *    "live_room:[object Object]", so joining any room put you in the same
+     *    socket room as everyone else.
+     *
+     * Normalising here rather than in the client keeps older deployed clients
+     * working against this server.
+     */
+    const asRoomId = (payload: any): string =>
+      String(payload && typeof payload === 'object' ? (payload.roomId ?? payload.id ?? '') : payload ?? '');
+
+    socket.on("join_live_room", async (payload) => {
       try {
+        const roomId = asRoomId(payload);
+        if (!roomId) return;
         const roomName = `live_room:${roomId}`;
         activeLiveRoomId = roomId;
         await socket.join(roomName);
@@ -186,8 +243,12 @@ export const initSocket = (server: any) => {
       }
     });
 
-    socket.on("leave_live_room", async (roomId) => {
+    socket.on("leave_live_room", async (payload) => {
       try {
+        // Same normalisation as join: today the client sends a bare string
+        // here, but the two must never drift apart again.
+        const roomId = asRoomId(payload);
+        if (!roomId) return;
         const roomName = `live_room:${roomId}`;
         socket.leave(roomName);
         activeLiveRoomId = null;
@@ -243,7 +304,7 @@ export const initSocket = (server: any) => {
 
     socket.on("join_group", async (groupId) => {
       const group = await Group.findById(groupId);
-      if (!group || !group.members.includes(userId)) {
+      if (!group || !isGroupMember(group, userId)) {
         socket.emit("error_message", { message: "You are not a member of this group" });
         return;
       }
@@ -258,7 +319,7 @@ export const initSocket = (server: any) => {
         // Enforce friendship/membership check
         if (groupId) {
           const group = await Group.findById(groupId);
-          if (!group || !group.members.includes(userId)) {
+          if (!group || !isGroupMember(group, userId)) {
             socket.emit("error_message", { message: "You are not a member of this group" });
             return;
           }
@@ -298,10 +359,13 @@ export const initSocket = (server: any) => {
         if (groupId) {
           io.to(groupId).emit("new_message", messageToSend);
         } else if (receiverId) {
-          socket.emit("new_message", messageToSend); // Emit directly to the sending socket
-          if (receiverId !== userId) {
-            io.to(receiverId).emit("new_message", messageToSend);
-            io.to(userId).emit("new_message", messageToSend); // Emit to other tabs of sender
+          socket.emit("new_message", messageToSend); // the sending tab
+          if (String(receiverId) !== String(userId)) {
+            io.to(String(receiverId)).emit("new_message", messageToSend);
+            // `socket.to(room)` excludes this socket; `io.to(room)` does not,
+            // and the sender is a member of their own room — so the sending tab
+            // was receiving every message it sent twice.
+            socket.to(String(userId)).emit("new_message", messageToSend);
           }
         }
       } catch (err) {
@@ -346,6 +410,10 @@ export const initSocket = (server: any) => {
         }
       }
       console.log(`User disconnected: ${userId}`);
+      // fetchSockets() still includes this socket during the disconnect handler,
+      // so defer until it has actually been removed or the user would appear
+      // online forever after leaving.
+      setTimeout(() => { void broadcastPresence(); }, 0);
     });
   });
 

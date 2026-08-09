@@ -80,7 +80,7 @@ export default function Notifications() {
           </button>
           <button 
             onClick={clearAll}
-            className="px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-red-500 hover:text-red-600 transition-colors uppercase tracking-widest flex items-center gap-1.5 sm:gap-2"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-brand-pink hover:text-brand-pink transition-colors uppercase tracking-widest flex items-center gap-1.5 sm:gap-2"
           >
             <Trash2 size={12} className="sm:hidden" />
             <Trash2 size={14} className="hidden sm:block" /> Clear all
@@ -152,9 +152,9 @@ export default function Notifications() {
               >
                 <div className={cn(
                   "w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0",
-                  notification.type === 'info' && "bg-blue-500/10 text-blue-500",
-                  notification.type === 'success' && "bg-green-500/10 text-green-500",
-                  notification.type === 'warning' && "bg-orange-500/10 text-orange-500",
+                  notification.type === 'info' && "bg-secondary/10 text-secondary",
+                  notification.type === 'success' && "bg-accent/10 text-accent",
+                  notification.type === 'warning' && "bg-brand-orange/10 text-brand-orange",
                   notification.type === 'ai' && "bg-primary/10 text-primary"
                 )}>
                   {notification.type === 'info' && <Info size={16} className="sm:hidden" />}
@@ -198,7 +198,7 @@ export default function Notifications() {
                   )}
                   <button 
                     onClick={() => deleteNotification(notification.id)}
-                    className="p-1.5 sm:p-2 hover:bg-red-500/10 text-text-muted hover:text-red-500 rounded-lg transition-colors"
+                    className="p-1.5 sm:p-2 hover:bg-brand-pink/10 text-text-muted hover:text-brand-pink rounded-lg transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={14} className="sm:hidden" />

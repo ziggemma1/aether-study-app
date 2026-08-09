@@ -5,9 +5,12 @@ function Skeleton({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
+  // Filled with --skeleton rather than surface-alt, and no border: an outlined
+  // near-white box reads as an empty slot, which is exactly how the Reports
+  // loading state was being misread.
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-surface-alt border border-border/20", className)}
+      className={cn("animate-pulse rounded-md bg-[var(--skeleton)]", className)}
       {...props}
     />
   )

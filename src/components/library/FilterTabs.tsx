@@ -49,9 +49,9 @@ export function FilterTabs({ activeFilter, onChange }: FilterTabsProps) {
                 onClick={() => onChange(tab)}
                 id={`tab-${tab.toLowerCase()}`}
                 aria-pressed={isActive}
-                className={`relative px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 shrink-0 min-h-[44px] flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-[#6C5CE7] focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                className={`relative px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 shrink-0 min-h-[44px] flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                   isActive
-                    ? "text-white bg-[#6C5CE7]"
+                    ? "text-white bg-primary"
                     : "text-text-muted bg-surface border border-border hover:text-text-main active:bg-surface/60"
                 }`}
               >

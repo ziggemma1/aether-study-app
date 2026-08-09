@@ -5,9 +5,22 @@ interface StreakFlameProps {
   studiedToday: boolean;
   size?: number | string;
   className?: string;
+  /**
+   * Flame amplitude, from `streakTier().scale`. Drives --flame-scale, which
+   * the shared `.motion-flicker` keyframe multiplies into its transform — so a
+   * 60-day inferno visibly moves more than a 1-day ember without needing a
+   * second animation. Reduced motion is handled globally in motion.css.
+   */
+  intensity?: number;
 }
 
-export default function StreakFlame({ days, studiedToday, size = 64, className = "" }: StreakFlameProps) {
+export default function StreakFlame({
+  days,
+  studiedToday,
+  size = 64,
+  className = "",
+  intensity = 1
+}: StreakFlameProps) {
   // Classification
   const isCold = !studiedToday;
   const isBlazing = studiedToday && days >= 3;
@@ -19,59 +32,69 @@ export default function StreakFlame({ days, studiedToday, size = 64, className =
   const innerGradId = `inner-flame-grad-${isCold ? 'cold' : 'warm'}`;
 
   return (
-    <div className={`relative flex items-center justify-center select-none ${className}`} style={{ width: size, height: size }}>
+    <div
+      className={`relative flex items-center justify-center select-none ${className}`}
+      style={{ width: size, height: size, ['--flame-scale' as string]: intensity }}
+    >
       {/* Absolute glow ring beneath blazing hot flame */}
       {isBlazing && (
-        <div className="absolute inset-0 bg-radial from-amber-500/20 via-red-500/5 to-transparent rounded-full filter blur-xl animate-pulse" />
+        <div className="absolute inset-0 bg-radial from-flame-mid/25 via-flame-edge/5 to-transparent rounded-full filter blur-xl animate-pulse" />
       )}
-      {/* Absolute glow ring beneath frozen cold flame */}
+      {/* A cold flame is a streak at risk — dimmed, not frozen. */}
       {isCold && days > 0 && (
-        <div className="absolute inset-0 bg-radial from-[#38BDF8]/10 to-transparent rounded-full filter blur-lg opacity-40" />
+        <div className="absolute inset-0 bg-radial from-flame-dead/12 to-transparent rounded-full filter blur-lg opacity-40" />
       )}
 
       <svg
         viewBox="0 0 100 100"
         className={`w-full h-full transform-gpu ${
-          isBlazing ? 'animate-flame-sway filter drop-shadow-[0_4px_12px_rgba(245,158,11,0.5)]' : ''
-        } ${isCold ? 'filter drop-shadow-[0_2px_4px_rgba(148,163,184,0.15)] opacity-60' : ''} ${
-          isWarm ? 'filter drop-shadow-[0_3px_6px_rgba(245,158,11,0.3)]' : ''
+          isBlazing ? 'motion-flicker filter drop-shadow-[0_4px_12px_color-mix(in_srgb,var(--flame-mid)_50%,transparent)]' : ''
+        } ${isCold ? 'filter drop-shadow-[0_2px_4px_color-mix(in_srgb,var(--flame-dead)_20%,transparent)] opacity-60' : ''} ${
+          isWarm ? 'filter drop-shadow-[0_3px_6px_color-mix(in_srgb,var(--flame-mid)_30%,transparent)]' : ''
         }`}
       >
+        {/*
+          Gradient stops are set via inline `style`, not the `stopColor`
+          attribute. SVG presentation attributes do not resolve var(), so the
+          attribute form would render black — the same trap the charts hit.
+          Through `style` these are real CSS declarations and the flame tokens
+          resolve, which is what lets the ramp change between light and dark.
+        */}
         <defs>
           {/* Outer Flame Gradients */}
           <linearGradient id="outer-flame-grad-warm" x1="0%" y1="100%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#EF4444" stopOpacity="0.95" />
-            <stop offset="60%" stopColor="#F59E0B" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#FBBF24" stopOpacity="0.3" />
+            <stop offset="0%" style={{ stopColor: 'var(--flame-edge)', stopOpacity: 0.95 }} />
+            <stop offset="60%" style={{ stopColor: 'var(--flame-mid)', stopOpacity: 0.9 }} />
+            <stop offset="100%" style={{ stopColor: 'var(--flame-mid)', stopOpacity: 0.3 }} />
           </linearGradient>
           <linearGradient id="outer-flame-grad-cold" x1="0%" y1="100%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#334155" stopOpacity="0.8" />
-            <stop offset="50%" stopColor="#475569" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.2" />
+            <stop offset="0%" style={{ stopColor: 'var(--flame-dead-ink)', stopOpacity: 0.8 }} />
+            <stop offset="50%" style={{ stopColor: 'var(--flame-dead)', stopOpacity: 0.6 }} />
+            <stop offset="100%" style={{ stopColor: 'var(--flame-dead)', stopOpacity: 0.2 }} />
           </linearGradient>
 
           {/* Middle Flame Gradients */}
           <linearGradient id="middle-flame-grad-warm" x1="0%" y1="100%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.95" />
-            <stop offset="70%" stopColor="#FCD34D" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#FEF3C7" stopOpacity="0.2" />
+            <stop offset="0%" style={{ stopColor: 'var(--flame-mid)', stopOpacity: 0.95 }} />
+            <stop offset="70%" style={{ stopColor: 'var(--flame-core)', stopOpacity: 0.9 }} />
+            <stop offset="100%" style={{ stopColor: 'var(--flame-core)', stopOpacity: 0.2 }} />
           </linearGradient>
           <linearGradient id="middle-flame-grad-cold" x1="0%" y1="100%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#0B3C5D" stopOpacity="0.85" />
-            <stop offset="70%" stopColor="#328CC1" stopOpacity="0.65" />
-            <stop offset="100%" stopColor="#D9B310" stopOpacity="0" />
+            <stop offset="0%" style={{ stopColor: 'var(--flame-dead-ink)', stopOpacity: 0.85 }} />
+            <stop offset="70%" style={{ stopColor: 'var(--flame-dead)', stopOpacity: 0.55 }} />
+            <stop offset="100%" style={{ stopColor: 'var(--flame-dead)', stopOpacity: 0 }} />
           </linearGradient>
 
           {/* Inner Flame Gradients */}
           <linearGradient id="inner-flame-grad-warm" x1="0%" y1="100%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-            <stop offset="50%" stopColor="#FDE047" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.3" />
+            <stop offset="0%" style={{ stopColor: 'var(--flame-core)', stopOpacity: 1 }} />
+            <stop offset="50%" style={{ stopColor: 'var(--flame-core)', stopOpacity: 0.95 }} />
+            <stop offset="100%" style={{ stopColor: 'var(--flame-mid)', stopOpacity: 0.3 }} />
           </linearGradient>
           <linearGradient id="inner-flame-grad-cold" x1="0%" y1="100%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#E0F2FE" stopOpacity="0.95" />
-            <stop offset="60%" stopColor="#38BDF8" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#0284C7" stopOpacity="0.1" />
+            <stop offset="0%" style={{ stopColor: 'var(--flame-dead)', stopOpacity: 0.9 }} />
+            <stop offset="60%" style={{ stopColor: 'var(--flame-dead)', stopOpacity: 0.7 }} />
+            <stop offset="100%" style={{ stopColor: 'var(--flame-dead-ink)', stopOpacity: 0.1 }} />
           </linearGradient>
         </defs>
 

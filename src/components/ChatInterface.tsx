@@ -67,7 +67,7 @@ export default function ChatInterface({ chatId, type, name, avatar, onBack, clas
               <img src={avatar} alt={name} className="w-10 h-10 rounded-full border border-border shadow-sm object-cover" />
               <span className={cn(
                 "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background",
-                isFriend || type === 'group' ? "bg-green-500" : "bg-text-muted"
+                isFriend || type === 'group' ? "bg-accent" : "bg-text-muted"
               )} />
             </div>
             <div>
@@ -100,7 +100,7 @@ export default function ChatInterface({ chatId, type, name, avatar, onBack, clas
             >
               <div className={cn(
                 "px-4 py-2.5 rounded-2xl text-sm shadow-sm",
-                isMe ? "bg-primary text-white rounded-tr-none" : "bg-surface-alt text-text-main rounded-tl-none border border-border"
+                isMe ? "bg-primary text-text-main rounded-tr-none" : "bg-surface-alt text-text-main rounded-tl-none border border-border"
               )}>
                 {m.content}
               </div>

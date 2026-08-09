@@ -114,7 +114,7 @@ export default function SmartScheduleGenerator() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-primary/10 to-purple-500/10 border border-primary/20 rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden">
+    <div className="bg-gradient-to-br from-primary/10 to-primary/10 border border-primary/20 rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden">
       <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
         <Sparkles size={64} />
       </div>

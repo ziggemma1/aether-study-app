@@ -29,6 +29,7 @@ export function pastelForType(type?: string): PastelTone {
     case 'document':
       return 'pink';
     case 'video':
+    case 'youtube':
       return 'sky';
     case 'quiz':
       return 'mint';
@@ -39,6 +40,28 @@ export function pastelForType(type?: string): PastelTone {
     case 'note':
     default:
       return 'lavender';
+  }
+}
+
+/**
+ * Same scale, keyed by achievement category. Deliberately agrees with
+ * pastelForType() where the two overlap — a quiz badge is the same mint as a
+ * quiz material, a material badge the same pink as a document — so the colours
+ * mean one thing across the app rather than two.
+ */
+export function pastelForCategory(category?: string): PastelTone {
+  switch ((category || '').toLowerCase()) {
+    case 'streak':
+      return 'peach';
+    case 'time':
+      return 'lavender';
+    case 'quiz':
+      return 'mint';
+    case 'material':
+      return 'pink';
+    case 'social':
+    default:
+      return 'sky';
   }
 }
 
@@ -56,10 +79,14 @@ export function pastelStyle(tone: PastelTone): { backgroundColor: string; color:
  * library stats row and the focus list cannot drift to different thresholds.
  */
 export function getMasteryColor(pct: number): string {
-  if (pct < 30) return '#FF5E7E'; // Ruby red
-  if (pct < 60) return '#F5B042'; // Amber
-  if (pct < 80) return '#00D2FF'; // Cyan
-  return '#00E5A0';               // Emerald
+  // Tokens, not hexes: the four literals this used to return were the neon
+  // dark-mode values (#FF5E7E / #F5B042 / #00D2FF / #00E5A0), which sit at
+  // roughly 1.5:1 on white paper. Every mastery number in the library was
+  // rendering in a colour you could barely read.
+  if (pct < 30) return 'var(--mastery-low)';
+  if (pct < 60) return 'var(--mastery-mid)';
+  if (pct < 80) return 'var(--mastery-high)';
+  return 'var(--mastery-max)';
 }
 
 export function getGreeting(): string {
@@ -107,6 +134,28 @@ export function getInitials(name: string): string {
     return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
   }
   return nameParts[0].substring(0, 2).toUpperCase();
+}
+
+/**
+ * Compact timestamp for a conversation-list row: "now", "4m", "3h", "Mon",
+ * "12 Jun". `formatRelativeTime` returns prose ("3 hours ago") which is far too
+ * wide for the column beside a name.
+ */
+export function formatChatTime(dateStr: string | Date | null | undefined): string {
+  if (!dateStr) return '';
+  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  if (isNaN(date.getTime())) return '';
+
+  const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `${mins}m`;
+
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return date.toLocaleDateString(undefined, { weekday: 'short' });
+  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
 export function formatRelativeTime(dateStr: string | Date): string {

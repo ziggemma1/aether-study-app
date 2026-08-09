@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Github, Chrome, ArrowLeft, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ArrowLeft, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { GoogleIcon } from '../components/ui/GoogleIcon';
 import { GeometricBackground } from '../components/ui/geometric-background';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
@@ -200,7 +201,7 @@ export default function LoginPage() {
 
       <Link 
         to="/" 
-        className="absolute top-8 left-8 p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-primary hover:border-primary transition-all shadow-xl group"
+        className="absolute top-8 left-8 p-3 bg-surface-alt backdrop-blur-md border border-border rounded-2xl text-text-main hover:bg-primary hover:border-primary transition-all shadow-xl group"
         title="Back to Home"
       >
         <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
@@ -218,13 +219,13 @@ export default function LoginPage() {
             </div>
             <span className="text-xl font-bold text-primary">Aether Study</span>
           </Link>
-          <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tighter">Welcome Back</h1>
+          <h1 className="text-4xl font-extrabold text-text-main mb-2 tracking-tighter">Welcome Back</h1>
           <p className="text-primary font-medium">Log in to continue your study journey.</p>
         </div>
 
-        <div className="glass-card p-8 bg-slate-950/40 backdrop-blur-2xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+        <div className="soft-card p-8">
           {serverState && !serverState.hasUri && (
-            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-500 text-sm">
+            <div className="mb-6 p-4 bg-brand-orange/10 border border-brand-orange/30 rounded-xl text-brand-orange text-sm">
               <div className="flex items-start gap-2">
                 <AlertCircle size={18} className="shrink-0 mt-0.5" />
                 <div>
@@ -239,7 +240,7 @@ export default function LoginPage() {
           )}
 
           {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
+            <div className="mb-6 p-4 bg-brand-pink/10 border border-brand-pink/20 rounded-xl text-brand-pink text-sm font-medium">
               <div className="flex items-center gap-2">
                 <AlertCircle size={16} />
                 <span>{error}</span>
@@ -249,7 +250,7 @@ export default function LoginPage() {
 
           <form className="space-y-6" onSubmit={handleLogin}>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
+              <label className="text-sm font-bold text-text-muted flex items-center gap-2">
                 <Mail size={16} /> Email Address
               </label>
               <input
@@ -258,12 +259,12 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
                 required
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-surface-alt border border-border text-text-main placeholder:text-text-muted focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <label className="text-sm font-bold text-text-muted flex items-center gap-2">
                   <Lock size={16} /> Password
                 </label>
                 <Link to="/reset-password" title="Reset Password" className="text-xs text-primary font-bold hover:underline">Forgot?</Link>
@@ -275,12 +276,12 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all pr-12"
+                  className="w-full px-4 py-3 rounded-xl bg-surface-alt border border-border text-text-main placeholder:text-text-muted focus:ring-2 focus:ring-primary outline-none transition-all pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-text-muted hover:text-text-main transition-colors"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -299,7 +300,7 @@ export default function LoginPage() {
                 <button 
                   type="button"
                   onClick={() => setLoading(false)}
-                  className="w-full py-2 text-xs font-bold text-slate-500 hover:text-white transition-colors"
+                  className="w-full py-2 text-xs font-bold text-text-muted hover:text-text-main transition-colors"
                 >
                   Cancel
                 </button>
@@ -308,22 +309,22 @@ export default function LoginPage() {
           </form>
 
           <div className="flex items-center gap-4 my-8">
-            <div className="flex-grow h-px bg-white/10"></div>
-            <span className="text-sm text-slate-500 font-medium whitespace-nowrap">Or continue with</span>
-            <div className="flex-grow h-px bg-white/10"></div>
+            <div className="flex-grow h-px bg-surface-alt"></div>
+            <span className="text-sm text-text-muted font-medium whitespace-nowrap">Or continue with</span>
+            <div className="flex-grow h-px bg-surface-alt"></div>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
             <button 
               onClick={() => handleSocialLogin('google')}
-              className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors"
+              className="flex items-center justify-center gap-2 p-3 bg-surface-alt border border-border rounded-xl text-text-main hover:bg-surface-alt transition-colors"
             >
-              <Chrome size={20} /> <span className="text-sm font-bold">Google</span>
+              <GoogleIcon size={20} /> <span className="text-sm font-bold">Google</span>
             </button>
           </div>
         </div>
 
-        <p className="text-center mt-8 text-sm text-slate-400">
+        <p className="text-center mt-8 text-sm text-text-muted">
           Don't have an account? <Link to="/signup" className="text-primary font-bold hover:underline">Sign up for free</Link>
         </p>
       </motion.div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Youtube, BookOpen, Star, Sparkles, Download, Eye } from 'lucide-react';
 import { CommunityMaterial } from '../../hooks/useCommunityMaterials';
+import { pastelForType } from '../../lib/utils';
 
 interface MaterialCardProps {
   material: CommunityMaterial;
@@ -39,16 +40,18 @@ export function MaterialCard({ material, onPreview, onClone }: MaterialCardProps
 
   const getBadgeConfig = (typeStr: string) => {
     const normType = typeStr.toLowerCase();
+    // Same source as every other type colour in the app — see pastelForType().
+    const color = `var(--pastel-${pastelForType(normType)}-ink)`;
     if (normType === 'pdf') {
-      return { label: 'PDF', color: '#6C5CE7', icon: FileText };
+      return { label: 'PDF', color, icon: FileText };
     }
     if (normType === 'youtube' || normType === 'video') {
-      return { label: 'Video', color: '#F5B042', icon: Youtube };
+      return { label: 'Video', color, icon: Youtube };
     }
     if (normType === 'flashcard' || normType === 'flashcards') {
-      return { label: 'Flashcards', color: '#00E5A0', icon: Sparkles };
+      return { label: 'Flashcards', color, icon: Sparkles };
     }
-    return { label: 'Notes', color: '#00D2FF', icon: BookOpen };
+    return { label: 'Notes', color, icon: BookOpen };
   };
 
   const badgeConfig = getBadgeConfig(material.type);
@@ -66,12 +69,12 @@ export function MaterialCard({ material, onPreview, onClone }: MaterialCardProps
               key={star}
               size={12}
               className={`${
-                isFilled ? 'text-[#F5B042] fill-[#F5B042]' : 'text-[#8E9AAF]/30'
+                isFilled ? 'text-brand-orange fill-brand-orange' : 'text-text-muted/30'
               }`}
             />
           );
         })}
-        <span className="text-xs font-bold text-[#F5B042] ml-1.5 mt-0.5">
+        <span className="text-xs font-bold text-brand-orange ml-1.5 mt-0.5">
           {rating.toFixed(1)}
         </span>
       </div>
@@ -79,7 +82,7 @@ export function MaterialCard({ material, onPreview, onClone }: MaterialCardProps
   };
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-2xl bg-[#141A24] p-5 border border-[#8E9AAF]/5 transition-shadow hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] w-full h-full min-h-[290px] select-none">
+    <div className="group relative flex flex-col justify-between rounded-2xl bg-surface p-5 border border-border/5 transition-shadow hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] w-full h-full min-h-[290px] select-none">
       <div>
         {/* Top Header Badge & Rating Row */}
         <div className="flex items-start justify-between gap-3 mb-3">
@@ -91,29 +94,33 @@ export function MaterialCard({ material, onPreview, onClone }: MaterialCardProps
             <span>{badgeConfig.label}</span>
           </div>
 
-          <div className="flex items-center gap-1">
-            {renderStars(material.rating || 4.7)}
-            <span className="text-[11px] text-[#8E9AAF] font-medium">({material.likes + 2})</span>
-          </div>
+          {(material.rating ?? 0) > 0 && (
+            <div className="flex items-center gap-1">
+              {renderStars(material.rating)}
+            </div>
+          )}
         </div>
 
         {/* Title */}
-        <h3 className="text-base font-extrabold text-[#F0F3F8] line-clamp-2 mb-1 tracking-tight leading-snug group-hover:text-[#6C5CE7] transition-colors">
+        <h3 className="text-base font-extrabold text-text-main line-clamp-2 mb-1 tracking-tight leading-snug group-hover:text-primary transition-colors">
           {material.title}
         </h3>
 
         {/* Author Line */}
-        <p className="text-xs text-[#8E9AAF]/90 mb-3 font-semibold">
-          By @{material.authorName?.replace(/\s+/g, '_').toLowerCase() || 'aether_scholar'} • <span className="text-xs text-[#8E9AAF]/60 font-medium">{getRelativeTime(material.createdAt)}</span>
+        <p className="text-xs text-text-muted/90 mb-3 font-semibold">
+          {material.authorName && (
+            <>By @{material.authorName.replace(/\s+/g, '_').toLowerCase()} • </>
+          )}
+          <span className="text-xs text-text-muted/60 font-medium">{getRelativeTime(material.createdAt)}</span>
         </p>
 
         {/* Description / Summary */}
         {material.summary ? (
-          <p className="text-sm text-[#8E9AAF] line-clamp-2 leading-relaxed mb-4 font-normal">
+          <p className="text-sm text-text-muted line-clamp-2 leading-relaxed mb-4 font-normal">
             {material.summary}
           </p>
         ) : (
-          <p className="text-xs italic text-[#8E9AAF]/50 line-clamp-2 leading-relaxed mb-4">
+          <p className="text-xs italic text-text-muted/50 line-clamp-2 leading-relaxed mb-4">
             No summary provided. Dive in to explore details!
           </p>
         )}
@@ -124,7 +131,7 @@ export function MaterialCard({ material, onPreview, onClone }: MaterialCardProps
             {material.keyTopics.slice(0, 3).map((tag, idx) => (
               <span
                 key={`${tag}-${idx}`}
-                className="text-[11px] font-bold text-[#8E9AAF]/90 bg-[#8E9AAF]/5 px-2.5 py-1 rounded-lg border border-[#8E9AAF]/10 whitespace-nowrap"
+                className="text-[11px] font-bold text-text-muted/90 bg-border/5 px-2.5 py-1 rounded-lg border border-border/10 whitespace-nowrap"
               >
                 #{tag}
               </span>
@@ -135,22 +142,22 @@ export function MaterialCard({ material, onPreview, onClone }: MaterialCardProps
 
       <div>
         {/* Statistics Row (Clones / Downloads) */}
-        <div className="flex items-center gap-4 py-2 border-t border-[#8E9AAF]/5 mb-3 text-xs font-semibold text-[#8E9AAF]">
+        <div className="flex items-center gap-4 py-2 border-t border-border/5 mb-3 text-xs font-semibold text-text-muted">
           <span className="flex items-center gap-1.5">
-            <Download size={13} className="text-[#00D2FF]" />
-            <span className="text-[#F0F3F8]">{material.downloads || 0}</span> clones
+            <Download size={13} className="text-secondary" />
+            <span className="text-text-main">{material.downloads || 0}</span> clones
           </span>
           <span className="flex items-center gap-1.5">
-            <Star size={13} className="text-[#F5B042]" />
-            <span className="text-[#F0F3F8]">{material.likes || 0}</span> likes
+            <Star size={13} className="text-brand-orange" />
+            <span className="text-text-main">{material.likes || 0}</span> likes
           </span>
         </div>
 
         {/* Quick Actions (Touch Target: min 44px) */}
-        <div className="grid grid-cols-2 gap-2 border-t border-[#8E9AAF]/5 pt-3">
+        <div className="grid grid-cols-2 gap-2 border-t border-border/5 pt-3">
           <button
             onClick={() => onPreview(material)}
-            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#8E9AAF]/5 hover:bg-[#8E9AAF]/10 active:scale-95 text-[#F0F3F8] text-xs font-bold transition-all min-h-[44px] cursor-pointer border border-[#8E9AAF]/10"
+            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-border/5 hover:bg-border/10 active:scale-95 text-text-main text-xs font-bold transition-all min-h-[44px] cursor-pointer border border-border/10"
             id={`comm-btn-prev-${material.id}`}
           >
             <Eye size={14} />
@@ -160,7 +167,7 @@ export function MaterialCard({ material, onPreview, onClone }: MaterialCardProps
           <button
             onClick={handleCloneClick}
             disabled={isCloning}
-            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#6C5CE7] hover:bg-[#6C5CE7]/90 disabled:opacity-50 active:scale-95 text-[#F0F3F8] text-xs font-bold transition-all min-h-[44px] cursor-pointer"
+            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-50 active:scale-95 text-white text-xs font-bold transition-all min-h-[44px] cursor-pointer"
             id={`comm-btn-clone-${material.id}`}
           >
             <Download size={14} className={isCloning ? 'animate-bounce' : ''} />

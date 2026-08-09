@@ -133,12 +133,12 @@ const AnimatedLoadingSkeleton = () => {
                     style={{ left: 24, top: 24 }}
                 >
                     <motion.div
-                        className="bg-blue-500/20 p-3 rounded-full backdrop-blur-sm"
+                        className="bg-secondary/20 p-3 rounded-full backdrop-blur-sm"
                         variants={glowVariants}
                         animate="animate"
                     >
                         <svg
-                            className="w-6 h-6 text-blue-600"
+                            className="w-6 h-6 text-secondary"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"

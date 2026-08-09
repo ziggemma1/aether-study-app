@@ -1,47 +1,52 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  User, 
-  Mail, 
-  Globe, 
-  GraduationCap, 
-  Bell, 
-  Trash2, 
-  Camera, 
-  Sparkles, 
-  Users2, 
-  Award, 
-  CheckCircle2,
-  Lock,
-  ShieldCheck,
-  CreditCard,
-  LogOut,
-  Loader2
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import {
+  User, Globe, Bell, Camera, Lock, CreditCard, LogOut, Loader2,
+  Palette, Sun, Moon, Check, ChevronRight, ShieldCheck, Users2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../services/api';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SHOP_ITEMS, ownsItem } from '../lib/shopCatalog';
+
+type TabId = 'account' | 'profile' | 'appearance' | 'security';
+
+const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
+  { id: 'account', label: 'Account', icon: User },
+  { id: 'profile', label: 'Profile', icon: Users2 },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'security', label: 'Security', icon: Lock }
+];
+
+// Every language the translation table actually has. The old select offered
+// three and left out Chinese, which translations.ts has supported all along.
+const LANGUAGES = ['English (US)', 'English (UK)', 'Indonesia', 'Chinese'];
+const CURRICULA = ['SAT / AP', 'WAEC / NECO', 'JAMB / UTME', 'General'];
 
 export default function Settings() {
   const { user, setUser, theme, toggleTheme, signOut, showToast, t } = useAppContext();
   const location = useLocation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = React.useState<'account' | 'social' | 'security' | 'billing'>('account');
+
+  const [activeTab, setActiveTab] = React.useState<TabId>('account');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isLocating, setIsLocating] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [busyTheme, setBusyTheme] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get('tab');
-    if (tab && ['account', 'social', 'security', 'billing'].includes(tab)) {
-      setActiveTab(tab as any);
-    }
-  }, [location]);
-  const [isSaving, setIsSaving] = React.useState(false);
-  const [formData, setFormData] = React.useState({
+    const tab = new URLSearchParams(location.search).get('tab');
+    // 'billing' used to be a tab of its own holding a single link. It redirects
+    // to the page that link pointed at rather than 404-ing an old bookmark.
+    if (tab === 'billing') { navigate('/subscription', { replace: true }); return; }
+    if (tab === 'social') { setActiveTab('profile'); return; }
+    if (tab && TABS.some((x) => x.id === tab)) setActiveTab(tab as TabId);
+  }, [location, navigate]);
+
+  const initial = React.useMemo(() => ({
     name: user?.name || '',
-    email: user?.email || '',
     language: user?.language || 'English (US)',
     curriculum: user?.curriculum || 'SAT / AP',
     bio: user?.bio || '',
@@ -53,25 +58,26 @@ export default function Settings() {
       email: user?.notificationPrefs?.email ?? false,
       aiInsights: user?.notificationPrefs?.aiInsights ?? true
     }
-  });
+  }), [user]);
+
+  const [formData, setFormData] = React.useState(initial);
+  React.useEffect(() => { setFormData(initial); }, [initial]);
+
+  // Nothing told you whether your edits were saved: the Save button looked
+  // identical before and after a change, and the notification toggles animated
+  // instantly while the value was still only in local state.
+  const isDirty = React.useMemo(
+    () => JSON.stringify(formData) !== JSON.stringify(initial),
+    [formData, initial]
+  );
 
   const [passwordForm, setPasswordForm] = React.useState({ current: '', next: '', confirm: '' });
   const [isChangingPassword, setIsChangingPassword] = React.useState(false);
 
-  const tabs = [
-    { id: 'account', label: t('account_info'), icon: User },
-    { id: 'social', label: t('social_profile_bio'), icon: Globe },
-    { id: 'security', label: t('security'), icon: Lock },
-    { id: 'billing', label: t('billing'), icon: CreditCard },
-  ];
-
-  const handleSave = async (specificData?: any) => {
+  const handleSave = async (specificData?: Record<string, any>) => {
     if (!user) return;
     setIsSaving(true);
-
-    // Ensure we don't try to stringify a React/DOM event object
-    const isEvent = specificData && (specificData.nativeEvent || specificData.target);
-    const payload = (specificData && !isEvent) ? specificData : {
+    const payload = specificData ?? {
       name: formData.name,
       language: formData.language,
       curriculum: formData.curriculum,
@@ -83,18 +89,13 @@ export default function Settings() {
     };
 
     try {
-      const response = await api.put('/users/profile', payload);
-
-      if (response.data) {
-        setUser({
-          ...user,
-          ...response.data
-        });
-        showToast('Profile updated successfully!');
+      const { data } = await api.put('/users/profile', payload);
+      if (data) {
+        setUser({ ...user, ...data });
+        showToast('Saved.');
       }
     } catch (err: any) {
-      console.error(err);
-      showToast('Failed to update profile: ' + (err.response?.data?.message || err.message), 'error');
+      showToast(err.response?.data?.message || "We couldn't save that.", 'error');
     } finally {
       setIsSaving(false);
     }
@@ -102,24 +103,15 @@ export default function Settings() {
 
   const handleChangePassword = async () => {
     const { current, next, confirm } = passwordForm;
-    if (!current || !next || !confirm) {
-      showToast('Fill in all three password fields.', 'error');
-      return;
-    }
-    if (next.length < 8) {
-      showToast('New password must be at least 8 characters.', 'error');
-      return;
-    }
-    if (next !== confirm) {
-      showToast("New password and confirmation don't match.", 'error');
-      return;
-    }
+    if (!current || !next || !confirm) return showToast('Fill in all three password fields.', 'error');
+    if (next.length < 8) return showToast('New password must be at least 8 characters.', 'error');
+    if (next !== confirm) return showToast("New password and confirmation don't match.", 'error');
 
     setIsChangingPassword(true);
     try {
       await api.put('/users/change-password', { currentPassword: current, newPassword: next });
       setPasswordForm({ current: '', next: '', confirm: '' });
-      showToast('Password updated successfully!');
+      showToast('Password updated.');
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Failed to update password', 'error');
     } finally {
@@ -130,455 +122,523 @@ export default function Settings() {
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      showToast('Image too large. Max 2MB.', 'error');
-      return;
-    }
-
+    if (file.size > 2 * 1024 * 1024) return showToast('Image too large. Max 2MB.', 'error');
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      handleSave({ avatar: base64String });
-    };
+    reader.onloadend = () => handleSave({ avatar: reader.result as string });
     reader.readAsDataURL(file);
   };
 
   const detectLocation = () => {
-    if (!navigator.geolocation) {
-      showToast('Geolocation is not supported by your browser.', 'error');
-      return;
-    }
-
+    if (!navigator.geolocation) return showToast('Your browser does not support location detection.', 'error');
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        const { latitude, longitude } = position.coords;
         try {
-          const { latitude, longitude } = position.coords;
-          // Reverse geocoding would be ideal, but for now we'll set a descriptive string
-          // In a real app we'd use a service like Google Maps API to get the city/country
-          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-          const data = await response.json();
-          const locationStr = data.address.city || data.address.town || data.address.state || 'Unknown Location';
-          const fullLocation = `${locationStr}, ${data.address.country}`;
-          
-          setFormData(prev => ({ ...prev, location: fullLocation }));
-          showToast(`Located: ${fullLocation}`);
-        } catch (err) {
-          showToast('Could not fetch address. Using coordinates.');
-          setFormData(prev => ({ ...prev, location: `${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}` }));
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+          const data = await res.json();
+          const place = data.address.city || data.address.town || data.address.state || 'Unknown location';
+          setFormData((p) => ({ ...p, location: `${place}, ${data.address.country}` }));
+        } catch {
+          setFormData((p) => ({ ...p, location: `${latitude.toFixed(2)}, ${longitude.toFixed(2)}` }));
+          showToast("Couldn't look up the address — using coordinates.");
         } finally {
           setIsLocating(false);
         }
       },
-      (error) => {
-        setIsLocating(false);
-        showToast('Location access denied or unavailable.', 'error');
-      }
+      () => { setIsLocating(false); showToast('Location access denied.', 'error'); }
     );
   };
 
-  return (
-    <div className="p-3 sm:p-8 lg:p-12 max-w-5xl mx-auto space-y-6 sm:space-y-10 animate-in fade-in duration-500 pb-24">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold mb-0.5 sm:mb-2 text-text-main tracking-tight">{t('settings')}</h1>
-          <p className="text-[11px] sm:text-base text-text-muted">Manage your account and preferences.</p>
-        </div>
-        
-        {/* Tab Navigation */}
-        <div className="flex items-center bg-surface-alt/50 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-border overflow-x-auto custom-scrollbar">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={cn(
-                "flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap",
-                activeTab === tab.id
-                  ? "bg-primary text-white shadow-lg"
-                  : "text-text-muted hover:text-text-main"
-              )}
-            >
-              <tab.icon size={12} className="sm:hidden" />
-              <tab.icon size={14} className="hidden sm:block" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </header>
+  /** Accent themes bought in the shop. Equipping uses the shop's own endpoint. */
+  const themeItems = SHOP_ITEMS.filter((i) => i.kind === 'theme');
+  const equipTheme = async (itemId: string | null) => {
+    setBusyTheme(itemId || 'default');
+    try {
+      const { data } = await api.post('/users/shop/equip', { itemId, kind: 'theme' });
+      if (user) setUser({ ...user, equippedTheme: data.equippedTheme });
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Could not switch theme.', 'error');
+    } finally {
+      setBusyTheme(null);
+    }
+  };
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10">
-        {/* Left Sidebar - Quick Stats & Profile Change */}
-        <div className="lg:col-span-4 space-y-4 sm:space-y-6">
-          <div className="glass-card p-6 sm:p-8 text-center relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-16 sm:h-24 bg-gradient-to-br from-primary/20 to-secondary/20" />
-            
-            <div className="relative inline-block mt-2 sm:mt-4 mb-4 sm:mb-6">
-              <div className="w-20 h-20 sm:w-32 sm:h-32 bg-surface rounded-full flex items-center justify-center text-primary text-2xl sm:text-4xl font-bold border-4 border-background shadow-2xl overflow-hidden relative z-10">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                ) : (
-                  user?.name.charAt(0)
-                )}
+  const joined = user?.createdAt ? new Date(user.createdAt) : null;
+
+  return (
+    <div className="p-4 md:p-8 max-w-5xl mx-auto w-full min-w-0 pb-24">
+      <PageHeader title={t('settings')} subtitle="Manage your account and how Aether looks." />
+
+      <div className="flex gap-1 p-1 rounded-xl bg-surface-alt border border-border mb-6 overflow-x-auto custom-scrollbar">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            aria-pressed={activeTab === tab.id}
+            className={cn(
+              'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer min-h-[38px]',
+              activeTab === tab.id
+                ? 'bg-surface text-text-main shadow-[var(--shadow-card)]'
+                : 'text-text-muted hover:text-text-main'
+            )}
+          >
+            <tab.icon size={14} /> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* ---------------- Left ---------------- */}
+        <aside className="lg:col-span-4 space-y-4">
+          <Card className="text-center">
+            <div className="relative inline-block">
+              <div className="w-24 h-24 rounded-3xl bg-pastel-lavender text-pastel-lavender-ink border border-border overflow-hidden flex items-center justify-center text-3xl font-bold mx-auto">
+                {user?.avatar
+                  ? <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                  : (user?.name?.charAt(0)?.toUpperCase() || '?')}
               </div>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/*" 
-                onChange={handleAvatarUpload}
-              />
-              <button 
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+              <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 p-1.5 sm:p-2.5 bg-primary text-white rounded-full shadow-xl hover:scale-110 transition-transform z-20 border-2 border-background"
+                aria-label="Change profile picture"
+                className="absolute -bottom-1 -right-1 p-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors cursor-pointer border-2 border-surface"
               >
-                <Camera size={14} className="sm:hidden" />
-                <Camera size={18} className="hidden sm:block" />
+                <Camera size={14} />
               </button>
             </div>
-            
-            <h2 className="text-lg sm:text-2xl font-bold mb-0.5 sm:mb-1 text-text-main tracking-tight">{user?.name}</h2>
-            <p className="text-[11px] sm:text-sm text-text-muted mb-4 sm:mb-6 font-medium">@{user?.handle || user?.name?.toLowerCase()?.replace(/\s+/g, '_')}</p>
-            
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-dashed border-border/40">
-              <div className="text-center">
-                <p className="text-sm sm:text-lg font-bold text-text-main">{user?.followersCount || 0}</p>
-                <p className="text-[11px] sm:text-[11px] font-bold text-text-muted uppercase tracking-widest">{t('followers')}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm sm:text-lg font-bold text-text-main">{user?.friendsCount || 0}</p>
-                <p className="text-[11px] sm:text-[11px] font-bold text-text-muted uppercase tracking-widest">{t('friends')}</p>
-              </div>
-            </div>
-          </div>
+            <h2 className="font-heading text-lg font-bold text-text-main mt-3">{user?.name}</h2>
+            <p className="text-xs text-text-muted">@{formData.handle}</p>
+          </Card>
 
-          <div className="glass-card p-4 sm:p-6 bg-primary/5 border-primary/20">
-            <h4 className="text-[11px] sm:text-xs font-bold text-primary uppercase tracking-widest mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
-              <ShieldCheck size={12} className="sm:hidden" />
-              <ShieldCheck size={14} className="hidden sm:block" /> Status
-            </h4>
-            <div className="space-y-3 sm:space-y-4">
-              <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold">
-                <span className="text-text-muted">Plan</span>
-                <span className="text-primary uppercase">{user?.plan}</span>
+          <Card>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted mb-3 flex items-center gap-1.5">
+              <ShieldCheck size={13} /> Account
+            </h3>
+            <dl className="space-y-2.5 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-text-muted">Email</dt>
+                <dd className="font-medium text-text-main truncate">{user?.email}</dd>
               </div>
-              <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold">
-                <span className="text-text-muted">{t('verified')}</span>
-                <span className="text-green-500 uppercase">Yes</span>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-text-muted">Joined</dt>
+                {/* Was the hardcoded string "Apr 2024" for every account. */}
+                <dd className="font-medium text-text-main">
+                  {joined && !isNaN(joined.getTime())
+                    ? joined.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+                    : '—'}
+                </dd>
               </div>
-              <div className="flex items-center justify-between text-[11px] sm:text-xs font-bold">
-                <span className="text-text-muted">Joined</span>
-                <span className="text-text-main uppercase">Apr 2024</span>
-              </div>
-            </div>
-          </div>
+              {/* A "Verified — YES" row used to sit here. Nothing in the app
+                  verifies anything, and no code ever set such a flag. */}
+            </dl>
+            <Link
+              to="/subscription"
+              className="mt-4 flex items-center justify-between gap-2 p-3 rounded-xl bg-surface-alt border border-border hover:border-primary/30 transition-colors text-sm"
+            >
+              <span className="flex items-center gap-2 text-text-main">
+                <CreditCard size={15} className="text-text-muted" />
+                Plan
+              </span>
+              <span className="flex items-center gap-1 text-text-muted capitalize">
+                {user?.plan || 'free'} <ChevronRight size={14} />
+              </span>
+            </Link>
+          </Card>
 
-          <button 
+          <button
             onClick={signOut}
-            className="w-full p-3 sm:p-4 glass-card border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all flex items-center justify-center gap-2 sm:gap-3 font-bold uppercase tracking-widest text-[11px] sm:text-xs"
+            className="w-full p-3.5 rounded-[var(--radius-card)] bg-surface border border-border text-brand-pink hover:bg-brand-pink/5 hover:border-brand-pink/30 transition-colors flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer min-h-[44px]"
           >
-            <LogOut size={16} className="sm:hidden" />
-            <LogOut size={18} className="hidden sm:block" /> Sign Out
+            <LogOut size={16} /> Sign out
           </button>
-        </div>
+        </aside>
 
-        {/* Right Content - Tabs */}
+        {/* ---------------- Right ---------------- */}
         <div className="lg:col-span-8">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-5">
+
             {activeTab === 'account' && (
-              <div className="space-y-4 sm:space-y-6">
-                <div className="glass-card p-6 sm:p-8">
-                  <h3 className="text-sm sm:text-xl font-bold mb-6 sm:mb-8 text-text-main flex items-center gap-2 sm:gap-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg sm:rounded-xl flex items-center justify-center text-primary">
-                      <User size={16} className="sm:hidden" />
-                      <User size={20} className="hidden sm:block" />
-                    </div>
-                    {t('account_info')}
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('full_name')}</label>
+              <>
+                <Card title="Account info" icon={<User size={16} className="text-pastel-lavender-ink" />}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label={t('full_name')}>
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
+                        className={inputCls}
                       />
-                    </div>
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('email')}</label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        disabled
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main opacity-50 cursor-not-allowed outline-none transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('language')}</label>
-                      <select 
+                    </Field>
+                    <Field label={t('email')} hint="Email can't be changed here">
+                      <input type="email" value={user?.email || ''} disabled className={cn(inputCls, 'opacity-60 cursor-not-allowed')} />
+                    </Field>
+                    <Field label={t('language')}>
+                      <select
                         value={formData.language}
                         onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all"
+                        className={inputCls}
                       >
-                        <option>English (US)</option>
-                        <option>English (UK)</option>
-                        <option>Indonesia</option>
+                        {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
                       </select>
-                    </div>
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest">{t('curriculum')}</label>
-                      <select 
+                    </Field>
+                    <Field label={t('curriculum')}>
+                      <select
                         value={formData.curriculum}
                         onChange={(e) => setFormData({ ...formData, curriculum: e.target.value })}
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all"
+                        className={inputCls}
                       >
-                        <option>SAT / AP</option>
-                        <option>WAEC / NECO</option>
-                        <option>JAMB / UTME</option>
+                        {CURRICULA.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
-                    </div>
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <label className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-widest flex items-center justify-between">
-                        {t('location')}
-                        <button 
-                          onClick={detectLocation}
-                          disabled={isLocating}
-                          className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1 normal-case font-bold"
-                        >
-                          {isLocating ? <Loader2 size={12} className="animate-spin" /> : <Globe size={12} />}
-                          {t('detect')}
-                        </button>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.location}
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        placeholder="e.g. Lagos, Nigeria"
-                        className="w-full px-4 py-2.5 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-border bg-surface text-[11px] sm:text-sm text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
-                      />
+                    </Field>
+                    <div className="sm:col-span-2">
+                      <Field
+                        label={t('location')}
+                        action={
+                          <button
+                            onClick={detectLocation}
+                            disabled={isLocating}
+                            className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer disabled:opacity-60"
+                          >
+                            {isLocating ? <Loader2 size={12} className="animate-spin" /> : <Globe size={12} />}
+                            {isLocating ? 'Locating…' : t('detect')}
+                          </button>
+                        }
+                      >
+                        <input
+                          type="text"
+                          value={formData.location}
+                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                          placeholder="e.g. Lagos, Nigeria"
+                          className={inputCls}
+                        />
+                      </Field>
                     </div>
                   </div>
-                  <div className="mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-border/40 flex justify-end">
-                    <button 
-                      onClick={() => handleSave()}
-                      disabled={isSaving}
-                      className="btn-primary py-2 px-6 sm:py-3 sm:px-10 text-[11px] sm:text-sm flex items-center gap-2"
-                    >
-                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : t('save_changes')}
-                    </button>
-                  </div>
-                </div>
+                  <SaveBar dirty={isDirty} saving={isSaving} onSave={() => handleSave()} onReset={() => setFormData(initial)} />
+                </Card>
 
-                <div className="glass-card p-6 sm:p-8">
-                  <h3 className="text-sm sm:text-xl font-bold mb-6 sm:mb-8 text-text-main flex items-center gap-2 sm:gap-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500/10 rounded-lg sm:rounded-xl flex items-center justify-center text-orange-500">
-                      <Bell size={16} className="sm:hidden" />
-                      <Bell size={20} className="hidden sm:block" />
-                    </div>
-                    Notifications
-                  </h3>
-                  <div className="space-y-3 sm:space-y-4">
+                <Card title="Notifications" icon={<Bell size={16} className="text-pastel-peach-ink" />}>
+                  <div className="space-y-2">
                     {([
-                      { key: 'push', title: 'Push Notifications', desc: 'Study reminders' },
-                      { key: 'email', title: 'Email Updates', desc: 'Weekly reports' },
-                      { key: 'aiInsights', title: 'AI Insights', desc: 'Personalized tips' },
+                      { key: 'push', title: 'Push notifications', desc: 'Study reminders on this device' },
+                      { key: 'email', title: 'Email updates', desc: 'A weekly summary of your progress' },
+                      { key: 'aiInsights', title: 'AI insights', desc: 'Suggestions based on what you study' }
                     ] as const).map((pref) => {
                       const active = formData.notificationPrefs[pref.key];
                       return (
-                        <div
+                        <button
                           key={pref.key}
+                          type="button"
+                          role="switch"
+                          aria-checked={active}
                           onClick={() => setFormData({
                             ...formData,
                             notificationPrefs: { ...formData.notificationPrefs, [pref.key]: !active }
                           })}
-                          className="flex items-center justify-between p-4 sm:p-5 bg-surface-alt/30 rounded-xl sm:rounded-2xl border border-border/40 hover:border-primary/30 transition-all cursor-pointer group"
+                          className="w-full flex items-center justify-between gap-4 p-4 rounded-xl bg-surface-alt/60 border border-border hover:border-primary/25 transition-colors text-left cursor-pointer"
                         >
-                          <div>
-                            <p className="font-bold text-[11px] sm:text-sm text-text-main group-hover:text-primary transition-colors">{pref.title}</p>
-                            <p className="text-[11px] sm:text-xs text-text-muted">{pref.desc}</p>
-                          </div>
-                          <motion.div
-                            initial={false}
-                            animate={{ backgroundColor: active ? "var(--color-primary)" : "var(--color-border)" }}
-                            className="w-10 h-5 sm:w-12 sm:h-6 rounded-full relative transition-all shrink-0"
-                          >
-                            <motion.div
-                              initial={false}
-                              animate={{ x: active ? (window.innerWidth < 640 ? 20 : 24) : 4 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                              className="absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                            />
-                          </motion.div>
-                        </div>
+                          <span>
+                            <span className="block text-sm font-semibold text-text-main">{pref.title}</span>
+                            <span className="block text-xs text-text-muted mt-0.5">{pref.desc}</span>
+                          </span>
+                          {/* Fixed-width track with a translate on the knob: the
+                              old one read window.innerWidth at render time to
+                              pick a pixel offset, so it never responded to a
+                              resize. */}
+                          <span className={cn(
+                            'relative w-11 h-6 rounded-full shrink-0 transition-colors',
+                            active ? 'bg-primary' : 'bg-[var(--ring-track)]'
+                          )}>
+                            <span className={cn(
+                              'absolute top-1 left-1 w-4 h-4 bg-surface rounded-full shadow-sm transition-transform',
+                              active && 'translate-x-5'
+                            )} />
+                          </span>
+                        </button>
                       );
                     })}
                   </div>
-                  <div className="mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-border/40 flex justify-end">
-                    <button
-                      onClick={() => handleSave()}
-                      disabled={isSaving}
-                      className="btn-primary py-2 px-6 sm:py-3 sm:px-10 text-[11px] sm:text-sm flex items-center gap-2"
-                    >
-                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : t('save_changes')}
-                    </button>
-                  </div>
-                </div>
-              </div>
+                  <SaveBar dirty={isDirty} saving={isSaving} onSave={() => handleSave()} onReset={() => setFormData(initial)} />
+                </Card>
+              </>
             )}
 
-            {activeTab === 'social' && (
-              <div className="space-y-6">
-                <div className="glass-card p-8">
-                  <h3 className="text-xl font-bold mb-8 text-text-main flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500">
-                      <Users2 size={20} />
-                    </div>
-                    {t('social_profile_bio')}
-                  </h3>
-                  <div className="space-y-8">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-muted uppercase tracking-widest">{t('public_bio')}</label>
-                      <textarea
-                        rows={4}
-                        value={formData.bio}
-                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                        placeholder="Tell the community about your study goals..."
-                        className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none resize-none transition-all"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-text-muted uppercase tracking-widest">{t('username_handle')}</label>
-                        <div className="relative">
-                          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted font-bold">@</span>
-                          <input
-                            type="text"
-                            value={formData.handle}
-                            onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
-                            className="w-full pl-10 pr-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-text-muted uppercase tracking-widest">{t('visibility_scope')}</label>
-                        <select
-                          value={formData.visibility}
-                          onChange={(e) => setFormData({ ...formData, visibility: e.target.value as typeof formData.visibility })}
-                          className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none appearance-none transition-all"
-                        >
-                          <option value="public">Public (Everyone)</option>
-                          <option value="friends">Friends Only</option>
-                          <option value="private">Private (Only Me)</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-10 pt-8 border-t border-border/40 flex justify-end">
-                    <button 
-                      onClick={() => handleSave()}
-                      disabled={isSaving}
-                      className="btn-primary px-10 flex items-center gap-2"
-                    >
-                      {isSaving ? <Loader2 size={16} className="animate-spin" /> : t('update_social_profile')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'billing' && (
-              <div className="space-y-6">
-                <div className="glass-card p-8">
-                  <h3 className="text-xl font-bold mb-8 text-text-main flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                      <CreditCard size={20} />
-                    </div>
-                    {t('billing')}
-                  </h3>
-                  <div className="flex items-center justify-between p-5 bg-surface-alt/30 rounded-2xl border border-border/40 mb-6">
-                    <div>
-                      <p className="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Current Plan</p>
-                      <p className="text-lg font-bold text-text-main capitalize">{user?.plan || 'free'}</p>
-                    </div>
-                    {user?.plan === 'pro' && (
-                      <span className="text-[11px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1.5 rounded-full">Active</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-text-muted mb-6">
-                    Manage plan changes, view usage, and see billing details on the subscription page.
-                  </p>
-                  <button
-                    onClick={() => navigate('/subscription')}
-                    className="btn-primary px-10"
+            {activeTab === 'profile' && (
+              <Card title="Public profile" icon={<Users2 size={16} className="text-pastel-mint-ink" />}>
+                <div className="space-y-4">
+                  {/* No maxLength: the server imposes no bio limit, and a
+                      client-side cap of 300 rendered an existing 375-character
+                      bio as "375/300" and blocked the user from editing it back
+                      under a limit that does not exist. The count is a hint. */}
+                  <Field
+                    label={t('public_bio')}
+                    hint={`${formData.bio.length} characters`}
                   >
-                    Manage Subscription
-                  </button>
+                    <textarea
+                      rows={5}
+                      value={formData.bio}
+                      onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                      placeholder="Tell people what you're studying…"
+                      className={cn(inputCls, 'resize-none')}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label={t('username_handle')}>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted text-sm">@</span>
+                        <input
+                          type="text"
+                          value={formData.handle}
+                          onChange={(e) => setFormData({ ...formData, handle: e.target.value.replace(/\s+/g, '_').toLowerCase() })}
+                          className={cn(inputCls, 'pl-8')}
+                        />
+                      </div>
+                    </Field>
+                    <Field label={t('visibility_scope')}>
+                      <select
+                        value={formData.visibility}
+                        onChange={(e) => setFormData({ ...formData, visibility: e.target.value as typeof formData.visibility })}
+                        className={inputCls}
+                      >
+                        <option value="public">Public — anyone</option>
+                        <option value="friends">Friends only</option>
+                        <option value="private">Private — only me</option>
+                      </select>
+                    </Field>
+                  </div>
                 </div>
-              </div>
+                <SaveBar dirty={isDirty} saving={isSaving} onSave={() => handleSave()} onReset={() => setFormData(initial)} />
+              </Card>
+            )}
+
+            {activeTab === 'appearance' && (
+              <>
+                {/* Settings had no appearance section at all. `theme` and
+                    `toggleTheme` were pulled off the context at the top of this
+                    file and then never used — the only light/dark control in the
+                    app was the small toggle in the header. */}
+                <Card title="Theme" icon={<Sun size={16} className="text-pastel-peach-ink" />}>
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      { id: 'light', label: 'Light', Icon: Sun },
+                      { id: 'dark', label: 'Dark', Icon: Moon }
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => { if (theme !== opt.id) toggleTheme(); }}
+                        aria-pressed={theme === opt.id}
+                        className={cn(
+                          'flex items-center gap-2.5 p-4 rounded-xl border text-sm font-semibold transition-colors cursor-pointer',
+                          theme === opt.id
+                            ? 'border-primary/40 bg-primary/5 text-text-main'
+                            : 'border-border bg-surface-alt/60 text-text-muted hover:border-primary/25'
+                        )}
+                      >
+                        <opt.Icon size={16} /> {opt.label}
+                        {theme === opt.id && <Check size={14} className="ml-auto text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                </Card>
+
+                <Card
+                  title="Accent colour"
+                  icon={<Palette size={16} className="text-pastel-lavender-ink" />}
+                  action={
+                    <Link to="/shop" className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-0.5">
+                      Shop <ChevronRight size={13} />
+                    </Link>
+                  }
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <ThemeOption
+                      name="Aether"
+                      swatch={['#6C5CE7', '#0089B0', '#0E9F6E']}
+                      owned
+                      active={!user?.equippedTheme}
+                      busy={busyTheme === 'default'}
+                      onSelect={() => equipTheme(null)}
+                    />
+                    {themeItems.map((item) => {
+                      const owned = ownsItem(user?.themeUnlocked, item.id);
+                      return (
+                        <ThemeOption
+                          key={item.id}
+                          name={item.name}
+                          swatch={item.swatch!}
+                          owned={owned}
+                          active={user?.equippedTheme === item.value}
+                          busy={busyTheme === item.id}
+                          cost={item.cost}
+                          onSelect={() => (owned ? equipTheme(item.id) : navigate('/shop'))}
+                        />
+                      );
+                    })}
+                  </div>
+                </Card>
+              </>
             )}
 
             {activeTab === 'security' && (
-              <div className="space-y-6">
-                <div className="glass-card p-8">
-                  <h3 className="text-xl font-bold mb-8 text-text-main flex items-center gap-3">
-                    <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500">
-                      <Lock size={20} />
-                    </div>
-                    Password & Security
-                  </h3>
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-text-muted uppercase tracking-widest">Current Password</label>
+              <Card title="Password" icon={<Lock size={16} className="text-pastel-pink-ink" />}>
+                <div className="space-y-4">
+                  <Field label="Current password">
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={passwordForm.current}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label="New password" hint="At least 8 characters">
                       <input
                         type="password"
-                        value={passwordForm.current}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
-                        className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
+                        autoComplete="new-password"
+                        value={passwordForm.next}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, next: e.target.value })}
+                        className={inputCls}
                       />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-text-muted uppercase tracking-widest">New Password</label>
-                        <input
-                          type="password"
-                          value={passwordForm.next}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, next: e.target.value })}
-                          className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-text-muted uppercase tracking-widest">Confirm New Password</label>
-                        <input
-                          type="password"
-                          value={passwordForm.confirm}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-                          className="w-full px-5 py-3.5 rounded-2xl border border-border bg-surface text-text-main focus:ring-2 focus:ring-primary outline-none transition-all"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-10 pt-8 border-t border-border/40 flex justify-end">
-                    <button
-                      onClick={handleChangePassword}
-                      disabled={isChangingPassword}
-                      className="btn-primary px-10 flex items-center gap-2"
-                    >
-                      {isChangingPassword ? <Loader2 size={16} className="animate-spin" /> : 'Update Password'}
-                    </button>
+                    </Field>
+                    <Field label="Confirm new password">
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        value={passwordForm.confirm}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                        className={inputCls}
+                      />
+                    </Field>
                   </div>
                 </div>
-              </div>
+                <div className="flex justify-end mt-5 pt-5 border-t border-border">
+                  <button
+                    onClick={handleChangePassword}
+                    disabled={isChangingPassword}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors cursor-pointer disabled:opacity-60 min-h-[44px]"
+                  >
+                    {isChangingPassword && <Loader2 size={15} className="animate-spin" />}
+                    Update password
+                  </button>
+                </div>
+              </Card>
             )}
           </motion.div>
         </div>
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+const inputCls =
+  'w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface text-sm text-text-main placeholder:text-text-muted outline-none focus:border-primary/50 transition-colors';
+
+function Card({ title, icon, action, className, children }: {
+  title?: string; icon?: React.ReactNode; action?: React.ReactNode; className?: string; children: React.ReactNode;
+}) {
+  return (
+    <section className={cn('rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] p-5 sm:p-6', className)}>
+      {title && (
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h2 className="font-heading text-base font-bold text-text-main tracking-tight flex items-center gap-2">
+            {icon} {title}
+          </h2>
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, hint, action, children }: {
+  label: string; hint?: string; action?: React.ReactNode; children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="flex items-center justify-between gap-2 mb-1.5">
+        <span className="text-xs font-semibold text-text-muted">{label}</span>
+        {action}
+      </span>
+      {children}
+      {hint && <span className="block text-[11px] text-text-muted mt-1">{hint}</span>}
+    </label>
+  );
+}
+
+/** Save row that only lights up when something has actually changed. */
+function SaveBar({ dirty, saving, onSave, onReset }: {
+  dirty: boolean; saving: boolean; onSave: () => void; onReset: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-end gap-2 mt-5 pt-5 border-t border-border">
+      {dirty && (
+        <button
+          onClick={onReset}
+          className="px-4 py-2.5 rounded-xl text-sm font-semibold text-text-muted hover:text-text-main transition-colors cursor-pointer min-h-[44px]"
+        >
+          Discard
+        </button>
+      )}
+      <button
+        onClick={onSave}
+        disabled={!dirty || saving}
+        className={cn(
+          'inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors min-h-[44px]',
+          dirty && !saving
+            ? 'bg-primary hover:bg-primary/90 text-white cursor-pointer'
+            : 'bg-surface-alt text-text-muted border border-border cursor-not-allowed'
+        )}
+      >
+        {saving && <Loader2 size={15} className="animate-spin" />}
+        {saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
+      </button>
+    </div>
+  );
+}
+
+function ThemeOption({ name, swatch, owned, active, busy, cost, onSelect }: {
+  name: string;
+  swatch: [string, string, string];
+  owned: boolean;
+  active: boolean;
+  busy: boolean;
+  cost?: number;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      onClick={onSelect}
+      disabled={busy}
+      aria-pressed={active}
+      className={cn(
+        'p-4 rounded-xl border text-left transition-colors cursor-pointer disabled:opacity-60',
+        active ? 'border-primary/40 bg-primary/5' : 'border-border bg-surface-alt/60 hover:border-primary/25'
+      )}
+    >
+      <span className="flex items-center gap-1.5 mb-3">
+        {swatch.map((c, i) => (
+          <span key={i} className="h-6 flex-1 rounded-md border border-border/60" style={{ backgroundColor: c }} />
+        ))}
+      </span>
+      <span className="flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-text-main">{name}</span>
+        {busy ? (
+          <Loader2 size={14} className="animate-spin text-text-muted" />
+        ) : active ? (
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+            <Check size={13} /> Active
+          </span>
+        ) : owned ? (
+          <span className="text-[11px] text-text-muted">Use</span>
+        ) : (
+          <span className="text-[11px] text-text-muted">{cost} pts</span>
+        )}
+      </span>
+    </button>
   );
 }

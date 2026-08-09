@@ -3,7 +3,12 @@
 export function startKeepAlive(url?: string) {
   if (typeof window === 'undefined') return;
   
-  const targetUrl = url || import.meta.env.VITE_SOCKET_URL || window.location.origin;
+  // Same precedence rule as services/socket.ts: never reach for the deployed
+  // server from a local origin. Keeping a production instance warm is not a
+  // dev machine's job, and it made the console imply a remote connection.
+  const origin = window.location.origin;
+  const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin);
+  const targetUrl = url || (isLocal ? origin : (import.meta.env.VITE_SOCKET_URL || origin));
   
   console.log(`[KeepAlive] Starting heartbeat to: ${targetUrl}`);
   

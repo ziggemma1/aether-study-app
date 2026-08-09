@@ -30,7 +30,16 @@ export interface User {
   achievements: Achievement[];
   aetherPoints?: number;
   freezeTokens?: number;
+  /** Ids of shop items owned. See src/lib/shopCatalog.ts. */
   themeUnlocked?: string[];
+  /** Accent theme class applied on the app root, '' for the default violet. */
+  equippedTheme?: string;
+  /** Gemini prebuilt voice used for read-aloud. */
+  equippedVoice?: string;
+  /** Account creation date, shown as "member since" on the profile. */
+  createdAt?: string;
+  /** Set once first-run onboarding is finished or skipped; null before that. */
+  onboardingCompletedAt?: string | null;
   lastActiveDate?: string;
   lastStreakResetDate?: string;
   optedInLeaderboard?: boolean;

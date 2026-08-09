@@ -42,7 +42,7 @@ export default function GoogleCalendarSync() {
     <div className="bg-surface/50 border border-border/30 rounded-2xl p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+          <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
             <CalendarIcon size={16} />
           </div>
           <div>
@@ -51,14 +51,14 @@ export default function GoogleCalendarSync() {
           </div>
         </div>
         
-        {status === 'success' && <CheckCircle2 className="text-green-500" size={16} />}
-        {status === 'error' && <AlertCircle className="text-red-500" size={16} />}
+        {status === 'success' && <CheckCircle2 className="text-accent" size={16} />}
+        {status === 'error' && <AlertCircle className="text-brand-pink" size={16} />}
       </div>
 
       <button 
         onClick={handleSync}
         disabled={isSyncing}
-        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
       >
         {isSyncing ? (
           <RefreshCw size={14} className="animate-spin" />

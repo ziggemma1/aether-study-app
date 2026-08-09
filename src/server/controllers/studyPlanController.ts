@@ -34,12 +34,32 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Start date is required' });
     }
 
+    // Reject an unparseable start date up front. It used to flow through to
+    // `new Date(startDate)` and produce an Invalid Date, which was then written
+    // to every day's `date` and to endDate — and the client blew up with
+    // "RangeError: Invalid time value" when it tried to format them.
+    const start = new Date(startDate);
+    if (isNaN(start.getTime())) {
+      return res.status(400).json({ message: 'Start date is not a valid date' });
+    }
+
+    // Clamp to the same 1–90 range the UI advertises. The UI enforced it, the
+    // API did not, so a hand-crafted request could ask for 100000 days and the
+    // fallback loop would happily build 100000 documents. NaN also used to slip
+    // through here and yield a plan with zero days and an Invalid Date end.
+    const parsedDuration = Math.min(90, Math.max(1, parseInt(duration as any, 10) || 7));
+    const parsedCommitment = Math.min(600, Math.max(5, parseInt(dailyCommitment as any, 10) || 60));
+
     // 1. Fetch material titles for context
     let materialTitles: string[] = [];
     if (materialIds && materialIds.length > 0) {
       try {
+        // Scoped to the requesting user: without the userId filter, passing
+        // someone else's material ids leaked their titles into the prompt (and
+        // therefore into the generated plan).
         const dbMaterials = await MaterialModel.find({
-          _id: { $in: materialIds }
+          _id: { $in: materialIds },
+          userId
         });
         materialTitles = dbMaterials.map(m => `${m.title} (${m.type})`);
       } catch (err: any) {
@@ -112,7 +132,8 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
         try {
           console.log(`[StudyPlanController] Falling back to direct Gemini for study plan...`);
           const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            // 1.5-flash is retired on v1beta and returned 404 for every plan.
+            model: "gemini-2.5-flash",
             contents: [{ role: 'user', parts: [{ text: "Please generate my personalized JSON study plan." }]}],
             config: {
               systemInstruction: systemPromptHead + "\n" + jsonSchemaInstructions,
@@ -156,45 +177,72 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
 
     // Fallback if AI fails or isn't available
     if (planData.days.length === 0) {
-      const parsedDuration = parseInt(duration, 10);
+      const topics = materialTitles[0] === 'General Curriculum / General Concepts'
+        ? null
+        : materialTitles;
       const days = [];
       for (let i = 1; i <= parsedDuration; i++) {
+        // Cycle through the user's actual materials rather than emitting
+        // "Topic Segment 1..N", which was the same filler on every plan and
+        // read as though it had been generated for them.
+        const focus = topics ? topics[(i - 1) % topics.length].replace(/\s*\([^)]*\)$/, '') : null;
         days.push({
           day: i,
-          topic: `Review of Material: Topic Segment ${i}`,
+          topic: focus ? `Work through ${focus}` : `Session ${i}: core concepts review`,
           activities: [
-            `Read and highlight core points from selected study materials`,
-            `Test long-term retention using active recall reviews`,
-            `Complete interactive quiz questions`
+            focus ? `Read and highlight the key sections of ${focus}` : 'Read and highlight the core points of your material',
+            'Test recall on what you just read, without looking',
+            'Finish with a short quiz to confirm it stuck'
           ],
-          estimatedTime: parseInt(dailyCommitment as any, 10) || 60
+          estimatedTime: parsedCommitment
         });
       }
       planData = {
-        title: `${goal} Study Roadmap (${parsedDuration} Days)`,
+        title: `${goal} plan · ${parsedDuration} day${parsedDuration === 1 ? '' : 's'}`,
         days
       };
     }
 
-    // 3. Construct chronological dates for each day starting from startDate
-    const start = new Date(startDate);
-    const parsedDays = planData.days.map((d: any) => {
-      const dayOffset = (d.day - 1);
+    // 3. Normalise to exactly `parsedDuration` days, renumbered 1..N.
+    // The model does not reliably return the requested number of days, and the
+    // end date used to be derived from `duration` while the day list came from
+    // the model — so a 7-day request answered with 5 days produced a plan whose
+    // final day and whose endDate disagreed.
+    const normalised = [...planData.days]
+      .filter((d: any) => d && (d.topic || (d.activities && d.activities.length)))
+      .slice(0, parsedDuration)
+      .map((d: any, idx: number) => ({ ...d, day: idx + 1 }));
+
+    while (normalised.length < parsedDuration) {
+      const idx = normalised.length;
+      normalised.push({
+        day: idx + 1,
+        topic: `Session ${idx + 1}: consolidate and review`,
+        activities: [
+          'Revisit the topics you scored lowest on',
+          'Re-test yourself on anything still shaky'
+        ],
+        estimatedTime: parsedCommitment
+      });
+    }
+
+    // 4. Construct chronological dates for each day starting from startDate
+    const parsedDays = normalised.map((d: any) => {
       const dayDate = new Date(start);
-      dayDate.setDate(dayDate.getDate() + dayOffset);
+      dayDate.setDate(dayDate.getDate() + (d.day - 1));
       return {
         day: d.day,
         date: dayDate,
         topic: d.topic,
-        activities: d.activities || [],
-        estimatedTime: d.estimatedTime || parseInt(dailyCommitment as any, 10) || 45,
+        activities: Array.isArray(d.activities) ? d.activities : [],
+        estimatedTime: Number(d.estimatedTime) > 0 ? Number(d.estimatedTime) : parsedCommitment,
         completed: false
       };
     });
 
-    const parsedDuration = parseInt(duration, 10);
+    // Derived from the actual day list, so endDate can never disagree with it.
     const end = new Date(start);
-    end.setDate(end.getDate() + parsedDuration - 1);
+    end.setDate(end.getDate() + parsedDays.length - 1);
 
     const totalMinutes = parsedDays.reduce((acc: number, d: any) => acc + d.estimatedTime, 0);
     const totalHours = Math.round((totalMinutes / 60) * 10) / 10;
@@ -205,7 +253,7 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
       title: planData.title,
       goal,
       complexity,
-      dailyCommitment: parseInt(dailyCommitment as any, 10) || 60,
+      dailyCommitment: parsedCommitment,
       startDate: start,
       endDate: end,
       days: parsedDays,
@@ -215,7 +263,11 @@ export const generateStudyPlan = async (req: Request, res: Response) => {
     });
 
     const saved = await newPlan.save();
-    res.status(201).json(saved);
+    // `aiGenerated` lets the client be honest about which plan it is showing.
+    // When no AI key is configured (or both providers fail) the schedule is a
+    // deterministic template, and presenting that as a personalised AI plan is
+    // the same invented-data problem the rest of the app was cleaned up for.
+    res.status(201).json({ ...saved.toObject(), aiGenerated: generationSucceeded });
   } catch (error: any) {
     console.error('Failed to generate study plan:', error);
     res.status(500).json({ message: 'Failed to generate study plan', error: error.message });

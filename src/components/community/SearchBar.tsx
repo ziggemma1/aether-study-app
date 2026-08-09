@@ -11,20 +11,20 @@ export function SearchBar({ value, onChange, placeholder = "Search for subjects,
   return (
     <div className="relative w-full">
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-        <Search className="h-5 w-5 text-[#8E9AAF]" />
+        <Search className="h-5 w-5 text-text-muted" />
       </div>
       <input
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         id="community-search-input"
-        className="block w-full rounded-2xl border border-[#8E9AAF]/10 bg-[#141A24] py-3.5 pl-11 pr-10 text-sm text-[#F0F3F8] placeholder-[#8E9AAF]/60 outline-none transition-all focus:border-[#6C5CE7]/50 focus:ring-2 focus:ring-[#6C5CE7]/10"
+        className="block w-full rounded-2xl border border-border/10 bg-surface py-3.5 pl-11 pr-10 text-sm text-text-main placeholder-text-muted/60 outline-none transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
         placeholder={placeholder}
       />
       {value && (
         <button
           onClick={() => onChange('')}
-          className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#8E9AAF] hover:text-[#F0F3F8] active:scale-95"
+          className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-muted hover:text-text-main active:scale-95"
           style={{ minWidth: '44px', minHeight: '44px', justifyContent: 'center' }}
         >
           <X className="h-4 w-4" />

@@ -52,6 +52,8 @@ export const analyzeMaterial = async (req: Request, res: Response) => {
 };
 
 import { Material as MaterialModel } from '../models/Material.js';
+import { User } from '../models/User.js';
+import { SHOP_ITEM_BY_ID, DEFAULT_VOICE } from '../../lib/shopCatalog.js';
 
 const generateMockChapters = (title: string, content?: string) => {
   return {
@@ -380,13 +382,47 @@ export const generatePlan = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Speak one fixed sentence in a catalog voice, so a voice can be heard before
+ * it is bought — the shop used to sell voices with no way to hear one.
+ *
+ * Deliberately ignores any text in the request: this is the only endpoint that
+ * accepts a caller-named voice, and it must not become a way to have your own
+ * notes read aloud in a voice you have not paid for.
+ */
+export const previewVoice = async (req: Request, res: Response) => {
+  try {
+    const { itemId } = req.body;
+    const item = SHOP_ITEM_BY_ID.get(itemId);
+    const voice = itemId === DEFAULT_VOICE ? DEFAULT_VOICE : item?.kind === 'voice' ? item.value : null;
+    if (!voice) {
+      return res.status(400).json({ message: 'Unknown voice' });
+    }
+
+    const audio = await generateSpeechSvc(
+      `Hello. This is ${voice}. I can read your notes aloud whenever you want a break from the screen.`,
+      voice
+    );
+    if (!audio) {
+      return res.status(503).json({ message: 'Voice preview is unavailable right now' });
+    }
+    res.json({ audio });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Voice preview failed', error: error.message });
+  }
+};
+
 export const generateSpeech = async (req: Request, res: Response) => {
   try {
     const { text } = req.body;
     if (!text) {
       return res.status(400).json({ message: 'Text is required' });
     }
-    const audio = await generateSpeechSvc(text);
+    // Read the caller's equipped voice rather than assuming Kore. The voice is
+    // never taken from the request body — that would let anyone use a voice
+    // they have not bought.
+    const speaker = await User.findById((req as any).userId).select('equippedVoice');
+    const audio = await generateSpeechSvc(text, speaker?.equippedVoice);
     if (!audio) {
       return res.status(500).json({ message: 'Speech generation failed' });
     }

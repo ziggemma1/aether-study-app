@@ -68,7 +68,7 @@ export function SortDropdown({ sortBy, onChange }: SortDropdownProps) {
                 }}
                 className={`flex w-full items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold transition-all min-h-[44px] ${
                   sortBy === opt.value
-                    ? 'bg-[#6C5CE7] text-white'
+                    ? 'bg-primary text-white'
                     : 'text-text-muted hover:bg-text-muted/5 hover:text-text-main'
                 }`}
               >

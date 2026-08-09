@@ -56,7 +56,7 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
   };
 
   return (
-    <div className="note-container font-sans rounded-3xl overflow-hidden shadow-2xl border border-border/10 bg-surface/30">
+    <div className="note-container font-sans rounded-3xl overflow-hidden shadow-[var(--shadow-card-hover)] border border-border/10 bg-surface/30">
       {/* Title */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -137,7 +137,7 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
                   <h3 className="text-primary font-black text-sm mb-1">{term.term}</h3>
                   <p className="text-xs text-text-main leading-relaxed m-0">{term.definition}</p>
                   {term.memoryTip && (
-                    <div className="mt-2.5 flex gap-2 items-start bg-[#00D2FF]/10 text-[#00D2FF] rounded-xl p-2.5 text-[11px] italic">
+                    <div className="mt-2.5 flex gap-2 items-start bg-secondary/10 text-secondary rounded-xl p-2.5 text-[11px] italic">
                       <Lightbulb size={14} className="shrink-0 mt-0.5" />
                       <span>{term.memoryTip}</span>
                     </div>
@@ -191,8 +191,8 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
                   {/* Example & Memory Tip Grid */}
                   <div className="grid grid-cols-1 gap-2.5 pt-2">
                     {concept.example && (
-                      <div className="p-3 bg-green-500/5 border border-green-500/10 rounded-xl">
-                        <span className="font-bold text-green-500 block text-[11px] uppercase tracking-wider mb-1">💡 Real-World Example</span>
+                      <div className="p-3 bg-accent/5 border border-accent/10 rounded-xl">
+                        <span className="font-bold text-accent block text-[11px] uppercase tracking-wider mb-1">💡 Real-World Example</span>
                         <p className="text-xs text-text-main leading-relaxed m-0 italic">
                           "{concept.example}"
                         </p>
@@ -200,8 +200,8 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
                     )}
 
                     {concept.memoryTip && (
-                      <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
-                        <span className="font-bold text-amber-500 block text-[11px] uppercase tracking-wider mb-1">🔑 Memory Cue</span>
+                      <div className="p-3 bg-brand-orange/5 border border-brand-orange/10 rounded-xl">
+                        <span className="font-bold text-brand-orange block text-[11px] uppercase tracking-wider mb-1">🔑 Memory Cue</span>
                         <p className="text-xs text-text-main leading-relaxed m-0">
                           {concept.memoryTip}
                         </p>
@@ -288,7 +288,7 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
                 </thead>
                 <tbody>
                   {note.comparisonTable.rows.map((row, i) => (
-                    <tr key={i} className="border-b border-border/5 hover:bg-white/5 transition-colors">
+                    <tr key={i} className="border-b border-border/5 hover:bg-surface-alt transition-colors">
                       {row.map((cell, j) => (
                         <td key={j} className="p-3 text-xs text-text-muted font-medium">
                           {cell}
@@ -304,18 +304,18 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
 
         {/* 7. Visual Prompts (Dual Coding) */}
         {note.visualPrompts && note.visualPrompts.length > 0 && (
-          <section className="study-card border-l-4 border-l-violet-500 bg-violet-500/5 rounded-2xl p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-3 text-violet-400 font-extrabold text-sm uppercase tracking-wider">
+          <section className="study-card border-l-4 border-l-violet-500 bg-primary/5 rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-3 text-primary font-extrabold text-sm uppercase tracking-wider">
               <Palette size={18} />
               <span>🎨 Sketch This (Visual Coding)</span>
             </div>
-            <p className="text-[11px] text-[#00E5A0] font-bold bg-[#00E5A0]/10 px-2 py-0.5 rounded-full inline-block mb-3 leading-normal">
+            <p className="text-[11px] text-accent font-bold bg-accent/10 px-2 py-0.5 rounded-full inline-block mb-3 leading-normal">
               💡 Tip: Combining words and sketches improves retention by 65%.
             </p>
             <ul className="space-y-2">
               {note.visualPrompts.map((prompt, i) => (
                 <li key={i} className="text-xs text-text-main leading-relaxed flex items-start gap-2">
-                  <span className="text-violet-500 shrink-0">✔</span>
+                  <span className="text-primary shrink-0">✔</span>
                   <span>{prompt}</span>
                 </li>
               ))}
@@ -383,7 +383,7 @@ export const StructuredNoteRenderer: React.FC<Props> = ({ note }) => {
                     animate={{ opacity: 1, scale: 1 }}
                     className="bg-accent/10 border border-accent/20 rounded-xl p-3 mt-1.5 text-xs text-text-muted font-medium italic leading-relaxed"
                   >
-                    <div className="flex items-center gap-1.5 text-[#00E5A0] font-bold text-[11px] uppercase tracking-wider mb-1">
+                    <div className="flex items-center gap-1.5 text-accent font-bold text-[11px] uppercase tracking-wider mb-1">
                       <span>Meta-Cognition Cue</span>
                     </div>
                     Explain this from first principles. Use a simple metaphor, or refer back to the "Core Concepts" tab.

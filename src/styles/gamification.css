@@ -1,0 +1,94 @@
+/* ---------------------------------------------------------------------------
+   GAMIFICATION TOKENS
+   ---------------------------------------------------------------------------
+   The reward palette: colour that is *earned*, spent only on wins, streaks,
+   ranks and live activity. The calm violet/paper base in index.css stays the
+   general UI; these are what pop against it.
+
+   Kept in its own file so the existing theme blocks in index.css are never
+   touched. Same two-layer pattern index.css already uses:
+     :root / .dark  hold the raw values
+     @theme         maps them to --color-* so Tailwind emits utilities
+                    (text-rank-gold, bg-flame-mid, border-live, ...)
+
+   Accent themes (.accent-ocean etc.) deliberately do NOT override these. A
+   flame that turns green under accent-forest reads as broken, and a bronze
+   medal that isn't bronze isn't a medal. Rewards are a fixed language; the
+   accent themes move the *product* colours, not the reward ones.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* --- Flame ramp: streak heat, coolest core to hottest edge -------------- */
+  --flame-core: #FFF3C4;  /* white-hot centre */
+  --flame-mid: #FFB020;   /* the streak's signature amber */
+  --flame-edge: #E8442E;  /* red outer lick */
+  --flame-ink: #B45309;   /* AA-safe text/number colour on light paper */
+
+  /* Streak at risk / extinguished. Desaturated slate, not blue — "going out",
+     not "frozen". */
+  --flame-dead: #94A3B8;
+  --flame-dead-ink: #5B6472;
+
+  /* --- Rank medals -------------------------------------------------------- */
+  --rank-gold: #D4A017;
+  --rank-silver: #8A94A6;
+  --rank-bronze: #B06E33;
+  --rank-gold-ink: #7A5B0A;
+  --rank-silver-ink: #4C5464;
+  --rank-bronze-ink: #6B421C;
+
+  /* --- Live / active ------------------------------------------------------
+     Energetic green for "happening right now". Distinct from --accent
+     (success) so a live pulse never reads as a completed state. */
+  --live: #12B76A;
+  --live-ink: #077A46;
+
+  /* --- Celebration -------------------------------------------------------- */
+  --xp: #7C5CFF;          /* AP / points */
+  --xp-ink: #4B2FD6;
+}
+
+.dark {
+  --flame-core: #FFE58A;
+  --flame-mid: #FFA726;
+  --flame-edge: #FF5A3C;
+  --flame-ink: #FFC46B;
+
+  --flame-dead: #64748B;
+  --flame-dead-ink: #94A3B8;
+
+  --rank-gold: #F5C542;
+  --rank-silver: #C3CBD9;
+  --rank-bronze: #D98E4A;
+  --rank-gold-ink: #F5C542;
+  --rank-silver-ink: #C3CBD9;
+  --rank-bronze-ink: #D98E4A;
+
+  --live: #34D399;
+  --live-ink: #34D399;
+
+  --xp: #A78BFA;
+  --xp-ink: #C4B5FD;
+}
+
+@theme {
+  --color-flame-core: var(--flame-core);
+  --color-flame-mid: var(--flame-mid);
+  --color-flame-edge: var(--flame-edge);
+  --color-flame-ink: var(--flame-ink);
+  --color-flame-dead: var(--flame-dead);
+  --color-flame-dead-ink: var(--flame-dead-ink);
+
+  --color-rank-gold: var(--rank-gold);
+  --color-rank-silver: var(--rank-silver);
+  --color-rank-bronze: var(--rank-bronze);
+  --color-rank-gold-ink: var(--rank-gold-ink);
+  --color-rank-silver-ink: var(--rank-silver-ink);
+  --color-rank-bronze-ink: var(--rank-bronze-ink);
+
+  --color-live: var(--live);
+  --color-live-ink: var(--live-ink);
+
+  --color-xp: var(--xp);
+  --color-xp-ink: var(--xp-ink);
+}

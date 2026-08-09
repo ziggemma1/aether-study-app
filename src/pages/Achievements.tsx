@@ -20,11 +20,12 @@ import {
   X,
   TrendingUp
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, pastelForCategory } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import { AchievementBadge } from '../components/AchievementBadge';
+import { CountUp } from '../components/motion/CountUp';
 import api from '../services/api';
-import confetti from 'canvas-confetti';
+import { celebrate } from '../lib/motion';
 
 interface Achievement {
   id: string;
@@ -39,13 +40,17 @@ interface Achievement {
   points: number;
 }
 
+// `color` was five neon hexes that nothing actually rendered — every tab drew
+// its colour from activeCategoryStyle() instead, so these were dead values
+// carrying the accent-overload look in a place it never even reached the
+// screen. The tone now comes from the shared scale via pastelForCategory().
 const CATEGORY_TABS = [
-  { id: 'all', label: 'All', icon: Trophy, color: 'text-primary' },
-  { id: 'streak', label: 'Streak', icon: Calendar, color: 'text-[#F5B042]' },
-  { id: 'time', label: 'Study Time', icon: Zap, color: 'text-[#6C5CE7]' },
-  { id: 'quiz', label: 'Quizzes', icon: Target, color: 'text-[#00E5A0]' },
-  { id: 'material', label: 'Materials', icon: Upload, color: 'text-[#00D2FF]' },
-  { id: 'social', label: 'Social', icon: MessageSquare, color: 'text-[#FF5E7E]' }
+  { id: 'all', label: 'All', icon: Trophy },
+  { id: 'streak', label: 'Streak', icon: Calendar },
+  { id: 'time', label: 'Study Time', icon: Zap },
+  { id: 'quiz', label: 'Quizzes', icon: Target },
+  { id: 'material', label: 'Materials', icon: Upload },
+  { id: 'social', label: 'Social', icon: MessageSquare }
 ];
 
 export default function Achievements() {
@@ -58,6 +63,22 @@ export default function Achievements() {
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>('all');
   const [selectedBadge, setSelectedBadge] = useState<Achievement | null>(null);
+
+  /**
+   * Ids unlocked during this visit, so those cards play the one-shot shine.
+   * Sourced from the same `achievement:unlocked` window event the toast
+   * listens to, rather than a second source of truth.
+   */
+  const [justUnlocked, setJustUnlocked] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const onUnlock = (e: Event) => {
+      const id = (e as CustomEvent).detail?.id;
+      if (!id) return;
+      setJustUnlocked(prev => new Set(prev).add(id));
+    };
+    window.addEventListener('achievement:unlocked', onUnlock);
+    return () => window.removeEventListener('achievement:unlocked', onUnlock);
+  }, []);
 
   // Sync / retrieve real data on mount
   const loadAchievementsData = async (triggerAudit = false) => {
@@ -106,33 +127,26 @@ export default function Achievements() {
 
   const nextMilestone = achievements.find(a => !a.isUnlocked);
 
-  // Celebratory manual confetti blast when tapping AP balance
+  // Celebratory blast when tapping the AP balance. Now goes through the shared
+  // motion layer, which reads the live theme tokens instead of the five
+  // literal hexes this used to carry, and no-ops under reduced motion.
   const blastConfetti = () => {
-    confetti({
-      particleCount: 50,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0 },
-      colors: ['#F5B042', '#6C5CE7', '#00D2FF']
-    });
-    confetti({
-      particleCount: 50,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1 },
-      colors: ['#00E5A0', '#FF5E7E', '#8B5CF6']
-    });
+    void celebrate('milestone');
   };
 
-  const activeCategoryStyle = (cat: string) => {
-    switch (cat) {
-      case 'streak': return 'bg-[#F5B042]/10 text-[#F5B042] border-[#F5B042]/30';
-      case 'time': return 'bg-[#6C5CE7]/10 text-[#6C5CE7] border-[#6C5CE7]/30';
-      case 'quiz': return 'bg-[#00E5A0]/10 text-[#00E5A0] border-[#00E5A0]/30';
-      case 'material': return 'bg-[#00D2FF]/10 text-[#00D2FF] border-[#00D2FF]/30';
-      case 'social': return 'bg-[#FF5E7E]/10 text-[#FF5E7E] border-[#FF5E7E]/30';
-      default: return 'bg-primary/10 text-primary border-primary/20';
+  // Inline style rather than a class string: Tailwind cannot compile
+  // `bg-[var(--pastel-${tone})]` from a template literal, so a class-based
+  // version of this would silently produce no background at all.
+  const activeCategoryStyle = (cat: string): React.CSSProperties => {
+    if (cat === 'all') {
+      return { backgroundColor: 'var(--primary)', color: '#FFFFFF', borderColor: 'transparent' };
     }
+    const tone = pastelForCategory(cat);
+    return {
+      backgroundColor: `var(--pastel-${tone})`,
+      color: `var(--pastel-${tone}-ink)`,
+      borderColor: 'transparent',
+    };
   };
 
   return (
@@ -153,12 +167,17 @@ export default function Achievements() {
             onClick={blastConfetti}
             className="flex bg-surface-alt/50 border border-border/10 p-2.5 rounded-2xl items-center gap-2.5 shadow-soft cursor-pointer pr-4"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#F5B042]/10 flex items-center justify-center text-[#F5B042]">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: 'var(--pastel-peach)', color: 'var(--pastel-peach-ink)' }}
+            >
               <Trophy size={18} />
             </div>
             <div>
-              <p className="text-xs font-black text-text-main leading-none">{totalPoints}</p>
-              <p className="text-[7px] text-text-muted font-black uppercase tracking-widest mt-0.5">Total AP</p>
+              {/* Was text-[7px] — the last sub-11px size left in the app after
+                  the typography pass, and unreadable at any viewport. */}
+              <p className="text-base font-black text-text-main leading-none"><CountUp value={totalPoints} /></p>
+              <p className="text-[11px] text-text-muted font-semibold uppercase tracking-widest mt-0.5">Total AP</p>
             </div>
           </motion.div>
         </div>
@@ -177,12 +196,15 @@ export default function Achievements() {
         </div>
         
         {/* Horizontal Progress bar */}
-        <div className="h-3 bg-surface-alt/75 rounded-full overflow-hidden mb-4">
-          <motion.div 
+        {/* purple-500 → pink-500 were raw Tailwind colours owned by no token and
+            not the brand gradient. Violet → cyan is the brand pair, and a
+            progress fill is one of the three things violet is spent on. */}
+        <div className="h-3 bg-[var(--ring-track)] rounded-full overflow-hidden mb-4">
+          <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${overallProgress}%` }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            className="h-full bg-gradient-to-r from-primary via-purple-500 to-pink-500 rounded-full"
+            className="h-full bg-gradient-to-r from-primary to-secondary rounded-full"
           />
         </div>
 
@@ -204,24 +226,30 @@ export default function Achievements() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider border transition-all cursor-pointer snap-start h-11 flex-shrink-0",
-                isActive 
-                  ? activeCategoryStyle(tab.id)
-                  : "bg-surface border-border/10 text-text-muted"
+                "flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-xs font-semibold border transition-all cursor-pointer snap-start h-11 flex-shrink-0",
+                !isActive && "bg-surface border-border text-text-muted hover:text-text-main"
               )}
+              style={isActive ? activeCategoryStyle(tab.id) : undefined}
+              aria-pressed={isActive}
             >
-              <Icon size={13} className={isActive ? "" : "text-text-muted"} />
+              <Icon size={13} />
               {tab.label}
             </button>
           );
         })}
       </div>
 
-      {/* Badges Grid (Strictly 2 Columns on Mobile View) */}
+      {/* Badges grid. Two columns is the MOBILE case — it was hardcoded with no
+          breakpoint above it, so at 1440px each badge stretched to ~760px wide
+          around a 56px icon and two short lines of text, and the min-height
+          then stranded that content at the top and bottom of a mostly empty
+          card. Scales up now instead of stretching. */}
       {loading ? (
-        <div className="grid grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="animate-pulse bg-surface-alt/35 h-[160px] rounded-[24px] border border-border/10" />
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            /* Same reasoning as the shared Skeleton: surface-alt at 35% on
+               white paper is an outlined empty box, not a loading card. */
+            <div key={i} className="animate-pulse bg-[var(--skeleton)] h-[160px] rounded-[var(--radius-card)]" />
           ))}
         </div>
       ) : filteredAchievements.length === 0 ? (
@@ -229,23 +257,28 @@ export default function Achievements() {
           <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 text-primary">
             <Award size={24} />
           </div>
-          <h3 className="font-extrabold text-sm text-text-main mb-1">No Badges in This Category</h3>
-          <p className="text-[11px] text-text-muted max-w-xs mx-auto mb-4 leading-normal">
-            Keep study-blocking notes, completing quizzes, uploading textbooks, and study plan generator.
+          <h3 className="font-heading font-bold text-base text-text-main mb-1">No badges in this category yet</h3>
+          {/* The old copy was a sentence fragment listing four unrelated nouns
+              ("Keep study-blocking notes, completing quizzes, uploading
+              textbooks, and study plan generator.") and never said what to do. */}
+          <p className="text-xs text-text-muted max-w-xs mx-auto mb-4 leading-relaxed">
+            Badges here unlock as you study. Start a focus session and this
+            category will start filling up.
           </p>
-          <button 
+          <button
             onClick={() => navigate('/dashboard')}
-            className="w-full h-11 bg-primary text-white font-extrabold text-xs uppercase tracking-widest rounded-2xl cursor-pointer"
+            className="h-11 px-6 bg-primary text-white font-semibold text-sm rounded-2xl cursor-pointer hover:bg-primary/90 transition-colors"
           >
-            Start Focus Session
+            Start a focus session
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {filteredAchievements.map((badge, idx) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredAchievements.map((badge) => (
             <AchievementBadge
               key={badge.id}
               {...badge}
+              justUnlocked={justUnlocked.has(badge.id)}
               onClick={() => setSelectedBadge(badge)}
             />
           ))}
@@ -256,7 +289,10 @@ export default function Achievements() {
       {!loading && nextMilestone && (
         <div className="glass-card p-5 rounded-[24px] border-border/10 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#F5B042] bg-[#F5B042]/10 px-2 rounded-md">
+            <span
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-md"
+              style={{ backgroundColor: 'var(--pastel-peach)', color: 'var(--pastel-peach-ink)' }}
+            >
               Suggested Target
             </span>
             <span className="text-[11px] font-bold text-text-muted flex items-center gap-0.5">
@@ -300,7 +336,14 @@ export default function Achievements() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
-              className="w-full max-w-sm bg-surface border-t border-border/10 rounded-t-[32px] p-6 shadow-soft pointer-events-auto flex flex-col gap-5 border-l border-r"
+              /* `relative z-10` is load-bearing. The backdrop above is
+                 `absolute`, i.e. positioned, so it paints in the positioned
+                 layer. This sheet was static, and only rendered above the
+                 backdrop while Framer's slide-up transform gave it a stacking
+                 context — the instant the animation settled and the transform
+                 was removed, it dropped below the backdrop and appeared to
+                 vanish behind the blur. */
+              className="relative z-10 w-full max-w-sm bg-surface border-t border-border/10 rounded-t-[32px] p-6 shadow-soft pointer-events-auto flex flex-col gap-5 border-l border-r"
             >
               <div className="flex justify-between items-center">
                 <span className="text-[11px] font-black uppercase tracking-widest text-text-muted">
@@ -321,7 +364,7 @@ export default function Achievements() {
                 )}>
                   <Trophy size={36} />
                   {selectedBadge.isUnlocked && (
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-surface flex items-center justify-center text-white">
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-accent rounded-full border-4 border-surface flex items-center justify-center text-white">
                       <CheckCircle2 size={12} />
                     </div>
                   )}
@@ -353,7 +396,7 @@ export default function Achievements() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="h-2.5 bg-border/20 rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-[var(--ring-track)] rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-primary" 
                         style={{ width: `${Math.round((selectedBadge.currentProgress / selectedBadge.target) * 100)}%` }}
@@ -377,7 +420,7 @@ export default function Achievements() {
                 }}
                 className={cn(
                   "w-full h-12 rounded-2xl font-extrabold text-xs uppercase tracking-widest cursor-pointer",
-                  selectedBadge.isUnlocked ? "bg-surface-alt text-text-main border" : "bg-primary text-white"
+                  selectedBadge.isUnlocked ? "bg-surface-alt text-text-main border" : "bg-primary text-text-main"
                 )}
               >
                 {selectedBadge.isUnlocked ? "Awesome!" : "Close & Study Now"}

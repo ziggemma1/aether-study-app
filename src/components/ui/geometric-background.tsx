@@ -93,7 +93,7 @@ export function GeometricBackground({ className }: { className?: string }) {
                     width={500}
                     height={120}
                     rotate={-15}
-                    gradient="from-violet-500/[0.1]"
+                    gradient="from-primary/[0.1]"
                     className="right-[-5%] md:right-[0%] top-[70%] md:top-[75%]"
                 />
 
@@ -102,7 +102,7 @@ export function GeometricBackground({ className }: { className?: string }) {
                     width={300}
                     height={80}
                     rotate={-8}
-                    gradient="from-indigo-500/[0.1]"
+                    gradient="from-primary/[0.1]"
                     className="left-[5%] md:left-[10%] bottom-[5%] md:bottom-[10%]"
                 />
 
@@ -120,7 +120,7 @@ export function GeometricBackground({ className }: { className?: string }) {
                     width={150}
                     height={40}
                     rotate={-25}
-                    gradient="from-violet-500/[0.1]"
+                    gradient="from-primary/[0.1]"
                     className="left-[20%] md:left-[25%] top-[5%] md:top-[10%]"
                 />
             </motion.div>

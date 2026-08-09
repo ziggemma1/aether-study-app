@@ -28,9 +28,9 @@ export default function NotificationBell() {
         return <UserPlus size={14} className="text-[#00D2FF]" />;
       case 'achievement':
       case 'streak_milestone':
-        return <Trophy size={14} className="text-amber-500" />;
+        return <Trophy size={14} className="text-brand-orange" />;
       case 'nudge':
-        return <Zap size={14} className="text-amber-500" />;
+        return <Zap size={14} className="text-brand-orange" />;
       case 'quiz_complete':
         return <Sparkles size={14} className="text-primary" />;
       default:
@@ -62,7 +62,7 @@ export default function NotificationBell() {
       >
         <Bell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 rounded-full text-[11px] font-black text-white flex items-center justify-center px-1 border border-surface leading-none">
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-brand-pink rounded-full text-[11px] font-black text-white flex items-center justify-center px-1 border border-surface leading-none">
             {unreadCount}
           </span>
         )}
@@ -83,7 +83,7 @@ export default function NotificationBell() {
             <div className="p-3.5 bg-background border-b border-border/20 flex items-center justify-between">
               <div>
                 <h4 className="text-xs font-black text-text-main uppercase tracking-widest flex items-center gap-1.5">
-                  Alerts {unreadCount > 0 && <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />}
+                  Alerts {unreadCount > 0 && <span className="w-1.5 h-1.5 bg-brand-pink rounded-full" />}
                 </h4>
                 <p className="text-[11px] text-text-muted mt-0.5">Systems sync & active metrics</p>
               </div>

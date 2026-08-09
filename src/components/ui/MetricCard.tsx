@@ -71,8 +71,8 @@ export function MetricCard({ label, value, trend, icon, tooltip, note, onClick }
         {trend && (
           <div className={`flex items-center gap-0.5 text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
             trend.direction === 'up' 
-              ? 'bg-emerald-500/10 text-emerald-500' 
-              : 'bg-rose-500/10 text-rose-500'
+              ? 'bg-accent/10 text-accent' 
+              : 'bg-brand-pink/10 text-brand-pink'
           }`}>
             {trend.direction === 'up' ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
             <span>{trend.value}%</span>

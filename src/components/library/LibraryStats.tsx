@@ -87,13 +87,17 @@ export function LibraryStats({ materials, user }: LibraryStatsProps) {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full">
       {statsCards.map((stat, i) => {
         const Icon = stat.icon;
+        // Was `justify-between` with a min-height, which pushed the value to the
+        // bottom edge — so the label and the number it belongs to ended up the
+        // furthest-apart things in the card. Grouped tightly now; the card sizes
+        // to content and the grid handles the rest.
         return (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.05 }}
-            className="relative overflow-hidden soft-card p-4 active:scale-[0.98] select-none flex flex-col justify-between min-h-[118px]"
+            className="relative overflow-hidden soft-card p-4 active:scale-[0.98] select-none flex flex-col gap-1.5"
           >
             <div className="flex items-start justify-between gap-2.5">
               {/* Two lines of room, so "Unread Materials" and "Badges Unlocked"
@@ -113,14 +117,14 @@ export function LibraryStats({ materials, user }: LibraryStatsProps) {
               </div>
             </div>
 
-            <div className="mt-2.5">
+            <div>
               <div
-                className="text-lg font-extrabold tracking-tight"
+                className="text-2xl font-extrabold tracking-tight leading-none"
                 style={{ color: stat.valueColor ?? 'var(--text-main)' }}
               >
                 {stat.value}
               </div>
-              <p className="text-[11px] font-medium text-text-muted/70 mt-0.5">
+              <p className="text-[11px] font-medium text-text-muted mt-1 leading-snug">
                 {stat.desc}
               </p>
             </div>

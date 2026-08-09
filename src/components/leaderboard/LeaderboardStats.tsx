@@ -1,58 +1,108 @@
 import React from 'react';
-import { Users, Target, Trophy, Clock } from 'lucide-react';
+import { Users, Target, Trophy, Timer } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface LeaderboardStatsProps {
   totalUsers: number;
   yourRank: number | null;
   topScore: number;
-  weekEnding: string;
+  /** ISO timestamp the weekly window closes at, or null on the all-time board. */
+  resetsAt: string | null;
 }
 
-export function LeaderboardStats({ totalUsers, yourRank, topScore, weekEnding }: LeaderboardStatsProps) {
+/** Live countdown to the end of the weekly window. */
+function useCountdown(resetsAt: string | null) {
+  const [now, setNow] = React.useState(() => Date.now());
+
+  React.useEffect(() => {
+    if (!resetsAt) return;
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, [resetsAt]);
+
+  if (!resetsAt) return null;
+  const ms = new Date(resetsAt).getTime() - now;
+  if (!Number.isFinite(ms) || ms <= 0) return 'now';
+
+  const days = Math.floor(ms / 86_400_000);
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+  const mins = Math.floor((ms % 3_600_000) / 60_000);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
+export function LeaderboardStats({ totalUsers, yourRank, topScore, resetsAt }: LeaderboardStatsProps) {
+  const countdown = useCountdown(resetsAt);
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-      <StatCard 
-        icon={<Users size={16} className="text-[#00D2FF]" />}
-        label="Participants"
+    /* Three tiles on the all-time board, four on the weekly one. A fixed
+       four-column grid left an empty cell whenever the countdown was absent. */
+    <div className={cn('grid grid-cols-2 gap-3', countdown ? 'md:grid-cols-4' : 'md:grid-cols-3')}>
+      <StatCard
+        icon={<Users size={15} className="text-pastel-sky-ink" />}
+        label="On the board"
         value={totalUsers.toLocaleString()}
       />
-      <StatCard 
-        icon={<Target size={16} className="text-[#6C5CE7]" />}
-        label="Your Rank"
-        value={yourRank ? `#${yourRank}` : '--'}
+      <StatCard
+        icon={<Target size={15} className="text-primary" />}
+        label="Your rank"
+        value={yourRank ? `#${yourRank}` : '—'}
+        /* The hint has to follow the range: "study this week to rank" is wrong
+           advice on the all-time board. */
+        hint={!yourRank ? (resetsAt ? 'Study this week to rank' : 'Study to get ranked') : undefined}
         highlight={!!yourRank}
       />
-      <StatCard 
-        icon={<Trophy size={16} className="text-amber-400" />}
-        label="Top Score"
+      <StatCard
+        icon={<Trophy size={15} className="text-pastel-peach-ink" />}
+        label="Top score"
         value={topScore.toLocaleString()}
       />
-      <StatCard 
-        icon={<Clock size={16} className="text-white/40" />}
-        label="Resets In"
-        value={weekEnding}
-      />
+      {/* Only shown on the weekly board. All-time never resets, and the old
+          card claimed "Resets in 4d 12h" on both — a string constant the server
+          sent to everyone regardless of the date. */}
+      {countdown && (
+        <StatCard
+          icon={<Timer size={15} className="text-pastel-mint-ink" />}
+          label="Week ends in"
+          value={countdown}
+        />
+      )}
     </div>
   );
 }
 
-function StatCard({ icon, label, value, highlight = false }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  hint,
+  highlight = false
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint?: string;
+  highlight?: boolean;
+}) {
   return (
     <div className={cn(
-      "p-4 rounded-2xl bg-[#141A24]/60 backdrop-blur-xl border flex flex-col gap-1.5 transition-all",
-      highlight ? "border-[#6C5CE7]/30 bg-[#6C5CE7]/5" : "border-white/5"
+      'p-4 rounded-2xl border flex flex-col gap-1',
+      highlight ? 'border-primary/30 bg-primary/5' : 'border-border bg-surface'
     )}>
-      <div className="flex items-center gap-2">
+      <span className="flex items-center gap-2">
         {icon}
-        <span className="text-[11px] font-black uppercase text-white/30 tracking-[0.15em]">{label}</span>
-      </div>
-      <div className={cn(
-        "text-lg font-black tracking-tight",
-        highlight ? "text-[#6C5CE7]" : "text-white"
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">{label}</span>
+      </span>
+      {/* Was `text-white` on a white card — invisible on every tile that
+          wasn't the highlighted one. */}
+      <span className={cn(
+        'text-lg font-bold tracking-tight tabular-nums',
+        highlight ? 'text-primary' : 'text-text-main'
       )}>
         {value}
-      </div>
+      </span>
+      {hint && <span className="text-[11px] text-text-muted leading-tight">{hint}</span>}
     </div>
   );
 }

@@ -69,7 +69,7 @@ export default function StudyPlanDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-full bg-background flex flex-col items-center justify-center p-6 text-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
         <p className="text-text-muted text-sm">Parsing roadmap milestones...</p>
       </div>
@@ -78,7 +78,7 @@ export default function StudyPlanDetail() {
 
   if (!plan) {
     return (
-      <div className="min-h-screen bg-background text-text-main p-6 text-center">
+      <div className="min-h-full bg-background text-text-main p-6 text-center">
         <p className="text-sm text-text-muted mb-4">Study plan not found or deleted.</p>
         <button onClick={() => navigate('/plans')} className="btn-primary min-h-[44px]">Back to Planner</button>
       </div>
@@ -242,7 +242,7 @@ export default function StudyPlanDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-text-main pb-24 font-sans print:bg-white print:text-black">
+    <div className="min-h-full bg-background text-text-main pb-24 font-sans print:bg-white print:text-black">
       <div className="max-w-md mx-auto px-4 pt-6 print:max-w-none print:pt-0">
         
         {/* Detail Header */}
@@ -257,16 +257,16 @@ export default function StudyPlanDetail() {
             Roadmap Detail
           </span>
           <div className="w-10 h-10 bg-surface-alt border border-border rounded-xl flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-[#00D2FF]" />
+            <Sparkles className="w-5 h-5 text-secondary" />
           </div>
         </div>
 
         {/* PLAN MAIN CARDBOXAL */}
-        <div className="bg-surface-alt border border-border rounded-3xl p-5 mb-5 shadow-2xl print:border-none print:shadow-none print:p-0">
+        <div className="bg-surface-alt border border-border rounded-3xl p-5 mb-5 shadow-[var(--shadow-card-hover)] print:border-none print:shadow-none print:p-0">
           <h1 className="text-xl font-extrabold text-text-main tracking-tight line-clamp-2 print:text-black print:text-2xl">
             {plan.title || 'Modular Syllabus Roadmap'}
           </h1>
-          <p className="text-xs text-text-muted mt-1 print:text-gray-600">
+          <p className="text-xs text-text-muted mt-1 print:text-text-muted">
             {plan.goal} • {plan.complexity} difficulty level
           </p>
 
@@ -279,7 +279,7 @@ export default function StudyPlanDetail() {
               </span>
             </div>
             <div className="flex items-center gap-1.5 justify-end">
-              <Clock className="w-4 h-4 text-[#00D2FF]" />
+              <Clock className="w-4 h-4 text-secondary" />
               <span>{plan.dailyCommitment} mins/day</span>
             </div>
           </div>
@@ -290,12 +290,12 @@ export default function StudyPlanDetail() {
               <span className="text-text-muted flex items-center gap-1">
                 Completed {completedDays} of {totalDays} milestones
               </span>
-              <span className="text-[#00E5A0] font-mono">{progressPercentage}%</span>
+              <span className="text-accent font-mono">{progressPercentage}%</span>
             </div>
             {/* Horizontal progress bar */}
             <div className="w-full h-2 bg-surface-alt rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-primary to-[#00E5A0] rounded-full transition-all duration-300"
+                className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-300"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
@@ -307,7 +307,7 @@ export default function StudyPlanDetail() {
               onClick={() => setIsRescheduleOpen(true)}
               className="flex flex-col items-center gap-1.5 py-2.5 bg-surface-alt/40 rounded-xl hover:bg-surface-alt text-[11px] font-bold text-text-muted min-h-[44px]"
             >
-              <Sliders className="w-4 h-4 text-[#00D2FF]" />
+              <Sliders className="w-4 h-4 text-secondary" />
               <span>Reschedule</span>
             </button>
             <button 
@@ -321,7 +321,7 @@ export default function StudyPlanDetail() {
               onClick={handlePrintPlan}
               className="flex flex-col items-center gap-1.5 py-2.5 bg-surface-alt/40 rounded-xl hover:bg-surface-alt text-[11px] font-bold text-text-muted min-h-[44px]"
             >
-              <Printer className="w-4 h-4 text-[#00E5A0]" />
+              <Printer className="w-4 h-4 text-accent" />
               <span>Export PDF / Print</span>
             </button>
           </div>
@@ -401,7 +401,7 @@ export default function StudyPlanDetail() {
                     </button>
                     <button
                       onClick={() => handleStartEditDay(idx, day)}
-                      className="w-8 h-8 rounded-full hover:bg-surface-alt text-[#00D2FF] flex items-center justify-center min-h-[32px] ml-1"
+                      className="w-8 h-8 rounded-full hover:bg-surface-alt text-secondary flex items-center justify-center min-h-[32px] ml-1"
                       title="Edit Session"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -441,7 +441,7 @@ export default function StudyPlanDetail() {
                           <div key={aIdx} className="flex items-center justify-between bg-surface-alt/60 px-2.5 py-1.5 rounded-lg border border-border/40">
                             <span className="text-[11px] font-medium text-text-muted">{act}</span>
                             <button onClick={() => handleRemoveEditActivity(aIdx)} className="p-1">
-                              <Trash2 className="w-3.5 h-3.5 text-red-400 hover:text-red-300" />
+                              <Trash2 className="w-3.5 h-3.5 text-brand-pink hover:text-brand-pink" />
                             </button>
                           </div>
                         ))}
@@ -489,7 +489,7 @@ export default function StudyPlanDetail() {
 
                     {/* Time estimate */}
                     <div className="flex items-center gap-1 text-[11px] text-text-muted font-mono mt-1.5">
-                      <Clock className="w-3 h-3 text-[#00D2FF]" />
+                      <Clock className="w-3 h-3 text-secondary" />
                       <span>{day.estimatedTime || plan.dailyCommitment || 60} minutes study review</span>
                     </div>
 
@@ -501,7 +501,7 @@ export default function StudyPlanDetail() {
                             key={actIdx} 
                             className="flex items-start gap-2 text-xs text-text-muted print:text-gray-700"
                           >
-                            <span className="text-[#00E5A0] font-bold mt-0.5">•</span>
+                            <span className="text-accent font-bold mt-0.5">•</span>
                             <span className="leading-relaxed">{act}</span>
                           </div>
                         ))}
@@ -522,7 +522,7 @@ export default function StudyPlanDetail() {
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
-                className="w-full max-w-sm bg-surface-alt border border-border rounded-t-3xl p-6 shadow-2xl relative"
+                className="w-full max-w-sm bg-surface-alt border border-border rounded-t-3xl p-6 shadow-[var(--shadow-card-hover)] relative"
               >
                 <div className="absolute top-4 right-4">
                   <button 
@@ -535,7 +535,7 @@ export default function StudyPlanDetail() {
 
                 <div className="mb-5">
                   <h3 className="text-sm font-bold text-text-main flex items-center gap-1.5">
-                    <Sliders className="w-4 h-4 text-[#00D2FF]" />
+                    <Sliders className="w-4 h-4 text-secondary" />
                     Reschedule Studies Project
                   </h3>
                   <p className="text-[11px] text-text-muted mt-1">

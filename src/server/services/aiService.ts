@@ -3,17 +3,26 @@ import axios from 'axios';
 import { NoteSection, PlanSession } from "../../types.js";
 import { validateAndFillNote } from "../../lib/note-validator";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-
-console.log(`[AI-Service] Keys Status: Gemini=${GEMINI_API_KEY ? 'Present' : 'Missing'}, OpenRouter=${OPENROUTER_API_KEY ? 'Present' : 'Missing'}`);
+// Read lazily, NEVER at module scope.
+//
+// ES module imports are evaluated before the importing module's body, so this
+// file used to capture process.env before server.ts had called dotenv.config().
+// Both keys therefore read as undefined for the whole process lifetime — the
+// logs showed "[AI-Service] Keys Status: Gemini=Missing, OpenRouter=Missing"
+// immediately followed by "[INIT] Checking API Keys: Gemini=true,
+// OpenRouter=true". Every AI call failed with "OPENROUTER_API_KEY missing"
+// despite the key being present, so the Study Planner silently produced
+// template plans instead of generated ones.
+const getGeminiKey = () => process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+const getOpenRouterKey = () => process.env.OPENROUTER_API_KEY;
 
 let aiClient: GoogleGenAI | null = null;
 const getAiClient = () => {
-  if (!aiClient && GEMINI_API_KEY) {
+  const key = getGeminiKey();
+  if (!aiClient && key) {
     try {
       console.log(`[AI-Service] Initializing GoogleGenAI client...`);
-      aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      aiClient = new GoogleGenAI({ apiKey: key });
     } catch (err: any) {
       console.error(`[AI-Service] Initialization failed:`, err.message);
     }
@@ -39,7 +48,10 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, backoff = 1000): 
   throw new Error('Max retries exceeded');
 };
 
-const GEMINI_MODEL = "gemini-1.5-flash"; 
+// gemini-1.5-flash now 404s on v1beta ("model is not found ... or is not supported
+// for generateContent"), so every direct-Gemini call failed. 2.5-flash is the
+// model this codebase already uses successfully via OpenRouter.
+const GEMINI_MODEL = "gemini-2.5-flash"; 
 
 // OpenRouter Logic
 const FREE_MODELS = [
@@ -313,7 +325,7 @@ export function validateAntigravityOutput(output: string): { valid: boolean; err
 
 
 export const callOpenRouter = async (messages: any[], useJson = false): Promise<any> => {
-  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY missing');
+  if (!getOpenRouterKey()) throw new Error('OPENROUTER_API_KEY missing');
   
   let lastError: any = null;
   for (const model of FREE_MODELS) {
@@ -336,7 +348,7 @@ export const callOpenRouter = async (messages: any[], useJson = false): Promise<
         
         const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', payload, {
           headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'Authorization': `Bearer ${getOpenRouterKey()}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://ai.studio',
             'X-Title': 'Aether Study'
@@ -446,7 +458,7 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
   }
 
   // Try OpenRouter as SECOND option
-  if (OPENROUTER_API_KEY) {
+  if (getOpenRouterKey()) {
     try {
       console.log(`[AI-Service] Using OpenRouter for analysis...`);
       return await analyzeWithOpenRouter(content, title, langPrompt);
@@ -455,7 +467,7 @@ export const analyzeStudyMaterial = async (content: string, title: string, langu
     }
   }
 
-  if (!ai && !OPENROUTER_API_KEY) {
+  if (!ai && !getOpenRouterKey()) {
     console.error(`[AI-Service] No AI providers available!`);
   }
 
@@ -520,7 +532,7 @@ export const generateFlashcards = async (content: string, language: string, coun
     }
   }
 
-  if (OPENROUTER_API_KEY) {
+  if (getOpenRouterKey()) {
     try {
       console.log(`[AI-Service] Using OpenRouter for flashcards (Fallback)...`);
       const response = await callOpenRouter([
@@ -572,7 +584,7 @@ export const generateQuiz = async (content: string, language: string, count: num
     }
   }
 
-  if (OPENROUTER_API_KEY) {
+  if (getOpenRouterKey()) {
     try {
       console.log(`[AI-Service] Using OpenRouter for quiz generation (Fallback)...`);
       const response = await callOpenRouter([
@@ -626,7 +638,7 @@ export const chatWithTutor = async (materialTitle: string, materialContent: stri
     }
   }
 
-  if (OPENROUTER_API_KEY) {
+  if (getOpenRouterKey()) {
     try {
       console.log(`[AI-Service] Using OpenRouter for tutor chat (Fallback)...`);
       const messages = [
@@ -685,7 +697,7 @@ export const generateStudyPlan = async (materials: any[], startDate: string, dur
     }
   }
 
-  if (OPENROUTER_API_KEY) {
+  if (getOpenRouterKey()) {
     try {
       console.log(`[AI-Service] Using OpenRouter for study plan (Fallback)...`);
       const response = await callOpenRouter([
@@ -911,7 +923,7 @@ export const generateDetailedNotes = async (content: string, title: string) => {
     }
   }
 
-  if (OPENROUTER_API_KEY) {
+  if (getOpenRouterKey()) {
     console.log(`[AI-Service] Using OpenRouter for XML detailed notes (Fallback)...`);
     try {
       const response = await callOpenRouter([
@@ -1075,7 +1087,7 @@ ${content.substring(0, 18000)}`;
     }
   }
  
-  if (OPENROUTER_API_KEY) {
+  if (getOpenRouterKey()) {
     console.log(`[AI-Service] Using OpenRouter for Academic Mega Notes (Fallback)...`);
     try {
       const response = await callOpenRouter([
@@ -1190,12 +1202,21 @@ ${cleanSentenceTruncate(chunkParagraphs[0], 250)}
   });
 };
 
-export const generateSpeech = async (text: string): Promise<string | null> => {
+/** Gemini prebuilt voices the shop can sell. Anything else falls back to Kore. */
+const ALLOWED_VOICES = new Set(['Kore', 'Puck', 'Charon', 'Aoede']);
+
+/**
+ * @param voiceName the caller's equipped voice. The name was hardcoded to
+ *   'Kore' before, which is why the shop's two 300–500 point "AI Voices"
+ *   changed nothing about what you heard.
+ */
+export const generateSpeech = async (text: string, voiceName?: string): Promise<string | null> => {
   const ai = getAiClient();
   if (!ai) {
     console.error(`[AI-Service] No AI client for speech`);
     return null;
   }
+  const voice = voiceName && ALLOWED_VOICES.has(voiceName) ? voiceName : 'Kore';
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-tts-preview",
@@ -1204,7 +1225,7 @@ export const generateSpeech = async (text: string): Promise<string | null> => {
         responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
+            prebuiltVoiceConfig: { voiceName: voice },
           },
         },
       },

@@ -1,415 +1,425 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
-  UserPlus, 
-  Plus,
-  MessageSquare, 
-  Users, 
-  MoreHorizontal, 
-  Phone, 
-  Video,
-  Send,
-  Smile,
-  Paperclip,
-  CheckCheck,
-  UserCheck,
-  ArrowLeft,
-  Loader2
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  Search, UserPlus, MessageSquare, Users, Send, CheckCheck, ArrowLeft,
+  Loader2, AlertTriangle, RotateCw, Plus
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { cn, formatChatTime } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 import api from '../services/api';
-import { motion, AnimatePresence } from 'motion/react';
-import { Link } from 'react-router-dom';
 import { useMessaging } from '../hooks/useMessaging';
+import { useConversations, Conversation } from '../hooks/useConversations';
+import { Avatar } from '../components/ui/Avatar';
 
+type Selection = { id: string; type: 'private' | 'group'; name: string; avatar: string | null; isFriend: boolean };
 
 export default function Messages() {
-  const { 
-    user, 
-    groups, 
-    setGroups, 
-    allProfiles, 
-    friendRequests,
-    isLoading: isLoadingProfiles 
-  } = useAppContext();
+  const { user, setGroups, allProfiles, friendRequests, showToast } = useAppContext();
 
-  const [activeTab, setActiveTab] = useState<'chats' | 'friends' | 'groups'>('chats');
-  const [selectedChat, setSelectedChat] = useState<{ id: string, type: 'private' | 'group', name: string, avatar: string } | null>(null);
+  const [selected, setSelected] = useState<Selection | null>(null);
   const [showChatMobile, setShowChatMobile] = useState(false);
   const [input, setInput] = useState('');
+  const [query, setQuery] = useState('');
+  const [showNew, setShowNew] = useState(false);
 
-  // Persistent Messaging Hook
-  const {
-    chatMessages,
-    unreadCounts,
-    isTyping,
-    isConnected,
-    sendDM,
-    sendGroupMessage,
-    setTypingStatus
-  } = useMessaging(
-    selectedChat?.type === 'private' ? selectedChat.id : undefined,
-    selectedChat?.type === 'group' ? selectedChat.id : undefined
-  );
+  const { conversations, loading: loadingList, error: listError, refetch, markRead } = useConversations();
 
-  // Derive final chat list combining profiles and groups
-  const chatList = React.useMemo(() => {
+  const { messages, loading: loadingThread, error: threadError, isTyping, isConnected, sendMessage, setTypingStatus } =
+    useMessaging(
+      selected?.type === 'private' ? selected.id : undefined,
+      selected?.type === 'group' ? selected.id : undefined
+    );
+
+  const endRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
+
+  // The search box had no value and no onChange — it was decoration. It filters.
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return conversations;
+    return conversations.filter(
+      (c) => c.name.toLowerCase().includes(q) || (c.lastMessage || '').toLowerCase().includes(q)
+    );
+  }, [conversations, query]);
+
+  /** Mutual followers you have not messaged yet — the "start a chat" list. */
+  const startable = useMemo(() => {
     if (!user) return [];
-    
-    if (activeTab === 'groups') {
-      return groups.map(g => {
-        return {
-          id: g.id,
-          name: g.name,
-          avatar: g.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${g.name}`,
-          type: 'group',
-          lastMsg: 'Study Group',
-          time: '',
-          unread: 0,
-          isTyping: false
-        };
-      });
-    }
+    const existing = new Set(conversations.filter((c) => c.type === 'private').map((c) => c.id));
+    return allProfiles
+      .filter((p: any) => p.id !== user.id && !existing.has(p.id))
+      .filter((p: any) => user.following?.includes(p.id) && p.following?.includes(user.id));
+  }, [allProfiles, conversations, user]);
 
-    const contactMap = new Map();
-    
-    // Add profiles
-    allProfiles.filter(p => p.id !== user.id).forEach(p => {
-      const isFriend = user.following?.includes(p.id) && p.following?.includes(user.id);
-      
-      // If we're on 'chats' tab, we might want to only show people we have messages with or friends
-      if (activeTab === 'friends' || (activeTab === 'chats' && isFriend)) {
-        contactMap.set(p.id, {
-          id: p.id,
-          name: p.name || 'User',
-          avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
-          lastMsg: isFriend ? 'Tap to message' : 'Follow each other to chat',
-          time: '',
-          unread: unreadCounts[p.id] || 0,
-          type: 'private',
-          isTyping: false,
-          isFriend
-        });
-      }
-    });
+  const open = (c: Conversation | Selection) => {
+    setSelected({ id: c.id, type: c.type, name: c.name, avatar: c.avatar, isFriend: c.isFriend });
+    setShowChatMobile(true);
+    setShowNew(false);
+    if (c.type === 'private' && 'unread' in c && c.unread > 0) void markRead(c.id);
+  };
 
-    return Array.from(contactMap.values());
-  }, [user, allProfiles, activeTab, groups, unreadCounts]);
-
-  const currentChatData = chatList.find(c => c.id === selectedChat?.id);
-  const isChatBlocked = selectedChat?.type === 'private' && !currentChatData?.isFriend;
+  const blocked = selected?.type === 'private' && !selected.isFriend;
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !selectedChat || isChatBlocked) return;
-    
-    if (selectedChat.type === 'group') {
-      sendGroupMessage(input.trim());
-    } else {
-      sendDM(input.trim());
-    }
-    
+    if (!input.trim() || !selected || blocked) return;
+    sendMessage(input.trim());
     setInput('');
     setTypingStatus(false);
   };
 
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupName, setGroupName] = useState('');
-
-  const handleCreateGroup = async (e: React.FormEvent) => {
+  const [creating, setCreating] = useState(false);
+  const createGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!groupName.trim()) return;
+    setCreating(true);
     try {
-      const res = await api.post('/groups', { name: groupName });
-      if (res.data) {
-        setGroups(prev => [...prev, res.data]);
-        setShowCreateGroup(false);
-        setGroupName('');
-        setSelectedChat({ 
-          id: res.data._id || res.data.id, 
-          type: 'group', 
-          name: res.data.name, 
-          avatar: res.data.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${res.data.name}`
-        });
-      }
-    } catch (err) {
-      console.error('Error creating group:', err);
+      const { data } = await api.post('/groups', { name: groupName.trim() });
+      const id = data.id || data._id;
+      setGroups((prev: any) => [...prev, { ...data, id }]);
+      setGroupName('');
+      setShowNew(false);
+      await refetch();
+      setSelected({ id, type: 'group', name: data.name, avatar: data.avatar || null, isFriend: true });
+      setShowChatMobile(true);
+    } catch (err: any) {
+      // Group creation used to fail silently into console.error.
+      showToast(err?.response?.data?.message || "We couldn't create that group.", 'error');
+    } finally {
+      setCreating(false);
     }
   };
 
-  const activeMessages = React.useMemo(() => {
-    return [...chatMessages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  }, [chatMessages]);
-
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeMessages]);
-
   return (
-    <div className="h-[calc(100vh-140px)] sm:h-[calc(100vh-120px)] flex gap-4 sm:gap-6 animate-in fade-in duration-500">
-      {/* Sidebar - Contacts & Tabs */}
-      <div className={cn(
-        "w-full sm:w-80 flex flex-col gap-4 sm:gap-6",
-        showChatMobile ? "hidden sm:flex" : "flex"
-      )}>
-        <div className="glass-card p-4 sm:p-6 flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h1 className="text-xl sm:text-2xl font-bold text-text-main">Messages</h1>
-            <div className="flex gap-2">
-              <Link
-                to="/community"
-                title="Friend Requests"
-                className="relative p-1.5 sm:p-2 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white rounded-xl transition-all border border-secondary/20"
-              >
-                <UserPlus size={18} />
-                {friendRequests.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[11px] flex items-center justify-center rounded-full border-2 border-surface animate-pulse">
-                    {friendRequests.length}
-                  </span>
-                )}
-              </Link>
-              <button 
-                onClick={() => setShowCreateGroup(true)}
-                title="Create Group"
-                className="p-1.5 sm:p-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl transition-all border border-primary/20"
-              >
-                <Users size={18} />
-              </button>
+    <div className="p-4 md:p-6 h-full min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0 flex gap-4 lg:gap-6">
+        {/* ---------------- Conversation list ---------------- */}
+        <aside className={cn(
+          'w-full sm:w-80 lg:w-96 shrink-0 min-h-0 flex-col rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] overflow-hidden',
+          showChatMobile ? 'hidden sm:flex' : 'flex'
+        )}>
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h1 className="font-heading text-lg font-bold text-text-main tracking-tight">Messages</h1>
+              <div className="flex items-center gap-1.5">
+                <Link
+                  to="/community"
+                  title="Friend requests"
+                  aria-label="Friend requests"
+                  className="relative p-2 rounded-xl text-text-muted hover:bg-surface-alt hover:text-text-main transition-colors"
+                >
+                  <UserPlus size={17} />
+                  {friendRequests.length > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 bg-brand-pink text-white text-[10px] font-bold flex items-center justify-center rounded-full">
+                      {friendRequests.length}
+                    </span>
+                  )}
+                </Link>
+                <button
+                  onClick={() => setShowNew((v) => !v)}
+                  title="New conversation"
+                  aria-label="New conversation"
+                  className="p-2 rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors cursor-pointer"
+                >
+                  <Plus size={17} />
+                </button>
+              </div>
             </div>
 
+            <div className="relative">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search conversations"
+                aria-label="Search conversations"
+                className="w-full bg-surface-alt border border-border rounded-xl py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary/40 transition-colors text-text-main placeholder:text-text-muted"
+              />
+            </div>
           </div>
 
           <AnimatePresence>
-            {showCreateGroup && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mb-6 bg-surface-alt/30 border border-border rounded-2xl p-4 overflow-hidden"
+            {showNew && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden border-b border-border bg-surface-alt/50"
               >
-                <form onSubmit={handleCreateGroup} className="space-y-3">
-                  <p className="text-xs font-bold text-text-main">Create New Study Group</p>
-                  <input 
-                    type="text" 
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
-                    placeholder="Group Name..."
-                    className="w-full bg-surface border border-border rounded-xl py-2 px-3 text-xs outline-none focus:border-primary/50 text-text-main"
-                  />
-                  <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-primary text-white text-[11px] font-bold py-2 rounded-lg">Create</button>
-                    <button type="button" onClick={() => setShowCreateGroup(false)} className="flex-1 bg-surface-alt text-text-muted text-[11px] font-bold py-2 rounded-lg">Cancel</button>
+                <div className="p-4 space-y-4">
+                  <form onSubmit={createGroup} className="space-y-2">
+                    <p className="text-xs font-semibold text-text-main">New study group</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                        placeholder="Group name"
+                        aria-label="Group name"
+                        className="flex-1 min-w-0 bg-surface border border-border rounded-xl py-2 px-3 text-sm outline-none focus:border-primary/40 text-text-main placeholder:text-text-muted"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!groupName.trim() || creating}
+                        className="shrink-0 px-3 rounded-xl bg-primary text-white text-sm font-semibold disabled:opacity-50 cursor-pointer min-h-[40px]"
+                      >
+                        {creating ? <Loader2 size={15} className="animate-spin" /> : 'Create'}
+                      </button>
+                    </div>
+                  </form>
+
+                  <div>
+                    <p className="text-xs font-semibold text-text-main mb-2">Message a friend</p>
+                    {startable.length === 0 ? (
+                      <p className="text-xs text-text-muted leading-relaxed">
+                        You have messaged everyone you are friends with.{' '}
+                        <Link to="/community" className="text-primary font-medium hover:underline">Find more friends</Link>.
+                      </p>
+                    ) : (
+                      <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
+                        {startable.map((p: any) => (
+                          <button
+                            key={p.id}
+                            onClick={() => open({ id: p.id, type: 'private', name: p.name, avatar: p.avatar, isFriend: true })}
+                            className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-surface text-left cursor-pointer"
+                          >
+                            <Avatar name={p.name || 'User'} src={p.avatar} size={30} />
+                            <span className="text-sm text-text-main truncate">{p.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </form>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Tabs */}
-          <div className="flex bg-surface-alt/50 p-1 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 border border-border">
-            {['chats', 'groups', 'friends'].map((tab) => (
-              <button 
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-bold transition-all capitalize",
-                  activeTab === tab ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-text-muted hover:text-text-main"
-                )}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative mb-4 sm:mb-6">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              className="w-full bg-surface-alt/50 border border-border rounded-xl sm:rounded-2xl py-2 sm:py-2.5 pl-9 sm:pl-10 pr-4 text-xs sm:text-sm outline-none focus:border-primary/30 transition-all text-text-main placeholder:text-text-muted"
-            />
-          </div>
-
-          <div className="flex-grow overflow-y-auto custom-scrollbar space-y-3 sm:space-y-4">
-            {isLoadingProfiles ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 sm:gap-4 p-2 sm:p-3 animate-pulse">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/5 shrink-0" />
-                  <div className="flex-grow space-y-2">
-                    <div className="h-3 w-24 bg-white/5 rounded-full" />
-                    <div className="h-2 w-full bg-white/5 rounded-full opacity-50" />
-                  </div>
-                </div>
-              ))
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2">
+            {listError ? (
+              <ListState
+                icon={<AlertTriangle size={20} />}
+                tone="bg-brand-pink/10 text-brand-pink"
+                title="We couldn't load your conversations"
+                body={listError}
+                action={
+                  <button onClick={refetch} className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-white text-xs font-semibold cursor-pointer">
+                    <RotateCw size={13} /> Try again
+                  </button>
+                }
+              />
+            ) : loadingList ? (
+              <div className="space-y-2 p-1">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-16 rounded-xl bg-[var(--skeleton)] animate-pulse" />
+                ))}
+              </div>
+            ) : visible.length === 0 ? (
+              <ListState
+                icon={<MessageSquare size={20} />}
+                tone="bg-pastel-lavender text-pastel-lavender-ink"
+                title={query ? 'No matches' : 'No conversations yet'}
+                body={
+                  query
+                    ? 'Nothing here matches that search.'
+                    : 'Start one with a friend, or make a study group.'
+                }
+              />
             ) : (
-              chatList.map((chat) => (
-                <div 
-                  key={chat.id} 
-                  onClick={() => {
-                    setSelectedChat(chat);
-                    setShowChatMobile(true);
-                  }}
+              visible.map((c) => (
+                <button
+                  key={`${c.type}-${c.id}`}
+                  onClick={() => open(c)}
                   className={cn(
-                    "flex items-center gap-3 sm:gap-4 p-2 sm:p-3 rounded-xl sm:rounded-2xl cursor-pointer transition-all group",
-                    selectedChat?.id === chat.id ? "bg-primary/10 border border-primary/20" : "hover:bg-surface-alt/50 border border-transparent"
+                    'w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors cursor-pointer',
+                    selected?.id === c.id ? 'bg-primary/10' : 'hover:bg-surface-alt'
                   )}
                 >
-                  <div className="relative shrink-0">
-                    <img src={chat.avatar} alt={chat.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-border object-cover" />
-                    {chat.isTyping && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse border-2 border-background" />
+                  <span className="relative shrink-0">
+                    <Avatar name={c.name} src={c.avatar} size={44} />
+                    {c.type === 'group' && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full bg-pastel-mint text-pastel-mint-ink flex items-center justify-center border border-surface">
+                        <Users size={9} />
+                      </span>
                     )}
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <p className="text-xs sm:text-sm font-bold text-text-main truncate">{chat.name}</p>
-                      <span className="text-[11px] sm:text-[11px] text-text-muted">{chat.time}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 overflow-hidden">
-                      {chat.type === 'private' && !chat.isFriend && (
-                        <span className="shrink-0 text-[11px] bg-surface-alt text-text-muted px-1 rounded uppercase font-bold">Not Friend</span>
+                  </span>
+
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className={cn('text-sm truncate', c.unread > 0 ? 'font-bold text-text-main' : 'font-semibold text-text-main')}>
+                        {c.name}
+                      </span>
+                      {/* A real timestamp. `time` was hardcoded to '' on every row. */}
+                      {c.lastAt && (
+                        <span className="shrink-0 text-[11px] text-text-muted">{formatChatTime(c.lastAt)}</span>
                       )}
-                      <p className={cn(
-                        "text-[11px] sm:text-xs truncate",
-                        chat.isTyping ? "text-primary italic" : "text-text-muted"
-                      )}>
-                        {chat.isTyping ? 'typing...' : chat.lastMsg}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                    </span>
+                    <span className="flex items-center gap-1.5 mt-0.5">
+                      <span className={cn('flex-1 text-xs truncate', c.unread > 0 ? 'text-text-main font-medium' : 'text-text-muted')}>
+                        {/* The real last message, not "Tap to message". */}
+                        {c.lastMessage
+                          ? `${c.sentByMe ? 'You: ' : ''}${c.lastMessage}`
+                          : c.type === 'group' ? 'No messages yet' : 'Say hello'}
+                      </span>
+                      {c.unread > 0 && (
+                        <span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">
+                          {c.unread > 99 ? '99+' : c.unread}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </button>
               ))
             )}
           </div>
-        </div>
-      </div>
+        </aside>
 
-      {/* Main Chat Area */}
-      <div className={cn(
-        "flex-grow glass-card flex flex-col overflow-hidden",
-        !showChatMobile ? "hidden sm:flex" : "flex"
-      )}>
-        {selectedChat ? (
-          <>
-            {/* Chat Header */}
-            <div className="p-4 sm:p-6 border-b border-border flex items-center justify-between bg-surface-alt/5 backdrop-blur-md">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <button 
+        {/* ---------------- Thread ---------------- */}
+        <section className={cn(
+          'flex-1 min-w-0 min-h-0 flex-col rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] overflow-hidden',
+          showChatMobile ? 'flex' : 'hidden sm:flex'
+        )}>
+          {!selected ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+              <span className="w-12 h-12 rounded-2xl bg-pastel-lavender text-pastel-lavender-ink flex items-center justify-center">
+                <MessageSquare size={22} />
+              </span>
+              <h2 className="font-heading text-base font-bold text-text-main mt-3">Pick a conversation</h2>
+              <p className="text-sm text-text-muted mt-1 max-w-xs">
+                Messages are delivered live to anyone you follow who follows you back.
+              </p>
+            </div>
+          ) : (
+            <>
+              <header className="px-4 py-3 border-b border-border flex items-center gap-3">
+                <button
                   onClick={() => setShowChatMobile(false)}
-                  className="p-1.5 hover:bg-surface rounded-lg text-text-muted sm:hidden"
+                  aria-label="Back to conversations"
+                  className="sm:hidden p-1.5 -ml-1 rounded-lg text-text-muted hover:bg-surface-alt cursor-pointer"
                 >
                   <ArrowLeft size={18} />
                 </button>
-                <div className="relative">
-                  <img src={selectedChat.avatar} alt={selectedChat.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-border" />
-                </div>
-                <div>
-                  <h2 className="text-sm sm:text-lg font-bold text-text-main truncate max-w-[120px] sm:max-w-none">{selectedChat.name}</h2>
-                  <p className="text-[11px] sm:text-xs text-primary font-medium flex items-center gap-1">
-                    {isTyping ? 'typing...' : (selectedChat.type === 'group' ? 'Group Study' : (isChatBlocked ? 'Mutual friends only' : (isConnected ? 'Online' : 'Reconnecting...')))}
+                <Avatar name={selected.name} src={selected.avatar} size={38} />
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-semibold text-text-main text-sm truncate">{selected.name}</h2>
+                  <p className="text-[11px] text-text-muted flex items-center gap-1.5">
+                    {isTyping ? (
+                      <span className="text-primary">typing…</span>
+                    ) : selected.type === 'group' ? (
+                      'Study group'
+                    ) : blocked ? (
+                      'Mutual friends only'
+                    ) : (
+                      <>
+                        <span className={cn('w-1.5 h-1.5 rounded-full', isConnected ? 'bg-accent' : 'bg-brand-orange')} />
+                        {isConnected ? 'Connected' : 'Reconnecting…'}
+                      </>
+                    )}
                   </p>
                 </div>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-3">
-                <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg text-text-muted border border-border">
-                  <Phone size={18} />
-                </button>
-                <button className="p-2 sm:p-2.5 bg-surface-alt/50 hover:bg-surface-alt rounded-lg text-text-muted border border-border">
-                  <Video size={18} />
-                </button>
-              </div>
-            </div>
+                {/* The call and video buttons that used to sit here had no
+                    onClick and no implementation behind them — the app has no
+                    calling of any kind. */}
+              </header>
 
-            {/* Messages Area */}
-            <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
-              {activeMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-text-muted">
-                  <MessageSquare size={48} className="mb-4 opacity-10" />
-                  <p className="text-xs">No messages history. Say hello!</p>
-                </div>
-              ) : (
-                activeMessages.map((msg, idx) => (
-                  <div 
-                    key={msg._id || idx}
-                    className={cn(
-                      "flex flex-col gap-1 max-w-[85%]",
-                      msg.fromUserId === user?.id ? "ml-auto" : ""
-                    )}
-                  >
-                    {selectedChat.type === 'group' && msg.fromUserId !== user?.id && (
-                      <p className="text-[11px] font-bold text-primary ml-1">{msg.fromUserName || 'Member'}</p>
-                    )}
-                    <div className={cn(
-                      "p-3 rounded-2xl text-xs sm:text-sm shadow-sm",
-                      msg.fromUserId === user?.id 
-                        ? "bg-primary text-white rounded-br-none" 
-                        : "bg-surface-alt border border-border text-text-main rounded-bl-none"
-                    )}>
-                      {msg.text}
-                      <div className={cn(
-                        "flex items-center gap-1 mt-1 opacity-70 text-[11px]",
-                        msg.fromUserId === user?.id ? "justify-end" : "justify-start"
-                      )}>
-                        <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        {msg.fromUserId === user?.id && selectedChat.type === 'private' && (
-                          msg.isRead ? <CheckCheck size={10} className="text-secondary-light" /> : <CheckCheck size={10} />
-                        )}
+              {/* `min-h-full` + `justify-end` on an inner wrapper anchors a
+                  short thread to the bottom of the pane, the way a chat reads,
+                  without the clipping that `justify-end` on the scroller itself
+                  causes once the content overflows. */}
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4">
+                <div className="min-h-full flex flex-col justify-end gap-3">
+                {threadError ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
+                    <span className="w-11 h-11 rounded-xl bg-brand-pink/10 text-brand-pink flex items-center justify-center">
+                      <AlertTriangle size={19} />
+                    </span>
+                    <p className="text-sm font-semibold text-text-main mt-3">We couldn't load this conversation</p>
+                    <p className="text-xs text-text-muted mt-1">{threadError}</p>
+                  </div>
+                ) : loadingThread ? (
+                  <div className="space-y-3">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className={cn('h-10 rounded-2xl bg-[var(--skeleton)] animate-pulse', i % 2 ? 'ml-auto w-40' : 'w-52')} />
+                    ))}
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-12">
+                    <p className="text-sm font-semibold text-text-main">No messages yet</p>
+                    <p className="text-xs text-text-muted mt-1">Say hello to get things started.</p>
+                  </div>
+                ) : (
+                  messages.map((msg) => {
+                    const mine = msg.fromUserId === user?.id;
+                    return (
+                      <div key={msg.id} className={cn('flex flex-col max-w-[85%] sm:max-w-[70%]', mine && 'ml-auto items-end')}>
+                        <div className={cn(
+                          'px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed break-words',
+                          mine ? 'bg-primary text-white rounded-br-sm' : 'bg-surface-alt border border-border text-text-main rounded-bl-sm'
+                        )}>
+                          {msg.text}
+                        </div>
+                        <span className="flex items-center gap-1 mt-1 px-1 text-[11px] text-text-muted">
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {mine && selected.type === 'private' && (
+                            /* Was `text-secondary-light`, a token that does not
+                               exist, so a read receipt rendered the same as an
+                               unread one. */
+                            <CheckCheck size={12} className={msg.isRead ? 'text-accent' : 'text-text-muted/60'} />
+                          )}
+                        </span>
                       </div>
-                    </div>
-                  </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-
-            {/* Input Area */}
-            <div className="p-4 sm:p-6 border-t border-border">
-              {isChatBlocked ? (
-                <div className="bg-surface-alt/50 border border-border rounded-xl p-3 text-center">
-                  <p className="text-xs text-text-muted">You can only message friends who also follow you back.</p>
+                    );
+                  })
+                )}
+                <div ref={endRef} />
                 </div>
-              ) : (
-                <form onSubmit={handleSend} className="flex items-center gap-2 sm:gap-4">
-                  <button type="button" className="p-2 text-text-muted hover:text-text-main">
-                    <Paperclip size={20} />
-                  </button>
-                  <div className="flex-grow relative">
-                    <input 
-                      type="text" 
+              </div>
+
+              <div className="p-3 border-t border-border">
+                {blocked ? (
+                  <p className="text-xs text-text-muted text-center py-2">
+                    You can only message people who follow you back.
+                  </p>
+                ) : (
+                  <form onSubmit={handleSend} className="flex items-center gap-2">
+                    <input
                       value={input}
-                      onChange={(e) => {
-                        setInput(e.target.value);
-                        setTypingStatus(e.target.value.length > 0);
-                      }}
+                      onChange={(e) => { setInput(e.target.value); setTypingStatus(e.target.value.length > 0); }}
                       onBlur={() => setTypingStatus(false)}
-                      placeholder="Type a message..." 
-                      className="w-full bg-surface-alt/50 border border-border rounded-xl py-2.5 sm:py-3 px-4 text-xs sm:text-sm outline-none focus:border-primary/50 transition-all text-text-main"
+                      placeholder="Type a message…"
+                      aria-label="Message"
+                      className="flex-1 min-w-0 bg-surface-alt border border-border rounded-xl py-2.5 px-3.5 text-sm outline-none focus:border-primary/40 transition-colors text-text-main placeholder:text-text-muted"
                     />
-                  </div>
-                  <button 
-                    type="submit"
-                    disabled={!input.trim()}
-                    className="w-10 h-10 sm:w-12 sm:h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    <Send size={18} />
-                  </button>
-                </form>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="flex-grow flex flex-col items-center justify-center p-6 text-center">
-            <MessageSquare size={48} className="mb-4 text-text-muted opacity-10" />
-            <h2 className="text-lg font-bold text-text-main mb-2">Your Conversations</h2>
-            <p className="text-xs text-text-muted">Select a chat to start real-time messaging.</p>
-          </div>
-        )}
+                    <button
+                      type="submit"
+                      disabled={!input.trim()}
+                      aria-label="Send message"
+                      className="w-11 h-11 shrink-0 bg-primary hover:bg-primary/90 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      <Send size={17} />
+                    </button>
+                  </form>
+                )}
+              </div>
+            </>
+          )}
+        </section>
       </div>
     </div>
   );
 }
 
-
+function ListState({ icon, tone, title, body, action }: {
+  icon: React.ReactNode; tone: string; title: string; body: string; action?: React.ReactNode;
+}) {
+  return (
+    <div className="px-6 py-12 text-center">
+      <span className={cn('inline-flex w-11 h-11 rounded-xl items-center justify-center', tone)}>{icon}</span>
+      <p className="text-sm font-semibold text-text-main mt-3">{title}</p>
+      <p className="text-xs text-text-muted mt-1 leading-relaxed">{body}</p>
+      {action}
+    </div>
+  );
+}

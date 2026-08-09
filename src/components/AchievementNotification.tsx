@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Award, Trophy, Star, CheckCircle2, X } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { useNavigate } from 'react-router-dom';
+import { celebrate } from '../lib/motion';
+import { pastelForCategory } from '../lib/utils';
 
 interface UnlockedEventData {
   id: string;
@@ -24,17 +25,10 @@ export const AchievementNotification: React.FC = () => {
 
       setActiveNotification(data);
 
-      try {
-        // Trigger high quality canvas confetti celebration
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.8 },
-          colors: ['#F5B042', '#6C5CE7', '#00E5A0', '#00D2FF', '#FF5E7E']
-        });
-      } catch (e) {
-        console.warn('Confetti fail:', e);
-      }
+      // Themed burst from the shared motion layer: reads the live theme
+      // tokens, lazy-loads canvas-confetti, and no-ops under reduced motion.
+      // Replaces a hardcoded five-hex palette that ignored the theme.
+      void celebrate('win', { x: 0.5, y: 0.8 });
     };
 
     window.addEventListener('achievement:unlocked', handleUnlock);
@@ -58,20 +52,15 @@ export const AchievementNotification: React.FC = () => {
     navigate('/achievements');
   };
 
-  const getStyle = (category: string) => {
-    switch (category) {
-      case 'streak': return { border: 'border-[#F5B042]/50', bg: 'bg-[#F5B042]/10', text: 'text-[#F5B042]' };
-      case 'time': return { border: 'border-[#6C5CE7]/50', bg: 'bg-[#6C5CE7]/10', text: 'text-[#6C5CE7]' };
-      case 'quiz': return { border: 'border-[#00E5A0]/50', bg: 'bg-[#00E5A0]/10', text: 'text-[#00E5A0]' };
-      case 'material': return { border: 'border-[#00D2FF]/50', bg: 'bg-[#00D2FF]/10', text: 'text-[#00D2FF]' };
-      case 'social': return { border: 'border-[#FF5E7E]/50', bg: 'bg-[#FF5E7E]/10', text: 'text-[#FF5E7E]' };
-      default: return { border: 'border-primary/50', bg: 'bg-primary/10', text: 'text-primary' };
-    }
-  };
-
   if (!activeNotification) return null;
 
-  const style = getStyle(activeNotification.category);
+  // The same five neon hexes this component used to carry, now the one shared
+  // pastel scale keyed by category — matching the badge grid and the category
+  // rail on the Achievements page, so an unlock toast is recognisably the same
+  // colour as the badge it is announcing.
+  const tone = pastelForCategory(activeNotification.category);
+  const tint = `var(--pastel-${tone})`;
+  const ink = `var(--pastel-${tone}-ink)`;
 
   return (
     <AnimatePresence>
@@ -81,13 +70,16 @@ export const AchievementNotification: React.FC = () => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 30, scale: 0.9 }}
           transition={{ type: 'spring', damping: 15 }}
-          className={`w-full max-w-sm rounded-[24px] bg-surface h-20 border ${style.border} shadow-soft p-3 flex items-center justify-between gap-3 pointer-events-auto relative overflow-hidden backdrop-blur-md`}
+          className="w-full max-w-sm rounded-[var(--radius-card)] bg-surface h-20 border border-border shadow-[var(--shadow-card-hover)] p-3 flex items-center justify-between gap-3 pointer-events-auto relative overflow-hidden"
         >
-          {/* Accent lighting strip */}
-          <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${activeNotification.category === 'streak' ? 'bg-[#F5B042]' : activeNotification.category === 'time' ? 'bg-[#6C5CE7]' : activeNotification.category === 'quiz' ? 'bg-[#00E5A0]' : activeNotification.category === 'material' ? 'bg-[#00D2FF]' : 'bg-[#FF5E7E]'}`} />
+          {/* Category strip — was a five-branch nested ternary of raw hexes. */}
+          <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: ink }} />
 
           {/* Left Icon badge */}
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${style.bg} ${style.text}`}>
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: tint, color: ink }}
+          >
             <Trophy size={20} />
           </div>
 
@@ -101,7 +93,7 @@ export const AchievementNotification: React.FC = () => {
           {/* View Badge button */}
           <button 
             onClick={viewAchievements}
-            className="flex-shrink-0 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[11px] uppercase tracking-wider px-3 py-1.5 rounded-xl cursor-pointer"
+            className="flex-shrink-0 bg-primary/10 hover:bg-primary/20 text-primary font-semibold text-xs px-3 py-1.5 rounded-xl cursor-pointer"
           >
             View
           </button>

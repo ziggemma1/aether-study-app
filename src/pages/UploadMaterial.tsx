@@ -392,7 +392,7 @@ export default function UploadMaterial() {
             animate={{ scale: 1, opacity: 1 }}
             className="text-center py-4 sm:py-8"
           >
-            <div className="w-12 h-12 sm:w-20 sm:h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+            <div className="w-12 h-12 sm:w-20 sm:h-20 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
               <CheckCircle2 size={24} className="sm:hidden" />
               <CheckCircle2 size={40} className="hidden sm:block" />
             </div>
@@ -428,9 +428,9 @@ export default function UploadMaterial() {
               <h2 className="text-lg sm:text-2xl font-black mb-3 sm:mb-4 text-text-main tracking-tight italic">
                 {loadingPhrases[loadingPhraseIndex]}
               </h2>
-              <div className="max-w-[200px] sm:max-w-xs mx-auto h-2 bg-white/5 rounded-full overflow-hidden border border-white/10 shadow-inner">
+              <div className="max-w-[200px] sm:max-w-xs mx-auto h-2 bg-surface-alt rounded-full overflow-hidden border border-border shadow-inner">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-primary via-indigo-500 to-accent"
+                  className="h-full bg-gradient-to-r from-primary to-accent"
                   initial={{ width: 0 }}
                   animate={{ width: `${uploadProgress}%` }}
                   transition={{ ease: "easeOut" }}
@@ -607,7 +607,7 @@ export default function UploadMaterial() {
                     onClick={toggleRecording}
                     className={cn(
                       "w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 cursor-pointer hover:scale-105 transition-all shadow-lg border-4",
-                      isRecording ? "bg-red-500/20 text-red-500 border-red-500 shadow-red-500/50 animate-pulse" : "bg-surface-alt text-text-muted border-border"
+                      isRecording ? "bg-brand-pink/20 text-brand-pink border-brand-pink shadow-brand-pink/50 animate-pulse" : "bg-surface-alt text-text-muted border-border"
                     )}
                   >
                     <Mic size={28} className="sm:hidden" />

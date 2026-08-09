@@ -73,9 +73,9 @@ export function useCommunityMaterials() {
         setLibraryMaterials((prev: any[]) => [res.data, ...prev]);
       }
       
-      // Update local download and clone indicators
-      setRawMaterials(prev => 
-        prev.map(m => m.id === materialId ? { ...m, downloads: m.downloads + 1, likes: m.likes + 1 } : m)
+      // Mirror the server, which increments downloads only — a clone is not a like.
+      setRawMaterials(prev =>
+        prev.map(m => m.id === materialId ? { ...m, downloads: (m.downloads ?? 0) + 1 } : m)
       );
 
       showToast(`📚 "${title}" has been successfully cloned to your library!`, 'success');
@@ -168,15 +168,20 @@ export function useCommunityMaterials() {
         return true;
       })
       .sort((a, b) => {
-        // Sorting logic
+        // Sorting logic. Engagement counters are genuinely 0 until earned, so
+        // every comparator falls back to newest-first rather than leaving ties
+        // in an arbitrary order.
+        const newestFirst =
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+
         if (sort === 'popular' || sort === 'downloads') {
-          return b.downloads - a.downloads;
+          return ((b.downloads ?? 0) - (a.downloads ?? 0)) || newestFirst;
         }
         if (sort === 'highest-rated') {
-          return b.rating - a.rating;
+          return ((b.rating ?? 0) - (a.rating ?? 0)) || newestFirst;
         }
         if (sort === 'newest') {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return newestFirst;
         }
         return 0;
       });

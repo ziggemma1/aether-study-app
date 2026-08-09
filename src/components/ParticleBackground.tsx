@@ -30,7 +30,7 @@ export function ParticleBackground() {
       {particles.map((p) => (
         <div
           key={p.id}
-          className="particle bg-gradient-to-t from-primary/30 to-cyan-500/20 rounded-full"
+          className="particle bg-gradient-to-t from-primary/30 to-secondary/20 rounded-full"
           style={{
             left: p.left,
             width: `${p.size}px`,

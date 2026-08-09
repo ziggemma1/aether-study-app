@@ -41,8 +41,10 @@ export function DataChart({
                 {title}
               </h4>
             )}
+            {/* Was violet, which spent the accent on a passive caption and made
+                it compete with the actual controls on the page. */}
             {subtitle && (
-              <p className="text-[11px] text-primary/80 font-bold mt-0.5">
+              <p className="text-[11px] text-text-muted font-medium mt-0.5">
                 {subtitle}
               </p>
             )}
@@ -68,20 +70,20 @@ export function DataChart({
             <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
               {/* Tooltip trigger hover effect */}
               <div className="relative w-full flex justify-center">
-                <div className="absolute bottom-full mb-1 bg-neutral-900 border border-border/10 text-white text-[11px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-10 z-index-top">
+                <div className="absolute bottom-full mb-1 bg-surface border border-border/10 text-text-main text-[11px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-10 z-index-top">
                   {point.value}h
                 </div>
               </div>
 
               {/* Bar outer track */}
-              <div className="w-full bg-surface-alt rounded-lg h-full max-h-[80px] flex items-end overflow-hidden ring-1 ring-white/5">
+              <div className="w-full bg-surface-alt rounded-lg h-full max-h-[80px] flex items-end overflow-hidden ring-1 ring-border">
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: point.value === 0 ? '0%' : `${Math.max(percentage, 8)}%` }}
                   transition={{ duration: 0.6, delay: idx * 0.05, ease: "easeOut" }}
                   className={`w-full rounded-b-md transition-all duration-300 ${
                     point.active 
-                      ? 'bg-gradient-to-t from-primary to-cyan-400 shadow-[0_0_12px_rgba(108,92,231,0.3)]' 
+                      ? 'bg-gradient-to-t from-primary to-secondary shadow-[0_0_12px_rgba(108,92,231,0.3)]' 
                       : 'bg-primary/25 hover:bg-primary/45'
                   }`}
                 />

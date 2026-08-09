@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { User } from '../models/User.js';
 import { FriendRequest } from '../models/FriendRequest.js';
 import { createNotification } from '../services/notification-service.js';
+import { SHOP_ITEM_BY_ID, ownsItem, DEFAULT_VOICE } from '../../lib/shopCatalog.js';
 
 export const getAllProfiles = async (req: Request, res: Response) => {
   try {
@@ -304,20 +305,17 @@ export const toggleLeaderboardOptIn = async (req: Request, res: Response) => {
   }
 };
 
-// Server-owned price catalog — never trust a client-supplied cost. Keep this
-// in sync with the items offered in src/pages/Shop.tsx.
-const SHOP_CATALOG: Record<string, { cost: number; isFreeze: boolean }> = {
-  'Cyberpunk Red': { cost: 200, isFreeze: false },
-  'Ocean Breeze': { cost: 150, isFreeze: false },
-  'Voice: Atlas (Deep UK)': { cost: 500, isFreeze: false },
-  'Voice: Nova (Bright US)': { cost: 300, isFreeze: false },
-  'Streak Freeze': { cost: 100, isFreeze: true },
-};
-
+/**
+ * Buy a shop item.
+ *
+ * Prices come from the shared catalog, never from the request — and the item is
+ * looked up by a stable id rather than by its display name, which used to mean
+ * renaming an item on screen broke buying it.
+ */
 export const purchaseShopItem = async (req: Request, res: Response) => {
   try {
-    const { itemName } = req.body;
-    const item = SHOP_CATALOG[itemName];
+    const { itemId } = req.body;
+    const item = SHOP_ITEM_BY_ID.get(itemId);
     if (!item) {
       return res.status(400).json({ message: "Unknown shop item" });
     }
@@ -325,15 +323,23 @@ export const purchaseShopItem = async (req: Request, res: Response) => {
     const user = await User.findById((req as any).userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.aetherPoints < item.cost) {
-      return res.status(400).json({ message: "Insufficient Aether Points" });
+    // Only the streak freeze is consumable. Everything else was previously
+    // re-purchasable without limit: buying the same theme twice charged twice
+    // and pushed a duplicate into the owned list.
+    const consumable = item.kind === 'utility';
+    if (!consumable && ownsItem(user.themeUnlocked, item.id)) {
+      return res.status(400).json({ message: `You already own ${item.name}.` });
+    }
+
+    if ((user.aetherPoints || 0) < item.cost) {
+      return res.status(400).json({ message: "Not enough Aether Points" });
     }
 
     user.aetherPoints -= item.cost;
-    if (item.isFreeze) {
-      user.freezeTokens += 1;
+    if (consumable) {
+      user.freezeTokens = (user.freezeTokens || 0) + 1;
     } else {
-      user.themeUnlocked.push(itemName);
+      user.themeUnlocked.push(item.id);
     }
 
     await user.save();
@@ -341,6 +347,49 @@ export const purchaseShopItem = async (req: Request, res: Response) => {
       aetherPoints: user.aetherPoints,
       freezeTokens: user.freezeTokens,
       themeUnlocked: user.themeUnlocked
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Equip a theme or voice the user already owns.
+ *
+ * This is the half the shop never had: buying a theme wrote its name into an
+ * array that nothing read, so no purchase ever changed anything on screen.
+ * Passing a null/empty id resets to the default.
+ */
+export const equipShopItem = async (req: Request, res: Response) => {
+  try {
+    const { itemId, kind } = req.body as { itemId: string | null; kind: 'theme' | 'voice' };
+    if (kind !== 'theme' && kind !== 'voice') {
+      return res.status(400).json({ message: "Unknown item kind" });
+    }
+
+    const user = await User.findById((req as any).userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!itemId) {
+      // Back to the defaults: violet accents, the Kore voice.
+      if (kind === 'theme') user.equippedTheme = '';
+      else user.equippedVoice = DEFAULT_VOICE;
+    } else {
+      const item = SHOP_ITEM_BY_ID.get(itemId);
+      if (!item || item.kind !== kind) {
+        return res.status(400).json({ message: "Unknown shop item" });
+      }
+      if (!ownsItem(user.themeUnlocked, item.id)) {
+        return res.status(403).json({ message: `You do not own ${item.name}.` });
+      }
+      if (kind === 'theme') user.equippedTheme = item.value || '';
+      else user.equippedVoice = item.value || DEFAULT_VOICE;
+    }
+
+    await user.save();
+    res.json({
+      equippedTheme: user.equippedTheme,
+      equippedVoice: user.equippedVoice
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -358,6 +407,34 @@ export const penalizePoints = async (req: Request, res: Response) => {
     user.aetherPoints = Math.max(0, user.aetherPoints - STREAK_BREAK_PENALTY);
     await user.save();
     res.json({ aetherPoints: user.aetherPoints });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Marks first-run onboarding as done, whether the user completed it or skipped
+ * it — either way we stop routing them to /onboarding.
+ *
+ * Returns the full user document (minus password) rather than a hand-picked
+ * subset, because the client replaces its whole `user` object with the
+ * response. `updateProfile` above returns a partial and callers there have to
+ * merge; this one is safe to hand straight to setUser().
+ */
+export const completeOnboarding = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Idempotent: re-running onboarding must not move the original date.
+    if (!user.onboardingCompletedAt) {
+      user.onboardingCompletedAt = new Date();
+      await user.save();
+    }
+
+    const fresh = await User.findById(userId).select('-password');
+    res.json(fresh);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

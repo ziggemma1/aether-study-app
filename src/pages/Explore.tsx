@@ -48,7 +48,7 @@ export default function Explore() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto relative min-h-screen pb-32 bg-background text-text-main">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto relative min-h-full pb-32 bg-background text-text-main">
 
       {/* Decorative Header Spark */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none select-none" />
@@ -67,7 +67,9 @@ export default function Explore() {
           🌐 Community Note Explorer
         </h1>
         <p className="text-sm text-text-muted max-w-lg leading-relaxed">
-          Discover top-rated notes, flashcards, and lectures from fellow students worldwide. Instant-clone them to your personal study library.
+          {/* Was "Discover top-rated notes … from fellow students worldwide" —
+              there are no ratings yet and no worldwide user base to draw on. */}
+          Browse notes, flashcards and lectures other students have published. Clone any of them straight into your library.
         </p>
       </header>
 
@@ -94,8 +96,18 @@ export default function Explore() {
         <SearchBar value={search} onChange={setSearch} />
 
         {/* Filters Group */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-          <div className="flex-grow">
+        {/* Horizontal only from lg. At sm the row already had to hold two
+            240px dropdowns plus the chip rail, which left the chips about
+            200px on a tablet — enough for "All" and "PDF" and a sliver of a
+            third. Stacking until there is genuinely room is the difference
+            between a scrollable rail and a squeezed one. */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          {/* min-w-0 is what makes FilterTabs' own overflow-x-auto work. A flex
+              item defaults to min-width:auto, so this wrapper refused to shrink
+              below the combined width of five shrink-0 chips — the scroll
+              container could never engage and the whole row forced itself wide
+              instead. */}
+          <div className="flex-grow min-w-0">
             <FilterTabs activeFilter={filter} onChange={setFilter} />
           </div>
 

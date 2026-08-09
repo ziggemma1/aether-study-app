@@ -109,7 +109,7 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-[#0B0E14]/80 backdrop-blur-sm cursor-pointer"
+          className="absolute inset-0 bg-background/80 backdrop-blur-sm cursor-pointer"
         />
 
         {/* Modal Panel */}
@@ -117,14 +117,14 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative flex flex-col w-full max-w-lg max-h-[90vh] overflow-hidden rounded-3xl border border-[#8E9AAF]/10 bg-[#141A24] text-[#F0F3F8] shadow-2xl z-10"
+          className="relative flex flex-col w-full max-w-lg max-h-[90vh] overflow-hidden rounded-3xl border border-border bg-surface text-text-main shadow-[var(--shadow-card-hover)] z-10"
         >
           {/* Header (Touch Close Target: 44px) */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-[#8E9AAF]/5">
-            <h2 className="text-base font-extrabold text-[#F0F3F8] tracking-tight">📤 Share with Community</h2>
+          <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+            <h2 className="text-base font-extrabold text-text-main tracking-tight">📤 Share with Community</h2>
             <button
               onClick={onClose}
-              className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#8E9AAF]/5 text-[#8E9AAF] hover:bg-[#8E9AAF]/10 active:scale-95 transition-all cursor-pointer"
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-text-muted hover:bg-surface-alt active:scale-95 transition-all cursor-pointer"
             >
               <X size={18} />
             </button>
@@ -135,8 +135,8 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
             
             {/* Title */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#8E9AAF] mb-1.5">
-                Material Title <span className="text-[#6C5CE7]">*</span>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5">
+                Material Title <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
@@ -144,13 +144,13 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Set Theory Introduction"
-                className="w-full bg-[#0B0E14] border border-[#8E9AAF]/10 rounded-xl px-4 py-3 text-sm text-[#F0F3F8] placeholder-[#8E9AAF]/40 outline-none focus:border-[#6C5CE7] transition-all"
+                className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-main placeholder-text-muted outline-none focus:border-primary transition-all"
               />
             </div>
 
             {/* Drag & Drop File Zone */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#8E9AAF] mb-1.5">
+              <label className="block text-xs font-semibold text-text-muted mb-1.5">
                 Upload File or Document
               </label>
               <div
@@ -160,10 +160,10 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
                 onDrop={handleDrop}
                 className={`relative border-2 border-dashed rounded-2xl p-6 text-center transition-all flex flex-col items-center justify-center cursor-pointer ${
                   dragActive 
-                    ? 'border-[#6C5CE7] bg-[#6C5CE7]/5' 
+                    ? 'border-primary bg-primary/5' 
                     : fileName 
-                      ? 'border-[#00E5A0]/50 bg-[#00E5A0]/5' 
-                      : 'border-[#8E9AAF]/10 bg-[#0B0E14] hover:border-[#6C5CE7]/50'
+                      ? 'border-accent/50 bg-accent/5' 
+                      : 'border-border bg-surface-alt hover:border-primary/50'
                 }`}
                 onClick={() => document.getElementById('community-file-uploader')?.click()}
               >
@@ -176,15 +176,15 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
                 
                 {fileName ? (
                   <div className="flex flex-col items-center gap-1.5 select-none">
-                    <CheckCircle2 className="h-8 w-8 text-[#00E5A0]" />
-                    <span className="text-xs font-bold text-[#F0F3F8] max-w-[250px] truncate">{fileName}</span>
-                    <span className="text-[11px] text-[#8E9AAF]">Ready to upload public copy</span>
+                    <CheckCircle2 className="h-8 w-8 text-accent" />
+                    <span className="text-xs font-bold text-text-main max-w-[250px] truncate">{fileName}</span>
+                    <span className="text-[11px] text-text-muted">Ready to upload public copy</span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-1.5 select-none">
-                    <Upload className="h-8 w-8 text-[#8E9AAF]" />
-                    <span className="text-xs font-bold text-[#F0F3F8]">Drag & Drop or Click to Upload</span>
-                    <span className="text-[11px] text-[#8E9AAF]/60">Supports PDF, Lecture Notes, Images, or Text files</span>
+                    <Upload className="h-8 w-8 text-text-muted" />
+                    <span className="text-xs font-bold text-text-main">Drag & Drop or Click to Upload</span>
+                    <span className="text-[11px] text-text-muted">Supports PDF, Lecture Notes, Images, or Text files</span>
                   </div>
                 )}
               </div>
@@ -193,13 +193,13 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
             {/* Type and Subject selectors */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#8E9AAF] mb-1.5">
+                <label className="block text-xs font-semibold text-text-muted mb-1.5">
                   Material Type
                 </label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="w-full bg-[#0B0E14] border border-[#8E9AAF]/10 rounded-xl px-4 py-3 text-sm text-[#F0F3F8] outline-none focus:border-[#6C5CE7] transition-all cursor-pointer"
+                  className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-main outline-none focus:border-primary transition-all cursor-pointer"
                 >
                   {TYPE_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -208,13 +208,13 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#8E9AAF] mb-1.5">
+                <label className="block text-xs font-semibold text-text-muted mb-1.5">
                   Subject
                 </label>
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full bg-[#0B0E14] border border-[#8E9AAF]/10 rounded-xl px-4 py-3 text-sm text-[#F0F3F8] outline-none focus:border-[#6C5CE7] transition-all cursor-pointer"
+                  className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-main outline-none focus:border-primary transition-all cursor-pointer"
                 >
                   {SUBJECT_OPTIONS.map(opt => (
                     <option key={opt} value={opt}>{opt}</option>
@@ -225,7 +225,7 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
 
             {/* Summary */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#8E9AAF] mb-1.5">
+              <label className="block text-xs font-semibold text-text-muted mb-1.5">
                 Description / Summary
               </label>
               <textarea
@@ -233,13 +233,13 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
                 onChange={(e) => setSummary(e.target.value)}
                 placeholder="Write a brief overview of this folder to help students search..."
                 rows={3}
-                className="w-full bg-[#0B0E14] border border-[#8E9AAF]/10 rounded-xl px-4 py-3 text-sm text-[#F0F3F8] placeholder-[#8E9AAF]/40 outline-none focus:border-[#6C5CE7] transition-all resize-none"
+                className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-main placeholder-text-muted outline-none focus:border-primary transition-all resize-none"
               />
             </div>
 
             {/* Tags comma separated */}
             <div>
-              <label className="block text-[#8E9AAF] text-xs font-bold uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-text-muted mb-1.5">
                 Comma-separated Tags
               </label>
               <input
@@ -247,24 +247,24 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="e.g. SetTheory, Algebra, Homework Help"
-                className="w-full bg-[#0B0E14] border border-[#8E9AAF]/10 rounded-xl px-4 py-3 text-sm text-[#F0F3F8] placeholder-[#8E9AAF]/40 outline-none focus:border-[#6C5CE7] transition-all"
+                className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-main placeholder-text-muted outline-none focus:border-primary transition-all"
               />
             </div>
 
             {/* Toggle isPublic notice */}
-            <div className="p-3 bg-[#6C5CE7]/5 rounded-xl border border-[#6C5CE7]/10 flex items-start gap-2.5">
+            <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex items-start gap-2.5">
               <span className="text-base">🌐</span>
-              <p className="text-[11px] text-[#8E9AAF] leading-relaxed">
-                By uploading, this folder is instantly published as <strong className="text-[#F0F3F8]">Public</strong>. Any community student can discover, bookmark, or clone it!
+              <p className="text-[11px] text-text-muted leading-relaxed">
+                By uploading, this folder is instantly published as <strong className="text-text-main">Public</strong>. Any community student can discover, bookmark, or clone it!
               </p>
             </div>
 
             {/* Actions Submit / Cancel */}
-            <div className="flex gap-2.5 pt-3 border-t border-[#8E9AAF]/5">
+            <div className="flex gap-2.5 pt-3 border-t border-border">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-[#8E9AAF] bg-[#8E9AAF]/5 hover:bg-[#8E9AAF]/10 rounded-xl transition-all cursor-pointer min-h-[44px]"
+                className="flex-1 py-3 text-sm font-semibold text-text-muted bg-surface-alt hover:bg-surface-alt rounded-xl transition-all cursor-pointer min-h-[44px]"
               >
                 Cancel
               </button>
@@ -272,7 +272,7 @@ export function UploadModal({ onClose, onUpload }: UploadModalProps) {
               <button
                 type="submit"
                 disabled={isSubmitting || !title.trim()}
-                className="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-[#F0F3F8] bg-[#6C5CE7] hover:bg-[#6C5CE7]/90 disabled:opacity-50 rounded-xl shadow-lg transition-all cursor-pointer min-h-[44px]"
+                className="flex-1 py-3 text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-xl transition-all cursor-pointer min-h-[44px]"
               >
                 {isSubmitting ? 'Sharing...' : 'Share Note'}
               </button>

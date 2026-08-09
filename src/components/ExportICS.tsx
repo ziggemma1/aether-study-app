@@ -59,7 +59,7 @@ export default function ExportICS() {
   return (
     <div className="bg-surface/50 border border-border/30 rounded-2xl p-4 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+        <div className="w-8 h-8 rounded-lg bg-brand-orange/10 flex items-center justify-center text-brand-orange">
           <FileDown size={16} />
         </div>
         <div>
@@ -74,7 +74,7 @@ export default function ExportICS() {
         className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-surface-alt hover:bg-surface border border-border/50 text-text-main rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
       >
         {exported ? (
-          <><CheckCircle2 size={14} className="text-green-500" /> Exported successfully</>
+          <><CheckCircle2 size={14} className="text-accent" /> Exported successfully</>
         ) : (
           <><Download size={14} /> Download .ics file</>
         )}

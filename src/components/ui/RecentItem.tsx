@@ -16,13 +16,13 @@ export function RecentItem({ title, date, type, progress = 0, onClick }: RecentI
       case 'pdf':
         return {
           icon: <FileText size={16} />,
-          badgeClass: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+          badgeClass: 'bg-accent/10 text-accent border-accent/20',
           label: 'PDF'
         };
       case 'quiz':
         return {
           icon: <Award size={16} />,
-          badgeClass: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+          badgeClass: 'bg-brand-orange/10 text-brand-orange border-brand-orange/20',
           label: 'Quiz'
         };
       case 'note':
@@ -34,7 +34,7 @@ export function RecentItem({ title, date, type, progress = 0, onClick }: RecentI
       case 'flashcard':
         return {
           icon: <HelpCircle size={16} />,
-          badgeClass: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
+          badgeClass: 'bg-secondary/10 text-secondary border-secondary/20',
           label: 'Flashcard'
         };
     }
@@ -75,7 +75,7 @@ export function RecentItem({ title, date, type, progress = 0, onClick }: RecentI
             <div className="flex items-center gap-2 mt-2 w-full max-w-[120px]">
               <div className="h-1 flex-1 bg-surface-alt rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-primary to-cyan-400 rounded-full" 
+                  className="h-full bg-gradient-to-r from-primary to-secondary rounded-full" 
                   style={{ width: `${progress}%` }} 
                 />
               </div>

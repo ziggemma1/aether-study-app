@@ -59,7 +59,7 @@ export function QuizCard({ question, options, correctAnswer, onAnswer }: QuizCar
             if (idx === correctAnswer) {
               optionStyle = "bg-accent/25 border-accent text-accent font-bold scale-[1.01]";
             } else if (idx === selectedIdx) {
-              optionStyle = "bg-red-500/20 border-red-500 text-red-500 font-bold scale-[0.99]";
+              optionStyle = "bg-brand-pink/20 border-brand-pink text-brand-pink font-bold scale-[0.99]";
             } else {
               optionStyle = "opacity-40 bg-surface-alt border-border/5 text-text-muted";
             }
@@ -77,7 +77,7 @@ export function QuizCard({ question, options, correctAnswer, onAnswer }: QuizCar
                 <span className="text-accent text-[11px] uppercase font-black tracking-widest shrink-0">✓ Correct</span>
               )}
               {answered && idx === selectedIdx && idx !== correctAnswer && (
-                <span className="text-red-500 text-[11px] uppercase font-black tracking-widest shrink-0">✗ Wrong</span>
+                <span className="text-brand-pink text-[11px] uppercase font-black tracking-widest shrink-0">✗ Wrong</span>
               )}
             </button>
           );

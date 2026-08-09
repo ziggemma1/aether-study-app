@@ -3,6 +3,16 @@
    geometric display face) used to sit: it was never legible at label sizes. */
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+/* Shared animation primitives + the global prefers-reduced-motion guard.
+   Kept out of this file so the theme token blocks below stay self-contained. */
+@import "./styles/motion.css";
+/* Reward palette — flame, rank medals, live, XP. Colour that is earned, spent
+   only on wins. Kept separate for the same reason: theme blocks stay intact. */
+@import "./styles/gamification.css";
+/* Pins the landing page's surface tokens dark — it is a dark-designed page
+   whose type is hardcoded white. Scoped to html.landing-dark, which only
+   LandingPage sets (NOT the shared is-landing-page scroll flag). */
+@import "./styles/landing.css";
 
 /* Bind the `dark:` variant to our .dark class. Without this, Tailwind v4 wires
    `dark:` to prefers-color-scheme, so the handful of dark: utilities in the app
@@ -35,7 +45,21 @@
   --color-pastel-lavender: var(--pastel-lavender);
   --color-pastel-mint: var(--pastel-mint);
   --color-pastel-peach: var(--pastel-peach);
-  
+
+  /* The AA-safe ink siblings, so `text-pastel-mint-ink` works as a class and
+     tone-keyed colour doesn't have to drop to inline styles every time. */
+  --color-pastel-pink-ink: var(--pastel-pink-ink);
+  --color-pastel-sky-ink: var(--pastel-sky-ink);
+  --color-pastel-lavender-ink: var(--pastel-lavender-ink);
+  --color-pastel-mint-ink: var(--pastel-mint-ink);
+  --color-pastel-peach-ink: var(--pastel-peach-ink);
+
+  /* Mastery scale, for the few places it is applied as a class. */
+  --color-mastery-low: var(--mastery-low);
+  --color-mastery-mid: var(--mastery-mid);
+  --color-mastery-high: var(--mastery-high);
+  --color-mastery-max: var(--mastery-max);
+
   --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 10px -4px rgba(0, 0, 0, 0.05);
   
   --f-heading: "Lexend", ui-sans-serif, system-ui, sans-serif;
@@ -127,6 +151,24 @@
   --pastel-mint-ink: #1E7A56;
   --pastel-peach-ink: #9A5410;
 
+  /* Loading placeholder fill. surface-alt is only ~2% off white, so skeletons
+     built on it read as empty outlined boxes rather than as content loading —
+     this was recorded as a missing empty state on Reports when it was really
+     the skeleton mid-load. Dark enough to be seen as a filled bar. */
+  --skeleton: rgba(28, 25, 51, 0.11);
+
+  /* Mastery health scale — one of the few places colour still encodes a value.
+     Darkened from the neon originals to hold AA on white. See getMasteryColor(). */
+  --mastery-low: #C81E4A;
+  --mastery-mid: #A85B08;
+  --mastery-high: #0089B0;
+  --mastery-max: #0E7A57;
+
+  /* Unfilled part of a progress ring. Deliberately darker than --surface-alt:
+     the track sits on a white card, so a near-white track made a low
+     percentage read as an empty circle instead of a mostly-unfilled one. */
+  --ring-track: rgba(28, 25, 51, 0.10);
+
   --radius-card: 20px;
   --shadow-card: 0 1px 2px rgba(28, 25, 51, 0.04), 0 8px 24px -12px rgba(28, 25, 51, 0.10);
   --shadow-card-hover: 0 2px 4px rgba(28, 25, 51, 0.05), 0 16px 36px -14px rgba(108, 92, 231, 0.20);
@@ -159,8 +201,71 @@
   --pastel-mint-ink: #8FDCBB;
   --pastel-peach-ink: #F3C48C;
 
+  --ring-track: rgba(255, 255, 255, 0.14);
+  --skeleton: rgba(255, 255, 255, 0.09);
+
+  /* Dark mode can afford the neon end of the scale again. */
+  --mastery-low: #FF5E7E;
+  --mastery-mid: #F5B042;
+  --mastery-high: #00D2FF;
+  --mastery-max: #00E5A0;
+
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
   --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 36px -14px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------------------------------------------------------------------------
+   PURCHASABLE ACCENT THEMES
+   ---------------------------------------------------------------------------
+   Bought in the Aether Shop and applied as a class on the AppLayout root, next
+   to `theme` and `timeTheme`. Before this the shop sold "Cyberpunk Red" and
+   "Ocean Breeze" for 200 and 150 points and pushed the name into a
+   `themeUnlocked` array that no code anywhere read — the purchase changed
+   nothing at all.
+
+   They move the three ACCENT tokens and nothing else. Paper, ink, borders and
+   the pastel category scale stay put: the pastel scale encodes material type,
+   so recolouring it would destroy meaning, and swapping --background is the
+   mistake the old time-of-day themes made.
+
+   Each value is picked to hold AA against --surface (#FFFFFF light /
+   rgba(30,41,59,.7) dark), the same bar --secondary and --accent were darkened
+   to meet.
+   --------------------------------------------------------------------------- */
+.accent-ocean {
+  --primary: #0E7490;
+  --secondary: #0369A1;
+  --accent: #0E9F6E;
+  --shadow-card-hover: 0 2px 4px rgba(28, 25, 51, 0.05), 0 16px 36px -14px rgba(14, 116, 144, 0.22);
+}
+.accent-ocean.dark {
+  --primary: #38BDF8;
+  --secondary: #67E8F9;
+  --accent: #10B981;
+}
+
+.accent-sunset {
+  --primary: #BE3455;
+  --secondary: #C2610C;
+  --accent: #B0490B;
+  --shadow-card-hover: 0 2px 4px rgba(28, 25, 51, 0.05), 0 16px 36px -14px rgba(190, 52, 85, 0.22);
+}
+.accent-sunset.dark {
+  --primary: #FB7185;
+  --secondary: #FDBA74;
+  --accent: #FCA5A5;
+}
+
+.accent-forest {
+  --primary: #15803D;
+  --secondary: #0E7490;
+  --accent: #4D7C0F;
+  --shadow-card-hover: 0 2px 4px rgba(28, 25, 51, 0.05), 0 16px 36px -14px rgba(21, 128, 61, 0.22);
+}
+.accent-forest.dark {
+  --primary: #4ADE80;
+  --secondary: #5EEAD4;
+  --accent: #A3E635;
 }
 
 @layer base {
@@ -352,8 +457,19 @@ html, body {
   flex-direction: column;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  @apply font-heading font-semibold tracking-tight text-text-main;
+/* MUST stay inside @layer base.
+ *
+ * Unlayered rules beat every layered rule in the cascade, regardless of
+ * specificity — and Tailwind v4 puts all utilities in a real @layer. While this
+ * block sat outside a layer it silently overrode `text-*`, `font-*` and
+ * `tracking-*` on EVERY heading in the app: `font-black text-text-muted`
+ * measured as weight 600 in text-main, and `text-white` headings rendered dark.
+ * Inside @layer base it is a default that utilities can override, which is what
+ * it was always meant to be. */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold tracking-tight text-text-main;
+  }
 }
 
 .markdown-body {

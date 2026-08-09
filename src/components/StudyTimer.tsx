@@ -6,6 +6,7 @@ import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { getSocket } from '../services/socket';
+import { celebrate } from '../lib/motion';
 
 interface StudyTimerProps {
   materialId?: string;
@@ -382,6 +383,11 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
       // unlocked achievements) — apply them directly, same pattern already
       // used in the penalize-points flow below.
       if (response.data.aetherPoints !== undefined && user) {
+        // A session that extends the streak is the bigger win of the two.
+        const extendedStreak =
+          typeof response.data.streak === 'number' && response.data.streak > (user.streak || 0);
+        void celebrate(extendedStreak ? 'milestone' : 'win');
+
         setUser({
           ...user,
           aetherPoints: response.data.aetherPoints,
@@ -427,17 +433,17 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 20 }}
-          className="bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-3 ring-1 ring-white/5"
+          className="bg-surface/90 backdrop-blur-2xl border border-border rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-3 ring-1 ring-border"
         >
           {readContent && (
-             <div className="flex flex-col items-center gap-1 w-full border-b border-white/10 pb-3">
+             <div className="flex flex-col items-center gap-1 w-full border-b border-border pb-3">
                <button 
                  onClick={() => toggleAudio()}
                  className={cn(
                    "w-10 h-10 rounded-full transition-all flex items-center justify-center relative mx-auto",
                    isPlayingAudio 
                      ? "bg-primary text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]" 
-                     : "bg-white/5 hover:bg-white/10 text-slate-300"
+                     : "bg-surface-alt hover:bg-surface-alt text-text-muted"
                  )}
                  title={isPlayingAudio ? "Pause Reading" : "Read Notes Aloud"}
                >
@@ -446,7 +452,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
                {voiceOptions.length > 1 && (
                  <button
                    onClick={cycleVoice}
-                   className="mt-1 bg-white/10 hover:bg-white/20 active:bg-white/5 border border-white/10 text-white rounded-full py-1 px-2 text-[11px] sm:text-xs font-semibold cursor-pointer w-[68px] truncate drop-shadow-md text-center max-w-[100px]"
+                   className="mt-1 bg-surface-alt hover:bg-surface-alt active:bg-surface-alt border border-border text-text-main rounded-full py-1 px-2 text-[11px] sm:text-xs font-semibold cursor-pointer w-[68px] truncate drop-shadow-md text-center max-w-[100px]"
                    title="Tap to change Voice"
                  >
                    {voiceOptions[currentVoiceIndex]?.name || 'Auto'}
@@ -459,8 +465,8 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
             <button 
               onClick={cycleAmbient}
               className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center transition-all border border-white/5",
-                ambientTrack.id !== 'none' ? "bg-cyan-500/20 text-cyan-400" : "bg-white/5 hover:bg-white/10 text-slate-300"
+                "w-10 h-10 rounded-full flex items-center justify-center transition-all border border-border",
+                ambientTrack.id !== 'none' ? "bg-secondary/20 text-secondary" : "bg-surface-alt hover:bg-surface-alt text-text-muted"
               )}
               title={"Ambient: " + ambientTrack.label}
             >
@@ -470,18 +476,18 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
                 <Music className="w-4 h-4" />
               )}
             </button>
-            <span className="text-[11px] text-white/50 w-[68px] text-center leading-tight truncate">{ambientTrack.label}</span>
+            <span className="text-[11px] text-text-muted w-[68px] text-center leading-tight truncate">{ambientTrack.label}</span>
 
             {isSelectingAmbient && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9, x: -10 }}
                 animate={{ opacity: 1, scale: 1, x: 0 }}
-                className="absolute right-full mr-4 bottom-0 bg-slate-900 border border-white/10 rounded-2xl p-3 shadow-2xl flex flex-col gap-3 min-w-[160px] z-[70] max-h-[400px] overflow-y-auto scrollbar-hide"
+                className="absolute right-full mr-4 bottom-0 bg-surface border border-border rounded-2xl p-3 shadow-2xl flex flex-col gap-3 min-w-[160px] z-[70] max-h-[400px] overflow-y-auto scrollbar-hide"
               >
-                <div className="flex flex-col gap-1.5 border-b border-white/10 pb-3 mb-2">
+                <div className="flex flex-col gap-1.5 border-b border-border pb-3 mb-2">
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-[11px] font-bold text-white/40 uppercase tracking-tighter">Volume</span>
-                    <span className="text-[11px] font-bold text-cyan-400">{Math.round(ambientVolume * 100)}%</span>
+                    <span className="text-[11px] font-bold text-text-muted uppercase tracking-tighter">Volume</span>
+                    <span className="text-[11px] font-bold text-secondary">{Math.round(ambientVolume * 100)}%</span>
                   </div>
                   <input 
                     type="range" 
@@ -490,7 +496,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
                     step="0.01" 
                     value={ambientVolume}
                     onChange={(e) => setAmbientVolume(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                    className="w-full h-1 bg-surface-alt rounded-lg appearance-none cursor-pointer accent-secondary"
                   />
                 </div>
 
@@ -502,8 +508,8 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
                       className={cn(
                         "text-left px-3 py-2 rounded-lg text-xs font-bold transition-all truncate",
                         ambientTrack.id === track.id 
-                          ? "bg-cyan-500 text-white" 
-                          : "text-text-muted hover:bg-white/5 hover:text-white"
+                          ? "bg-secondary text-white" 
+                          : "text-text-muted hover:bg-surface-alt hover:text-text-main"
                       )}
                     >
                       {track.label}
@@ -514,20 +520,20 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
             )}
           </div>
 
-          <div className="w-8 h-[1px] bg-white/10 my-1" />
+          <div className="w-8 h-[1px] bg-surface-alt my-1" />
 
           <div className="flex flex-col items-center gap-3">
             <button 
               onClick={() => setDeepFocus(!deepFocus)}
               className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center transition-all border border-white/5",
-                deepFocus ? "bg-red-500/20 text-red-400" : "bg-white/5 hover:bg-white/10 text-slate-300"
+                "w-10 h-10 rounded-full flex items-center justify-center transition-all border border-border",
+                deepFocus ? "bg-brand-pink/20 text-brand-pink" : "bg-surface-alt hover:bg-surface-alt text-text-muted"
               )}
               title="Deep Focus Mode"
             >
               <ShieldAlert className="w-4 h-4" />
             </button>
-            <span className={cn("text-[11px] text-center leading-tight w-[68px]", deepFocus ? "text-red-400" : "text-white/50")}>
+            <span className={cn("text-[11px] text-center leading-tight w-[68px]", deepFocus ? "text-brand-pink" : "text-text-muted")}>
               Strict Mode
             </span>
           </div>
@@ -537,7 +543,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
       <motion.div 
         layout
         className={cn(
-          "bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1 shadow-2xl flex flex-col items-center relative overflow-hidden ring-1 ring-white/5",
+          "bg-surface/90 backdrop-blur-2xl border border-border rounded-full p-1 shadow-2xl flex flex-col items-center relative overflow-hidden ring-1 ring-border",
           seconds >= targetSeconds - 5 && seconds < targetSeconds && "animate-shake"
         )}
       >
@@ -549,7 +555,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
         {/* Time Display Toggle Button */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex flex-col items-center justify-center bg-black/50 rounded-full w-12 h-12 sm:w-14 sm:h-14 border border-white/10 shadow-inner relative z-10 transition-colors hover:bg-white/5 active:scale-95"
+          className="flex flex-col items-center justify-center bg-black/50 rounded-full w-12 h-12 sm:w-14 sm:h-14 border border-border shadow-inner relative z-10 transition-colors hover:bg-surface-alt active:scale-95"
         >
           {/* Progress Ring */}
           <svg className="absolute inset-0 -rotate-90 w-full h-full">
@@ -560,7 +566,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
               stroke="currentColor"
               strokeWidth="2"
               fill="transparent"
-              className="text-white/5"
+              className="text-text-muted/20"
             />
             <motion.circle
               cx="50%"
@@ -585,7 +591,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
             transition={{ duration: 0.3 }}
             className="absolute -bottom-1 z-10"
           >
-            <ChevronDown className="text-white/40 mb-1 w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <ChevronDown className="text-text-muted mb-1 w-3 h-3 sm:w-3.5 sm:h-3.5" />
           </motion.div>
         </button>
         
@@ -599,13 +605,13 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="flex flex-col items-center gap-2 sm:gap-3 relative z-10 w-full overflow-hidden"
             >
-              <div className="w-6 sm:w-8 h-[1px] bg-white/10 mt-2 sm:mt-3" />
+              <div className="w-6 sm:w-8 h-[1px] bg-surface-alt mt-2 sm:mt-3" />
 
               <button 
                 onClick={() => setIsActive(!isActive)}
                 className={cn(
-                  "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all flex items-center justify-center border border-white/5",
-                  isActive ? "bg-white/10 text-white hover:bg-white/20" : "bg-primary/20 text-primary hover:bg-primary/30"
+                  "w-8 h-8 sm:w-12 sm:h-12 rounded-full transition-all flex items-center justify-center border border-border",
+                  isActive ? "bg-surface-alt text-text-main hover:bg-surface-alt" : "bg-primary/20 text-primary hover:bg-primary/30"
                 )}
                 title={isActive ? "Pause Timer" : "Start Timer"}
               >
@@ -620,7 +626,7 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
                   startTimeRef.current = new Date();
                 }}
                 disabled={seconds < 10}
-                className="w-8 h-8 sm:w-12 sm:h-12 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-full transition-all disabled:opacity-30 disabled:hover:bg-emerald-500/20 disabled:hover:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-lg mb-1"
+                className="w-8 h-8 sm:w-12 sm:h-12 bg-accent/20 text-accent hover:bg-accent hover:text-text-main rounded-full transition-all disabled:opacity-30 disabled:hover:bg-accent/20 disabled:hover:text-accent flex items-center justify-center border border-accent/20 shadow-lg mb-1"
                 title="Save Session"
               >
                 <Save className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" />

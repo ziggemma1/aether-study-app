@@ -1,235 +1,178 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { useAppContext } from '../context/AppContext';
+import { getSocket } from '../services/socket';
+import api from '../services/api';
 
-// This URL should be your Render server URL
-// Defined as VITE_SOCKET_URL in .env
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '') || 'https://aether-socket-server-17zk.onrender.com';
+/**
+ * Chat for the Messages page.
+ *
+ * The previous version spoke a protocol that did not exist. It emitted
+ * `send-dm`, `send-group-message`, `load-dm-history`, `load-group-history`,
+ * `join-group-chat`, `mark-dm-read`, `get-unread-counts`, `typing-dm` and
+ * `typing-group`, and listened for `receive-dm`, `dm-history`,
+ * `receive-group-message`, `group-history`, `user-typing`, `group-typing` and
+ * `unread-counts` — **seventeen events, none of which the server implements.**
+ * The server speaks `send_message` / `typing` / `join_group` and replies with
+ * `new_message` / `typing_update` / `error_message`.
+ *
+ * So no message was ever sent, no history ever loaded, and no message ever
+ * arrived. The page looked complete and did nothing.
+ *
+ * It also opened a SECOND socket connection of its own, on top of the shared
+ * one in services/socket.ts, so every signed-in client held two authenticated
+ * sockets. This uses the shared one.
+ *
+ * History comes over REST — GET /messages already existed and worked, and is a
+ * better fit than a socket round-trip for a one-shot fetch.
+ */
 
-export interface Message {
-  _id: string;
+/** What the server stores. */
+interface StoredMessage {
+  _id?: string;
+  id?: string;
+  senderId: string;
+  receiverId?: string;
+  groupId?: string;
+  content: string;
+  isRead?: boolean;
+  createdAt: string;
+}
+
+/** What the UI renders. */
+export interface ChatMessage {
+  id: string;
   fromUserId: string;
   toUserId?: string;
   groupId?: string;
-  fromUserName?: string;
   text: string;
   timestamp: string;
-  isRead?: boolean;
+  isRead: boolean;
+}
+
+/**
+ * The two shapes never matched either: the page read `fromUserId`, `text` and
+ * `timestamp` off documents that carry `senderId`, `content` and `createdAt`,
+ * so even a delivered message would have rendered as an empty bubble.
+ */
+function toChatMessage(m: StoredMessage): ChatMessage {
+  return {
+    id: String(m._id || m.id || `${m.senderId}-${m.createdAt}`),
+    fromUserId: String(m.senderId),
+    toUserId: m.receiverId ? String(m.receiverId) : undefined,
+    groupId: m.groupId ? String(m.groupId) : undefined,
+    text: m.content,
+    timestamp: m.createdAt || new Date().toISOString(),
+    isRead: !!m.isRead
+  };
 }
 
 export const useMessaging = (selectedUserId?: string, selectedGroupId?: string) => {
   const { user } = useAppContext();
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [chatMessages, setChatMessages] = useState<Message[]>([]);
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const [isTyping, setIsTyping] = useState<boolean>(false);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  
-  const socketRef = useRef<Socket | null>(null);
-  const selectedUserRef = useRef<string | undefined>(selectedUserId);
-  const selectedGroupRef = useRef<string | undefined>(selectedGroupId);
-  const userRef = useRef(user);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
-  // Keep refs in sync
+  const selectedUserRef = useRef(selectedUserId);
+  const selectedGroupRef = useRef(selectedGroupId);
   useEffect(() => { selectedUserRef.current = selectedUserId; }, [selectedUserId]);
   useEffect(() => { selectedGroupRef.current = selectedGroupId; }, [selectedGroupId]);
-  useEffect(() => { userRef.current = user; }, [user]);
 
-  // Initialize Socket (Once per user)
+  // --- Live connection ---
   useEffect(() => {
     if (!user) return;
+    const socket = getSocket();
+    if (!socket) return;
 
-    const token = localStorage.getItem('auth_token');
+    setIsConnected(socket.connected);
 
-    if (!token) {
-      console.warn('Messaging: No auth token found in localStorage. WebSocket connection skipped.');
-      return;
-    }
+    const onConnect = () => setIsConnected(true);
+    const onDisconnect = () => setIsConnected(false);
 
-    console.log('Messaging: Attempting to connect to', SOCKET_URL);
+    const onNewMessage = (raw: StoredMessage) => {
+      const msg = toChatMessage(raw);
+      const inThisDm =
+        selectedUserRef.current &&
+        !msg.groupId &&
+        (msg.fromUserId === selectedUserRef.current || msg.toUserId === selectedUserRef.current);
+      const inThisGroup = selectedGroupRef.current && msg.groupId === selectedGroupRef.current;
+      if (!inThisDm && !inThisGroup) return;
 
-    // Normalize protocol: https -> wss, http -> ws
-    const WS_URL = SOCKET_URL.replace(/^http/, 'ws');
+      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+    };
 
-    const newSocket = io(WS_URL, {
-      auth: { token },
-      autoConnect: true,
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000,
-      transports: ['websocket'], // Force WebSocket transport as requested
-      withCredentials: true
-    });
+    const onTyping = (data: { userId: string; isTyping: boolean; groupId?: string }) => {
+      const relevant = data.groupId
+        ? data.groupId === selectedGroupRef.current
+        : data.userId === selectedUserRef.current;
+      if (relevant) setIsTyping(data.isTyping);
+    };
 
-    socketRef.current = newSocket;
-    setSocket(newSocket);
-
-    newSocket.on('connect', () => {
-      setIsConnected(true);
-      console.log('Messaging: Socket connected successfully');
-      newSocket.emit('get-unread-counts', { userId: user.id });
-      
-      // If we already have a selection, request history/join
-      if (selectedUserRef.current) {
-        newSocket.emit('load-dm-history', { withUserId: selectedUserRef.current, currentUserId: user.id });
-      } else if (selectedGroupRef.current) {
-        newSocket.emit('join-group-chat', { groupId: selectedGroupRef.current });
-        newSocket.emit('load-group-history', { groupId: selectedGroupRef.current });
-      }
-    });
-
-    newSocket.on('connect_error', (err) => {
-      console.error('❌ WebSocket error:', err.message);
-      setIsConnected(false);
-      
-      // Notify user about potential server wake-up delay
-      if (err.message.includes('timeout')) {
-        console.log('⏳ Server is likely waking up from sleep. Reconnection will resume automatically.');
-      } else {
-        console.warn('Socket connection error occurred. Ensure your network allows WebSocket connections.');
-      }
-    });
-
-    newSocket.on('disconnect', (reason) => {
-      setIsConnected(false);
-      console.log('Messaging: Socket disconnected. Reason:', reason);
-    });
-
-    // Listen for DMs
-    newSocket.on('receive-dm', (msg: Message) => {
-      const currentSelectedUser = selectedUserRef.current;
-      const currentUser = userRef.current;
-      
-      // If we are currently chatting with the other party (sender or recipient)
-      const isCurrentChat = currentSelectedUser && (msg.fromUserId === currentSelectedUser || msg.toUserId === currentSelectedUser);
-      
-      if (isCurrentChat) {
-        setChatMessages(prev => {
-          // Prevent duplicates (especially if sender gets back their own msg)
-          if (prev.find(m => m._id === msg._id)) return prev;
-          return [...prev, msg];
-        });
-        
-        // Mark as read only if we are the recipient
-        if (msg.toUserId === currentUser?.id) {
-          newSocket.emit('mark-dm-read', { fromUserId: msg.fromUserId, currentUserId: currentUser.id });
-        }
-      } else if (currentUser && msg.toUserId === currentUser.id) {
-        // Increment unread count only if we are the recipient and NOT in the chat
-        setUnreadCounts(prev => ({
-          ...prev,
-          [msg.fromUserId]: (prev[msg.fromUserId] || 0) + 1
-        }));
-      }
-    });
-
-    newSocket.on('dm-history', ({ withUserId, messages }: { withUserId: string, messages: Message[] }) => {
-      if (selectedUserRef.current === withUserId) {
-        setChatMessages(messages);
-      }
-    });
-
-    // Listen for Group Messages
-    newSocket.on('receive-group-message', (msg: Message) => {
-      if (selectedGroupRef.current === msg.groupId) {
-        setChatMessages(prev => {
-          if (prev.find(m => m._id === msg._id)) return prev;
-          return [...prev, msg];
-        });
-      }
-    });
-
-    newSocket.on('group-history', ({ groupId, messages }: { groupId: string, messages: Message[] }) => {
-      if (selectedGroupRef.current === groupId) {
-        setChatMessages(messages);
-      }
-    });
-
-    // Typing Indicators
-    newSocket.on('user-typing', ({ fromUserId, isTyping: typing }: { fromUserId: string, isTyping: boolean }) => {
-      if (selectedUserRef.current === fromUserId) {
-        setIsTyping(typing);
-      }
-    });
-
-    newSocket.on('group-typing', ({ groupId, isTyping: typing }: { groupId: string, isTyping: boolean }) => {
-      if (selectedGroupRef.current === groupId) {
-        setIsTyping(typing);
-      }
-    });
-
-    newSocket.on('unread-counts', (counts: Record<string, number>) => {
-      setUnreadCounts(counts);
-    });
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('new_message', onNewMessage);
+    socket.on('typing_update', onTyping);
 
     return () => {
-      newSocket.disconnect();
-      socketRef.current = null;
+      // Pass the handler: `socket.off('new_message')` with no second argument
+      // strips every listener on the shared socket, including AppContext's.
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('new_message', onNewMessage);
+      socket.off('typing_update', onTyping);
     };
   }, [user]);
 
-  // Selection Logic (Joining rooms/Requesting history)
+  // --- History for the open conversation ---
   useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket || !isConnected || !user) return;
-
-    if (selectedUserId) {
-      socket.emit('load-dm-history', { withUserId: selectedUserId, currentUserId: user.id });
-      socket.emit('mark-dm-read', { fromUserId: selectedUserId, currentUserId: user.id });
-      setUnreadCounts(prev => ({ ...prev, [selectedUserId]: 0 }));
-      setChatMessages([]); // Clear while loading
-    } else if (selectedGroupId) {
-      socket.emit('join-group-chat', { groupId: selectedGroupId });
-      socket.emit('load-group-history', { groupId: selectedGroupId });
-      setChatMessages([]); // Clear while loading
+    if (!user || (!selectedUserId && !selectedGroupId)) {
+      setMessages([]);
+      return;
     }
 
-    return () => {
-      if (selectedGroupId) {
-        socket.emit('leave-group-chat', { groupId: selectedGroupId });
-      }
-    };
-  }, [selectedUserId, selectedGroupId, isConnected, user]);
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setIsTyping(false);
 
-  // Actions
-  const sendDM = useCallback((text: string) => {
-    if (!socket || !user || !selectedUserId) return;
-    socket.emit('send-dm', {
-      toUserId: selectedUserId,
-      text,
-      fromUserId: user.id,
-      fromUserName: user.name
-    });
-  }, [socket, user, selectedUserId]);
+    const params = selectedGroupId ? { groupId: selectedGroupId } : { receiverId: selectedUserId };
 
-  const sendGroupMessage = useCallback((text: string) => {
-    if (!socket || !user || !selectedGroupId) return;
-    socket.emit('send-group-message', {
-      groupId: selectedGroupId,
-      text,
-      userId: user.id,
-      userName: user.name
-    });
-  }, [socket, user, selectedGroupId]);
+    api.get('/messages', { params })
+      .then((res) => {
+        if (cancelled) return;
+        setMessages((res.data || []).map(toChatMessage));
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err?.response?.data?.message || "We couldn't load this conversation.");
+        setMessages([]);
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    // Joining the group room is what makes its live messages arrive at all.
+    const socket = getSocket();
+    if (socket && selectedGroupId) socket.emit('join_group', selectedGroupId);
+
+    return () => { cancelled = true; };
+  }, [user, selectedUserId, selectedGroupId]);
+
+  const sendMessage = useCallback((text: string) => {
+    const socket = getSocket();
+    if (!socket || !user || !text.trim()) return;
+    if (selectedGroupId) {
+      socket.emit('send_message', { content: text, groupId: selectedGroupId });
+    } else if (selectedUserId) {
+      socket.emit('send_message', { content: text, receiverId: selectedUserId });
+    }
+  }, [user, selectedUserId, selectedGroupId]);
 
   const setTypingStatus = useCallback((typing: boolean) => {
+    const socket = getSocket();
     if (!socket || !user) return;
-    if (selectedUserId) {
-      socket.emit('typing-dm', { toUserId: selectedUserId, fromUserId: user.id, isTyping: typing });
-    } else if (selectedGroupId) {
-      socket.emit('typing-group', { groupId: selectedGroupId, userId: user.id, isTyping: typing });
-    }
-  }, [socket, user, selectedUserId, selectedGroupId]);
+    if (selectedGroupId) socket.emit('typing', { isTyping: typing, groupId: selectedGroupId });
+    else if (selectedUserId) socket.emit('typing', { isTyping: typing, receiverId: selectedUserId });
+  }, [user, selectedUserId, selectedGroupId]);
 
-  return {
-    chatMessages,
-    unreadCounts,
-    isTyping,
-    isConnected,
-    sendDM,
-    sendGroupMessage,
-    setTypingStatus
-  };
+  return { messages, loading, error, isTyping, isConnected, sendMessage, setTypingStatus };
 };

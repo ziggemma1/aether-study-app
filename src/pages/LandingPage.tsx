@@ -13,6 +13,10 @@ export default function LandingPage() {
   React.useEffect(() => {
     document.documentElement.classList.add('is-landing-page');
     document.body.classList.add('is-landing-page');
+    // Separate from is-landing-page (which Login and Signup also set, purely
+    // for scrolling). This one pins the surface tokens dark — see
+    // src/styles/landing.css — because only this page is designed dark.
+    document.documentElement.classList.add('landing-dark');
     
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -23,6 +27,7 @@ export default function LandingPage() {
       window.removeEventListener('scroll', handleScroll);
       document.documentElement.classList.remove('is-landing-page');
       document.body.classList.remove('is-landing-page');
+      document.documentElement.classList.remove('landing-dark');
     };
   }, []);
 
@@ -102,13 +107,16 @@ export default function LandingPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
+            {/* No counts, percentages or social proof here. Every figure this
+                headline used to carry was invented, and none of it can be
+                backed up at launch. Benefit framing instead. */}
             <h1 className="text-3xl md:text-5xl font-medium mb-6 leading-[1.1] tracking-tight">
               <span className="block text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-100 via-80% to-slate-400">
-                85% of Students Say They 
+                Stop re-reading.
               </span>
-              <span className="block text-primary my-1">Remember More</span>
+              <span className="block text-primary my-1">Start remembering.</span>
               <span className="block text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-100 via-80% to-slate-400">
-                After One Week on <span className="font-bold">Aether</span>
+                <span className="font-bold">Aether</span> turns your notes into quizzes, flashcards and a plan.
               </span>
             </h1>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-6">
@@ -116,15 +124,19 @@ export default function LandingPage() {
               <span>📸 Snap physical notes • 📚 Learn from curriculum – no upload needed</span>
             </div>
             <p className="text-slate-400 text-lg mb-8 max-w-lg leading-relaxed">
-              Not another note-taking app. A complete AI study system that thousands of students use to replace last-minute cramming with confident mastery.
+              Not another note-taking app. Upload a PDF or snap a photo of your notes,
+              and Aether writes the summaries, quizzes and flashcards — then keeps you
+              coming back with daily streaks and live study rooms.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/signup" className="btn-primary w-full sm:w-auto text-center">
-                Join 10,000+ Students
+                Start studying free
               </Link>
-              <button className="btn-secondary w-full sm:w-auto text-center">
-                Read Reviews
-              </button>
+              {/* Was "Read Reviews" — a dead button with no handler, pointing at
+                  reviews that do not exist. Now scrolls to the feature list. */}
+              <a href="#features" className="btn-secondary w-full sm:w-auto text-center">
+                See how it works
+              </a>
             </div>
           </motion.div>
 
@@ -141,11 +153,16 @@ export default function LandingPage() {
               transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
               className="w-full max-w-[280px] sm:max-w-[320px] bg-gradient-to-br from-[#FF55D2] to-[#FF9F68] rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 shadow-xl relative z-20 mb-6 sm:mb-8 mx-auto lg:ml-auto"
             >
+              {/* Was an invented "concepts mastered" count. The card keeps its
+                  visual weight with a benefit line instead of a fake figure. */}
               <div className="flex flex-col gap-1 mb-3 sm:mb-4">
-                <span className="text-white/70 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Concepts Mastered</span>
-                <span className="text-white text-2xl sm:text-4xl font-extrabold">1,240</span>
+                <span className="text-white/70 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Mastery tracking</span>
+                {/* One line, short copy: the floating "Daily streaks" card is
+                    absolutely positioned across this card's lower half, so a
+                    two-line headline pushed the description underneath it. */}
+                <span className="text-white text-2xl sm:text-4xl font-extrabold leading-tight">Know your gaps</span>
               </div>
-              <p className="text-white/90 text-xs sm:text-sm">Aether helps you track exactly what you know and what you don't.</p>
+              <p className="text-white/90 text-xs sm:text-sm">Scored per topic, so you revise what's weak.</p>
             </motion.div>
 
             {/* Main Card 2 */}
@@ -154,26 +171,37 @@ export default function LandingPage() {
               transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
               className="w-full max-w-[280px] sm:max-w-[320px] bg-gradient-to-br from-primary to-violet-700 rounded-[24px] sm:rounded-[32px] p-6 sm:p-8 shadow-xl relative z-10 mx-auto lg:ml-auto lg:mr-8"
             >
+              {/* Was an invented session count plus unverifiable social proof. */}
               <div className="flex flex-col gap-1 mb-3 sm:mb-4">
-                <span className="text-white/70 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Study Sessions</span>
-                <span className="text-white text-2xl sm:text-4xl font-extrabold">12k+</span>
+                <span className="text-white/70 text-[11px] sm:text-xs font-bold uppercase tracking-wider">Live Rooms</span>
+                <span className="text-white text-xl sm:text-3xl font-extrabold leading-tight">Never study<br />alone</span>
               </div>
-              <p className="text-white/90 text-xs sm:text-sm">Join thousands of students optimizing their study time today.</p>
+              <p className="text-white/90 text-xs sm:text-sm">Drop into a room and work alongside other people on a shared timer.</p>
             </motion.div>
 
             {/* Floating Stats */}
-            <div className="relative lg:absolute lg:-left-8 lg:top-1/2 lg:-translate-y-1/2 mt-6 lg:mt-0 bg-surface border border-border rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 shadow-xl flex flex-col gap-2 sm:gap-3 w-full max-w-[280px] sm:min-w-[220px] mx-auto z-30">
+            {/* Deliberately NOT absolutely positioned any more.
+                It was `lg:absolute -left-8 top-1/2`, which parked it across the
+                middle of both gradient cards and hid a line of body copy on
+                each — pre-existing, the old "Active Students" card did the
+                same. Every alternative offset just moved the collision to a
+                different card or into the hero paragraph, because the column
+                is not wide enough for a floating layer. In normal flow it
+                cannot overlap anything at any width, which is the right
+                trade for a marketing page. */}
+            <div className="relative mt-6 bg-surface border border-border rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 shadow-xl flex flex-col gap-2 sm:gap-3 w-full max-w-[280px] sm:max-w-[320px] mx-auto lg:ml-auto lg:mr-0 z-30">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-accent rounded-lg sm:rounded-xl flex items-center justify-center text-primary shadow-sm">
                   <User size={16} className="sm:hidden" />
                   <User size={20} className="hidden sm:block" />
                 </div>
                 <div>
-                  <p className="text-[11px] sm:text-[11px] text-slate-400 font-bold uppercase tracking-wider">Active Students</p>
-                  <p className="text-lg sm:text-xl font-bold text-white">10,482</p>
+                  {/* Was a fabricated active-user count. */}
+                  <p className="text-[11px] sm:text-[11px] text-slate-400 font-bold uppercase tracking-wider">Daily streaks</p>
+                  <p className="text-lg sm:text-xl font-bold text-white">Show up, don't break it</p>
                 </div>
               </div>
-              <p className="text-slate-500 text-[11px] sm:text-[11px] font-medium">Master your courses with AI-powered insights.</p>
+              <p className="text-slate-500 text-[11px] sm:text-[11px] font-medium">The habit is the hard part. Streaks make it the easy part.</p>
             </div>
           </motion.div>
         </section>

@@ -7,6 +7,13 @@ import { translations, Language } from '../lib/translations';
 interface AppContextType {
   user: User | null;
   setUser: (user: User | null) => void;
+  /**
+   * Re-reads /auth/me and refreshes both `user` and its localStorage cache.
+   * Needed after a server-side change to the user document (onboarding
+   * completion, for one) — a bare setUser() would leave the cached copy stale
+   * and the old value would come back on the next reload.
+   */
+  refreshUser: () => Promise<boolean>;
   materials: Material[];
   setMaterials: React.Dispatch<React.SetStateAction<Material[]>>;
   savedPlans: SavedPlan[];
@@ -53,7 +60,27 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  /**
+   * Hydrate from the cached user rather than starting at null.
+   *
+   * `fetchUserData` has always WRITTEN localStorage['user'], and nothing ever
+   * read it back. So on every load the app started signed-out and depended on
+   * `/auth/me` succeeding — and when that call failed for any reason other than
+   * a real 401 (a 429 from the rate limiter, a timeout, the DB being slow),
+   * `user` stayed null and ProtectedRoute redirected to /login. Being rate
+   * limited was indistinguishable from being logged out.
+   *
+   * This is optimistic, not authoritative: a genuine 401 from `/auth/me` still
+   * clears the cache and sends the user to the login page.
+   */
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const cached = localStorage.getItem('user');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [materials, setMaterials] = useState<Material[]>([]);
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>(() => {
     try {
@@ -143,7 +170,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setQuizResults([]);
     disconnectSocket();
     localStorage.removeItem('user');
-    localStorage.removeItem('cached_materials');
+    localStorage.removeItem('cached_materials_v2');
     localStorage.removeItem('auth_token');
   };
 
@@ -229,30 +256,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (user) {
       const socket = getSocket();
       if (socket) {
-        socket.on("new_message", (message: Message) => {
+        const onNewMessage = (message: Message) => {
           setMessages(prev => {
             const msgId = message.id || (message as any)._id;
             // Prevent duplicate message renders
             if (prev.some(m => m.id === msgId || (m as any)._id === msgId)) return prev;
             return [...prev, { ...message, id: msgId }];
           });
-          
-          // Show toast if not current recipient (simple logic for now)
-          if (message.senderId !== user.id) {
-            showToast(`New message`, 'success');
-          }
-        });
 
-        socket.on("typing_update", (data: { userId: string, isTyping: boolean, groupId?: string }) => {
+          // Only announce messages from other people, and not while the user is
+          // already reading that conversation — the toast used to fire for every
+          // message including your own the moment you sent it.
+          const onMessagesPage = window.location.pathname.startsWith('/messages');
+          if (message.senderId !== user.id && !onMessagesPage) {
+            showToast('New message', 'success');
+          }
+        };
+
+        const onTypingUpdate = (data: { userId: string, isTyping: boolean, groupId?: string }) => {
           setTypingUsers(prev => ({
             ...prev,
             [data.groupId || data.userId]: data.isTyping
           }));
-        });
+        };
 
-        socket.on("error_message", (data: { message: string }) => {
+        const onErrorMessage = (data: { message: string }) => {
           showToast(data.message, 'error');
-        });
+        };
+
+        socket.on("new_message", onNewMessage);
+        socket.on("typing_update", onTypingUpdate);
+        socket.on("error_message", onErrorMessage);
 
         // Join rooms for user groups
         groups.forEach(g => {
@@ -260,8 +294,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
 
         return () => {
-          socket.off("new_message");
-          socket.off("typing_update");
+          /* Must name the handler. `socket.off("new_message")` removes EVERY
+             listener for that event on the shared socket, so this cleanup was
+             silently tearing down the Messages page's listeners too. */
+          socket.off("new_message", onNewMessage);
+          socket.off("typing_update", onTypingUpdate);
+          socket.off("error_message", onErrorMessage);
         };
       }
     }
@@ -273,6 +311,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     root.classList.add(theme);
     localStorage.setItem('aether-theme', theme);
   }, [theme]);
+
+  /**
+   * Token overrides have to live on documentElement, not on a div inside the
+   * layout.
+   *
+   * Tailwind v4's `@theme` emits `--color-primary: var(--primary)` on :root, and
+   * a custom property resolves where it is DECLARED — so :root computes
+   * --color-primary to the :root violet and every descendant inherits that
+   * literal colour. Re-declaring --primary further down the tree changes
+   * nothing that `bg-primary` can see.
+   *
+   * That is why the light/dark class above is set here and works, while the
+   * time-of-day tint was applied as a className on an AppLayout div and never
+   * actually moved `bg-background`. Both it and the shop's accent theme are set
+   * here now.
+   */
+  const accentTheme = user?.equippedTheme || '';
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const applied = [timeTheme, accentTheme].filter(Boolean);
+    applied.forEach((c) => root.classList.add(c));
+    return () => applied.forEach((c) => root.classList.remove(c));
+  }, [timeTheme, accentTheme]);
 
   useEffect(() => {
     const handleDbError = (e: any) => {
@@ -294,10 +355,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       { key: 'requests', url: '/users/friend-requests', setter: setFriendRequests }
     ];
 
-    const mapId = (item: any) => ({ 
-      ...item, 
+    // uploadDate stays machine-readable. It used to be written as
+    // `toLocaleDateString()` — a DISPLAY string — and cached to localStorage,
+    // then parsed back with `new Date()` by consumers. Any locale Chrome can't
+    // re-parse ("04.08.2026") yielded an Invalid Date, and the `'Recently'`
+    // fallback was worse: it is truthy, so `if (uploadDate)` guards passed and
+    // `new Date('Recently')` threw "RangeError: Invalid time value", taking the
+    // Study Planner down to the error boundary. Views format it themselves.
+    const mapId = (item: any) => ({
+      ...item,
       id: item._id || item.id,
-      uploadDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'
+      uploadDate: item.createdAt ? new Date(item.createdAt).toISOString() : null
     });
 
     try {
@@ -309,7 +377,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const mapped = res.data.map(mapId);
             setter(mapped);
             if (url === '/materials') {
-              localStorage.setItem('cached_materials', JSON.stringify(mapped));
+              localStorage.setItem('cached_materials_v2', JSON.stringify(mapped));
             }
           }
         } catch (err) {
@@ -341,7 +409,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const initialize = useCallback(async () => {
     const cachedUser = localStorage.getItem('user');
-    const cachedMaterials = localStorage.getItem('cached_materials');
+    const cachedMaterials = localStorage.getItem('cached_materials_v2');
     
     if (cachedUser) {
       try {
@@ -362,10 +430,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(parsedMaterials)) {
           setMaterials(parsedMaterials);
         } else {
-          localStorage.removeItem('cached_materials');
+          localStorage.removeItem('cached_materials_v2');
         }
       } catch (e) {
-        localStorage.removeItem('cached_materials');
+        localStorage.removeItem('cached_materials_v2');
       }
     }
 
@@ -417,9 +485,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{ 
-      user, 
-      setUser, 
-      materials, 
+      user,
+      setUser,
+      refreshUser: fetchUserData,
+      materials,
       setMaterials, 
       savedPlans,
       setSavedPlans,

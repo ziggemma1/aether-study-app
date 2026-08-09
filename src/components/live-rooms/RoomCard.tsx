@@ -1,13 +1,22 @@
-import React from 'react';
-import { Users, Play } from 'lucide-react';
+import { Users, Play, Plus } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { UserAvatar } from '../ui/UserAvatar';
+
+export interface RoomOccupant {
+  id: string;
+  name: string;
+  avatar?: string;
+}
 
 export interface Room {
   id: string;
   name: string;
   subject: string;
-  participants: Array<{ name: string; avatar?: string }>;
+  /** Live occupancy. socket.ts rewrites this on every join/leave/disconnect. */
+  activeCount: number;
+  /** Who is actually inside. Populated by GET /rooms; empty for idle rooms. */
+  participants: RoomOccupant[];
   maxParticipants: number;
   isActive: boolean;
   createdAt: string;
@@ -18,75 +27,132 @@ interface RoomCardProps {
   onJoin: (id: string) => void;
 }
 
-export function RoomCard({ room, onJoin }: RoomCardProps) {
-  const { name, subject, participants, maxParticipants, isActive, createdAt } = room;
+const MAX_FACES = 4;
+
+const openedLabel = (createdAt: string) => {
+  const d = new Date(createdAt);
+  return isNaN(d.getTime()) ? null : formatDistanceToNow(d, { addSuffix: true });
+};
+
+/**
+ * A room with people in it.
+ *
+ * Deliberately louder than the idle row below: live green edge and wash, a
+ * pulsing indicator, real faces, the occupancy count as the headline figure,
+ * and the solid primary CTA. Occupancy is the only thing that earns this
+ * treatment — the point is that a busy room and a dead one should never be
+ * mistakable at a glance.
+ */
+export function ActiveRoomCard({ room, onJoin }: RoomCardProps) {
+  const { name, subject, activeCount, participants, maxParticipants, createdAt } = room;
+  const faces = participants.slice(0, MAX_FACES);
+  const overflow = Math.max(0, activeCount - faces.length);
+  const opened = openedLabel(createdAt);
 
   return (
-    <div className={cn(
-      "group relative overflow-hidden rounded-2xl bg-[#141A24]/60 backdrop-blur-xl border transition-all duration-300",
-      isActive ? "border-[#00D2FF]/30 hover:border-[#00D2FF]/50 hover:shadow-[0_8px_30px_rgba(0,210,255,0.15)]" : "border-[#6C5CE7]/10 hover:border-[#6C5CE7]/30 hover:shadow-[0_8px_30px_rgba(108,92,231,0.1)]",
-      "p-6 flex flex-col justify-between hover:-translate-y-1"
-    )}>
-      {/* Background Gradient Effect */}
-      <div className={cn(
-        "absolute -top-24 -right-24 w-48 h-48 rounded-full blur-[80px] pointer-events-none opacity-50",
-        isActive ? "bg-[#00D2FF]/20" : "bg-[#6C5CE7]/20"
-      )} />
+    <div className="group relative flex flex-col rounded-[var(--radius-card)] bg-live/[0.06] border border-live/35 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-0.5 transition-all duration-300 p-5 overflow-hidden">
+      {/* Live wash. pointer-events-none so it never swallows the CTA. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-10 -top-12 w-44 h-44 rounded-full bg-live/15 blur-3xl"
+      />
 
-      <div>
-        <div className="flex justify-between items-start mb-6">
-          <div className="z-10">
-            <h3 className="font-bold text-white text-lg tracking-tight group-hover:text-[#00D2FF] transition-colors">{name}</h3>
-            <p className="text-xs text-[#00D2FF]/80 font-bold uppercase tracking-widest mt-1">{subject}</p>
-          </div>
-          <div className="z-10 bg-black/40 px-3 py-1 rounded-full border border-white/5 flex items-center gap-2">
-            <div className={cn("w-2 h-2 rounded-full", isActive ? "bg-[#00E5A0] animate-pulse" : "bg-[#4A5568]")} />
-            <span className={cn("text-[11px] font-bold uppercase tracking-wider", isActive ? "text-[#00E5A0]" : "text-[#4A5568]")}>
-              {isActive ? 'Live' : 'Waiting'}
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          {/* line-clamp-2, not truncate: a two-word room name was fine but
+              "Organic Chem — Finals Grind" lost its ending to an ellipsis. */}
+          <h3 className="font-heading font-bold text-base tracking-tight leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors">
+            {name}
+          </h3>
+          <p className="text-xs text-text-muted mt-0.5 truncate">{subject}</p>
+        </div>
+
+        <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-live/15 text-live-ink">
+          {/* Shared primitive — hidden automatically under reduced motion. */}
+          <span className="motion-live-dot text-live" />
+          LIVE
+        </span>
+      </div>
+
+      {/* Occupancy is the headline, not a footnote. */}
+      <p className="relative mt-3 text-sm font-bold text-live-ink">
+        {activeCount} studying now
+        <span className="ml-1.5 text-xs font-medium text-text-muted">
+          of {maxParticipants} seats
+        </span>
+      </p>
+
+      {faces.length > 0 && (
+        <div className="relative flex items-center -space-x-2 mt-3">
+          {faces.map(p => (
+            <span key={p.id} title={p.name}>
+              <UserAvatar name={p.name} avatarUrl={p.avatar} size="sm" />
             </span>
-          </div>
+          ))}
+          {overflow > 0 && (
+            <span className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center text-[11px] font-bold text-text-muted">
+              +{overflow}
+            </span>
+          )}
         </div>
+      )}
 
-        <div className="flex justify-between items-end mb-8 z-10 relative">
-          <div className="flex items-center">
-            {participants.slice(0, 5).map((p, i) => (
-              <div 
-                key={i} 
-                className="w-10 h-10 rounded-full border-2 border-[#0B0E14] -ml-2 first:ml-0 flex items-center justify-center bg-[#6C5CE7] text-white text-xs font-bold overflow-hidden"
-                style={{ zIndex: participants.length - i }}
-              >
-                {p.avatar ? (
-                  <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
-                ) : (
-                  p.name.charAt(0)
-                )}
-              </div>
-            ))}
-            {participants.length > 5 && (
-              <div className="w-10 h-10 rounded-full border-2 border-[#0B0E14] -ml-2 bg-[#2D3436] flex items-center justify-center text-[11px] font-bold text-white" style={{ zIndex: 0 }}>
-                +{participants.length - 5}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 text-xs font-bold text-white/50 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
-            <Users size={14} /> {participants.length}/{maxParticipants}
-          </div>
-        </div>
-      </div>
+      {opened && (
+        <p className="relative text-[11px] text-text-muted mt-3">opened {opened}</p>
+      )}
 
-      <div className="z-10 flex flex-col gap-4 mt-auto">
-        <button 
-          onClick={() => onJoin(room.id)}
-          className="w-full bg-gradient-to-r from-[#6C5CE7] to-[#00D2FF] hover:opacity-90 active:scale-[0.98] text-white py-3 rounded-xl text-sm font-bold shadow-[0_4px_15px_rgba(108,92,231,0.3)] transition-all flex items-center justify-center gap-2"
-        >
-          {participants.length === 0 ? 'Start Room' : 'Join Room'} <Play size={16} className="fill-white" />
-        </button>
-
-        <div className="flex justify-between items-center text-[11px] uppercase font-bold tracking-widest text-white/30 px-1">
-          <span>Created {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}</span>
-          {participants.length > 0 && <span className="text-[#00D2FF]/60 flex items-center gap-1">🎯 Active Focus</span>}
-        </div>
-      </div>
+      <button
+        onClick={() => onJoin(room.id)}
+        className="relative w-full mt-4 bg-primary hover:bg-primary/90 active:scale-[0.98] text-white py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
+      >
+        Join room <Play size={15} className="fill-white" />
+      </button>
     </div>
   );
+}
+
+/**
+ * An empty room.
+ *
+ * A compact row rather than a card, with a ghost action. Seven of these used
+ * to be full-size cards carrying the same solid primary button as a busy room,
+ * which is what made the screen read as uniformly dead — every room shouted
+ * equally loudly about having nobody in it.
+ */
+export function IdleRoomRow({ room, onJoin }: RoomCardProps) {
+  const { name, subject, maxParticipants, createdAt } = room;
+  const opened = openedLabel(createdAt);
+
+  return (
+    <div className="group flex items-center gap-3 rounded-2xl bg-surface border border-border px-4 py-3 hover:border-primary/25 transition-colors">
+      <span className="shrink-0 w-9 h-9 rounded-xl bg-surface-alt text-text-muted flex items-center justify-center">
+        <Users size={16} />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <h3 className="font-semibold text-sm text-text-main leading-snug line-clamp-1 break-words">
+          {name}
+        </h3>
+        <p className="text-[11px] text-text-muted truncate">
+          {subject} · empty{opened ? ` · opened ${opened}` : ''} · {maxParticipants} seats
+        </p>
+      </div>
+
+      {/* Ghost, not a primary button. Starting an empty room is a secondary
+          action next to joining one that already has people in it. */}
+      <button
+        onClick={() => onJoin(room.id)}
+        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-text-muted hover:text-text-main hover:border-primary/30 text-xs font-semibold transition-colors cursor-pointer min-h-[40px]"
+      >
+        <Plus size={13} /> Start it
+      </button>
+    </div>
+  );
+}
+
+/** Kept so any older import keeps compiling; routes to the right variant. */
+export function RoomCard({ room, onJoin }: RoomCardProps) {
+  return room.activeCount > 0
+    ? <ActiveRoomCard room={room} onJoin={onJoin} />
+    : <IdleRoomRow room={room} onJoin={onJoin} />;
 }

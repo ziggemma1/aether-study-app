@@ -1,57 +1,65 @@
 import React from 'react';
-import { Trophy, Rocket, Shield, ArrowRight } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import { motion } from 'motion/react';
+import { Trophy, Flame, Eye, Users, ArrowRight, Loader2 } from 'lucide-react';
 
 interface OptInToggleProps {
-  isOptedIn: boolean;
   onToggle: () => void;
   isLoading?: boolean;
 }
 
-export function OptInToggle({ isOptedIn, onToggle, isLoading }: OptInToggleProps) {
+/**
+ * The gate shown while a user is opted out.
+ *
+ * The old version put icon, copy and button in one `flex-row` with no wrapping
+ * rule, so at anything under a very wide viewport the text column collapsed to
+ * ~40 characters and its two feature chips stacked into a ragged stub. The copy
+ * was also written in house jargon — "Arena Opt-In Required", "calculate your
+ * study recall metrics" — for a screen whose only job is to explain a choice.
+ */
+export function OptInToggle({ onToggle, isLoading }: OptInToggleProps) {
   return (
-    <div className="relative overflow-hidden group">
-      {/* Background Ambience */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-[#6C5CE7]/10 blur-[80px] pointer-events-none group-hover:bg-[#6C5CE7]/20 transition-all duration-700" />
-      
-      <div className="bg-[#141A24]/60 backdrop-blur-2xl border border-white/5 rounded-3xl p-8 shadow-2xl relative z-10 transition-all duration-300 group-hover:border-white/10">
-        <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="w-20 h-20 shrink-0 rounded-[28px] bg-gradient-to-br from-[#6C5CE7] to-[#00D2FF] flex items-center justify-center shadow-lg shadow-[#6C5CE7]/20">
-            <Trophy size={32} className="text-white fill-white/20" />
-          </div>
-          
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="text-xl font-black text-white mb-3 tracking-tight">Arena Opt-In Required</h3>
-            <p className="text-sm text-white/50 leading-relaxed max-w-sm mx-auto md:mx-0">
-              Join the Aether Leaderboard to calculate your study recall metrics and compete for weekly academic recognition.
-            </p>
-            
-            <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-6">
-              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#00D2FF]/60 bg-[#00D2FF]/5 px-3 py-1.5 rounded-lg border border-[#00D2FF]/10">
-                <Rocket size={12} /> Global Exposure
-              </div>
-              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#6C5CE7]/60 bg-[#6C5CE7]/5 px-3 py-1.5 rounded-lg border border-[#6C5CE7]/10">
-                <Shield size={12} /> Verify Recall
-              </div>
-            </div>
-          </div>
-          
-          <button 
-            onClick={onToggle}
-            disabled={isLoading}
-            className={cn(
-              "shrink-0 w-full md:w-auto px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-3",
-              isOptedIn 
-                ? "bg-white/5 text-white/40 hover:bg-white/10 border border-white/5" 
-                : "bg-gradient-to-r from-[#6C5CE7] to-[#00D2FF] text-white shadow-[0_4px_25px_rgba(108,92,231,0.3)] hover:opacity-90"
-            )}
-          >
-            {isLoading ? 'Processing...' : isOptedIn ? 'Retire from Arena' : 'Enter the Arena'}
-            {!isOptedIn && <ArrowRight size={18} />}
-          </button>
-        </div>
-      </div>
+    <div className="rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] p-6 sm:p-8 text-center">
+      <span className="inline-flex w-14 h-14 rounded-2xl bg-pastel-peach text-pastel-peach-ink items-center justify-center mx-auto">
+        <Trophy size={26} />
+      </span>
+
+      <h2 className="font-heading text-xl sm:text-2xl font-bold text-text-main tracking-tight mt-4">
+        Join the leaderboard
+      </h2>
+      <p className="text-sm text-text-muted mt-2 max-w-md mx-auto leading-relaxed">
+        See how your study time stacks up against everyone else using Aether.
+        You can leave again at any time.
+      </p>
+
+      <ul className="mt-6 grid sm:grid-cols-3 gap-3 text-left">
+        <Point icon={<Users size={15} />} title="Weekly and all-time">
+          Ranked on the points you earn from sessions and quizzes.
+        </Point>
+        <Point icon={<Flame size={15} />} title="Keep your streak visible">
+          Your streak and study hours show on your row.
+        </Point>
+        <Point icon={<Eye size={15} />} title="Only your name and score">
+          Nothing you upload or write is ever shown.
+        </Point>
+      </ul>
+
+      <button
+        onClick={onToggle}
+        disabled={isLoading}
+        className="mt-7 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-sm transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer min-h-[44px]"
+      >
+        {isLoading ? <><Loader2 size={16} className="animate-spin" /> Joining…</> : <>Join the leaderboard <ArrowRight size={16} /></>}
+      </button>
     </div>
+  );
+}
+
+function Point({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <li className="rounded-2xl border border-border bg-surface-alt/60 p-4">
+      <span className="flex items-center gap-2 text-sm font-semibold text-text-main">
+        <span className="text-primary">{icon}</span> {title}
+      </span>
+      <span className="block text-xs text-text-muted mt-1 leading-relaxed">{children}</span>
+    </li>
   );
 }

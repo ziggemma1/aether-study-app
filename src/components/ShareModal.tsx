@@ -96,7 +96,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   onClick={handleCopy}
                   className={cn(
                     "p-3 rounded-xl transition-all flex items-center gap-2",
-                    copied ? "bg-green-500 text-white" : "bg-primary text-white hover:scale-105"
+                    copied ? "bg-accent text-white" : "bg-primary text-white hover:scale-105"
                   )}
                 >
                   {copied ? <Check size={18} /> : <Copy size={18} />}

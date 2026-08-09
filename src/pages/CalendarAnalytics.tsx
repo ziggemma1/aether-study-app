@@ -61,10 +61,10 @@ export default function CalendarAnalytics() {
   const totalHours = summary ? Math.round((summary.totalStudyTimeMinutes / 60) * 10) / 10 : 0;
 
   const kpis = [
-    { label: 'Total Hours', value: `${totalHours}h`, trend: 'All time', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'Current Streak', value: `${summary?.studyStreak ?? 0} Days`, trend: summary?.studyStreak > 0 ? 'Keep it going' : 'Start today', icon: Flame, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-    { label: 'Completion Rate', value: completionRate === null ? 'No Data' : `${completionRate}%`, trend: completionRate === null ? 'Log a session' : 'Study sessions finished', icon: Target, color: 'text-green-500', bg: 'bg-green-500/10' },
-    { label: 'Productivity', value: productivity, trend: peakHourLabel ? `Peak at ${peakHourLabel}` : 'Not enough data yet', icon: TrendingUp, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { label: 'Total Hours', value: `${totalHours}h`, trend: 'All time', icon: Clock, color: 'text-secondary', bg: 'bg-secondary/10' },
+    { label: 'Current Streak', value: `${summary?.studyStreak ?? 0} Days`, trend: summary?.studyStreak > 0 ? 'Keep it going' : 'Start today', icon: Flame, color: 'text-brand-orange', bg: 'bg-brand-orange/10' },
+    { label: 'Completion Rate', value: completionRate === null ? 'No Data' : `${completionRate}%`, trend: completionRate === null ? 'Log a session' : 'Study sessions finished', icon: Target, color: 'text-accent', bg: 'bg-accent/10' },
+    { label: 'Productivity', value: productivity, trend: peakHourLabel ? `Peak at ${peakHourLabel}` : 'Not enough data yet', icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
   ];
 
   return (

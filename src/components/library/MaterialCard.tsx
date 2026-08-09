@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { pastelForType } from '../../lib/utils';
 import { motion } from 'framer-motion';
 import { FileText, Youtube, BookOpen, Sparkles, Award, Share2 } from 'lucide-react';
 import { LibraryMaterial } from '../../hooks/useLibrary';
@@ -30,17 +31,19 @@ export function MaterialCard({ material }: MaterialCardProps) {
   // Type mappings and configuration
   const getBadgeConfig = (typeStr: string) => {
     const normType = typeStr.toLowerCase();
+    // Same source as every other type colour in the app — see pastelForType().
+    const color = `var(--pastel-${pastelForType(normType)}-ink)`;
     if (normType === 'pdf') {
-      return { label: 'PDF', color: '#6C5CE7', icon: FileText };
+      return { label: 'PDF', color, icon: FileText };
     }
     if (normType === 'youtube' || normType === 'video') {
-      return { label: 'Videos', color: '#F5B042', icon: Youtube };
+      return { label: 'Videos', color, icon: Youtube };
     }
     if (normType === 'quiz') {
-      return { label: 'Quizzes', color: '#00E5A0', icon: Award };
+      return { label: 'Quizzes', color, icon: Award };
     }
     // note, article, audio, default
-    return { label: 'Notes', color: '#00D2FF', icon: BookOpen };
+    return { label: 'Notes', color, icon: BookOpen };
   };
 
   const badge = getBadgeConfig(material.type);
@@ -76,7 +79,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-text-muted/5 text-text-muted transition-all active:scale-90 active:bg-text-muted/10 shrink-0 cursor-pointer"
             title="Share material"
           >
-            <Share2 size={16} className={copied ? 'text-[#00E5A0]' : ''} />
+            <Share2 size={16} className={copied ? 'text-accent' : ''} />
           </button>
         </div>
 
@@ -119,13 +122,13 @@ export function MaterialCard({ material }: MaterialCardProps) {
                 <span className="text-[11px] font-bold uppercase text-text-muted tracking-wider">
                   Mastery Progress
                 </span>
-                <span className="text-xs font-semibold text-[#6C5CE7]">
+                <span className="text-xs font-semibold text-primary">
                   {material.mastery}%
                 </span>
               </div>
               <div className="h-1.5 w-full bg-surface/50 border border-border rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#6C5CE7] to-[#00D2FF] rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
                   style={{ width: `${material.mastery}%` }}
                 />
               </div>
@@ -137,7 +140,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
         <div className="grid grid-cols-4 gap-2 border-t border-border pt-3">
           <button
             onClick={() => navigateTo(`/library/${material.id}`)}
-            className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#6C5CE7]/5 hover:bg-[#6C5CE7]/10 active:scale-95 text-[#6C5CE7] transition-all min-h-[44px] cursor-pointer"
+            className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-primary/5 hover:bg-primary/10 active:scale-95 text-primary transition-all min-h-[44px] cursor-pointer"
             id={`btn-study-${material.id}`}
           >
             <BookOpen size={16} />
@@ -145,7 +148,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
           </button>
           <button
             onClick={() => navigateTo(`/materials/${material.id}/notes`)}
-            className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#00D2FF]/5 hover:bg-[#00D2FF]/10 active:scale-95 text-[#00D2FF] transition-all min-h-[44px] cursor-pointer"
+            className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-secondary/5 hover:bg-secondary/10 active:scale-95 text-secondary transition-all min-h-[44px] cursor-pointer"
             id={`btn-notes-${material.id}`}
           >
             <FileText size={16} />
@@ -153,7 +156,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
           </button>
           <button
             onClick={() => navigateTo(`/quiz/${material.id}`)}
-            className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#F5B042]/5 hover:bg-[#F5B042]/10 active:scale-95 text-[#F5B042] transition-all min-h-[44px] cursor-pointer"
+            className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-brand-orange/5 hover:bg-brand-orange/10 active:scale-95 text-brand-orange transition-all min-h-[44px] cursor-pointer"
             id={`btn-quiz-${material.id}`}
           >
             <Award size={16} />
@@ -161,7 +164,7 @@ export function MaterialCard({ material }: MaterialCardProps) {
           </button>
           <button
             onClick={() => navigateTo(`/flashcards/${material.id}`)}
-            className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#00E5A0]/5 hover:bg-[#00E5A0]/10 active:scale-95 text-[#00E5A0] transition-all min-h-[44px] cursor-pointer"
+            className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-accent/5 hover:bg-accent/10 active:scale-95 text-accent transition-all min-h-[44px] cursor-pointer"
             id={`btn-flash-${material.id}`}
           >
             <Sparkles size={16} />

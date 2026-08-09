@@ -28,7 +28,10 @@ import {
   FileBadge,
   Headphones,
   Compass,
-  Radio
+  Radio,
+  Trophy,
+  Bell,
+  ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -48,7 +51,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({
     'Dashboard': true,
     'Learning': true,
-    'Social & Account': true
+    'Social': true,
+    'Account': true
   });
 
   const toggleGroup = (title: string) => {
@@ -103,16 +107,27 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         { icon: Calendar, label: t('calendar'), path: '/calendar' },
       ]
     },
+    // Social is its own group, above Account and directly under Learning.
+    // These four used to sit in one "Social & Account" list interleaved with
+    // billing and settings, which buried the part of the product that is
+    // actually the differentiator.
     {
-      title: 'Social & Account',
+      title: 'Social',
       items: [
         { icon: Radio, label: 'Live Rooms', path: '/rooms' },
-        { icon: Users, label: 'Leaderboard', path: '/leaderboard' },
-        { icon: Award, label: 'Aether Shop', path: '/shop' },
+        { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
         { icon: MessageSquare, label: t('messages'), path: '/messages' },
+        { icon: Users, label: 'Community', path: '/community' },
+      ]
+    },
+    {
+      title: 'Account',
+      items: [
         { icon: User, label: t('profile'), path: '/profile' },
-        { icon: CreditCard, label: t('subscription'), path: '/subscription' },
         { icon: Settings, label: t('settings'), path: '/settings' },
+        { icon: ShoppingBag, label: 'Aether Shop', path: '/shop' },
+        { icon: CreditCard, label: t('subscription'), path: '/subscription' },
+        { icon: Bell, label: t('notifications'), path: '/notifications' },
       ]
     }
 
@@ -268,7 +283,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
             <button 
               onClick={handleLogout}
-              className="flex items-center gap-3 px-6 py-4 w-full text-red-400 hover:bg-red-500/10 rounded-2xl transition-all group mt-4"
+              className="flex items-center gap-3 px-6 py-4 w-full text-brand-pink hover:bg-brand-pink/10 rounded-2xl transition-all group mt-4"
             >
               <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
               <span className="font-semibold text-sm">{t('logout')}</span>

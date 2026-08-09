@@ -17,6 +17,11 @@ export interface LibraryMaterial {
 export function useLibrary() {
   const [materials, setMaterials] = useState<LibraryMaterial[]>([]);
   const [loading, setLoading] = useState(true);
+  // Distinguishes "you have no materials" from "we could not load them". The
+  // failure used to be console.error'd only, so a timed-out or rate-limited
+  // request rendered a confident "Your library is empty" with an upload CTA —
+  // to a user who might have dozens of materials.
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [sortBy, setSortBy] = useState('newest'); // default
@@ -28,8 +33,10 @@ export function useLibrary() {
       if (res.data && Array.isArray(res.data.materials)) {
         setMaterials(res.data.materials);
       }
-    } catch (err) {
+      setError(null);
+    } catch (err: any) {
       console.error('Failed to fetch library materials:', err);
+      setError(err?.response?.data?.message || 'We could not load your library.');
     } finally {
       setLoading(false);
     }
@@ -155,6 +162,7 @@ export function useLibrary() {
     materials: filteredMaterials,
     allMaterials: materials,
     loading,
+    error,
     search,
     setSearch,
     filter,

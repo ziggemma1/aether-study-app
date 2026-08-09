@@ -18,23 +18,21 @@ interface BuddiesListProps {
 
 export function BuddiesList({ buddies, onNudge, onJoin }: BuddiesListProps) {
   return (
-    <div className="bg-[#141A24]/60 backdrop-blur-xl border border-[#00D2FF]/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-      {/* Decorative Glow */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-[#00D2FF]/10 blur-[60px] pointer-events-none" />
+    <div className="bg-surface border border-border rounded-[var(--radius-card)] p-5 shadow-[var(--shadow-card)]">
 
-      <h4 className="flex items-center gap-2 text-xs font-black uppercase text-white/50 tracking-[0.2em] mb-6">
-        <Users size={16} className="text-[#00D2FF]" /> Active Peers
+      <h4 className="flex items-center gap-2 text-sm font-semibold mb-5">
+        <Users size={16} className="text-primary" /> Study buddies
       </h4>
 
       <div className="space-y-4 relative z-10">
         {buddies.length > 0 ? buddies.map((buddy) => (
           <div 
             key={buddy.id} 
-            className="flex items-center justify-between p-3.5 bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/5 hover:border-white/10"
+            className="flex items-center justify-between gap-3 p-3 bg-surface-alt rounded-xl transition-colors border border-transparent hover:border-border"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="relative">
-                <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center bg-[#6C5CE7] text-white font-bold overflow-hidden shadow-inner">
+                <div className="w-12 h-12 rounded-full border border-border flex items-center justify-center bg-primary text-white font-bold overflow-hidden shadow-inner">
                   {buddy.avatar ? (
                     <img src={buddy.avatar} alt={buddy.name} className="w-full h-full object-cover" />
                   ) : (
@@ -42,19 +40,17 @@ export function BuddiesList({ buddies, onNudge, onJoin }: BuddiesListProps) {
                   )}
                 </div>
                 <div className={cn(
-                  "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#141A24]",
-                  buddy.status === 'online' ? "bg-[#00E5A0]" : 
-                  buddy.status === 'away' ? "bg-yellow-400" : "bg-gray-500"
+                  "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-surface",
+                  buddy.status === 'online' ? "bg-accent" : "bg-text-muted/40"
                 )} />
               </div>
-              <div>
-                <span className="block text-sm font-bold text-white mb-0.5">{buddy.name}</span>
+              <div className="min-w-0">
+                <span className="block text-sm font-semibold text-text-main truncate">{buddy.name}</span>
                 <span className={cn(
-                  "block text-[11px] uppercase tracking-widest font-bold",
-                  buddy.status === 'online' ? "text-[#00E5A0]" : 
-                  buddy.status === 'away' ? "text-yellow-400" : "text-white/40"
+                  "block text-[11px] font-medium",
+                  buddy.status === 'online' ? "text-accent" : "text-text-muted"
                 )}>
-                  {buddy.status}
+                  {buddy.status === 'online' ? 'Online' : 'Offline'}
                 </span>
               </div>
             </div>
@@ -62,24 +58,24 @@ export function BuddiesList({ buddies, onNudge, onJoin }: BuddiesListProps) {
             {buddy.roomId ? (
               <button 
                 onClick={() => onJoin(buddy.roomId!)} 
-                className="px-4 py-2 bg-[#00D2FF]/10 hover:bg-[#00D2FF]/20 text-[#00D2FF] text-xs font-bold rounded-lg border border-[#00D2FF]/20 transition-all flex items-center gap-2"
+                className="px-4 py-2 bg-secondary/10 hover:bg-secondary/20 text-secondary text-xs font-bold rounded-lg border border-secondary/20 transition-all flex items-center gap-2"
               >
                 Join <Video size={14} />
               </button>
             ) : (
               <button 
                 onClick={() => onNudge(buddy.id, buddy.name)} 
-                title="Send Nudge"
-                className="w-10 h-10 flex items-center justify-center bg-[#6C5CE7]/10 hover:bg-[#6C5CE7]/20 text-[#6C5CE7] hover:text-[#8d82f0] rounded-xl border border-[#6C5CE7]/20 transition-all active:scale-95"
+                title={`Nudge ${buddy.name}`}
+                className="w-10 h-10 flex items-center justify-center bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary rounded-xl border border-primary/20 transition-all active:scale-95"
               >
                 <Bell size={16} />
               </button>
             )}
           </div>
         )) : (
-          <div className="py-8 text-center text-white/30 text-xs font-medium">
+          <div className="py-8 text-center text-text-muted text-xs font-medium">
             <Users size={32} className="mx-auto mb-3 opacity-20" />
-            No buddies online right now
+            No study buddies yet
           </div>
         )}
       </div>

@@ -35,17 +35,17 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.1 }}
-      className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-surface-alt/90 to-surface/90 p-5 border border-[#6C5CE7]/15 shadow-xl select-none"
+      className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-surface-alt/90 to-surface/90 p-5 border border-primary/15 shadow-xl select-none"
     >
       {/* Decorative Warm Backglow */}
-      <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-[#6C5CE7]/10 blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
       {/* Header Info. Was brand pink, which bought a fifth accent on a screen
           where nothing already read as primary — and matched neither the card's
           own violet backglow nor anything it was trying to say. */}
       <div className="flex items-center gap-2 mb-3 px-1">
-        <Sparkles className="h-4 w-4 text-[#6C5CE7]" />
-        <h3 className="text-xs font-bold uppercase text-[#6C5CE7] tracking-widest">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <h3 className="text-xs font-bold uppercase text-primary tracking-widest">
           Today's Recommendation Focus
         </h3>
       </div>
@@ -71,11 +71,11 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
                 className="flex items-center justify-between p-3.5 rounded-2xl bg-background/60 border border-border active:bg-background/95 transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6C5CE7]/10 text-[#6C5CE7] font-semibold text-lg">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary font-semibold text-lg">
                     📚
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-text-main truncate leading-tight group-hover:text-[#6C5CE7] transition-colors pr-2">
+                    <p className="text-xs font-semibold text-text-main truncate leading-tight group-hover:text-primary transition-colors pr-2">
                       {item.title}
                     </p>
                     <div className="flex items-center gap-2 mt-1.5">
@@ -101,7 +101,7 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
                       e.stopPropagation();
                       navigateTo(`/quiz/${item.id}`);
                     }}
-                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#6C5CE7] text-white text-[11px] font-bold uppercase transition-all hover:bg-[#6C5CE7]/90 cursor-pointer"
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold transition-all hover:bg-primary/90 cursor-pointer"
                   >
                     Take Quiz
                   </button>
@@ -111,7 +111,7 @@ export function TodaysFocus({ materials }: TodaysFocusProps) {
             );
           })
         ) : (
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#00E5A0]/5 border border-[#00E5A0]/10 text-[#00E5A0]">
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-accent/5 border border-accent/10 text-accent">
             <CheckCircle2 className="h-5 w-5 shrink-0" />
             <div>
               <p className="text-xs font-bold text-text-main">

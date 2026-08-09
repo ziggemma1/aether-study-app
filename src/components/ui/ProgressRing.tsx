@@ -7,9 +7,11 @@ interface ProgressRingProps {
   strokeWidth?: number;
   accentColor?: string; // e.g. '#6C5CE7'
   icon?: React.ReactNode;
+  /** Hide the centred percentage when the surrounding card already states it. */
+  showLabel?: boolean;
 }
 
-export function ProgressRing({ percentage, size = 64, strokeWidth = 5, accentColor = 'var(--primary)', icon }: ProgressRingProps) {
+export function ProgressRing({ percentage, size = 64, strokeWidth = 5, accentColor = 'var(--primary)', icon, showLabel = true }: ProgressRingProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
@@ -18,11 +20,12 @@ export function ProgressRing({ percentage, size = 64, strokeWidth = 5, accentCol
   return (
     <div className="relative inline-flex items-center justify-center select-none shrink-0" style={{ width: size, height: size }}>
       <svg className="transform -rotate-90" width={size} height={size}>
-        {/* Background track circle */}
+        {/* Background track. surface-alt is nearly white on a white card, so at
+            a low percentage the ring read as an empty circle rather than as a
+            track with a small amount filled. */}
         <circle
-          className="text-surface-alt"
           strokeWidth={strokeWidth}
-          stroke="currentColor"
+          stroke="var(--ring-track)"
           fill="transparent"
           r={radius}
           cx={size / 2}
@@ -43,15 +46,19 @@ export function ProgressRing({ percentage, size = 64, strokeWidth = 5, accentCol
           cy={size / 2}
         />
       </svg>
-      {/* Centered label or content */}
+      {/* Centered label or content. The label scales with the ring — it was
+          pinned at 11px, which read as a speck inside a large ring. */}
       <div className="absolute inset-0 flex items-center justify-center">
         {icon ? (
           <div className="text-text-main text-xs">{icon}</div>
-        ) : (
-          <span className="text-[11px] font-black leading-none text-text-main">
+        ) : showLabel ? (
+          <span
+            className="font-black leading-none text-text-main"
+            style={{ fontSize: Math.max(11, Math.round(size * 0.22)) }}
+          >
             {Math.round(clampedPercentage)}%
           </span>
-        )}
+        ) : null}
       </div>
     </div>
   );

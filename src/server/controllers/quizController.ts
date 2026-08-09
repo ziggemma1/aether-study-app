@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { QuizResult } from '../models/QuizResult.js';
 import { User } from '../models/User.js';
 import { checkAchievements } from '../services/achievement-service.js';
+import { touchStreak } from '../services/streak-service.js';
 
 export const getResults = async (req: Request, res: Response) => {
   try {
@@ -41,13 +42,22 @@ export const createResult = async (req: Request, res: Response) => {
     });
     await result.save();
 
-    // Update user stats
+    // Update user stats.
+    //
+    // These are PERCENTAGES. They used to be stored as the raw number of
+    // correct answers — `avgQuizScore = totalCorrect / quizCount` — while every
+    // consumer read them as a percentage: the dashboard returns the field as
+    // `averageQuizScore`, Reports falls back to it for a figure it otherwise
+    // computes as `score / totalQuestions * 100`, and the profile printed it
+    // with a % sign. A user averaging 2 of 3 correct was shown "2%".
     const results = await QuizResult.find({ userId });
     if (results.length > 0) {
-      const totalScore = results.reduce((acc, curr) => acc + (curr.score || 0), 0);
-      const avgScore = Math.round(totalScore / results.length);
-      const highest = Math.max(...results.map(r => r.score || 0));
-      const lowest = Math.min(...results.map(r => r.score || 0));
+      const percentages = results.map(r =>
+        r.totalQuestions > 0 ? ((r.score || 0) / r.totalQuestions) * 100 : 0
+      );
+      const avgScore = Math.round(percentages.reduce((a, b) => a + b, 0) / percentages.length);
+      const highest = Math.round(Math.max(...percentages));
+      const lowest = Math.round(Math.min(...percentages));
 
       await User.findByIdAndUpdate(userId, {
         $set: {
@@ -61,17 +71,25 @@ export const createResult = async (req: Request, res: Response) => {
       });
     }
 
+    // Finishing a quiz counts as studying for the day, same as a session.
+    // Runs before checkAchievements so the streak achievements see today's
+    // value rather than yesterday's.
+    const streakResult = await touchStreak(userId);
+
     const newlyUnlockedAchievements = await checkAchievements(userId);
 
     // aetherPoints changes both from the score increment above and from any
     // achievement bonus checkAchievements just applied — read back the final
     // value so the client can update its cached user without a full refetch.
-    const updatedUser = await User.findById(userId).select('aetherPoints streak');
+    const updatedUser = await User.findById(userId).select('aetherPoints streak freezeTokens');
 
     res.status(201).json({
       ...result.toObject(),
       aetherPoints: updatedUser?.aetherPoints,
       streak: updatedUser?.streak,
+      freezeTokens: updatedUser?.freezeTokens,
+      freezeUsed: streakResult?.freezeUsed || false,
+      streakBroken: streakResult?.streakBroken || false,
       newlyUnlockedAchievements
     });
   } catch (error: any) {

@@ -108,9 +108,11 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
             <CalendarIcon size={16} className="sm:hidden" />
             <CalendarIcon size={20} className="hidden sm:block" />
           </div>
+          {/* "Management" was a second, uppercase heading stacked under a
+              title-case one, saying nothing the title didn't. Dropped, so this
+              header matches the single-heading pattern used everywhere else. */}
           <div>
             <h2 className="text-sm sm:text-lg font-bold text-text-main leading-tight">{t('calendar')}</h2>
-            <p className="text-[11px] sm:text-[11px] font-bold text-text-muted/70 uppercase tracking-wider">Management</p>
           </div>
         </div>
 
@@ -224,20 +226,20 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
                 {isMissed && (
                   <>
                     {hasPrevMissed && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1/2 h-5 sm:h-7 bg-red-400/10 z-0" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1/2 h-5 sm:h-7 bg-brand-pink/10 z-0" />
                     )}
                     {hasNextMissed && (
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1/2 h-5 sm:h-7 bg-red-400/10 z-0" />
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1/2 h-5 sm:h-7 bg-brand-pink/10 z-0" />
                     )}
-                    <div className="absolute inset-x-1 sm:inset-x-1.5 top-1/2 -translate-y-1/2 h-5 sm:h-7 bg-red-400/10 z-0 rounded-sm sm:rounded-md" />
+                    <div className="absolute inset-x-1 sm:inset-x-1.5 top-1/2 -translate-y-1/2 h-5 sm:h-7 bg-brand-pink/10 z-0 rounded-sm sm:rounded-md" />
                   </>
                 )}
 
                 <span className={cn(
                   "relative z-10 text-[11px] sm:text-xs font-medium w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full transition-all",
                   isToday(day) && !isMissed && data?.status !== 'attended' && "bg-primary text-white shadow-sm shadow-primary/20",
-                  data?.status === 'attended' && "bg-green-500 text-white shadow-sm shadow-green-500/20",
-                  data?.status === 'missed' && "bg-red-500 text-white shadow-sm shadow-red-500/20",
+                  data?.status === 'attended' && "bg-accent text-white shadow-sm shadow-accent/20",
+                  data?.status === 'missed' && "bg-brand-pink text-white shadow-sm shadow-brand-pink/20",
                   !isToday(day) && !data?.status && "text-text-main group-hover:bg-surface-alt/50"
                 )}>
                   {format(day, 'd')}
@@ -281,11 +283,11 @@ export default function CalendarWidget({ className }: CalendarWidgetProps) {
                 <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2">{t('status')}</p>
                 <div className="flex items-center gap-3">
                   {dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'attended' ? (
-                    <div className="flex items-center gap-2 text-green-500 font-bold text-sm">
+                    <div className="flex items-center gap-2 text-accent font-bold text-sm">
                       <CheckCircle2 size={18} /> {t('attended')}
                     </div>
                   ) : dayData[format(selectedDate, 'yyyy-MM-dd')]?.status === 'missed' ? (
-                    <div className="flex items-center gap-2 text-red-500 font-bold text-sm">
+                    <div className="flex items-center gap-2 text-brand-pink font-bold text-sm">
                       <AlertCircle size={18} /> {t('missed')}
                     </div>
                   ) : (

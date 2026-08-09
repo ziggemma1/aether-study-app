@@ -1,36 +1,30 @@
-import confetti from 'canvas-confetti';
+import { celebrate } from '../lib/motion';
 
+/**
+ * Confetti for win moments.
+ *
+ * Delegates to the shared motion layer rather than calling canvas-confetti
+ * directly, which fixes three things this hook used to have:
+ *
+ *  - `fireConfetti` ran a 3-second setInterval firing two bursts every 250ms,
+ *    roughly 24 bursts and ~1,200 particles. That is a fireworks show, and on
+ *    a budget phone it is a sustained main-thread cost during the exact moment
+ *    the results screen is trying to animate in. It is now one burst.
+ *  - `burstConfetti` carried three hardcoded hexes that ignored the theme.
+ *    Colour now comes from the live theme tokens.
+ *  - Neither respected prefers-reduced-motion. celebrate() no-ops when it is set.
+ *
+ * The API is unchanged so existing call sites did not need touching.
+ */
 export function useConfetti() {
+  /** Bigger moment: quiz passed, milestone reached. */
   const fireConfetti = () => {
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-    function randomInRange(min: number, max: number) {
-      return Math.random() * (max - min) + min;
-    }
-
-    const interval: any = setInterval(function() {
-      const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
-
-      const particleCount = 50 * (timeLeft / duration);
-      // since particles fall down, start a bit higher than random
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-    }, 250);
+    void celebrate('milestone');
   };
 
+  /** Smaller moment: a single correct answer, a card flipped. */
   const burstConfetti = () => {
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#8B5CF6', '#10B981', '#FF55D2']
-    });
+    void celebrate('win', { x: 0.5, y: 0.6 });
   };
 
   return { fireConfetti, burstConfetti };

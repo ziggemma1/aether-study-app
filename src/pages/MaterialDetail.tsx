@@ -29,7 +29,7 @@ export default function MaterialDetail() {
 
   if (isLoading && !material) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-full flex flex-col items-center justify-center p-6 text-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
         <p className="text-text-muted font-medium">Fetching material details...</p>
       </div>
@@ -200,7 +200,7 @@ export default function MaterialDetail() {
                   <button
                     onClick={handleRegenerate}
                     disabled={isRegenerating}
-                    className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 text-orange-600 rounded-xl hover:bg-orange-500/20 transition-colors disabled:opacity-50 text-xs font-bold"
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-orange/10 text-brand-orange rounded-xl hover:bg-brand-orange/20 transition-colors disabled:opacity-50 text-xs font-bold"
                   >
                     {isRegenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                     Regenerate
@@ -267,7 +267,7 @@ export default function MaterialDetail() {
           {material.realLifeApplications && material.realLifeApplications.length > 0 && (
             <section className="glass-card p-8">
               <div className="flex items-center gap-2 mb-6">
-                <Lightbulb className="text-yellow-500" size={24} />
+                <Lightbulb className="text-brand-orange" size={24} />
                 <h2 className="text-xl font-bold text-text-main">Real Life Applications</h2>
               </div>
               <ul className="space-y-4">
@@ -284,15 +284,15 @@ export default function MaterialDetail() {
 
         <div className="space-y-6">
           {/* Study Actions Card */}
-          <div className="rounded-[24px] p-6 bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-900 text-white shadow-2xl border border-white/5 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-white/10 transition-colors" />
+          <div className="rounded-[24px] p-6 bg-gradient-to-br from-primary to-secondary text-white shadow-2xl border border-border relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-surface-alt blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-surface-alt transition-colors" />
             
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-surface-alt flex items-center justify-center">
                   <Zap size={16} className="text-secondary" />
                 </div>
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white/90">Study Engine</h3>
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-text-main">Study Engine</h3>
               </div>
 
               <div className="space-y-3">
@@ -300,16 +300,16 @@ export default function MaterialDetail() {
                 <div className="flex gap-2">
                   <Link
                     to={`/quiz/${id}`}
-                    className="flex-grow flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 group/btn shadow-inner"
+                    className="flex-grow flex items-center gap-4 p-4 bg-surface-alt hover:bg-surface-alt rounded-2xl transition-all border border-border hover:border-border group/btn shadow-inner"
                   >
                     <div className="flex flex-col text-left">
                       <span className="text-sm font-bold text-white">AI Practice Quiz</span>
-                      <span className="text-[11px] text-white/50 font-medium">Test your knowledge</span>
+                      <span className="text-[11px] text-text-muted font-medium">Test your knowledge</span>
                     </div>
                   </Link>
                   <button
                     onClick={() => handleGenerateClick('Quiz')}
-                    className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 text-white/40 hover:text-white"
+                    className="p-4 bg-surface-alt hover:bg-surface-alt rounded-2xl transition-all border border-border hover:border-border text-text-muted hover:text-text-main"
                     title="Customize Quiz"
                   >
                     <Settings size={20} />
@@ -320,16 +320,16 @@ export default function MaterialDetail() {
                 <div className="flex gap-2">
                   <Link
                     to={`/flashcards/${id}`}
-                    className="flex-grow flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 group/btn shadow-inner"
+                    className="flex-grow flex items-center gap-4 p-4 bg-surface-alt hover:bg-surface-alt rounded-2xl transition-all border border-border hover:border-border group/btn shadow-inner"
                   >
                     <div className="flex flex-col text-left">
                       <span className="text-sm font-bold text-white">Smart Flashcards</span>
-                      <span className="text-[11px] text-white/50 font-medium">Spaced repetition</span>
+                      <span className="text-[11px] text-text-muted font-medium">Spaced repetition</span>
                     </div>
                   </Link>
                   <button
                     onClick={() => handleGenerateClick('Flashcards')}
-                    className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 text-white/40 hover:text-white"
+                    className="p-4 bg-surface-alt hover:bg-surface-alt rounded-2xl transition-all border border-border hover:border-border text-text-muted hover:text-text-main"
                     title="Customize Flashcards"
                   >
                     <Settings size={20} />
@@ -339,14 +339,14 @@ export default function MaterialDetail() {
                 {/* Create Study Plan */}
                 <Link
                   to={`/plans/create?materialId=${id}`}
-                  className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 group/btn shadow-inner"
+                  className="w-full flex items-center gap-4 p-4 bg-surface-alt hover:bg-surface-alt rounded-2xl transition-all border border-border hover:border-border group/btn shadow-inner"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-indigo-400/20 flex items-center justify-center text-indigo-300 group-hover/btn:scale-110 transition-transform">
+                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary group-hover/btn:scale-110 transition-transform">
                     <Calendar size={20} />
                   </div>
                   <div className="flex flex-col text-left">
                     <span className="text-sm font-bold text-white">Create Study Plan</span>
-                    <span className="text-[11px] text-white/50 font-medium">Personalized roadmap</span>
+                    <span className="text-[11px] text-text-muted font-medium">Personalized roadmap</span>
                   </div>
                 </Link>
 
@@ -354,14 +354,14 @@ export default function MaterialDetail() {
                 <button
                   onClick={handleRegenerate}
                   disabled={isRegenerating}
-                  className="w-full flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/10 group/btn shadow-inner"
+                  className="w-full flex items-center gap-4 p-4 bg-surface-alt hover:bg-surface-alt rounded-2xl transition-all border border-border hover:border-border group/btn shadow-inner"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-orange-400/20 flex items-center justify-center text-orange-400 group-hover/btn:scale-110 transition-transform">
+                  <div className="w-10 h-10 rounded-xl bg-brand-orange/20 flex items-center justify-center text-brand-orange group-hover/btn:scale-110 transition-transform">
                     {isRegenerating ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
                   </div>
                   <div className="flex flex-col text-left">
                     <span className="text-sm font-bold text-white">Regenerate Insights</span>
-                    <span className="text-[11px] text-white/50 font-medium">Update smart analysis</span>
+                    <span className="text-[11px] text-text-muted font-medium">Update smart analysis</span>
                   </div>
                 </button>
               </div>

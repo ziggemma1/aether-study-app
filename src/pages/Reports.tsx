@@ -138,7 +138,7 @@ export default function Reports() {
           <div className="bg-surface-alt p-5 rounded-2xl border border-border/40 shadow-md">
             <div className="mb-4">
               <h3 className="text-sm font-bold text-text-main flex items-center gap-2">
-                <TrendingUp size={16} className="text-[#00D2FF]" />
+                <TrendingUp size={16} className="text-secondary" />
                 {t?.('growth_over_time') || 'Growth Over Time'}
               </h3>
               <p className="text-[11px] text-text-muted mt-0.5">
@@ -174,7 +174,7 @@ export default function Reports() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-text-main flex items-center gap-2">
-                    <Users size={16} className="text-[#F5B042]" />
+                    <Users size={16} className="text-brand-orange" />
                     {t?.('leaderboard') || 'Global Leaderboard'}
                   </h3>
                   <p className="text-[11px] text-text-muted mt-0.5">
@@ -195,26 +195,32 @@ export default function Reports() {
                   {/* Leaderboard Competitors */}
                   <div className="space-y-2 max-h-[280px] overflow-y-auto">
                     {leaderboard.leaderboard.map((item: any) => {
-                      // The endpoint returns `currentUserRank`, not a
-                      // `currentUser` object — matching on a name that was
-                      // always undefined meant nobody was ever marked "You".
-                      const isCurrentUser = item.rank === leaderboard.currentUserRank;
+                      // The endpoint now returns the caller's own ranked entry
+                      // as `currentUser`, so this matches on id rather than on
+                      // a name that was always undefined.
+                      const isCurrentUser = item.id === leaderboard.currentUser?.id;
                       return (
                         <div 
                           key={item.rank} 
                           className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
                             isCurrentUser 
-                              ? 'bg-surface-alt border-[#00D2FF]/40 shadow-sm' 
+                              ? 'bg-surface-alt border-secondary/40 shadow-sm' 
                               : 'bg-surface/60 border-border/40'
                           }`}
                         >
                           <div className="flex items-center gap-3">
                             {/* Rank circle */}
+                            {/* Medal colours were bright fills with near-black
+                                text — fine on the old dark UI, but brand-orange
+                                darkens on paper and dark-on-dark stops being
+                                readable. Tinted chip + its own ink instead, so
+                                each place still reads as gold/silver/bronze and
+                                holds contrast in both themes. */}
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                              item.rank === 1 ? 'bg-[#F5B042] text-[#0B0E14]' :
-                              item.rank === 2 ? 'bg-gray-300 text-[#0B0E14]' :
-                              item.rank === 3 ? 'bg-[#CD7F32] text-[#0B0E14]' :
-                              'text-text-muted bg-white/5'
+                              item.rank === 1 ? 'bg-pastel-peach text-pastel-peach-ink' :
+                              item.rank === 2 ? 'bg-surface-alt text-text-muted' :
+                              item.rank === 3 ? 'bg-pastel-pink text-pastel-pink-ink' :
+                              'text-text-muted bg-surface-alt'
                             }`}>
                               {item.rank}
                             </span>
@@ -224,7 +230,7 @@ export default function Reports() {
                               <img 
                                 src={item.avatar} 
                                 alt={item.name} 
-                                className="w-8 h-8 rounded-full object-cover border border-white/10" 
+                                className="w-8 h-8 rounded-full object-cover border border-border" 
                                 referrerPolicy="no-referrer"
                               />
                             ) : (
@@ -240,19 +246,19 @@ export default function Reports() {
                                 {item.name}
                               </span>
                               {isCurrentUser && (
-                                <span className="text-[11px] text-[#00D2FF] font-semibold uppercase tracking-wider block">
+                                <span className="text-[11px] text-secondary font-semibold uppercase tracking-wider block">
                                   You
                                 </span>
                               )}
                             </div>
                           </div>
 
-                          {/* `points` is an object ({ total, studyTime,
-                              quizzes, streak }) — calling toLocaleString on it
-                              printed a literal "[object Object] pts" on every
-                              row. LeaderboardCard already reads `.total`. */}
-                          <span className="text-xs font-extrabold text-[#00E5A0]">
-                            {(item.points?.total ?? 0).toLocaleString()} pts
+                          {/* `points` is a plain number now. It used to be an
+                              object whose three siblings (studyTime, quizzes,
+                              streak) were the total multiplied by 0.4/0.5/0.1
+                              — invented, so they went. */}
+                          <span className="text-xs font-extrabold text-accent">
+                            {(item.points ?? 0).toLocaleString()} pts
                           </span>
                         </div>
                       );
@@ -260,13 +266,13 @@ export default function Reports() {
                   </div>
 
                   {/* Your standing, when you place outside the top five. Keyed
-                      off `currentUserRank`; the old `currentUser` object is not
-                      part of this response, so this never used to render. */}
-                  {leaderboard.currentUserRank > leaderboard.leaderboard.length && (
+                      off the caller's own ranked entry, which the endpoint
+                      returns alongside the list. */}
+                  {leaderboard.currentUser?.rank > leaderboard.leaderboard.length && (
                     <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/20 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-primary">
-                          #{leaderboard.currentUserRank}
+                          #{leaderboard.currentUser.rank}
                         </span>
                         <span className="text-xs font-bold text-text-main">
                           {user?.name ? `${user.name} (You)` : 'You'}

@@ -18,7 +18,7 @@ export function SearchBar({ value, onChange, placeholder = "Search materials..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
         id="library-search-input"
-        className="block w-full rounded-2xl border border-border bg-surface py-3.5 pl-11 pr-4 text-sm text-text-main placeholder-text-muted/60 outline-none transition-all focus:border-[#6C5CE7]/50 focus:ring-2 focus:ring-[#6C5CE7]/10"
+        className="block w-full rounded-2xl border border-border bg-surface py-3.5 pl-11 pr-4 text-sm text-text-main placeholder-text-muted/60 outline-none transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
         placeholder={placeholder}
       />
     </div>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import posthog from 'posthog-js';
 import { AppProvider, useAppContext } from './context/AppContext';
@@ -36,6 +36,7 @@ import Shop from './pages/Shop';
 import Leaderboard from './pages/Leaderboard';
 import LiveRooms from './pages/LiveRooms';
 import Explore from './pages/Explore';
+import Onboarding from './pages/Onboarding';
 
 import { startKeepAlive } from './lib/keep-alive';
 import SharedMaterialView from './pages/SharedMaterialView';
@@ -43,7 +44,8 @@ import { AchievementNotification } from './components/AchievementNotification';
 
 function ProtectedRoute() {
   const { user, isLoading } = useAppContext();
-  
+  const location = useLocation();
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -56,7 +58,14 @@ function ProtectedRoute() {
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  
+
+  // First run: a user who has never finished (or skipped) onboarding goes
+  // there before anything else. Accounts that predate the feature are
+  // backfilled at boot, so only genuinely new users are caught here.
+  if (!user.onboardingCompletedAt && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return <Outlet />;
 }
 
@@ -103,6 +112,10 @@ export default function App() {
 
           {/* Protected Routes (Wrapped in AppLayout and ProtectedRoute) */}
           <Route element={<ProtectedRoute />}>
+            {/* Full-screen, outside AppLayout — no sidebar to wander off into
+                before the account has anything in it. */}
+            <Route path="/onboarding" element={<Onboarding />} />
+
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/library" element={<Library />} />

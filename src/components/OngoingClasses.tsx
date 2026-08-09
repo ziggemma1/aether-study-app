@@ -81,13 +81,13 @@ export default function OngoingClasses() {
             )}
           >
             {/* Background Pattern */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl" />
+            <div className="absolute top-0 right-0 w-40 h-40 bg-surface-alt rounded-full -mr-20 -mt-20 blur-3xl" />
             
             <div className="flex items-center justify-between mb-8">
               <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm", isLight ? cls.lightIconBg : cls.iconBg, isLight ? cls.lightIconColor : cls.iconColor)}>
                 <cls.icon size={28} />
               </div>
-              <button className="p-2 hover:bg-white/5 rounded-full transition-colors text-text-muted">
+              <button className="p-2 hover:bg-surface-alt rounded-full transition-colors text-text-muted">
                 <MoreHorizontal size={20} />
               </button>
             </div>

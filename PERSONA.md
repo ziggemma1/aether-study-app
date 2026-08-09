@@ -478,11 +478,11 @@ Before returning output to user, verify:
 
 | Page | File | Purpose | Key Components |
 | :--- | :--- | :--- | :--- |
-| **Dashboard** | `Dashboard.tsx` | Greeting, focus meters, streaks, calendar, recent materials, quick actions | `LearningNebula`, `StudyConstellation`, `StreakFlameIndicator` |
+| **Dashboard** | `Dashboard.tsx` | Greeting, metric cards, weekly chart, recent materials, live rooms rail, shortcuts | `MetricCard`, `DataChart`, `StudyingNowRail`, `StreakFlame` |
 | **Upload** | `UploadMaterial.tsx` | Camera/file upload, Tesseract OCR, AI parsing | `Tesseract.js` |
 | **Notes** | `DetailedNotes.tsx` | Structured notes, toggle definitions/cues/formulas | `XMLNoteRenderer`, `StructuredNoteRenderer` |
 | **Reels** | `StudyReel.tsx` | AI-rendered procedural video summaries | `Remotion Player` |
-| **Quiz** | `QuizInterface.tsx` | Multiple-choice with progress gauges, feedback | `ConfettiEffect`, `canvas-confetti` |
+| **Quiz** | `QuizInterface.tsx` | Multiple-choice with progress gauges, feedback | `celebrate()` from `src/lib/motion.ts` |
 | **Flashcards** | `Flashcards.tsx` | Swipeable/flippable cards, mobile gestures | `framer-motion` |
 | **Plan Generator** | `ReadingPlanGenerator.tsx` | Timeline config, complexity, commitment, daily syllabus | `SmartScheduleGenerator` |
 | **Live Rooms** | `LiveRooms.tsx` | Multiplayer study rooms, video/audio/chat | `socket.io-client` |

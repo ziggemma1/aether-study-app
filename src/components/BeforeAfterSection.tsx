@@ -135,7 +135,7 @@ const BeforeAfterSlider = () => {
     "Mastering topics in minutes.",
     "Exam ready. Stress-free.",
     "Clear path to mastery.",
-    "85% better retention.",
+    "Recall that lasts past tomorrow.",
     "Study smarter, not harder.",
     "AI-powered focus mode.",
     "Achieve your academic goals."
@@ -379,7 +379,7 @@ const BeforeAfterSlider = () => {
                       <Trophy size={16} className="text-accent hidden sm:block" />
                       <span className="text-[11px] sm:text-[11px] font-bold text-white/40 uppercase">Mastery</span>
                     </div>
-                    <div className="text-white font-bold text-xs sm:text-sm mb-0.5 sm:mb-1">92% Score</div>
+                    <div className="text-white font-bold text-xs sm:text-sm mb-0.5 sm:mb-1">On track</div>
                     <div className="h-1 sm:h-1.5 w-full bg-white/10 rounded mt-1.5 sm:mt-2 overflow-hidden">
                       <div className="h-full bg-accent w-[92%]" />
                     </div>
@@ -390,7 +390,7 @@ const BeforeAfterSlider = () => {
                       <Zap size={16} className="text-emerald-400" />
                       <span className="text-[11px] font-bold text-white/40 uppercase">Retention</span>
                     </div>
-                    <div className="text-white font-bold text-sm mb-1">+35% Increase</div>
+                    <div className="text-white font-bold text-sm mb-1">Trending up</div>
                     <div className="text-emerald-400/60 text-[11px]">Since last week</div>
                   </div>
                 </div>
@@ -479,14 +479,17 @@ const StatsComparison = () => {
             <h3 className="text-xl font-semibold text-white mb-3 tracking-tight">
               Time wasted organizing notes
             </h3>
+            {/* Was "Average student spends 47% of study time searching for
+                materials" — an external statistic with no source behind it. */}
             <p className="text-slate-400 mb-8 leading-relaxed">
-              Average student spends 47% of study time searching for materials and organizing scattered notes.
+              Notes in one app, slides in another, past papers in a folder somewhere.
+              Half of studying turns into hunting for the thing you meant to study.
             </p>
-            
+
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-bold text-rose-400 uppercase tracking-wider">
-                <span>Inefficiency Level</span>
-                <span>47%</span>
+                <span>Time lost to admin</span>
+                <span>Too much</span>
               </div>
               <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
                 <motion.div 
@@ -629,7 +632,7 @@ const TransformationTimeline = () => {
       status: "After",
       icon: Trophy,
       title: "Exam Ready",
-      description: "85% practice score. Confident, organized, and ready for test day.",
+      description: "Practice quizzes done. Confident, organized, and ready for test day.",
       visual: (
         <div className="flex justify-center">
           <motion.div 
@@ -709,7 +712,9 @@ export default function BeforeAfterSection() {
     <section className="py-12 sm:py-24 bg-background overflow-hidden font-['Poppins',_sans-serif]">
       <div className="container mx-auto">
         <SectionHeader 
-          eyebrow="REAL RESULTS. REAL STUDENTS."
+          /* Was "REAL RESULTS. REAL STUDENTS." — implies verified outcomes from
+             a real user base. Reframed as what the product does. */
+          eyebrow="HOW AETHER WORKS"
           title="See What Happens When AI Organizes Your Studies"
           subtitle="No more scattered notes. No more cramming. Just a clear path to mastery."
         />

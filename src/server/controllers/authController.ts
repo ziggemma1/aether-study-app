@@ -137,6 +137,22 @@ export const register = async (req: Request, res: Response) => {
         plan: user.plan,
         points: user.points || 0,
         aetherPoints: user.aetherPoints || 0,
+        // Defaults to true on the model, but was never sent to the client, so
+        // the Leaderboard page read undefined and showed its opt-in gate to
+        // everyone — and the "join" button then toggled them straight OFF.
+        optedInLeaderboard: user.optedInLeaderboard !== false,
+        // Same omission on the shop's three fields: the balance reset to zero
+        // on every reload and every already-owned item went back to full price.
+        freezeTokens: user.freezeTokens || 0,
+        themeUnlocked: user.themeUnlocked || [],
+        equippedTheme: user.equippedTheme || '',
+        equippedVoice: user.equippedVoice || 'Kore',
+        // Sourced for "member since" on the profile, which previously had
+        // no join date to show at all.
+        createdAt: user.createdAt,
+        // Null until first-run onboarding is finished or skipped. The client
+        // routes on this, so omitting it would loop the user back forever.
+        onboardingCompletedAt: user.onboardingCompletedAt || null,
         followersCount: user.followersCount || 0,
         friendsCount: user.friendsCount || 0,
         following: user.following || [],
@@ -227,6 +243,22 @@ export const login = async (req: Request, res: Response) => {
         plan: user.plan,
         points: user.points || 0,
         aetherPoints: user.aetherPoints || 0,
+        // Defaults to true on the model, but was never sent to the client, so
+        // the Leaderboard page read undefined and showed its opt-in gate to
+        // everyone — and the "join" button then toggled them straight OFF.
+        optedInLeaderboard: user.optedInLeaderboard !== false,
+        // Same omission on the shop's three fields: the balance reset to zero
+        // on every reload and every already-owned item went back to full price.
+        freezeTokens: user.freezeTokens || 0,
+        themeUnlocked: user.themeUnlocked || [],
+        equippedTheme: user.equippedTheme || '',
+        equippedVoice: user.equippedVoice || 'Kore',
+        // Sourced for "member since" on the profile, which previously had
+        // no join date to show at all.
+        createdAt: user.createdAt,
+        // Null until first-run onboarding is finished or skipped. The client
+        // routes on this, so omitting it would loop the user back forever.
+        onboardingCompletedAt: user.onboardingCompletedAt || null,
         followersCount: user.followersCount || 0,
         friendsCount: user.friendsCount || 0,
         following: user.following || [],
@@ -312,6 +344,22 @@ export const getMe = async (req: Request, res: Response) => {
         plan: user.plan,
         points: user.points || 0,
         aetherPoints: user.aetherPoints || 0,
+        // Defaults to true on the model, but was never sent to the client, so
+        // the Leaderboard page read undefined and showed its opt-in gate to
+        // everyone — and the "join" button then toggled them straight OFF.
+        optedInLeaderboard: user.optedInLeaderboard !== false,
+        // Same omission on the shop's three fields: the balance reset to zero
+        // on every reload and every already-owned item went back to full price.
+        freezeTokens: user.freezeTokens || 0,
+        themeUnlocked: user.themeUnlocked || [],
+        equippedTheme: user.equippedTheme || '',
+        equippedVoice: user.equippedVoice || 'Kore',
+        // Sourced for "member since" on the profile, which previously had
+        // no join date to show at all.
+        createdAt: user.createdAt,
+        // Null until first-run onboarding is finished or skipped. The client
+        // routes on this, so omitting it would loop the user back forever.
+        onboardingCompletedAt: user.onboardingCompletedAt || null,
         followersCount: user.followersCount || 0,
         friendsCount: user.friendsCount || 0,
         following: user.following || [],

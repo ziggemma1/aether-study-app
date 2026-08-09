@@ -28,6 +28,30 @@ router.get('/profile', async (req, res) => {
       }) + 1;
     }
 
+    // Both of these used to be read straight off the user document, and both
+    // were wrong there:
+    //  - `avgQuizScore` was written as a raw number of correct answers, so the
+    //    dashboard rendered "2%" for someone averaging 2 of 3. Fixed at the
+    //    write site in quizController, but stored values stay stale until the
+    //    next quiz — computing here means every account is right immediately.
+    //  - `totalStudyTime` is a counter that only `createSession` increments,
+    //    and only for `type === 'study'`, so it drifts below the sessions
+    //    actually logged. The session records are the evidence.
+    const [quizzes, timeAgg] = await Promise.all([
+      QuizResult.find({ userId }).select('score totalQuestions'),
+      StudySession.aggregate([
+        { $match: { userId: user._id } },
+        { $group: { _id: null, minutes: { $sum: '$durationMinutes' } } }
+      ])
+    ]);
+
+    const scored = quizzes.filter((q: any) => q.totalQuestions > 0);
+    const averageQuizScore = scored.length
+      ? Math.round(scored.reduce((sum: number, q: any) => sum + (q.score / q.totalQuestions) * 100, 0) / scored.length)
+      : 0;
+
+    const loggedMinutes = timeAgg[0]?.minutes || 0;
+
     res.json({
       id: user._id || user.id,
       name: user.name,
@@ -35,8 +59,12 @@ router.get('/profile', async (req, res) => {
       image: user.avatar || null,
       joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       streak: user.streak || 0,
-      totalStudyTime: user.totalStudyTime || 0, // In minutes
-      averageQuizScore: user.avgQuizScore || 0,
+      // The streak hero shows this as "your best is N days" — the stake the
+      // user is playing against when a streak is at risk.
+      longestStreak: user.longestStreak || 0,
+      totalStudyTime: loggedMinutes || user.totalStudyTime || 0, // In minutes
+      averageQuizScore,
+      quizCount: scored.length,
       rank: rank,
       totalLearners: totalLearners
     });

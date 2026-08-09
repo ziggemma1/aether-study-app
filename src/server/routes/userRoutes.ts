@@ -10,7 +10,9 @@ import {
   respondToFriendRequest,
   toggleLeaderboardOptIn,
   purchaseShopItem,
-  penalizePoints
+  equipShopItem,
+  penalizePoints,
+  completeOnboarding
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -28,7 +30,9 @@ router.get('/sent-friend-requests', getSentFriendRequests);
 router.post('/friend-request/respond', respondToFriendRequest);
 router.post('/leaderboard/toggle', toggleLeaderboardOptIn);
 router.post('/shop/purchase', purchaseShopItem);
+router.post('/shop/equip', equipShopItem);
 router.post('/penalize', penalizePoints);
+router.post('/onboarding/complete', completeOnboarding);
 
 export default router;
 

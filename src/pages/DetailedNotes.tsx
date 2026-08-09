@@ -106,7 +106,7 @@ export default function DetailedNotes() {
 
   if (isLoading && !material) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-full flex flex-col items-center justify-center p-6 text-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
         <p className="text-text-muted font-medium">{t('loading_data')}...</p>
       </div>
@@ -249,7 +249,7 @@ export default function DetailedNotes() {
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-all font-bold text-[11px] sm:text-sm"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-brand-pink/10 text-brand-pink hover:bg-brand-pink/20 rounded-xl transition-all font-bold text-[11px] sm:text-sm"
             >
               <Trash2 size={14} className="sm:w-[18px] sm:h-[18px]" />
               <span className="hidden sm:inline">{t('delete')}</span>
@@ -272,7 +272,7 @@ export default function DetailedNotes() {
           {/* Progress bar (Only shown when viewing deep study slides) */}
           {activeViewMode === 'slides' && totalPages > 0 && (
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex-grow bg-white/5 h-1.5 rounded-full overflow-hidden">
+              <div className="flex-grow bg-surface-alt h-1.5 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${((currentPage + 1) / totalPages) * 100}%` }}
@@ -324,9 +324,9 @@ export default function DetailedNotes() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="glass-card p-8 text-center border-red-500/20"
+                className="glass-card p-8 text-center border-brand-pink/20"
               >
-                <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-brand-pink/10 text-brand-pink rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <AlertCircle size={24} />
                 </div>
                 <h3 className="text-lg font-bold text-text-main mb-1">Generation Failed</h3>
@@ -367,10 +367,10 @@ export default function DetailedNotes() {
               >
                 {/* Visual Style Selection Based on Academic Note Mode */}
                 {sections[currentPage].noteStyle === 'Cornell' ? (
-                  <div className="glass-card shadow-2xl p-4 sm:p-8 border-l-[6px] border-l-amber-500/80 bg-gradient-to-br from-amber-500/5 to-transparent rounded-3xl space-y-6">
+                  <div className="glass-card shadow-2xl p-4 sm:p-8 border-l-[6px] border-l-amber-500/80 bg-gradient-to-br from-brand-orange/5 to-transparent rounded-3xl space-y-6">
                     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/15 pb-4">
                       <div>
-                        <div className="flex items-center gap-2 text-amber-500 font-bold text-[11px] uppercase tracking-wider mb-1">
+                        <div className="flex items-center gap-2 text-brand-orange font-bold text-[11px] uppercase tracking-wider mb-1">
                           <GraduationCap size={14} />
                           <span>Cornell Note Sheet (Exam prep)</span>
                         </div>
@@ -385,8 +385,8 @@ export default function DetailedNotes() {
                         className={cn(
                           "flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border self-start sm:self-center",
                           isELI5 
-                            ? "bg-amber-500/20 border-amber-500/50 text-amber-500" 
-                            : "bg-surface border-border text-text-muted hover:border-amber-500/30 hover:text-amber-500"
+                            ? "bg-brand-orange/20 border-brand-orange/50 text-brand-orange" 
+                            : "bg-surface border-border text-text-muted hover:border-brand-orange/30 hover:text-brand-orange"
                         )}
                       >
                         {isLoadingELI5 ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
@@ -396,14 +396,14 @@ export default function DetailedNotes() {
 
                     {/* Cornell Concept Focus Pin */}
                     {sections[currentPage].conceptAnalyzed && (
-                      <div className="bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] font-bold inline-block">
+                      <div className="bg-brand-orange/10 px-3 py-1.5 rounded-xl border border-brand-orange/20 text-brand-orange dark:text-brand-orange text-[11px] font-bold inline-block">
                         🎯 Study Objective: {sections[currentPage].conceptAnalyzed}
                       </div>
                     )}
 
                     {/* Image visualizer */}
                     {sections[currentPage].imageUrl && (
-                      <div className="rounded-2xl overflow-hidden border border-amber-500/10 max-h-[220px]">
+                      <div className="rounded-2xl overflow-hidden border border-brand-orange/10 max-h-[220px]">
                         <img 
                           src={sections[currentPage].imageUrl} 
                           alt={sections[currentPage].heading} 
@@ -413,7 +413,7 @@ export default function DetailedNotes() {
                       </div>
                     )}
 
-                    <div className="markdown-body text-text-main text-sm selection:bg-amber-500/30 leading-relaxed">
+                    <div className="markdown-body text-text-main text-sm selection:bg-brand-orange/30 leading-relaxed">
                       <ReactMarkdown>
                         {isELI5 && eli5Content[currentPage] 
                           ? eli5Content[currentPage] 
@@ -428,7 +428,7 @@ export default function DetailedNotes() {
                         disabled={currentPage === 0}
                         className={cn(
                           "flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
-                          currentPage === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-amber-500/10 text-amber-500"
+                          currentPage === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-brand-orange/10 text-brand-orange"
                         )}
                       >
                         <ChevronLeft size={16} /> Prev
@@ -441,7 +441,7 @@ export default function DetailedNotes() {
                         disabled={currentPage === totalPages - 1}
                         className={cn(
                           "flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
-                          currentPage === totalPages - 1 ? "opacity-30 cursor-not-allowed text-green-500" : "bg-primary text-white shadow-sm"
+                          currentPage === totalPages - 1 ? "opacity-30 cursor-not-allowed text-accent" : "bg-primary text-white shadow-sm"
                         )}
                       >
                         {currentPage === totalPages - 1 ? 'Complete Review' : 'Next'} <ChevronRight size={16} />
@@ -450,10 +450,10 @@ export default function DetailedNotes() {
                   </div>
                 ) : (
                   /* Feynman Template Style */
-                  <div className="glass-card shadow-2xl p-4 sm:p-8 border-l-[6px] border-l-sky-500/80 bg-gradient-to-br from-sky-500/5 to-transparent rounded-3xl space-y-6">
+                  <div className="glass-card shadow-2xl p-4 sm:p-8 border-l-[6px] border-l-sky-500/80 bg-gradient-to-br from-secondary/5 to-transparent rounded-3xl space-y-6">
                     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/15 pb-4">
                       <div>
-                        <div className="flex items-center gap-2 text-sky-500 font-bold text-[11px] uppercase tracking-wider mb-1">
+                        <div className="flex items-center gap-2 text-secondary font-bold text-[11px] uppercase tracking-wider mb-1">
                           <Brain size={14} />
                           <span>Feynman Masterclass (Concept Mastery)</span>
                         </div>
@@ -468,8 +468,8 @@ export default function DetailedNotes() {
                         className={cn(
                           "flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border self-start sm:self-center",
                           isELI5 
-                            ? "bg-sky-500/20 border-sky-500/50 text-sky-500" 
-                            : "bg-surface border-border text-text-muted hover:border-sky-500/30 hover:text-sky-500"
+                            ? "bg-secondary/20 border-secondary/50 text-secondary" 
+                            : "bg-surface border-border text-text-muted hover:border-secondary/30 hover:text-secondary"
                         )}
                       >
                         {isLoadingELI5 ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
@@ -479,14 +479,14 @@ export default function DetailedNotes() {
 
                     {/* Feynman concept block */}
                     {sections[currentPage].conceptAnalyzed && (
-                      <div className="bg-sky-500/10 px-3 py-1.5 rounded-xl border border-sky-500/20 text-sky-800 dark:text-sky-300 text-[11px] font-bold inline-block">
+                      <div className="bg-secondary/10 px-3 py-1.5 rounded-xl border border-secondary/20 text-secondary dark:text-secondary text-[11px] font-bold inline-block">
                         🧠 Conceptual Core: {sections[currentPage].conceptAnalyzed}
                       </div>
                     )}
 
                     {/* Image visualizer */}
                     {sections[currentPage].imageUrl && (
-                      <div className="rounded-2xl overflow-hidden border border-sky-500/10 max-h-[220px]">
+                      <div className="rounded-2xl overflow-hidden border border-secondary/10 max-h-[220px]">
                         <img 
                           src={sections[currentPage].imageUrl} 
                           alt={sections[currentPage].heading} 
@@ -496,7 +496,7 @@ export default function DetailedNotes() {
                       </div>
                     )}
 
-                    <div className="markdown-body text-text-main text-sm selection:bg-sky-500/30 leading-relaxed">
+                    <div className="markdown-body text-text-main text-sm selection:bg-secondary/30 leading-relaxed">
                       <ReactMarkdown>
                         {isELI5 && eli5Content[currentPage] 
                           ? eli5Content[currentPage] 
@@ -511,7 +511,7 @@ export default function DetailedNotes() {
                         disabled={currentPage === 0}
                         className={cn(
                           "flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
-                          currentPage === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-sky-500/10 text-sky-500"
+                          currentPage === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-secondary/10 text-secondary"
                         )}
                       >
                         <ChevronLeft size={16} /> Prev
@@ -524,7 +524,7 @@ export default function DetailedNotes() {
                         disabled={currentPage === totalPages - 1}
                         className={cn(
                           "flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all",
-                          currentPage === totalPages - 1 ? "opacity-30 cursor-not-allowed text-green-500" : "bg-primary text-white shadow-sm"
+                          currentPage === totalPages - 1 ? "opacity-30 cursor-not-allowed text-accent" : "bg-primary text-white shadow-sm"
                         )}
                       >
                         {currentPage === totalPages - 1 ? 'Complete Review' : 'Next'} <ChevronRight size={16} />
@@ -627,9 +627,9 @@ export default function DetailedNotes() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-sm glass-card p-8 border-red-500/20 shadow-[0_0_50px_rgba(239,68,68,0.2)]"
+              className="relative w-full max-w-sm glass-card p-8 border-brand-pink/20 shadow-[0_0_50px_rgba(239,68,68,0.2)]"
             >
-              <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 bg-brand-pink/10 text-brand-pink rounded-3xl flex items-center justify-center mx-auto mb-6">
                 <Trash2 size={32} />
               </div>
               <h3 className="text-xl font-bold text-text-main text-center mb-2">{t('delete_study_confirm_title')}</h3>
@@ -647,7 +647,7 @@ export default function DetailedNotes() {
                 <button
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                  className="bg-brand-pink hover:bg-brand-pink/90 text-white font-bold py-3 rounded-2xl transition-all shadow-lg shadow-brand-pink/20 flex items-center justify-center gap-2"
                 >
                   {isDeleting ? <Loader2 size={18} className="animate-spin" /> : t('delete_now')}
                 </button>

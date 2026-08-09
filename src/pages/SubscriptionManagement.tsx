@@ -1,148 +1,186 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { Check, Info, Sparkles, Layers, CheckCircle2, Clock } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { CreditCard, CheckCircle2, Zap, Shield, Star, Receipt } from 'lucide-react';
+import { cn, formatTime } from '../lib/utils';
+import { PageHeader } from '../components/ui/PageHeader';
+import { useStudyTotals } from '../hooks/useStudyTotals';
+
+/**
+ * Plans.
+ *
+ * Billing is not implemented — there is no subscription endpoint, no payment
+ * provider, and no code anywhere enforces a plan limit. The previous version of
+ * this page did not say so. It showed:
+ *   - three invoices ("Mar 25, 2024 · $9.99 · PAID") on an account that has
+ *     never paid anything;
+ *   - "Your next billing date is April 25, 2024" under a FREE plan;
+ *   - "Materials 3 / 5" and "AI Quizzes 8 / 10", both hardcoded, on an account
+ *     holding 43 materials;
+ *   - "Manage Billing" and "Upgrade to Pro" buttons with no onClick.
+ *
+ * Fabricated payment records are the worst thing a page can show, so they are
+ * gone rather than restyled. What is left is a real usage summary and an honest
+ * preview of the plans, with Pro marked unavailable until billing actually
+ * exists.
+ */
+
+const PLANS = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: '0',
+    tagline: 'Everything the app does today.',
+    features: [
+      'Unlimited materials',
+      'AI summaries and notes',
+      'Quizzes and flashcards',
+      'Study planner',
+      'Live rooms and leaderboard'
+    ]
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: '9.99',
+    tagline: 'Planned. Not available yet.',
+    features: [
+      'Everything in Free',
+      'Higher AI generation limits',
+      'Longer study plans',
+      'Priority support'
+    ]
+  }
+];
 
 export default function SubscriptionManagement() {
   const { user } = useAppContext();
-
-  const plans = [
-    {
-      name: 'Free',
-      price: '0',
-      features: ['5 Materials per month', 'AI Summaries', 'Basic Quizzes'],
-      current: user?.plan === 'free',
-    },
-    {
-      name: 'Pro',
-      price: '9.99',
-      features: ['Unlimited Materials', 'Advanced AI Analysis', 'Custom Reading Plans', 'Priority Support'],
-      current: user?.plan === 'pro',
-      popular: true,
-    },
-  ];
+  const plan = user?.plan || 'free';
+  // Shared so this page and the Profile cannot report different totals.
+  const totals = useStudyTotals();
 
   return (
-    <div className="p-4 md:p-8 lg:p-12 max-w-5xl mx-auto">
-      <header className="mb-12">
-        <h1 className="text-3xl font-bold mb-2 text-text-main">Subscription Management</h1>
-        <p className="text-text-muted">Manage your plan and billing information.</p>
-      </header>
+    <div className="p-4 md:p-8 max-w-5xl mx-auto w-full min-w-0 pb-24">
+      <PageHeader
+        title="Plans"
+        subtitle="What Aether costs, and what you're using."
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Current Plan Info */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="glass-card p-8 bg-primary text-white">
-            <h3 className="text-lg font-bold mb-6">Current Plan</h3>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
-                <Star className="text-secondary" size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-white/70">Plan Type</p>
-                <p className="text-xl font-bold capitalize">{user?.plan} Plan</p>
-              </div>
-            </div>
-            <p className="text-sm text-white/60 mb-8">Your next billing date is April 25, 2024.</p>
-            <button className="w-full py-3 bg-white text-primary rounded-xl font-bold hover:bg-secondary hover:text-white transition-colors">
-              Manage Billing
-            </button>
-          </div>
-
-          <div className="glass-card p-6">
-            <h3 className="font-bold mb-4 text-text-main">Usage This Month</h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-text-muted">Materials</span>
-                  <span className="font-bold text-text-main">3 / 5</span>
-                </div>
-                <div className="h-1.5 bg-surface rounded-full overflow-hidden border border-border">
-                  <div className="h-full bg-primary w-[60%]" />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-text-muted">AI Quizzes</span>
-                  <span className="font-bold text-text-main">8 / 10</span>
-                </div>
-                <div className="h-1.5 bg-surface rounded-full overflow-hidden border border-border">
-                  <div className="h-full bg-secondary w-[80%]" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Plan Selection */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                className={cn(
-                  "glass-card p-8 flex flex-col border-2 transition-all",
-                  plan.current ? "border-primary bg-primary/5" : "border-border"
-                )}
-              >
-                {plan.popular && (
-                  <div className="self-start px-3 py-1 bg-secondary text-white text-xs font-bold rounded-full mb-4">
-                    MOST POPULAR
-                  </div>
-                )}
-                <h3 className="text-xl font-bold mb-2 text-text-main">{plan.name}</h3>
-                <div className="text-3xl font-bold mb-6 text-text-main">${plan.price}<span className="text-sm font-normal text-text-muted">/mo</span></div>
-                
-                <ul className="space-y-3 mb-8 flex-grow">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-sm text-text-muted">
-                      <CheckCircle2 size={16} className="text-secondary" /> {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  disabled={plan.current}
-                  className={cn(
-                    "w-full py-3 rounded-xl font-bold transition-all",
-                    plan.current
-                      ? "bg-surface text-text-muted cursor-not-allowed border border-border"
-                      : "btn-primary"
-                  )}
-                >
-                  {plan.current ? 'Current Plan' : `Upgrade to ${plan.name}`}
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="glass-card p-8">
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-text-main">
-              <Receipt size={20} className="text-primary" /> Billing History
-            </h3>
-            <div className="space-y-4">
-              {[
-                { date: 'Mar 25, 2024', amount: '$9.99', status: 'Paid' },
-                { date: 'Feb 25, 2024', amount: '$9.99', status: 'Paid' },
-                { date: 'Jan 25, 2024', amount: '$9.99', status: 'Paid' },
-              ].map((invoice, idx) => (
-                <div key={idx} className="flex items-center justify-between p-4 hover:bg-surface rounded-xl transition-colors border border-transparent hover:border-border">
-                  <div>
-                    <p className="font-bold text-text-main">{invoice.date}</p>
-                    <p className="text-xs text-text-muted">Pro Plan Subscription</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-text-main">{invoice.amount}</p>
-                    <span className="text-xs font-bold text-green-500 uppercase">{invoice.status}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* Says the thing the old page went out of its way to imply the opposite
+          of. Placed first so nobody reads the prices as live. */}
+      <div className="flex items-start gap-3 p-4 rounded-[var(--radius-card)] bg-pastel-sky border border-border mb-6">
+        <span className="shrink-0 mt-0.5 text-pastel-sky-ink"><Info size={18} /></span>
+        <div>
+          <p className="text-sm font-semibold text-pastel-sky-ink">Billing isn't switched on yet</p>
+          <p className="text-sm text-pastel-sky-ink/85 mt-0.5 leading-relaxed">
+            Every feature in Aether is free for everyone right now, with no caps.
+            The plans below are a preview of what's planned — nothing here can
+            charge you, and there is nothing to cancel.
+          </p>
         </div>
       </div>
+
+      {/* ---- Usage: real counts, no invented ceilings ---- */}
+      <section className="rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] p-5 sm:p-6 mb-6">
+        <h2 className="font-heading text-base font-bold text-text-main tracking-tight mb-1">
+          Your usage
+        </h2>
+        <p className="text-xs text-text-muted mb-5">
+          Everything you've used so far. Nothing is limited.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Usage icon={<Layers size={15} />} tone="mint" value={String(totals.materials)} label="Materials" />
+          <Usage icon={<CheckCircle2 size={15} />} tone="sky" value={String(totals.quizzes)} label="Quizzes taken" />
+          <Usage icon={<Clock size={15} />} tone="peach" value={formatTime(totals.minutes)} label="Time studied" />
+          <Usage icon={<Sparkles size={15} />} tone="lavender" value={String(totals.sessions)} label="Sessions" />
+        </div>
+      </section>
+
+      {/* ---- Plans ---- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {PLANS.map((p) => {
+          const isCurrent = p.id === plan;
+          const isAvailable = p.id === 'free';
+          return (
+            <section
+              key={p.id}
+              className={cn(
+                'rounded-[var(--radius-card)] bg-surface border shadow-[var(--shadow-card)] p-6 flex flex-col',
+                isCurrent ? 'border-primary/40' : 'border-border'
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-heading text-lg font-bold text-text-main tracking-tight">{p.name}</h3>
+                  <p className="text-xs text-text-muted mt-0.5">{p.tagline}</p>
+                </div>
+                {isCurrent && (
+                  <span className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-accent/10 text-accent">
+                    Your plan
+                  </span>
+                )}
+              </div>
+
+              <p className="mt-4 mb-5">
+                <span className="text-3xl font-bold text-text-main tracking-tight">${p.price}</span>
+                <span className="text-sm text-text-muted ml-1">/month</span>
+              </p>
+
+              <ul className="space-y-2.5 flex-1">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-sm text-text-main">
+                    <Check
+                      size={16}
+                      className={cn('shrink-0 mt-0.5', isAvailable ? 'text-accent' : 'text-text-muted')}
+                    />
+                    <span className={isAvailable ? undefined : 'text-text-muted'}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* No dead controls: the old "Upgrade to Pro" and "Manage Billing"
+                  buttons looked live and did nothing at all when pressed. */}
+              <div className="mt-6">
+                {isCurrent ? (
+                  <span className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent/10 text-accent text-sm font-semibold min-h-[44px]">
+                    <Check size={15} /> Active
+                  </span>
+                ) : (
+                  <span
+                    className="w-full inline-flex items-center justify-center py-2.5 rounded-xl bg-surface-alt border border-border text-text-muted text-sm font-semibold min-h-[44px] cursor-default"
+                    title="Billing is not available yet"
+                  >
+                    Coming soon
+                  </span>
+                )}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      <p className="text-xs text-text-muted text-center mt-8 max-w-md mx-auto leading-relaxed">
+        No payment details are stored and no invoices exist. When billing is
+        switched on, this page will show your real plan and receipts.
+      </p>
     </div>
   );
 }
 
-import { cn } from '../lib/utils';
+const TONES: Record<string, string> = {
+  mint: 'bg-pastel-mint text-pastel-mint-ink',
+  sky: 'bg-pastel-sky text-pastel-sky-ink',
+  peach: 'bg-pastel-peach text-pastel-peach-ink',
+  lavender: 'bg-pastel-lavender text-pastel-lavender-ink'
+};
+
+function Usage({ icon, tone, value, label }: { icon: React.ReactNode; tone: string; value: string; label: string }) {
+  return (
+    <div>
+      <span className={cn('inline-flex w-8 h-8 rounded-lg items-center justify-center mb-2', TONES[tone])}>
+        {icon}
+      </span>
+      <p className="text-xl font-bold text-text-main tabular-nums leading-none">{value}</p>
+      <p className="text-[11px] text-text-muted mt-1">{label}</p>
+    </div>
+  );
+}

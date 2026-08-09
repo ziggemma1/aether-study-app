@@ -129,10 +129,10 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
             >
               <div className={cn(
                 "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all",
-                event.completed ? "bg-green-500/20 text-green-500 scale-90" :
+                event.completed ? "bg-accent/20 text-accent scale-90" :
                 event.type === 'study' ? "bg-primary/10 text-primary" :
-                event.type === 'break' ? "bg-green-500/10 text-green-500" :
-                "bg-purple-500/10 text-purple-500"
+                event.type === 'break' ? "bg-accent/10 text-accent" :
+                "bg-primary/10 text-primary"
               )}>
                 {event.completed ? <CheckCircle2 size={18} /> : <Clock size={18} />}
               </div>
@@ -154,8 +154,8 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
                   {!event.completed && (
                     <span className={cn(
                       "text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
-                      event.priority === 'high' ? "bg-red-500/10 text-red-500" :
-                      event.priority === 'medium' ? "bg-orange-500/10 text-orange-500" :
+                      event.priority === 'high' ? "bg-brand-pink/10 text-brand-pink" :
+                      event.priority === 'medium' ? "bg-brand-orange/10 text-brand-orange" :
                       "bg-primary/10 text-primary"
                     )}>
                       {event.priority}

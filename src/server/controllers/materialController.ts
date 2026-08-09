@@ -87,6 +87,7 @@ export const saveFromShare = async (req: Request, res: Response) => {
       isPublic: false,
       likes: 0,
       downloads: 0,
+      rating: 0,
       progress: 0,
       createdAt: new Date()
     });
@@ -138,14 +139,20 @@ export const createMaterial = async (req: Request, res: Response) => {
     
     console.log(`Creating material for user ID: ${userId}, Title: ${title}`);
     
-    let authorName = req.body.authorName;
-    if (isPublic && !authorName) {
+    // Authorship is always the authenticated user — never taken from the request
+    // body (spoofable) and never a placeholder persona.
+    let authorName: string | undefined;
+    if (isPublic) {
       try {
         const user = await mongoose.model('User').findById(userId);
-        authorName = user?.name || "Unknown Author";
+        authorName = user?.name || user?.handle || undefined;
       } catch (err) {
-        console.warn('User model not found or lookup failed:', err);
-        authorName = "Aether Scholar";
+        console.warn('User lookup failed while resolving authorName:', err);
+      }
+      if (!authorName) {
+        return res.status(400).json({
+          message: 'Could not resolve your account details. Please try again.'
+        });
       }
     }
 
@@ -169,10 +176,10 @@ export const createMaterial = async (req: Request, res: Response) => {
       suggestedQuizQuestions: normalizedQuizQuestions,
       flashcards: Array.isArray(flashcards) ? flashcards : [],
       isPublic: isPublic || false,
-      authorName: authorName || "Aether Scholar",
-      likes: Math.floor(Math.random() * 15) + 2,
-      downloads: Math.floor(Math.random() * 20) + 5,
-      rating: parseFloat((4 + Math.random()).toFixed(1))
+      authorName,
+      likes: 0,
+      downloads: 0,
+      rating: 0
     });
 
     await material.save();
@@ -314,6 +321,7 @@ export const cloneMaterial = async (req: Request, res: Response) => {
       isPublic: false, // cloned material is private by default for the cloner
       likes: 0,
       downloads: 0,
+      rating: 0,
       createdAt: new Date()
     });
 

@@ -8,8 +8,12 @@ export interface DashboardUser {
   image: string | null;
   joinDate: string;
   streak: number;
+  /** Best streak ever reached, for "what you stand to lose" context. */
+  longestStreak: number;
   totalStudyTime: number;
   averageQuizScore: number;
+  /** How many scored quizzes the average is drawn from. */
+  quizCount: number;
   rank: number;
   totalLearners: number;
 }

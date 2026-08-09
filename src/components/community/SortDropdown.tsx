@@ -33,19 +33,19 @@ export function SortDropdown({ sortBy, onChange }: SortDropdownProps) {
   const currentLabel = OPTIONS.find(o => o.value === sortBy)?.label || 'Sort';
 
   return (
-    <div ref={containerRef} className="relative w-full sm:w-auto">
+    <div ref={containerRef} className="relative w-full lg:w-auto">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         id="comm-sort-dropdown-trigger"
-        className="flex w-full sm:w-60 items-center justify-between gap-2.5 rounded-xl border border-[#8E9AAF]/10 bg-[#141A24] px-4 py-3 text-sm font-semibold text-[#F0F3F8] shadow-sm transition-all active:scale-[0.98] min-h-[44px] cursor-pointer"
+        className="flex w-full lg:w-60 items-center justify-between gap-2.5 rounded-xl border border-border/10 bg-surface px-4 py-3 text-sm font-semibold text-text-main shadow-sm transition-all active:scale-[0.98] min-h-[44px] cursor-pointer"
       >
-        <span className="flex items-center gap-2 text-[#8E9AAF]">
+        <span className="flex items-center gap-2 text-text-muted">
           <ArrowUpDown className="h-4 w-4" />
-          <span className="text-[#8E9AAF] text-xs font-medium uppercase tracking-wider">Sort:</span>
-          <span className="text-[#F0F3F8] font-semibold">{currentLabel}</span>
+          <span className="text-text-muted text-xs font-medium uppercase tracking-wider">Sort:</span>
+          <span className="text-text-main font-semibold">{currentLabel}</span>
         </span>
-        <ChevronDown className={`h-4 w-4 text-[#8E9AAF] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 text-text-muted transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>
@@ -55,7 +55,7 @@ export function SortDropdown({ sortBy, onChange }: SortDropdownProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.1 }}
-            className="absolute left-0 right-0 sm:left-auto sm:right-0 z-50 mt-2 rounded-2xl border border-[#8E9AAF]/10 bg-[#141A24] p-1.5 shadow-2xl min-w-48"
+            className="absolute left-0 right-0 sm:left-auto sm:right-0 z-50 mt-2 rounded-2xl border border-border/10 bg-surface p-1.5 shadow-[var(--shadow-card-hover)] min-w-48"
           >
             {OPTIONS.map((opt) => (
               <button
@@ -67,8 +67,8 @@ export function SortDropdown({ sortBy, onChange }: SortDropdownProps) {
                 }}
                 className={`flex w-full items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer min-h-[44px] ${
                   sortBy === opt.value
-                    ? 'bg-[#6C5CE7] text-[#F0F3F8]'
-                    : 'text-[#8E9AAF] hover:bg-[#8E9AAF]/5 hover:text-[#F0F3F8]'
+                    ? 'bg-primary text-white'
+                    : 'text-text-muted hover:bg-border/5 hover:text-text-main'
                 }`}
               >
                 {opt.label}

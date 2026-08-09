@@ -1,0 +1,153 @@
+/* ---------------------------------------------------------------------------
+   MOTION LAYER
+   ---------------------------------------------------------------------------
+   Shared animation primitives plus the global reduced-motion guard.
+
+   Kept in its own file, imported from index.css, so the theme token blocks
+   stay untouched. Nothing here defines a colour: every animation below
+   animates opacity, transform, or `currentColor` / an inherited token, so it
+   works in light, dark and every accent theme without knowing about any of
+   them.
+   --------------------------------------------------------------------------- */
+
+/* --- Tunables ------------------------------------------------------------ */
+:root {
+  --motion-fast: 180ms;
+  --motion-base: 320ms;
+  --motion-slow: 560ms;
+  /* Gentle overshoot for "pop" moments. Not a bouncy cartoon spring — one
+     small overshoot and settle. */
+  --motion-pop-ease: cubic-bezier(0.34, 1.42, 0.64, 1);
+  --motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* --- Primitive: pop ------------------------------------------------------
+   A win landed. Scale up and settle. Used on badge unlock, streak extend,
+   points earned. */
+@keyframes motion-pop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+.motion-pop {
+  animation: motion-pop var(--motion-slow) var(--motion-pop-ease) both;
+}
+
+/* --- Primitive: shine ----------------------------------------------------
+   A single diagonal sweep across an earned surface. The element needs
+   `position: relative; overflow: hidden`. Deliberately one-shot: a looping
+   shine on every unlocked badge would turn the achievements grid into a
+   disco. */
+@keyframes motion-shine {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  40%  { opacity: 0.7; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+
+.motion-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    color-mix(in srgb, currentColor 22%, transparent) 50%,
+    transparent 100%
+  );
+  animation: motion-shine 1100ms var(--motion-ease) 120ms both;
+}
+
+/* --- Primitive: live pulse ----------------------------------------------
+   For "something is happening right now" dots. Two rings so it reads as a
+   heartbeat rather than a blinking LED. */
+@keyframes motion-ping {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  70%  { transform: scale(2.3); opacity: 0; }
+  100% { transform: scale(2.3); opacity: 0; }
+}
+
+.motion-live-dot {
+  position: relative;
+  display: inline-flex;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.motion-live-dot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: motion-ping 1900ms cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* --- Primitive: glow -----------------------------------------------------
+   Slow breathing halo for an active/at-stake element (the live streak).
+   currentColor so the caller picks the token. */
+@keyframes motion-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 26%, transparent); }
+  50%      { box-shadow: 0 0 0 0.65rem color-mix(in srgb, currentColor 0%, transparent); }
+}
+
+.motion-glow {
+  animation: motion-glow 2600ms var(--motion-ease) infinite;
+}
+
+/* --- Primitive: flame flicker -------------------------------------------
+   Intensity is driven by the caller via --flame-scale, so one keyframe
+   serves a 1-day ember and a 90-day blaze. */
+@keyframes motion-flicker {
+  0%, 100% { transform: scale(calc(1 * var(--flame-scale, 1))) rotate(-0.6deg); }
+  35%      { transform: scale(calc(1.045 * var(--flame-scale, 1))) rotate(0.7deg); }
+  65%      { transform: scale(calc(0.978 * var(--flame-scale, 1))) rotate(-0.3deg); }
+}
+
+.motion-flicker {
+  animation: motion-flicker 2200ms ease-in-out infinite;
+  transform-origin: 50% 85%;
+  will-change: transform;
+}
+
+/* ---------------------------------------------------------------------------
+   REDUCED MOTION — hard requirement
+   ---------------------------------------------------------------------------
+   Unlayered and !important on purpose: this has to beat Tailwind utilities,
+   the ~20 keyframe animations already defined in index.css, and any inline
+   style Framer Motion writes. Transforms and opacity are left alone so
+   nothing disappears — animations simply resolve to their end state instantly.
+
+   Framer Motion is handled separately in src/lib/motion.ts, which reads the
+   same media query and swaps in zero-duration transitions, because JS-driven
+   animation cannot be stopped from CSS.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Infinite ambient effects have no meaningful end state — hide the decoration
+     rather than freezing it mid-pulse. */
+  .motion-live-dot::before,
+  .motion-shine::after {
+    display: none !important;
+  }
+
+  .motion-glow {
+    box-shadow: none !important;
+  }
+}

@@ -32,7 +32,7 @@ export default function StudyReminders() {
       <div className="flex items-center gap-3">
         <div className={cn(
           "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
-          enabled ? "bg-green-500/10 text-green-500" : "bg-surface-alt/50 text-text-muted"
+          enabled ? "bg-accent/10 text-accent" : "bg-surface-alt/50 text-text-muted"
         )}>
           {enabled ? <Bell size={18} /> : <BellOff size={18} />}
         </div>

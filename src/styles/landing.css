@@ -1,0 +1,37 @@
+/* ---------------------------------------------------------------------------
+   LANDING PAGE TOKEN CONTEXT
+   ---------------------------------------------------------------------------
+   The marketing page is designed dark: its type is hardcoded `text-white` and
+   `text-slate-400` throughout, and it paints over a dark GeometricBackground
+   canvas. Its *surfaces*, though, come from theme tokens — `glass-card`
+   (bg-surface), `bg-surface/50`, `bg-background/60`, `border-border`.
+
+   Since the pastel restyle made light the `:root` default, those surfaces
+   resolve white on the landing page while the text stays white. The visible
+   symptom was the pricing table rendering "/mo" with no price: `$0` in
+   `text-white` on a `#FFFFFF` card.
+
+   Pinning the handful of tokens the landing actually consumes to their dark
+   values fixes every instance at once, without touching the theme blocks in
+   index.css and without rewriting the page's ~40 hardcoded colour classes.
+
+   This must sit on `html`, not an inner wrapper: Tailwind v4's `@theme`
+   resolves `--color-*` at `:root`, so a token override on a descendant is
+   invisible to `bg-surface` and friends. `html.landing-dark` is :root.
+
+   Deliberately NOT keyed to `.is-landing-page`: that class is a shared
+   "public page, let the document scroll" flag that LoginPage and SignupPage
+   set too, and darkening their cards would undo the theme-aware auth surfaces.
+   `landing-dark` is set by LandingPage alone.
+
+   Values mirror the `.dark` block in index.css. If that block's surface
+   colours ever change, update these to match.
+   --------------------------------------------------------------------------- */
+html.landing-dark {
+  --background: #0F172A;
+  --surface: rgba(30, 41, 59, 0.7);
+  --surface-alt: #0F172A;
+  --border: rgba(255, 255, 255, 0.1);
+  --text-main: #FFFFFF;
+  --text-muted: #94A3B8;
+}

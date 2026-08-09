@@ -10,6 +10,16 @@ export async function generateSpeech(text: string): Promise<string | null> {
   }
 }
 
+/**
+ * Sample a shop voice before buying it. Separate from generateSpeech because
+ * that one always speaks in the voice you own — this one names a voice, and so
+ * the server only ever reads a fixed sentence back.
+ */
+export async function previewVoice(itemId: string): Promise<string | null> {
+  const response = await api.post('/materials/voice-preview', { itemId });
+  return response.data.audio || null;
+}
+
 export function playAudio(base64Data: string) {
   const binaryString = window.atob(base64Data);
   const len = binaryString.length;

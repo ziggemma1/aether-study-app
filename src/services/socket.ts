@@ -14,15 +14,26 @@ export const getSocket = (token?: string) => {
 
   if (!socket) {
     const envUrl = (import.meta.env?.VITE_SOCKET_URL as string);
-    
-    // Choose target: Env var > Origin (safest fallback)
-    let targetUrl = envUrl || window.location.origin;
-    
-    // Explicitly check for local environments to ensure we use the correct origin
     const origin = window.location.origin;
-    if (!envUrl && (origin.includes("google-west1.run.app") || origin.includes("localhost") || origin.includes("webcontainer.io"))) {
-      targetUrl = origin;
-    }
+
+    /**
+     * Local origins ALWAYS win over VITE_SOCKET_URL.
+     *
+     * This used to be `envUrl || origin`, with the local-origin check gated
+     * behind `if (!envUrl)` — so whenever the env var was set (it is, in
+     * .env), the check could never fire. Two consequences, both bad:
+     *
+     *  - Sockets from a dev machine went to the PRODUCTION socket server, so
+     *    local joins, presence and room chat were delivered to real users and
+     *    counted against real rooms.
+     *  - Nothing socket-driven could be tested locally, because the local
+     *    server never saw the traffic and never updated Room.activeCount.
+     */
+    const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin)
+      || origin.includes('webcontainer.io')
+      || origin.includes('google-west1.run.app');
+
+    const targetUrl = isLocal ? origin : (envUrl || origin);
 
     // Try to get token from localStorage first, then cookies
     let finalToken = token;

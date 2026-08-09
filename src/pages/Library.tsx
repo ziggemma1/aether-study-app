@@ -19,6 +19,7 @@ export default function Library() {
     materials,      // Filtered materials
     allMaterials = [], // All materials before filtering (to compute correct stats)
     loading,
+    error,
     search,
     setSearch,
     filter,
@@ -114,11 +115,11 @@ export default function Library() {
   const targetMaterialsCount = allMaterials.length || materials.length;
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-background via-surface to-surface-alt text-text-main p-4 sm:p-6 pb-32 select-none overflow-x-hidden">
+    <div className="relative min-h-full bg-gradient-to-br from-background via-surface to-surface-alt text-text-main p-4 sm:p-6 pb-32 select-none overflow-x-hidden">
       
       {/* Absolute Ambient Sphere Background Accent Glow */}
-      <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-[#6C5CE7]/5 blur-[120px] pointer-events-none select-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-80 h-80 rounded-full bg-[#00D2FF]/5 blur-[120px] pointer-events-none select-none" />
+      <div className="absolute top-0 right-1/4 w-80 h-80 rounded-full bg-primary/5 blur-[120px] pointer-events-none select-none" />
+      <div className="absolute bottom-1/4 left-1/4 w-80 h-80 rounded-full bg-secondary/5 blur-[120px] pointer-events-none select-none" />
 
       {/* 1. Header Section (Engaging & Personal).
           Stacks on mobile: sharing a row with "Bulk Select" + "Add" squeezed
@@ -126,13 +127,15 @@ export default function Library() {
       <header className="mb-6 relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mt-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <LibraryBig size={22} className="text-[#6C5CE7] shrink-0" />
+            <LibraryBig size={22} className="text-primary shrink-0" />
             <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-main tracking-tight">
               Your Learning Hub
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-text-muted mt-1 font-medium leading-relaxed">
-            Welcome back, <span className="text-[#6C5CE7] font-bold">{firstName}</span>. You have{' '}
+            {/* The name was violet; emphasis here is a job for weight, not for
+                the one accent that is supposed to mean "this is actionable". */}
+            Welcome back, <span className="text-text-main font-semibold">{firstName}</span>. You have{' '}
             <span className="text-text-main font-bold">{targetMaterialsCount}</span>{' '}
             {targetMaterialsCount === 1 ? 'material' : 'materials'} ready to study.
           </p>
@@ -159,8 +162,8 @@ export default function Library() {
               }}
               className={`flex h-11 items-center gap-2 px-3 sm:px-4 rounded-xl font-extrabold text-[11px] sm:text-xs transition-all outline-none border-2 shadow-lg backdrop-blur-md ${
                 selectionMode 
-                  ? 'bg-red-500 text-white border-red-500' 
-                  : 'bg-[#6C5CE7] text-white border-[#6C5CE7] shadow-[#6C5CE7]/30'
+                  ? 'bg-brand-pink text-white border-brand-pink' 
+                  : 'bg-primary text-white border-primary shadow-primary/30'
               }`}
               id="library-bulk-select-action"
               title={selectionMode ? "Cancel selection" : "Start bulk selection"}
@@ -189,17 +192,17 @@ export default function Library() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-24 left-4 right-4 z-50 flex items-center justify-between gap-4 p-4 rounded-2xl bg-[#6C5CE7] shadow-[0_8px_32px_rgba(108,92,231,0.4)] border border-white/20 sm:max-w-md sm:mx-auto"
+            className="fixed bottom-24 left-4 right-4 z-50 flex items-center justify-between gap-4 p-4 rounded-2xl bg-primary shadow-[0_8px_32px_rgba(108,92,231,0.4)] border border-border sm:max-w-md sm:mx-auto"
           >
             <div className="flex items-center gap-3">
-              <div className="bg-white/20 rounded-lg p-1.5">
+              <div className="bg-surface-alt rounded-lg p-1.5">
                 <CheckCircle2 size={20} className="text-white" />
               </div>
               <div>
                 <p className="text-xs font-black text-white leading-none">
                   {selectedIds.length} {selectedIds.length === 1 ? 'Item' : 'Items'} Selected
                 </p>
-                <p className="text-[11px] text-white/70 mt-1 font-bold">Ready for bulk action</p>
+                <p className="text-[11px] text-text-muted mt-1 font-bold">Ready for bulk action</p>
               </div>
             </div>
 
@@ -207,7 +210,7 @@ export default function Library() {
               <button
                 onClick={handleMerge}
                 disabled={isProcessing || selectedIds.length < 2}
-                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-40 transition-all text-white text-[11px] font-black uppercase tracking-tight border border-white/10"
+                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-surface-alt hover:bg-surface-alt disabled:opacity-40 transition-all text-text-main text-[11px] font-black uppercase tracking-tight border border-border"
               >
                 <Combine size={14} />
                 <span>Merge</span>
@@ -216,7 +219,7 @@ export default function Library() {
               <button
                 onClick={handleBulkDelete}
                 disabled={isProcessing}
-                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-40 transition-all text-white text-[11px] font-black uppercase tracking-tight shadow-md shadow-red-900/20"
+                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-brand-pink hover:bg-brand-pink/90 disabled:opacity-40 transition-all text-white text-[11px] font-black uppercase tracking-tight shadow-md shadow-brand-pink/20"
               >
                 {isProcessing ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
                 <span>Delete</span>
@@ -284,7 +287,7 @@ export default function Library() {
               </motion.div>
             </AnimatePresence>
           ) : (
-            <EmptyState />
+            <EmptyState error={error} onRetry={refetch} />
           )}
         </main>
       </div>

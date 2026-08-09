@@ -31,7 +31,7 @@ export function TruncatedText({ text, maxLength = 12, className = "" }: Truncate
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 bg-slate-900 text-white text-[11px] font-bold px-2 py-1 rounded-lg z-50 border border-border/20 shadow-2xl pointer-events-none whitespace-normal min-w-[120px] max-w-[200px]"
+            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 bg-surface text-text-main text-[11px] font-bold px-2 py-1 rounded-lg z-50 border border-border/20 shadow-2xl pointer-events-none whitespace-normal min-w-[120px] max-w-[200px]"
           >
             {text}
           </motion.span>

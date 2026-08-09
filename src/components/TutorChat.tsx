@@ -65,7 +65,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ materialTitle, materialCon
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
             className={cn(
-              "w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-primary to-accent text-white rounded-full shadow-2xl flex items-center justify-center border-2 border-white/20",
+              "w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-primary to-accent text-white rounded-full shadow-2xl flex items-center justify-center border-2 border-border",
               variant === 'floating' ? "fixed bottom-24 right-6 z-[100]" : "relative z-10"
             )}
           >
@@ -93,7 +93,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ materialTitle, materialCon
                   <p className="text-[11px] text-primary font-medium tracking-widest uppercase">Online</p>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} className="p-2 text-text-muted hover:bg-white/10 rounded-full transition-colors">
+              <button onClick={() => setIsOpen(false)} className="p-2 text-text-muted hover:bg-surface-alt rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>

@@ -1,303 +1,276 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useDashboardData } from '../hooks/useDashboardData';
-import { formatTime, getGreeting, formatDate, getRandomQuote } from '../lib/utils';
-import { 
-  Camera, 
-  ArrowRight, 
-  Clock,
-  Compass,
-  Radio,
-  BookOpen,
-  CalendarDays,
-  Sparkles,
-  Inbox,
-  AlertCircle,
-  RotateCcw,
-  Plus
+import { formatTime, getGreeting, formatDate, getRandomQuote, cn } from '../lib/utils';
+import {
+  ArrowRight, Clock, Compass, BookOpen, Sparkles, AlertCircle,
+  RotateCcw, Upload, CalendarDays, Play, ChevronRight, Inbox
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import MessagesList from '../components/MessagesList';
-import CalendarWidget from '../components/CalendarWidget';
-import StudyConstellation from '../components/StudyConstellation';
-import LearningNebula from '../components/LearningNebula';
-import StreakFlameIndicator from '../components/StreakFlameIndicator';
-import { useStudyActivity } from '../hooks/useStudyActivity';
-import { useUserSubject } from '../hooks/useUserSubject';
 
-// Import our cohesive, polished shared components
-import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import { MetricCard } from '../components/ui/MetricCard';
 import { DataChart } from '../components/ui/DataChart';
 import { RecentItem } from '../components/ui/RecentItem';
 import { UserAvatar } from '../components/ui/UserAvatar';
-import { TruncatedText } from '../components/ui/TruncatedText';
-import { StatsCard } from '../components/ui/StatsCard';
-import { ProgressRing } from '../components/ui/ProgressRing';
+import { StudyingNowRail } from '../components/dashboard/StudyingNowRail';
+import { StreakHero } from '../components/dashboard/StreakHero';
 
+/**
+ * Dashboard.
+ *
+ * Two full-screen decorative canvases used to render behind this page:
+ * `LearningNebula` (25–55 drifting, pulsing particles repainting at 20–35 fps)
+ * and `StudyConstellation`. They are the "floating bubbles" — gone, along with
+ * the animation loop they ran on every dashboard view.
+ *
+ * The page also carried three things that belong on other pages and were
+ * duplicated wholesale here: a full month calendar grid (~900px tall, the whole
+ * of /calendar), a "Discussion Forum" message list (/messages), and a "Mobile
+ * Actions Pad" of links the sidebar and bottom nav already provide. It opened
+ * with two stacked headers — a greeting block and a PageHeader immediately
+ * under it.
+ */
 export default function Dashboard() {
-  const { theme, allProfiles, studySessions, quizResults, t } = useAppContext();
+  const { studySessions, t } = useAppContext();
   const { user, stats, recentMaterials, loading, error, refetch } = useDashboardData();
   const navigate = useNavigate();
-  const randomQuote = React.useMemo(() => getRandomQuote(), []);
-  const activities = useStudyActivity();
-  const subject = useUserSubject(recentMaterials);
-  
-  const studiedToday = React.useMemo(() => {
-    // 1. Check if we have weekly minutes recorded today
-    const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const todayDayName = weekDays[new Date().getDay()];
-    const todayStats = stats?.weeklyData?.find((d: any) => d.day === todayDayName);
-    if (todayStats && todayStats.minutes > 0) {
-      return true;
-    }
+  const quote = React.useMemo(() => getRandomQuote(), []);
 
-    // 2. Check studySessions
-    if (Array.isArray(studySessions) && studySessions.length > 0) {
-      const todayStr = new Date().toDateString();
-      return studySessions.some((session: any) => {
-        if (!session || !session.startTime) return false;
-        try {
-          return new Date(session.startTime).toDateString() === todayStr;
-        } catch {
-          return false;
-        }
-      });
-    }
+  const sessions = React.useMemo(
+    () => (Array.isArray(studySessions) ? studySessions.filter((s: any) => s?.startTime) : []),
+    [studySessions]
+  );
 
-    return false;
-  }, [stats, studySessions]);
+  const todayMinutes = React.useMemo(() => {
+    const today = new Date().toDateString();
+    return sessions
+      .filter((s: any) => new Date(s.startTime).toDateString() === today)
+      .reduce((sum: number, s: any) => sum + (s.durationMinutes || 0), 0);
+  }, [sessions]);
 
-  // 1. Loading Skeleton Component
+  const recentSessions = React.useMemo(
+    () => [...sessions]
+      .sort((a: any, b: any) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+      .slice(0, 4),
+    [sessions]
+  );
+
+  /** Scheduled sessions still ahead of now — what the month grid was for. */
+  const upcoming = React.useMemo(() => {
+    const now = Date.now();
+    return [...sessions]
+      .filter((s: any) => new Date(s.startTime).getTime() > now)
+      .sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+      .slice(0, 4);
+  }, [sessions]);
+
+  const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const todayIndex = new Date().getDay();
+  const chartData = weekDays.map((day, idx) => {
+    const statsDay = stats?.weeklyData?.find((d) => d.day === day);
+    const hours = statsDay ? statsDay.minutes / 60 : 0;
+    return { label: day, value: hours > 0 ? parseFloat(hours.toFixed(1)) : 0, active: todayIndex === idx };
+  });
+  const weekHasData = chartData.some((d) => d.value > 0);
+
   if (loading) {
     return (
-      <div className="space-y-6 pb-24 max-w-lg mx-auto sm:max-w-none animate-pulse select-none">
-        {/* Header Skeleton */}
-        <div className="flex items-center justify-between gap-4 p-4 bg-surface-alt/40 border border-border/10 rounded-2xl">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-12 h-12 rounded-full bg-border/20" />
-            <div className="space-y-2">
-              <div className="w-16 h-3 bg-border/20 rounded" />
-              <div className="w-32 h-5 bg-border/20 rounded" />
-            </div>
-          </div>
-          <div className="w-10 h-10 bg-border/20 rounded-xl" />
-        </div>
-
-        {/* Overview Header */}
-        <div className="h-14 bg-border/10 rounded-xl w-1/3" />
-
-        {/* Metric Cards Skeleton */}
+      <div className="p-4 md:p-8 max-w-6xl mx-auto w-full min-w-0 space-y-5 pb-24">
+        <div className="h-24 rounded-[var(--radius-card)] bg-[var(--skeleton)] animate-pulse" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map(idx => (
-            <div key={idx} className="h-24 bg-surface border border-border/10 rounded-2xl p-4 space-y-2">
-              <div className="w-1/2 h-3 bg-border/20 rounded" />
-              <div className="w-3/4 h-6 bg-border/20 rounded" />
-            </div>
-          ))}
+          {[0, 1, 2, 3].map((i) => <div key={i} className="h-24 rounded-2xl bg-[var(--skeleton)] animate-pulse" />)}
         </div>
-
-        {/* Chart Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-8 h-64 bg-surface border border-border/10 rounded-2xl p-6" />
-          <div className="lg:col-span-4 h-64 bg-surface border border-border/10 rounded-2xl p-6" />
+          <div className="lg:col-span-8 h-64 rounded-[var(--radius-card)] bg-[var(--skeleton)] animate-pulse" />
+          <div className="lg:col-span-4 h-64 rounded-[var(--radius-card)] bg-[var(--skeleton)] animate-pulse" />
         </div>
       </div>
     );
   }
 
-  // 2. Error Recovery Component
   if (error) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto select-none">
-        <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center border border-red-500/20 mb-4">
-          <AlertCircle size={32} />
-        </div>
-        <h3 className="text-lg font-black text-text-main uppercase tracking-wider mb-2">Failed to Load Dashboard</h3>
-        <p className="text-xs text-text-muted mb-6">{error}</p>
-        <button 
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
+        <span className="w-12 h-12 rounded-2xl bg-brand-pink/10 text-brand-pink flex items-center justify-center">
+          <AlertCircle size={22} />
+        </span>
+        <h2 className="font-heading text-base font-bold text-text-main mt-3">We couldn't load your dashboard</h2>
+        <p className="text-sm text-text-muted mt-1">{error}</p>
+        <button
           onClick={refetch}
-          className="btn-primary flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest border border-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all btn-ripple"
+          className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors cursor-pointer min-h-[44px]"
         >
-          <RotateCcw size={14} /> Retry Loading
+          <RotateCcw size={15} /> Try again
         </button>
       </div>
     );
   }
 
-  const recentSessions = Array.isArray(studySessions)
-    ? [...studySessions]
-        .filter(s => s && s.startTime)
-        .sort((a, b) => {
-          try {
-            return new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
-          } catch {
-            return 0;
-          }
-        })
-        .slice(0, 4)
-    : [];
-
-  // Data mapping for custom DataChart
-  const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-  const todayIndex = new Date().getDay();
-
-  const chartData = weekDays.map((day, idx) => {
-    const isToday = todayIndex === idx;
-    const statsDay = stats?.weeklyData?.find(d => d.day === day);
-    // Convert minutes to fractional hours to maintain dynamic visualization bounds
-    const hours = statsDay ? (statsDay.minutes / 60) : 0;
-    return {
-      label: day,
-      value: hours > 0 ? parseFloat(hours.toFixed(1)) : 0,
-      active: isToday
-    };
-  });
-
-  const filteredProfiles = Array.isArray(allProfiles) 
-    ? allProfiles.filter(p => p.optedInLeaderboard || (user && p.id === user.id))
-    : [];
-
-  const userName = user?.name || "Student";
-  const formattedStreak = user?.streak || 0;
+  const userName = user?.name || 'Student';
+  const streak = user?.streak || 0;
 
   return (
-    <div className="relative min-h-screen bg-transparent">
-      {/* Background Learning Nebula */}
-      <LearningNebula subject={subject} streak={formattedStreak} />
-
-      {/* Background Study Constellation */}
-      <StudyConstellation userId={user?.id} activities={activities} />
-
-      <div className="relative z-10 space-y-6 pb-24 max-w-lg mx-auto sm:max-w-none select-none">
-      {/* 1. Personalized Header */}
-      <div className="flex items-center justify-between gap-4 p-4 bg-surface-alt/40 border border-border/10 rounded-2xl">
-        <div className="flex items-center gap-3.5 min-w-0">
-          <UserAvatar 
-            name={userName} 
-            avatarUrl={user?.image || undefined} 
-            streakCount={formattedStreak} 
-            size="lg" 
-          />
-          <div className="min-w-0">
-            {/* was hardcoded #00D2FF — a neon cyan that fails contrast on paper.
-                The token is the darkened cyan that holds AA on a light surface. */}
-            <span className="text-[11px] font-black uppercase tracking-widest text-secondary">
-              {getGreeting()}, {userName.split(' ')[0]}! ☀️
-            </span>
-            <h1 className="text-base sm:text-lg font-black text-text-main leading-tight mt-0.5 truncate uppercase">
-              <TruncatedText text={userName} maxLength={24} />
-            </h1>
-            <p className="text-[11px] sm:text-xs text-text-muted mt-1 italic leading-tight">
-              "{randomQuote}"
-            </p>
-          </div>
+    <div className="p-4 md:p-8 max-w-6xl mx-auto w-full min-w-0 pb-24 space-y-5">
+      {/* ---- One header, not two ---- */}
+      <section className="rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+        <UserAvatar name={userName} avatarUrl={user?.image || undefined} streakCount={streak} size="lg" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-text-muted">{getGreeting()}</p>
+          <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-main tracking-tight truncate">
+            {userName}
+          </h1>
+          <p className="text-xs text-text-muted mt-1 italic truncate">"{quote}"</p>
         </div>
-        
-        {/* Quick action floating tracker button */}
-        <Link 
-          to="/upload" 
-          className="btn-primary !p-2.5 rounded-xl text-xs flex items-center justify-center shrink-0 border border-primary/40 btn-ripple"
-        >
-          <Camera size={16} />
-        </Link>
-      </div>
-
-      {/* 2. PageHeader Container */}
-      <PageHeader 
-        title={t('overview')} 
-        subtitle="Analytical insights, focus charts and material tracking."
-        action={
-          <Link to="/reports" className="text-[11px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
-            {t('reports')} <ArrowRight size={10} />
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            to="/rooms"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors min-h-[44px]"
+          >
+            <Play size={15} className="fill-current" /> Start studying
           </Link>
-        }
+          <Link
+            to="/upload"
+            aria-label="Upload a material"
+            title="Upload a material"
+            className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-surface-alt border border-border text-text-main hover:border-primary/30 transition-colors"
+          >
+            <Upload size={17} />
+          </Link>
+        </div>
+      </section>
+
+      {/* ---- Streak hero ----
+          The streak is the retention mechanic, so it no longer shares a row
+          with three neutral figures. It gets its own panel, its own colour,
+          and a flame that grows with tier. */}
+      <StreakHero
+        streak={streak}
+        longestStreak={user?.longestStreak || 0}
+        todayMinutes={todayMinutes}
       />
 
-      {/* 3. Core Consistent Metric System */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MetricCard 
-          label="Total Study Time" 
-          value={formatTime(user?.totalStudyTime || 0)}
-          icon={<Clock size={16} />}
-          tooltip="Accumulated focused educational timing in hours and minutes."
-          onClick={() => navigate('/reports')}
-        />
-        <MetricCard 
-          label="Average Score" 
-          value={`${Math.round(user?.averageQuizScore || 0)}%`}
-          icon={<Sparkles size={16} />}
-          tooltip="Average correctness rating across generated quiz modules."
-          onClick={() => navigate('/reports')}
-        />
-        
-        <StreakFlameIndicator 
-          days={formattedStreak} 
-          studiedToday={studiedToday} 
-          onClick={() => navigate('/reports')}
-          onActionClick={() => navigate('/rooms')}
-        />
-
-        {/* `|| 1` and `|| 124` showed an unranked account a confident "#1 of
-            124" that the leaderboard then contradicted. */}
+      {/* ---- Supporting metrics ---- */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <MetricCard
-          label="Rivals Rank"
+          label="Study time"
+          value={formatTime(user?.totalStudyTime || 0)}
+          note={user?.totalStudyTime ? 'Across all sessions' : 'No sessions logged yet'}
+          icon={<Clock size={16} />}
+          onClick={() => navigate('/reports')}
+        />
+        <MetricCard
+          label="Average quiz score"
+          value={user?.quizCount ? `${Math.round(user.averageQuizScore || 0)}%` : '—'}
+          note={user?.quizCount ? `Across ${user.quizCount} ${user.quizCount === 1 ? 'quiz' : 'quizzes'}` : 'No quizzes taken yet'}
+          icon={<Sparkles size={16} />}
+          onClick={() => navigate('/reports')}
+        />
+        {/* `|| 1` and `|| 124` used to show an unranked account a confident
+            "#1 of 124" that the leaderboard then contradicted. */}
+        <MetricCard
+          label="Leaderboard rank"
           value={user?.rank ? `#${user.rank}` : 'Unranked'}
-          note={
-            user?.rank
-              ? `Of ${(user?.totalLearners ?? 0).toLocaleString()} ranked learners`
-              : 'Opt in on the leaderboard to be ranked'
-          }
+          note={user?.rank ? `Of ${(user?.totalLearners ?? 0).toLocaleString()} learners` : 'Join the leaderboard to rank'}
           icon={<Compass size={16} />}
-          tooltip="Your highlighted rank position among active course leaderboard members."
           onClick={() => navigate('/leaderboard')}
         />
       </div>
 
-      {/* 4. Focus Charts & Statistics */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div className="lg:col-span-8 flex flex-col gap-3">
-          <DataChart 
-            data={chartData} 
-            title="Weekly Studying Level" 
-            subtitle="Calculated active review metrics" 
-          />
+      {/* ---- This week + today ---- */}
+      {/* items-start, not items-stretch: the two cards hold unrelated
+          content of different length, and stretching the chart to match
+          the panel beside it left ~200px of empty card under the bars. */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div className="lg:col-span-8 flex">
+          {weekHasData ? (
+            <DataChart data={chartData} title="This week" subtitle="Hours studied each day" />
+          ) : (
+            /* The chart used to render seven empty grey boxes captioned
+               "Calculated active review metrics" when there was nothing to
+               plot — an empty state pretending to be a chart. */
+            <div className="w-full rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] p-6 flex flex-col items-center justify-center text-center min-h-[240px]">
+              <span className="w-11 h-11 rounded-xl bg-pastel-sky text-pastel-sky-ink flex items-center justify-center">
+                <CalendarDays size={20} />
+              </span>
+              <p className="text-sm font-semibold text-text-main mt-3">Nothing logged this week</p>
+              <p className="text-xs text-text-muted mt-1 max-w-xs">
+                Finish a focus session and your week will start filling in here.
+              </p>
+              <Link
+                to="/rooms"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors min-h-[44px]"
+              >
+                <Play size={14} className="fill-current" /> Start a session
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-4">
-          <StatsCard 
-            title="Academic Health Rate" 
-            value={user?.averageQuizScore && user?.averageQuizScore > 0 ? `${Math.round(user.averageQuizScore)}%` : "No Data"}
-            description={user?.averageQuizScore && user?.averageQuizScore > 0 && stats?.peak && stats?.floor
-              ? `Peak target: ${stats?.peak}m / floor run: ${stats?.floor}m`
-              : user?.averageQuizScore && user?.averageQuizScore > 0
-                ? "Academic performance calculated from recent study quizzes."
-                : "Complete a quiz in active study mode to compute health rating."}
-            accentColor="text-primary"
-            icon={<ProgressRing percentage={user?.averageQuizScore || 0} size={36} strokeWidth={4} />}
-          />
+          <section className="h-full rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] p-5 flex flex-col">
+            <h2 className="font-heading text-base font-bold text-text-main tracking-tight mb-1">Today</h2>
+            <p className="text-3xl font-bold text-text-main tabular-nums mt-2">{formatTime(todayMinutes)}</p>
+            <p className="text-xs text-text-muted mt-1">
+              {todayMinutes > 0 ? 'studied so far today' : 'nothing logged yet today'}
+            </p>
+
+            <div className="mt-5 pt-4 border-t border-border flex-1">
+              <h3 className="text-xs font-semibold text-text-muted mb-2">Coming up</h3>
+              {/* Replaces a full month grid that duplicated /calendar and stood
+                  ~900px tall in the middle of the page. */}
+              {upcoming.length === 0 ? (
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Nothing scheduled.{' '}
+                  <Link to="/calendar" className="text-primary font-medium hover:underline">Plan a session</Link>.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {upcoming.map((s: any, i: number) => (
+                    <li key={s.id || i} className="flex items-start gap-2 text-xs">
+                      <CalendarDays size={13} className="text-text-muted shrink-0 mt-0.5" />
+                      <span className="min-w-0">
+                        <span className="block font-medium text-text-main truncate">{s.title || 'Study session'}</span>
+                        <span className="block text-text-muted">
+                          {new Date(s.startTime).toLocaleString(undefined, {
+                            weekday: 'short', hour: '2-digit', minute: '2-digit'
+                          })} · {s.durationMinutes}m
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <Link
+              to="/calendar"
+              className="mt-4 inline-flex items-center justify-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              Open calendar <ChevronRight size={13} />
+            </Link>
+          </section>
         </div>
       </div>
 
-      {/* 5. Highlight Area: Recent Course Items */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-black text-text-main uppercase tracking-widest">
+      {/* ---- Recent materials ---- */}
+      <section className="space-y-3">
+        <div className="flex items-baseline gap-3">
+          <h2 className="font-heading text-base font-bold text-text-main tracking-tight">
             {t('recent_materials')}
           </h2>
-          <Link to="/library" className="text-[11px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1">
-            {t('view_all')} <ArrowRight size={10} />
+          <Link to="/library" className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5">
+            {t('view_all')} <ArrowRight size={12} />
           </Link>
         </div>
 
         {recentMaterials.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {recentMaterials.map((material, idx) => (
-              <RecentItem 
+              <RecentItem
                 key={material.id || `material-${idx}`}
-                title={material.title || "Untitled course"}
-                date={formatDate(material.uploadDate) || "Recently"}
+                title={material.title || 'Untitled'}
+                date={formatDate(material.uploadDate) || 'Recently'}
                 type={(material.type && ['pdf', 'quiz', 'note', 'flashcard'].includes(material.type) ? material.type : 'pdf') as any}
                 progress={material.progress || 0}
                 onClick={() => navigate(`/library/${material.id}`)}
@@ -305,104 +278,87 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <EmptyState 
-            title="Your Library is Empty" 
-            message="Upload notes, text pages, or PDF articles to start your smart study track!"
-            actionLabel="Scan Notebook"
+          <EmptyState
+            title="Your library is empty"
+            message="Upload a PDF or your notes and Aether will turn them into summaries, quizzes and flashcards."
+            actionLabel="Upload a material"
             onAction={() => navigate('/upload')}
             icon={<BookOpen size={24} />}
           />
         )}
-      </div>
+      </section>
 
-      {/* 6. Tasks & Study Schedules */}
+      {/* ---- Recent sessions + shortcuts ---- */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        {/* Calendar scheduling Widget */}
-        <div className="lg:col-span-8">
-          <CalendarWidget className="min-h-[380px] h-auto" />
-        </div>
+        <section className="lg:col-span-8 rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] p-5">
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <h2 className="font-heading text-base font-bold text-text-main tracking-tight">
+              {t('recent_activity')}
+            </h2>
+            <Link to="/reports" className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5">
+              Reports <ArrowRight size={12} />
+            </Link>
+          </div>
 
-        {/* Dynamic Activity Tracking History */}
-        <div className="lg:col-span-4 space-y-3">
-          <h2 className="text-xs font-black text-text-main uppercase tracking-widest">
-            {t('recent_activity')}
-          </h2>
-          <div className="bg-surface border border-border/10 p-4 rounded-2xl min-h-[380px] h-auto overflow-y-auto no-scrollbar flex flex-col justify-between">
-            <div className="space-y-2.5">
-              {recentSessions.length > 0 ? (
-                recentSessions.map((session, idx) => (
-                  <div 
-                    key={session.id || idx} 
-                    className="flex items-center gap-2.5 p-2.5 bg-surface-alt/40 border border-border/5 rounded-xl hover:border-primary/20 transition-all cursor-pointer"
-                    onClick={() => navigate('/reports')}
-                  >
-                    <div className="w-7 h-7 bg-primary/10 text-primary rounded-lg flex items-center justify-center shrink-0">
-                      <Clock size={14} />
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <h4 className="text-[11px] font-bold text-text-main truncate">
-                        {session.title || "Active focus"}
-                      </h4>
-                      <p className="text-[11px] text-text-muted mt-0.5">
-                        {session.durationMinutes} mins • {session.startTime ? new Date(session.startTime).toLocaleDateString() : 'Today'}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center py-10 opacity-70">
-                  <Inbox size={26} className="text-text-muted opacity-40 mb-2" />
-                  <p className="text-[11px] font-black uppercase text-text-muted tracking-wider">No recent sessions</p>
-                  <p className="text-[11px] text-text-muted max-w-[150px] mt-1">Daily active recall sessions accumulate here.</p>
-                </div>
-              )}
+          {recentSessions.length === 0 ? (
+            <div className="py-10 text-center">
+              <span className="inline-flex w-11 h-11 rounded-xl bg-surface-alt text-text-muted items-center justify-center">
+                <Inbox size={19} />
+              </span>
+              <p className="text-sm font-semibold text-text-main mt-3">No sessions yet</p>
+              <p className="text-xs text-text-muted mt-1">Your focus sessions will be listed here.</p>
             </div>
-            
-            <button 
-              onClick={() => navigate('/community')}
-              className="w-full mt-3 btn-ripple py-2.5 bg-surface-alt hover:bg-primary/10 border border-border/10 text-text-main hover:text-primary rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all"
-            >
-              Solve Doubts with Friends
-            </button>
+          ) : (
+            <ul className="space-y-2">
+              {recentSessions.map((session: any, idx: number) => (
+                <li key={session.id || idx}>
+                  <button
+                    onClick={() => navigate('/reports')}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-surface-alt/60 border border-border hover:border-primary/25 transition-colors text-left cursor-pointer"
+                  >
+                    <span className="w-8 h-8 shrink-0 rounded-lg bg-pastel-lavender text-pastel-lavender-ink flex items-center justify-center">
+                      <Clock size={15} />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-medium text-text-main truncate">
+                        {session.title || 'Focus session'}
+                      </span>
+                      <span className="block text-xs text-text-muted mt-0.5">
+                        {formatTime(session.durationMinutes || 0)} · {new Date(session.startTime).toLocaleDateString()}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <div className="lg:col-span-4 flex flex-col gap-3 content-start">
+          {/* Live presence takes the slot the static "Live rooms" shortcut used
+              to occupy — same destination, but it shows whether anyone is
+              actually there. */}
+          <StudyingNowRail />
+
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { to: '/upload', icon: Upload, tone: 'bg-pastel-lavender text-pastel-lavender-ink', label: t('snap_scan') },
+              { to: '/curriculum', icon: BookOpen, tone: 'bg-pastel-peach text-pastel-peach-ink', label: t('curriculum_library') },
+              { to: '/explore', icon: Compass, tone: 'bg-pastel-mint text-pastel-mint-ink', label: 'Explore notes' }
+            ].map((tool) => (
+              <Link
+                key={tool.to}
+                to={tool.to}
+                className="rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] p-3 flex flex-col items-center justify-center gap-2 text-center hover:border-primary/25 transition-colors min-h-[96px]"
+              >
+                <span className={cn('w-9 h-9 rounded-xl flex items-center justify-center', tool.tone)}>
+                  <tool.icon size={17} />
+                </span>
+                <span className="text-[11px] font-semibold text-text-main leading-tight">{tool.label}</span>
+              </Link>
+            ))}
           </div>
         </div>
-      </div>
-
-      {/* 7. Bottom Discussion Forum */}
-      <div className="space-y-3">
-        <h2 className="text-xs font-black text-text-main uppercase tracking-widest">
-          Discussion Forum
-        </h2>
-        <MessagesList className="h-[240px] border border-border/10 bg-surface rounded-2xl overflow-hidden shadow-soft" />
-      </div>
-
-      {/* 8. Touch Optimized Mobile Quick Actions Pad */}
-      <div className="space-y-3 pt-2">
-        <h2 className="text-xs font-black text-text-main uppercase tracking-widest">
-          Mobile Actions Pad
-        </h2>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { to: "/upload", icon: Camera, color: "text-primary bg-primary/10", label: t('snap_scan') },
-            { to: "/curriculum", icon: BookOpen, color: "text-amber-500 bg-amber-500/10", label: t('curriculum_library') },
-            { to: "/explore", icon: Compass, color: "text-emerald-500 bg-emerald-500/10", label: "Explore Courses" },
-            { to: "/rooms", icon: Radio, color: "text-cyan-500 bg-cyan-500/10", label: "Live Rooms" }
-          ].map((tool, idx) => (
-            <Link 
-              key={idx} 
-              to={tool.to}
-              className="bg-surface/50 border border-border/10 p-4.5 rounded-2xl flex flex-col items-center justify-center gap-2 text-center active:scale-95 transition-transform btn-ripple select-none"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tool.color}`}>
-                <tool.icon size={18} />
-              </div>
-              <span className="text-[11px] font-black uppercase tracking-wider text-text-main font-sans">
-                {tool.label}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </div>
       </div>
     </div>
   );

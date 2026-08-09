@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User as UserIcon, ArrowRight, Github, Chrome, ArrowLeft, Loader2, Eye, EyeOff, Globe } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, ArrowRight, ArrowLeft, Loader2, Eye, EyeOff, Globe } from 'lucide-react';
+import { GoogleIcon } from '../components/ui/GoogleIcon';
 import { GeometricBackground } from '../components/ui/geometric-background';
 import api from '../services/api';
 import { useAppContext } from '../context/AppContext';
@@ -200,7 +201,7 @@ export default function SignupPage() {
 
       <Link 
         to="/" 
-        className="absolute top-8 left-8 p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-primary hover:border-primary transition-all shadow-xl group"
+        className="absolute top-8 left-8 p-3 bg-surface-alt backdrop-blur-md border border-border rounded-2xl text-text-main hover:bg-primary hover:border-primary transition-all shadow-xl group"
         title="Back to Home"
       >
         <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
@@ -218,20 +219,20 @@ export default function SignupPage() {
             </div>
             <span className="text-xl font-bold text-primary">Aether Study</span>
           </Link>
-          <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tighter">Create Account</h1>
-          <p className="text-primary font-medium">Join thousands of students studying smarter.</p>
+          <h1 className="text-4xl font-extrabold text-text-main mb-2 tracking-tighter">Create Account</h1>
+          <p className="text-primary font-medium">Set up your account and start studying smarter.</p>
         </div>
 
-        <div className="glass-card p-8 bg-slate-950/40 backdrop-blur-2xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+        <div className="soft-card p-8">
           {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
+            <div className="mb-6 p-4 bg-brand-pink/10 border border-brand-pink/20 rounded-xl text-brand-pink text-sm font-medium">
               {error}
             </div>
           )}
 
           <form className="space-y-4" onSubmit={handleSignup}>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
+              <label className="text-sm font-bold text-text-muted flex items-center gap-2">
                 <UserIcon size={16} /> Full Name
               </label>
               <input
@@ -240,11 +241,11 @@ export default function SignupPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="John Doe"
                 required
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-surface-alt border border-border text-text-main placeholder:text-text-muted focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
+              <label className="text-sm font-bold text-text-muted flex items-center gap-2">
                 <Mail size={16} /> Email Address
               </label>
               <input
@@ -253,11 +254,11 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
                 required
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-surface-alt border border-border text-text-main placeholder:text-text-muted focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
+              <label className="text-sm font-bold text-text-muted flex items-center gap-2">
                 <Lock size={16} /> Password
               </label>
               <div className="relative">
@@ -267,12 +268,12 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-primary outline-none transition-all pr-12"
+                  className="w-full px-4 py-3 rounded-xl bg-surface-alt border border-border text-text-main placeholder:text-text-muted focus:ring-2 focus:ring-primary outline-none transition-all pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-text-muted hover:text-text-main transition-colors"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -280,7 +281,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-300 flex items-center gap-2">
+              <label className="text-sm font-bold text-text-muted flex items-center gap-2">
                 <Globe size={16} /> Country
               </label>
               <select
@@ -298,11 +299,11 @@ export default function SignupPage() {
                   }
                 }}
                 required
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white outline-none focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer"
+                className="w-full px-4 py-3 rounded-xl bg-surface-alt border border-border text-text-main outline-none focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer"
               >
-                <option value="" disabled className="bg-slate-900">Select your country</option>
+                <option value="" disabled className="bg-surface">Select your country</option>
                 {countries.sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-                  <option key={c.name} value={c.name} className="bg-slate-900 text-white">
+                  <option key={c.name} value={c.name} className="bg-surface text-text-main">
                     {c.flag} {c.name}
                   </option>
                 ))}
@@ -322,7 +323,7 @@ export default function SignupPage() {
                 <button 
                   type="button"
                   onClick={() => setLoading(false)}
-                  className="w-full py-2 text-xs font-bold text-slate-500 hover:text-white transition-colors"
+                  className="w-full py-2 text-xs font-bold text-text-muted hover:text-text-main transition-colors"
                 >
                   Cancel
                 </button>
@@ -331,22 +332,22 @@ export default function SignupPage() {
           </form>
 
           <div className="flex items-center gap-4 my-8">
-            <div className="flex-grow h-px bg-white/10"></div>
-            <span className="text-sm text-slate-500 font-medium whitespace-nowrap">Or sign up with</span>
-            <div className="flex-grow h-px bg-white/10"></div>
+            <div className="flex-grow h-px bg-surface-alt"></div>
+            <span className="text-sm text-text-muted font-medium whitespace-nowrap">Or sign up with</span>
+            <div className="flex-grow h-px bg-surface-alt"></div>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
             <button 
               onClick={() => handleSocialSignup('google')}
-              className="flex items-center justify-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors"
+              className="flex items-center justify-center gap-2 p-3 bg-surface-alt border border-border rounded-xl text-text-main hover:bg-surface-alt transition-colors"
             >
-              <Chrome size={20} /> <span className="text-sm font-bold">Google</span>
+              <GoogleIcon size={20} /> <span className="text-sm font-bold">Google</span>
             </button>
           </div>
         </div>
 
-        <p className="text-center mt-8 text-sm text-slate-400">
+        <p className="text-center mt-8 text-sm text-text-muted">
           Already have an account? <Link to="/login" className="text-primary font-bold hover:underline">Log in</Link>
         </p>
       </motion.div>

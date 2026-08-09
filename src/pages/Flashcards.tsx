@@ -200,13 +200,13 @@ export default function Flashcards() {
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          className="glass-card p-6 sm:p-12 border-b-8 border-emerald-500"
+          className="glass-card p-6 sm:p-12 border-b-8 border-accent"
         >
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring" }}
-            className="w-16 h-16 sm:w-24 sm:h-24 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-8"
+            className="w-16 h-16 sm:w-24 sm:h-24 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-8"
           >
             <Trophy size={32} className="sm:hidden" />
             <Trophy size={48} className="hidden sm:block" />
@@ -216,7 +216,7 @@ export default function Flashcards() {
             Every card in this session reviewed
           </p>
 
-          <div className="text-5xl sm:text-7xl font-black text-emerald-500 mb-8 sm:mb-12 tabular-nums">
+          <div className="text-5xl sm:text-7xl font-black text-accent mb-8 sm:mb-12 tabular-nums">
             {completedCount}/{totalInitial}
           </div>
 
@@ -296,14 +296,14 @@ export default function Flashcards() {
             {/* Swipe Indicators */}
             <motion.div 
               style={{ opacity: checkOpacity }}
-              className="absolute top-10 right-10 z-50 bg-emerald-500 text-white p-4 rounded-2xl border-4 border-white shadow-xl rotate-12 pointer-events-none"
+              className="absolute top-10 right-10 z-50 bg-accent text-white p-4 rounded-2xl border-4 border-white shadow-xl rotate-12 pointer-events-none"
             >
               <Check size={40} strokeWidth={4} />
             </motion.div>
 
             <motion.div 
               style={{ opacity: crossOpacity }}
-              className="absolute top-10 left-10 z-50 bg-rose-500 text-white p-4 rounded-2xl border-4 border-white shadow-xl -rotate-12 pointer-events-none"
+              className="absolute top-10 left-10 z-50 bg-brand-pink text-white p-4 rounded-2xl border-4 border-white shadow-xl -rotate-12 pointer-events-none"
             >
               <X size={40} strokeWidth={4} />
             </motion.div>
@@ -339,7 +339,7 @@ export default function Flashcards() {
               animate={{ rotateY: isFlipped ? 0 : 180 }}
               transition={{ duration: 0.6, type: "spring", damping: 20 }}
               className={cn(
-                'absolute inset-0 backface-hidden w-full h-full p-8 flex flex-col items-center justify-center text-center glass-card border-b-8 border-emerald-500 rounded-[40px] shadow-2xl bg-surface/95 transition-colors overflow-hidden',
+                'absolute inset-0 backface-hidden w-full h-full p-8 flex flex-col items-center justify-center text-center glass-card border-b-8 border-accent rounded-[40px] shadow-2xl bg-surface/95 transition-colors overflow-hidden',
                 !isFlipped && 'pointer-events-none'
               )}
               style={{ rotateY: 180 }}
@@ -347,7 +347,7 @@ export default function Flashcards() {
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
               
               <div className="relative z-10 flex flex-col items-center justify-center h-full w-full">
-                <div className="mb-6 w-16 h-1.5 bg-emerald-500/30 rounded-full" />
+                <div className="mb-6 w-16 h-1.5 bg-accent/30 rounded-full" />
                 <div className="flex-1 w-full flex items-center justify-center px-2">
                   <div className="text-lg sm:text-2xl font-medium text-text-main leading-relaxed italic font-serif">
                     {activeCard.answer}
@@ -357,14 +357,14 @@ export default function Flashcards() {
                 <div className="mt-8 grid grid-cols-2 gap-4 w-full">
                   <button
                     onClick={(e) => { e.stopPropagation(); reviewAgain(); }}
-                    className="py-4 bg-rose-500 text-white rounded-2xl text-[11px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-rose-500/20 active:scale-95 transition-transform"
+                    className="py-4 bg-brand-pink text-white rounded-2xl text-[11px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-brand-pink/20 active:scale-95 transition-transform"
                   >
                     <X size={18} />
                     <span>Still Learning</span>
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); markKnown(); }}
-                    className="py-4 bg-emerald-500 text-white rounded-2xl text-[11px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
+                    className="py-4 bg-accent text-white rounded-2xl text-[11px] font-black tracking-widest uppercase flex flex-col items-center justify-center gap-1 shadow-lg shadow-accent/20 active:scale-95 transition-transform"
                   >
                     <Check size={18} />
                     <span>Got it!</span>
@@ -382,19 +382,19 @@ export default function Flashcards() {
           onClick={reviewAgain}
           className="flex flex-col items-center group active:scale-95 transition-transform"
         >
-          <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2 border border-rose-500/20 group-hover:bg-rose-500 group-hover:text-white transition-all">
+          <div className="w-12 h-12 rounded-full bg-brand-pink/10 flex items-center justify-center text-brand-pink mb-2 border border-brand-pink/20 group-hover:bg-brand-pink group-hover:text-text-main transition-all">
             <X size={20} />
           </div>
           <span className="text-[11px] font-black uppercase text-text-muted tracking-tighter">Review</span>
         </button>
 
-        <div className="h-0.5 flex-1 mx-8 bg-gradient-to-r from-rose-500/20 via-transparent to-emerald-500/20 rounded-full opacity-30" />
+        <div className="h-0.5 flex-1 mx-8 bg-gradient-to-r from-brand-pink/20 via-transparent to-accent/20 rounded-full opacity-30" />
 
         <button 
           onClick={markKnown}
           className="flex flex-col items-center group active:scale-95 transition-transform"
         >
-          <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-2 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+          <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-2 border border-accent/20 group-hover:bg-accent group-hover:text-text-main transition-all">
             <Check size={20} />
           </div>
           <span className="text-[11px] font-black uppercase text-text-muted tracking-tighter">I Know This</span>

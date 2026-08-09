@@ -46,7 +46,19 @@ const userSchema = new mongoose.Schema({
   }],
   aetherPoints: { type: Number, default: 0 },
   freezeTokens: { type: Number, default: 0 },
+  /** Ids of every shop item bought. See src/lib/shopCatalog.ts. */
   themeUnlocked: [{ type: String }],
+  /** The accent theme class currently applied, or '' for the default violet. */
+  equippedTheme: { type: String, default: '' },
+  /** Gemini prebuilt voice used for read-aloud. */
+  equippedVoice: { type: String, default: 'Kore' },
+  /**
+   * Set when the user finishes (or skips) first-run onboarding. Null means
+   * they have never been through it, which is what routes them to /onboarding.
+   * A date rather than a boolean so we can tell how long an account has been
+   * past its first run without a migration.
+   */
+  onboardingCompletedAt: { type: Date, default: null },
   lastActiveDate: { type: Date },
   lastStreakResetDate: { type: Date },
   optedInLeaderboard: { type: Boolean, default: true },

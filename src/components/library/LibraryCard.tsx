@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, Youtube, BookOpen, Sparkles, Award, Share2, ClipboardCheck, Clock, Trash2, CheckCircle2, Circle, Combine } from 'lucide-react';
+import {
+  FileText, Youtube, BookOpen, Sparkles, Award, Share2, ClipboardCheck,
+  Trash2, CheckCircle2, Circle, Combine, MoreHorizontal, ArrowUpRight
+} from 'lucide-react';
 import { LibraryMaterial } from '../../hooks/useLibrary';
+import { pastelForType, formatDate, getMasteryColor } from '../../lib/utils';
 import { useAppContext } from '../../context/AppContext';
 import api from '../../services/api';
 
@@ -14,16 +18,58 @@ interface LibraryCardProps {
   onDelete?: (id: string, title: string) => void;
 }
 
+/**
+ * Library material card.
+ *
+ * Redesigned around four problems the old layout had:
+ *  1. The header carried five competing things (status chip, bullet, a
+ *     two-word type label that wrapped to two lines, share, delete). Type is
+ *     now an icon chip in the material's own tone, and the two management
+ *     actions moved behind one overflow button.
+ *  2. Delete sat top-right of every card at full visual weight — the exact
+ *     defect the UI audit recorded. It is now inside the overflow menu. Not
+ *     hover-revealed: hover does not exist on touch, so a hover-only delete
+ *     would be unreachable on a phone.
+ *  3. Every un-started material rendered a red near-empty "0%" bar, so a fresh
+ *     library read as a wall of failure. 0 is now stated as "Not started" with
+ *     a neutral track; the coloured mastery scale only appears once there is
+ *     real progress to colour.
+ *  4. The footer had four equal buttons, one of which ("Study") navigated to
+ *     exactly the same route as clicking the card. That one is gone; the three
+ *     that remain each go somewhere the card itself does not.
+ */
 export function LibraryCard({ material, selected, selectionMode, onSelect, onDelete }: LibraryCardProps) {
   const navigate = useNavigate();
   const { showToast } = useAppContext();
   const [copied, setCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const id = material.id || (material as any)._id;
+
+  // Close the overflow menu on outside click or Escape. Without this the menu
+  // stays open while you interact with another card, and keyboard users have
+  // no way out of it.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    const id = material.id || (material as any)._id;
     if (!id || isSharing) return;
 
     setIsSharing(true);
@@ -41,308 +87,261 @@ export function LibraryCard({ material, selected, selectionMode, onSelect, onDel
       showToast('Failed to generate share link', 'error');
     } finally {
       setIsSharing(false);
+      setMenuOpen(false);
     }
   };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    const id = material.id || (material as any)._id;
-    console.log(`[LibraryCard] Clicked delete for ${material.title} (${id})`);
-    if (onDelete && id) {
-      onDelete(id, material.title);
-    }
+    setMenuOpen(false);
+    if (onDelete && id) onDelete(id, material.title);
   };
 
-  const handleCardClick = () => {
-    const id = material.id || (material as any)._id;
-    if (selectionMode && onSelect && id) {
-      onSelect(id);
-    } else if (id) {
-      navigate(`/library/${id}`);
-    }
+  const openMaterial = () => {
+    if (selectionMode && onSelect && id) onSelect(id);
+    else if (id) navigate(`/library/${id}`);
   };
 
-  // Get status metadata from mastery level
-  const statusConfig = React.useMemo(() => {
-    const mastery = material.mastery || 0;
-    if (mastery >= 90) {
-      return { label: 'Complete', color: '#00E5A0', bg: 'rgba(0, 229, 160, 0.12)' };
-    }
-    if (mastery > 0) {
-      return { label: 'In Progress', color: '#00D2FF', bg: 'rgba(0, 210, 255, 0.12)' };
-    }
-    return { label: 'New', color: '#FF5E7E', bg: 'rgba(255, 94, 126, 0.12)', pulse: true };
-  }, [material.mastery]);
-
-  // Type mappings and configuration
-  const getBadgeConfig = (typeStr: string) => {
-    const normType = typeStr.toLowerCase();
-    if (normType === 'pdf') {
-      return { label: 'PDF Document', color: '#6C5CE7', icon: FileText };
-    }
-    if (normType === 'youtube' || normType === 'video') {
-      return { label: 'Video Lecture', color: '#F5B042', icon: Youtube };
-    }
-    if (normType === 'quiz') {
-      return { label: 'Quiz Pack', color: '#00E5A0', icon: Award };
-    }
-    if (normType === 'unified') {
-      return { label: 'Unified Guide', color: '#00D2FF', icon: Combine };
-    }
-    return { label: 'Study Notes', color: '#00D2FF', icon: BookOpen };
-  };
-
-  const badge = getBadgeConfig(material.type);
-  const IconComponent = badge.icon;
-
-  const navigateTo = (path: string) => {
+  const go = (e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
     navigate(path);
   };
 
-  // Mastery progress color bands
-  const getProgressColor = (pct: number) => {
-    if (pct < 30) return 'from-[#FF5E7E] to-[#FF9F68]'; // Ruby to amber
-    if (pct < 60) return 'from-[#F5B042] to-[#FFD54F]'; // Amber to light amber
-    if (pct < 80) return 'from-[#00D2FF] to-[#6C5CE7]'; // Cyan to Purple
-    return 'from-[#00E5A0] to-[#00D2FF]'; // Emerald to Cyan
-  };
+  const tone = pastelForType(material.type);
+  const tint = `var(--pastel-${tone})`;
+  const ink = `var(--pastel-${tone}-ink)`;
 
-  const pct = material.mastery || 0;
+  // Short labels. "PDF DOCUMENT" was long enough to wrap onto a second line in
+  // a three-column grid, which is what pushed the header out of alignment.
+  const typeConfig = (() => {
+    const t = (material.type || '').toLowerCase();
+    if (t === 'pdf') return { label: 'PDF', Icon: FileText };
+    if (t === 'youtube' || t === 'video') return { label: 'Video', Icon: Youtube };
+    if (t === 'quiz') return { label: 'Quiz', Icon: Award };
+    if (t === 'unified') return { label: 'Guide', Icon: Combine };
+    return { label: 'Notes', Icon: BookOpen };
+  })();
+  const TypeIcon = typeConfig.Icon;
+
+  const pct = Math.max(0, Math.min(100, material.mastery || 0));
+  const started = pct > 0;
+
+  // The shared helper rather than a local copy of the thresholds — a second
+  // copy is how this card's bar and the Library's stats row drift apart.
+  const masteryColor = getMasteryColor(pct);
+
+  const tags = material.tags?.filter(Boolean) ?? [];
+  const shownTags = tags.slice(0, 2);
+  const extraTags = tags.length - shownTags.length;
+
+  const secondaryActions = [
+    // hasNotes comes from the backend (detailedNotes / noteSections /
+    // structuredNote). The old card ignored it and left Notes always enabled,
+    // so a material with no notes still offered a button to an empty page.
+    { key: 'notes', label: 'Notes', Icon: FileText, path: `/materials/${id}/notes`, enabled: !!material.hasNotes, hint: material.hasNotes ? 'Detailed notes' : 'No notes generated yet' },
+    { key: 'quiz', label: 'Quiz', Icon: Award, path: `/quiz/${id}`, enabled: !!material.hasQuiz, hint: material.hasQuiz ? 'Interactive quiz' : 'No quiz generated yet' },
+    { key: 'flash', label: 'Flashcards', Icon: Sparkles, path: `/flashcards/${id}`, enabled: !!material.hasFlashcards, hint: material.hasFlashcards ? 'Active recall flashcards' : 'No flashcards generated yet' },
+  ];
 
   return (
     <motion.div
       layout
-      whileHover={{ y: -5 }}
+      whileHover={{ y: -4 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className={`group relative flex rounded-3xl bg-surface/90 border ${
-        selected ? 'border-[#6C5CE7] shadow-[0_0_20px_rgba(108,92,231,0.2)]' : 'border-border'
-      } hover:border-[#6C5CE7]/30 hover:shadow-[0_12px_36px_rgba(108,92,231,0.12)] transition-all overflow-hidden w-full min-h-[290px] select-none shadow-[0_4px_24px_rgba(0,0,0,0.1)] flex-col cursor-pointer`}
-      onClick={handleCardClick}
+      onClick={openMaterial}
+      className={`group relative flex h-full w-full flex-col rounded-[var(--radius-card)] bg-surface border transition-shadow cursor-pointer select-none ${
+        selected
+          ? 'border-primary shadow-[var(--shadow-card-hover)]'
+          : 'border-border shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)]'
+      }`}
     >
-      {/* 0. Selection Overlay & Checkbox */}
-      {selectionMode && (
-        <div className={`absolute inset-0 z-10 transition-all duration-300 ${
-          selected ? 'bg-[#6C5CE7]/20 ring-4 ring-[#6C5CE7] ring-inset' : 'bg-black/20'
-        }`} />
+      {/* Selection state. The dimming overlay is gone — it greyed the text of
+          every unselected card during bulk select, which made the list harder
+          to read at exactly the moment you need to read it. A ring on the
+          selected card carries the state instead. */}
+      {selected && (
+        <span className="pointer-events-none absolute inset-0 rounded-[var(--radius-card)] ring-2 ring-primary ring-inset" />
       )}
-      
+
       {(selectionMode || selected) && (
-        <div className="absolute top-4 right-4 z-50 p-1">
+        <div className="absolute top-3 right-3 z-30">
           {selected ? (
-            <motion.div 
-              initial={{ scale: 0, rotate: -45 }}
-              animate={{ scale: 1, rotate: 0 }}
-              className="bg-[#6C5CE7] rounded-full p-2 shadow-2xl shadow-[#6C5CE7]/60 border-2 border-white"
+            <motion.div
+              initial={{ scale: 0.6 }}
+              animate={{ scale: 1 }}
+              className="rounded-full bg-primary text-white p-0.5 shadow-[var(--shadow-card)]"
             >
-              <CheckCircle2 size={24} className="text-white" strokeWidth={4} />
+              <CheckCircle2 size={22} strokeWidth={2.5} />
             </motion.div>
           ) : (
-            <div className="bg-white/20 rounded-full p-2 border-2 border-white/60 text-white backdrop-blur-xl shadow-xl">
-              <Circle size={24} strokeWidth={4} />
+            <div className="rounded-full bg-surface text-text-muted p-0.5 border border-border">
+              <Circle size={22} strokeWidth={2} />
             </div>
           )}
         </div>
       )}
 
-      {/* 1. Left Gradient Border Overlay Block */}
-      <div 
-        className="absolute left-0 top-0 bottom-0 w-2 shrink-0 transition-all duration-300 pointer-events-none group-hover:w-2.5"
-        style={{ 
-          background: `linear-gradient(to bottom, ${badge.color}, ${statusConfig.color})`,
-          opacity: 0.85 
-        }}
-      />
-
-      {/* Main card body area wrapper */}
-      <div className="flex-grow pl-6 pr-5 pt-5 pb-4 flex flex-col justify-between">
-        
-        {/* Top Badges Header Row */}
-        <div>
-          <div className="flex items-center justify-between gap-3 mb-3">
-            {/* Status Indicator */}
-            <div className="flex items-center gap-1.5">
-              <span 
-                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 ${
-                  statusConfig.pulse ? 'animate-pulse' : ''
-                }`}
-                style={{ backgroundColor: statusConfig.bg, color: statusConfig.color }}
-              >
-                {statusConfig.pulse && <span className="w-1.5 h-1.5 rounded-full bg-[#FF5E7E] animate-ping shrink-0" />}
-                {statusConfig.label}
-              </span>
-
-              <span className="text-[11px] text-text-muted/40">•</span>
-              
-              <span className="text-[11px] font-bold text-text-muted/80 uppercase font-mono">
-                {badge.label}
-              </span>
+      <div className="flex flex-col flex-1 p-4 gap-3">
+        {/* ---- Header: type identity, then overflow ---- */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* The icon was computed by the old card and then never rendered,
+                so type was communicated only by a word and a stripe colour. */}
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+              style={{ backgroundColor: tint, color: ink }}
+            >
+              <TypeIcon size={17} />
+            </span>
+            <div className="min-w-0">
+              {/* Label in ink, not the tone: at full saturation the type ink is
+                  a crimson/amber strong enough to read as a warning. The chip
+                  behind the icon already carries the colour coding. */}
+              <p className="text-[11px] font-semibold leading-none text-text-main">
+                {typeConfig.label}
+              </p>
+              <p className="mt-1 truncate text-[11px] leading-none text-text-muted">
+                {material.date ? formatDate(material.date) : 'No date'}
+              </p>
             </div>
+          </div>
 
-            {/* Quick Share / Delete Buttons */}
-            <div className="flex items-center gap-2 shrink-0 relative z-40">
-              {selectionMode ? (
-                null
-              ) : (
-                <>
-                  {/* Share leads; delete follows. Delete keeps its 44px target
-                      but rests in muted grey and only turns red on intent —
-                      it used to sit first and shout as loudly as the action
-                      people actually came to use. */}
+          {!selectionMode && (
+            <div className="relative z-30 shrink-0" ref={menuRef}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted hover:bg-surface-alt hover:text-text-main transition-colors cursor-pointer"
+                aria-label={`Actions for ${material.title}`}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+              >
+                <MoreHorizontal size={18} />
+              </button>
+
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-10 w-44 overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-card-hover)] py-1"
+                >
                   <button
+                    role="menuitem"
                     onClick={handleShare}
                     disabled={isSharing}
-                    id={`lib-share-${material.id || (material as any)._id}`}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#6C5CE7]/10 text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white active:scale-95 transition-all outline-none border border-[#6C5CE7]/20 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                    title="Share study material"
-                    aria-label={`Share ${material.title}`}
+                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-text-main hover:bg-surface-alt transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                   >
-                    {copied ? <ClipboardCheck size={20} className="text-white" /> : <Share2 size={20} />}
+                    {copied
+                      ? <><ClipboardCheck size={16} className="text-accent" /> Link copied</>
+                      : <><Share2 size={16} className="text-text-muted" /> {isSharing ? 'Creating link…' : 'Share'}</>}
                   </button>
-
                   <button
+                    role="menuitem"
                     onClick={handleDelete}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-transparent text-text-muted/70 hover:bg-red-500/10 hover:text-red-400 focus-visible:bg-red-500/10 focus-visible:text-red-400 transition-all active:scale-95 outline-none border border-transparent hover:border-red-500/20 cursor-pointer"
-                    title="Delete study material"
-                    aria-label={`Delete ${material.title}`}
+                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-brand-pink hover:bg-brand-pink/10 transition-colors cursor-pointer"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} /> Delete
                   </button>
-                </>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ---- Title. A real button so keyboard users have a focusable target;
+                the card's own onClick is a mouse convenience on top of it. ---- */}
+        <button
+          onClick={(e) => { e.stopPropagation(); openMaterial(); }}
+          className="group/title text-left outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+        >
+          <h4 className="flex items-start gap-1 font-heading text-[15px] font-bold leading-snug text-text-main line-clamp-2 group-hover:text-primary transition-colors">
+            <span className="min-w-0">{material.title}</span>
+            <ArrowUpRight
+              size={15}
+              className="mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
+            />
+          </h4>
+        </button>
+
+        {material.description && (
+          <p className="text-xs leading-relaxed text-text-muted line-clamp-2">
+            {material.description}
+          </p>
+        )}
+
+        {/* Tags: two, then a count. Three truncated tags told you less than two
+            whole ones — "#Set operations: union, intersection, co…" is not a
+            label you can read at a glance. */}
+        {shownTags.length > 0 && (
+          /* One row, never wrapping. With wrapping the "+10" dropped onto a
+             line of its own and cost the card a whole extra row of height for
+             three characters. flex-1 lets the two tags share the width and
+             truncate; the counter is shrink-0 so it always stays on the end. */
+          <div className="flex items-center gap-1.5">
+            {shownTags.map((tag, idx) => (
+              <span
+                key={`${tag}-${idx}`}
+                title={tag}
+                className="min-w-0 flex-1 truncate rounded-md bg-surface-alt px-2 py-1 text-[11px] font-medium text-text-muted"
+              >
+                {tag}
+              </span>
+            ))}
+            {extraTags > 0 && (
+              <span
+                className="shrink-0 py-1 text-[11px] font-medium text-text-muted"
+                title={tags.slice(2).join(', ')}
+              >
+                +{extraTags}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* mt-auto pins the footer to the bottom so cards of differing text
+            length still line their progress bars and buttons up across a row. */}
+        <div className="mt-auto pt-3 flex flex-col gap-3">
+          <div>
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <span className="text-[11px] font-medium text-text-muted">Mastery</span>
+              <span
+                className="text-[11px] font-semibold"
+                style={{ color: started ? masteryColor : 'var(--text-muted)' }}
+              >
+                {started ? `${pct}%` : 'Not started'}
+              </span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--ring-track)]">
+              {started && (
+                <div
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${pct}%`, backgroundColor: masteryColor }}
+                />
               )}
             </div>
           </div>
 
-          {/* Title */}
-          <h4 className="text-base font-extrabold text-text-main line-clamp-2 md:line-clamp-1 mb-1 tracking-tight leading-snug group-hover:text-[#6C5CE7] transition-colors">
-            {material.title}
-          </h4>
-
-          {/* Date bar */}
-          <div className="flex items-center gap-1.5 text-xs text-text-muted/70 mb-3 font-semibold select-none">
-            <Clock size={12} className="text-text-muted/40" />
-            <span>Updated: {material.date || 'June 15, 2026'}</span>
-          </div>
-
-          {/* Summary / Description preview */}
-          {material.description ? (
-            <p className="text-xs text-text-muted line-clamp-2 leading-relaxed mb-4 leading-normal font-normal">
-              {material.description}
-            </p>
-          ) : (
-            <p className="text-xs italic text-text-muted/40 mb-4 select-none">
-              Double-click to expand and synthesize direct quiz reviews.
-            </p>
-          )}
-
-          {/* Tags */}
-          {material.tags && material.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-4 select-none">
-              {material.tags.slice(0, 3).map((tag, idx) => (
-                <span
-                  key={`${tag}-${idx}`}
-                  className="text-[11px] font-bold text-text-muted/80 bg-text-muted/5 px-2.5 py-1 rounded-lg border border-border"
+          {!selectionMode && (
+            <div className="grid grid-cols-3 gap-1.5 border-t border-border pt-3">
+              {secondaryActions.map(({ key, label, Icon, path, enabled, hint }) => (
+                <button
+                  key={key}
+                  onClick={(e) => enabled && go(e, path)}
+                  disabled={!enabled}
+                  id={`lib-card-${key}-${id}`}
+                  title={hint}
+                  className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl text-[11px] font-semibold transition-colors ${
+                    enabled
+                      ? 'bg-surface-alt text-text-muted hover:bg-primary/10 hover:text-primary cursor-pointer'
+                      : 'bg-surface-alt/40 text-text-muted/40 cursor-not-allowed'
+                  }`}
                 >
-                  #{tag}
-                </span>
+                  <Icon size={14} />
+                  {label}
+                </button>
               ))}
             </div>
           )}
         </div>
-
-        {/* Outer bottom actions/progress container wrapper */}
-        <div>
-          {/* Progress / Mastery Bar */}
-          <div className="pt-3.5 border-t border-border mb-4 select-none">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-extrabold uppercase text-text-muted/80 tracking-wider">
-                Concept Mastery
-              </span>
-              <span className="text-xs font-bold font-mono text-text-main">
-                {pct}%
-              </span>
-            </div>
-            <div className="h-1.5 w-full bg-surface/40 border border-border rounded-full overflow-hidden">
-              <div
-                className={`h-full bg-gradient-to-r ${getProgressColor(pct)} rounded-full transition-all duration-700 ease-out`}
-                style={{ width: `${pct || 4}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Interaction Touch Buttons (min size 44px) */}
-          {!selectionMode && (
-            <div className="grid grid-cols-4 gap-2 pt-1 border-t border-border">
-              {/* STUDY */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigateTo(`/library/${material.id}`);
-                }}
-                className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#6C5CE7]/10 hover:bg-[#6C5CE7]/20 text-[#6C5CE7] active:scale-95 transition-all min-h-[44px] cursor-pointer"
-                id={`lib-card-study-${material.id}`}
-                title="Study Materials"
-              >
-                <BookOpen size={15} />
-                <span className="text-[11px] font-black uppercase tracking-tight mt-1">Study</span>
-              </button>
-
-              {/* NOTES SNEAK */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigateTo(`/materials/${material.id}/notes`);
-                }}
-                className="flex flex-col items-center justify-center py-2.5 rounded-xl bg-[#00D2FF]/10 hover:bg-[#00D2FF]/20 text-[#00D2FF] active:scale-95 transition-all min-h-[44px] cursor-pointer"
-                id={`lib-card-notes-${material.id}`}
-                title="Detailed Notes"
-              >
-                <FileText size={15} />
-                <span className="text-[11px] font-black uppercase tracking-tight mt-1">Notes</span>
-              </button>
-
-              {/* QUIZ */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigateTo(`/quiz/${material.id}`);
-                }}
-                className={`flex flex-col items-center justify-center py-2.5 rounded-xl active:scale-95 transition-all min-h-[44px] cursor-pointer ${
-                  material.hasQuiz
-                    ? 'bg-[#F5B042]/10 hover:bg-[#F5B042]/20 text-[#F5B042]'
-                    : 'bg-text-muted/5 hover:bg-text-muted/10 text-text-muted/40 disabled:opacity-40'
-                }`}
-                id={`lib-card-quiz-${material.id}`}
-                title="Interactive Quiz"
-                disabled={!material.hasQuiz}
-              >
-                <Award size={15} />
-                <span className="text-[11px] font-black uppercase tracking-tight mt-1">Quiz</span>
-              </button>
-
-              {/* FLASHCARDS */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigateTo(`/flashcards/${material.id}`);
-                }}
-                className={`flex flex-col items-center justify-center py-2.5 rounded-xl active:scale-95 transition-all min-h-[44px] cursor-pointer ${
-                  material.hasFlashcards
-                    ? 'bg-[#00E5A0]/10 hover:bg-[#00E5A0]/20 text-[#00E5A0]'
-                    : 'bg-text-muted/5 hover:bg-text-muted/10 text-text-muted/40 disabled:opacity-40'
-                }`}
-                id={`lib-card-flash-${material.id}`}
-                title="Active Recall Flashcards"
-                disabled={!material.hasFlashcards}
-              >
-                <Sparkles size={15} />
-                <span className="text-[11px] font-black uppercase tracking-tight mt-1">Flash</span>
-              </button>
-            </div>
-          )}
-
-        </div>
-
       </div>
     </motion.div>
   );

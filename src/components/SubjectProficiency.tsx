@@ -17,12 +17,12 @@ export default function SubjectProficiency({ subjects }: SubjectProficiencyProps
 
   if (!hasQuizData) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 bg-[#141A24] rounded-2xl border border-white/5 min-h-[220px] text-center">
-        <div className="w-12 h-12 rounded-xl bg-[#6C5CE7]/10 flex items-center justify-center mb-4">
-          <BookOpen className="text-[#6C5CE7]" size={22} />
+      <div className="flex flex-col items-center justify-center p-8 bg-surface rounded-2xl border border-border min-h-[220px] text-center">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+          <BookOpen className="text-primary" size={22} />
         </div>
-        <p className="text-sm font-semibold text-gray-300">Complete your first quiz to see proficiency</p>
-        <p className="text-xs text-gray-500 mt-1 max-w-[280px]">
+        <p className="text-sm font-semibold text-text-muted">Complete your first quiz to see proficiency</p>
+        <p className="text-xs text-text-muted mt-1 max-w-[280px]">
           Take a quiz based on your materials to analyze detailed performance by study subject.
         </p>
       </div>
@@ -39,26 +39,26 @@ export default function SubjectProficiency({ subjects }: SubjectProficiencyProps
           <div key={sub.name} className="space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-sm font-semibold text-[#F0F3F8] block">
+                <span className="text-sm font-semibold text-text-main block">
                   {sub.name}
                 </span>
-                <span className="text-[11px] text-gray-400 font-medium">
+                <span className="text-[11px] text-text-muted font-medium">
                   {sub.quizCount} quiz{sub.quizCount !== 1 ? 'zes' : ''} completed
                 </span>
               </div>
-              <span className="text-sm font-bold text-[#00D2FF]">
+              <span className="text-sm font-bold text-secondary">
                 {score}%
               </span>
             </div>
             
-            <div className="relative h-2.5 w-full bg-[#0B0E14] rounded-full overflow-hidden border border-white/5">
+            <div className="relative h-2.5 w-full bg-background rounded-full overflow-hidden border border-border">
               <div 
-                className="h-full bg-gradient-to-r from-[#6C5CE7] to-[#00D2FF] rounded-full transition-all duration-700 ease-out"
+                className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-700 ease-out"
                 style={{ width: `${score}%` }}
               />
             </div>
             
-            <div className="flex justify-between text-[11px] text-gray-500 font-bold uppercase tracking-wider">
+            <div className="flex justify-between text-[11px] text-text-muted font-bold uppercase tracking-wider">
               <span>Novice</span>
               <span>Exp</span>
               <span>Proficient</span>

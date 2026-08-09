@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { StudySession } from '../models/StudySession.js';
 import { User } from '../models/User.js';
 import { checkAchievements } from '../services/achievement-service.js';
+import { touchStreak } from '../services/streak-service.js';
 
 export const getSessions = async (req: Request, res: Response) => {
   try {
@@ -36,6 +37,7 @@ export const createSession = async (req: Request, res: Response) => {
     await session.save();
 
     // Update user stats
+    let streakResult = null;
     if (durationMinutes > 0 && type === 'study') {
       await User.findByIdAndUpdate(userId, {
         $inc: {
@@ -43,17 +45,25 @@ export const createSession = async (req: Request, res: Response) => {
           aetherPoints: durationMinutes * 10
         }
       });
+      // Advance the daily streak. Must run before checkAchievements, since five
+      // of the achievements are keyed on streak length and would otherwise be
+      // evaluated against yesterday's value.
+      streakResult = await touchStreak(userId);
     }
 
     // Update achievements on the and send response
     const newlyUnlockedAchievements = await checkAchievements(userId);
-    const updatedUser = await User.findById(userId).select('aetherPoints streak totalStudyTime');
+    const updatedUser = await User.findById(userId).select('aetherPoints streak totalStudyTime freezeTokens');
 
     res.status(201).json({
       ...session.toObject(),
       aetherPoints: updatedUser?.aetherPoints,
       streak: updatedUser?.streak,
       totalStudyTime: updatedUser?.totalStudyTime,
+      freezeTokens: updatedUser?.freezeTokens,
+      // Lets the client tell the user a token was spent on their behalf.
+      freezeUsed: streakResult?.freezeUsed || false,
+      streakBroken: streakResult?.streakBroken || false,
       newlyUnlockedAchievements
     });
   } catch (error: any) {

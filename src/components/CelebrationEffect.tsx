@@ -24,7 +24,7 @@ export function CelebrationEffect({ type, onComplete }: CelebrationEffectProps) 
           icon: '🔥',
           title: 'Streak Milestone!',
           message: "You're on fire! Keep up the daily momentum!",
-          colorClass: 'text-amber-500 border-l-amber-500',
+          colorClass: 'text-brand-orange border-l-amber-500',
           bgAccent: 'rgba(245, 176, 66, 0.1)'
         };
       case 'quiz':
@@ -32,7 +32,7 @@ export function CelebrationEffect({ type, onComplete }: CelebrationEffectProps) 
           icon: '🏆',
           title: 'Quiz Master!',
           message: 'Excellent job! You successfully completed the recall study!',
-          colorClass: 'text-emerald-500 border-l-emerald-500',
+          colorClass: 'text-accent border-l-emerald-500',
           bgAccent: 'rgba(16, 185, 129, 0.1)'
         };
       case 'achievement':
@@ -40,7 +40,7 @@ export function CelebrationEffect({ type, onComplete }: CelebrationEffectProps) 
           icon: '🎖️',
           title: 'Achievement Unlocked!',
           message: 'New milestone badge added to your user profile.',
-          colorClass: 'text-purple-500 border-l-purple-500',
+          colorClass: 'text-primary border-l-purple-500',
           bgAccent: 'rgba(139, 92, 246, 0.1)'
         };
       case 'levelup':
@@ -48,7 +48,7 @@ export function CelebrationEffect({ type, onComplete }: CelebrationEffectProps) 
           icon: '✨',
           title: 'Level Up!',
           message: 'New academic level unlocked. Keep soaring high!',
-          colorClass: 'text-cyan-500 border-l-cyan-500',
+          colorClass: 'text-secondary border-l-cyan-500',
           bgAccent: 'rgba(6, 182, 212, 0.1)'
         };
     }

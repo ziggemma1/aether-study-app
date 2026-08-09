@@ -20,6 +20,7 @@ import userRoutes from "./src/server/routes/userRoutes.js";
 import groupRoutes from "./src/server/routes/groupRoutes.js";
 import roomRoutes from "./src/server/routes/roomRoutes.js";
 import dashboardRoutes from "./src/server/routes/dashboardRoutes.js";
+import { backfillOnboarding } from "./src/server/lib/onboardingBackfill.js";
 import notificationRoutes from "./src/server/routes/notificationRoutes.js";
 import reportsRoutes from "./src/server/routes/reportsRoutes.js";
 import leaderboardRoutes from "./src/server/routes/leaderboardRoutes.js";
@@ -78,11 +79,25 @@ async function startServer() {
   app.use(mongoSanitize());
 
   // Rate Limiting Configurations
+  //
+  // The global cap was 100 per 15 minutes, which is ~6 requests a minute for a
+  // signed-in user. Normal browsing exceeds that easily, and because the cap
+  // covers /api/auth/me too, blowing it made the client fail to identify the
+  // user and drop them on the login screen — the app looked broken rather than
+  // rate-limited. 1000 still stops scripted abuse while leaving real use alone.
+  //
+  // The limits that actually guard something expensive are unchanged:
+  // authLimiter (15 login/register attempts) and aiLimiter (20 generations).
   const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: 1000, // Limit each IP to 1000 requests per windowMs
     standardHeaders: true,
     legacyHeaders: false,
+    // A liveness probe must never be throttled: once the budget is gone, the
+    // health check that would report the problem is the first thing to fail.
+    // `req.path` is relative to the "/api" mount point, so it reads "/health";
+    // originalUrl is checked too in case the mount ever changes.
+    skip: (req) => req.path === "/health" || req.originalUrl.startsWith("/api/health"),
     message: { message: "Too many requests from this IP, please try again after 15 minutes." }
   });
 
@@ -114,6 +129,7 @@ async function startServer() {
   app.use("/api/materials/generate-quiz", aiLimiter);
   app.use("/api/materials/chat", aiLimiter);
   app.use("/api/materials/speech", aiLimiter);
+  app.use("/api/materials/voice-preview", aiLimiter);
   app.use("/api/materials/generate-plan", aiLimiter);
   app.use("/api/study-plans/generate", aiLimiter);
 
@@ -187,6 +203,7 @@ async function startServer() {
             connectTimeoutMS: 5000,
           });
           console.log("✅ Connected to MongoDB successfully");
+          await backfillOnboarding();
         } catch (err: any) {
           const lowerMsg = err.message.toLowerCase();
           const isAuthError = lowerMsg.includes('authentication failed') || lowerMsg.includes('bad auth');

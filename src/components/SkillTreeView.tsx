@@ -68,7 +68,7 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({ subject, topics, o
                 >
                    <div className={cn(
                      "absolute -top-4 -left-4 w-12 h-12 rounded-full border-4 border-background flex items-center justify-center z-20 shadow-xl",
-                     isCompleted ? "bg-green-500 text-white" : isLocked ? "bg-surface text-text-muted" : "bg-primary text-white animate-pulse"
+                     isCompleted ? "bg-accent text-text-main" : isLocked ? "bg-surface text-text-muted" : "bg-primary text-text-main animate-pulse"
                    )}>
                      {isCompleted ? <Check size={20} strokeWidth={3} /> : isLocked ? <Lock size={20} /> : <div className="w-3 h-3 bg-white rounded-full" />}
                    </div>

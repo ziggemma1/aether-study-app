@@ -80,7 +80,7 @@ export default function SharedMaterialView() {
           <Loader2 className="w-12 h-12 text-primary animate-spin" />
           <div className="absolute inset-0 blur-xl bg-primary/20 animate-pulse" />
         </div>
-        <p className="mt-6 text-slate-500 font-medium tracking-tight">Accessing shared intelligence...</p>
+        <p className="mt-6 text-text-muted font-medium tracking-tight">Accessing shared intelligence...</p>
       </div>
     );
   }
@@ -88,7 +88,7 @@ export default function SharedMaterialView() {
   if (!material) return null;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 selection:bg-primary/10">
+    <div className="min-h-screen bg-[#f8fafc] font-sans text-text-main selection:bg-primary/10">
       {/* Premium Header */}
       <nav className="sticky top-0 z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200/50 px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
@@ -102,7 +102,7 @@ export default function SharedMaterialView() {
             <div className="min-w-0">
               <h2 className="text-sm font-bold truncate leading-tight">{material.title}</h2>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Shared Material</span>
+                <span className="text-[11px] text-text-muted font-bold uppercase tracking-wider">Shared Material</span>
               </div>
             </div>
           </div>
@@ -132,18 +132,18 @@ export default function SharedMaterialView() {
                   {material.type}
                 </span>
                 <div className="h-1 w-1 rounded-full bg-slate-300" />
-                <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                <div className="flex items-center gap-2 text-text-muted text-xs font-semibold">
                   <User size={13} strokeWidth={2.5} />
                   <span>{material.userId?.name || 'Academic Contributor'}</span>
                 </div>
                 <div className="h-1 w-1 rounded-full bg-slate-300" />
-                <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                <div className="flex items-center gap-2 text-text-muted text-xs font-semibold">
                    <Clock size={13} strokeWidth={2.5} />
                    <span>{new Date(material.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-8 leading-[1.1] tracking-tight">
+              <h1 className="text-3xl md:text-4xl font-bold text-text-main mb-8 leading-[1.1] tracking-tight">
                 {material.title}
               </h1>
 
@@ -151,7 +151,7 @@ export default function SharedMaterialView() {
                 {material.keyTopics?.map((topic: string, idx: number) => (
                   <span 
                     key={topic + idx} 
-                    className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 transition-colors rounded-full text-[11px] font-bold text-slate-600 border border-slate-200/10 cursor-default"
+                    className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 transition-colors rounded-full text-[11px] font-bold text-text-muted border border-slate-200/10 cursor-default"
                   >
                     {topic}
                   </span>
@@ -166,12 +166,12 @@ export default function SharedMaterialView() {
                   <BookOpen size={20} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 tracking-tight">Executive Summary</h3>
-                  <p className="text-xs text-slate-500 font-medium tracking-tight">AI-generated core insights</p>
+                  <h3 className="text-lg font-bold text-text-main tracking-tight">Executive Summary</h3>
+                  <p className="text-xs text-text-muted font-medium tracking-tight">AI-generated core insights</p>
                 </div>
               </div>
               
-              <div className="prose prose-slate max-w-none prose-p:text-slate-600 prose-p:leading-relaxed prose-headings:text-slate-900 prose-headings:font-bold">
+              <div className="prose prose-slate max-w-none prose-p:text-text-muted prose-p:leading-relaxed prose-headings:text-text-main prose-headings:font-bold">
                 <ReactMarkdown>{material.summary || "No summary available."}</ReactMarkdown>
               </div>
             </div>
@@ -184,10 +184,10 @@ export default function SharedMaterialView() {
                 <div className="p-8 md:p-10">
                    <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                      <div className="w-10 h-10 rounded-2xl bg-primary border border-primary flex items-center justify-center text-primary">
                         <FileText size={20} />
                       </div>
-                      <h3 className="text-lg font-bold text-slate-900 tracking-tight">Comprehensive Study Guide</h3>
+                      <h3 className="text-lg font-bold text-text-main tracking-tight">Comprehensive Study Guide</h3>
                     </div>
                   </div>
 
@@ -197,13 +197,13 @@ export default function SharedMaterialView() {
                     </div>
                     
                     {/* Locked Paywall-style Overlay */}
-                    <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-t from-white via-white/40 to-transparent flex flex-col items-center justify-end pb-12 px-8 text-center bg-white/10 backdrop-blur-[2px]">
+                    <div className="absolute inset-x-0 bottom-0 top-0 bg-gradient-to-t from-white via-white/40 to-transparent flex flex-col items-center justify-end pb-12 px-8 text-center bg-surface-alt backdrop-blur-[2px]">
                       <div className="bg-white p-8 rounded-[28px] border border-slate-200 shadow-2xl max-w-sm mb-4 transform translate-y-4">
                         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-6">
                           <Lock size={28} />
                         </div>
-                        <h4 className="text-xl font-bold text-slate-900 mb-3 tracking-tight">Study guide is protected</h4>
-                        <p className="text-sm text-slate-500 leading-relaxed font-medium mb-8">
+                        <h4 className="text-xl font-bold text-text-main mb-3 tracking-tight">Study guide is protected</h4>
+                        <p className="text-sm text-text-muted leading-relaxed font-medium mb-8">
                           Save this material to unlock the full study guide and generate interactive flashcards & quizzes.
                         </p>
                         <button
@@ -223,23 +223,23 @@ export default function SharedMaterialView() {
 
             {/* Sidebar Stats/CTA */}
             <div className="md:col-span-4 space-y-6">
-              <div className="bg-slate-900 rounded-[32px] p-8 text-white relative overflow-hidden">
+              <div className="bg-surface rounded-[32px] p-8 text-text-main relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 
                 <h3 className="text-xl font-bold mb-4 relative z-10">Power up your learning</h3>
-                <p className="text-sm text-slate-400 mb-8 leading-relaxed relative z-10 font-medium">
+                <p className="text-sm text-text-muted mb-8 leading-relaxed relative z-10 font-medium">
                   Use Aether's proprietary AI to master this topic in half the time.
                 </p>
                 
                 <div className="space-y-4 mb-10 relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded bg-white/10 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded bg-surface-alt flex items-center justify-center">
                       <Sparkles size={12} className="text-primary" />
                     </div>
                     <span className="text-xs font-bold">Smart Quiz Generation</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded bg-white/10 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded bg-surface-alt flex items-center justify-center">
                       <Layers size={12} className="text-primary" />
                     </div>
                     <span className="text-xs font-bold">Spaced Repetition Cards</span>
@@ -248,7 +248,7 @@ export default function SharedMaterialView() {
 
                 <a 
                   href="/signup"
-                  className="block w-full py-4 bg-white text-slate-900 font-bold rounded-2xl text-center text-xs uppercase tracking-widest hover:bg-slate-100 transition-colors shadow-lg"
+                  className="block w-full py-4 bg-white text-text-main font-bold rounded-2xl text-center text-xs uppercase tracking-widest hover:bg-slate-100 transition-colors shadow-lg"
                 >
                   Join Aether Free
                 </a>
@@ -260,7 +260,7 @@ export default function SharedMaterialView() {
                     <BookOpen size={16} />
                     <span className="text-[11px] font-black uppercase tracking-widest">About Aether Study</span>
                   </div>
-                  <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                  <p className="text-xs text-text-muted font-medium leading-relaxed">
                     Aether is an intelligent study assistant that helps you synthesize complex information from PDFs, Videos, and Articles into actionable knowledge.
                   </p>
                </div>

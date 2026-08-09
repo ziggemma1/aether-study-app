@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Group } from '../models/Group.js';
+import { isGroupMember } from '../lib/groupMembership.js';
 
 export const createGroup = async (req: Request, res: Response) => {
   try {
@@ -41,7 +42,7 @@ export const addMember = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Only admin can add members' });
     }
 
-    if (!group.members.includes(memberId)) {
+    if (!isGroupMember(group, memberId)) {
       group.members.push(memberId);
       await group.save();
     }

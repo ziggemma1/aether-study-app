@@ -23,11 +23,17 @@ export interface ClientStudyPlan {
   totalHours: number;
   materialIds?: string[];
   calendarSync?: boolean;
+  /** False when both AI providers were unavailable and the schedule is the
+   *  deterministic template. Only present on a freshly generated plan. */
+  aiGenerated?: boolean;
 }
 
 export function useStudyPlans() {
   const [studyPlans, setStudyPlans] = useState<ClientStudyPlan[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  // `error` distinguishes "you have no plans" from "we could not load them".
+  // Without it the list rendered a confident empty state on every failure.
+  const [error, setError] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
 
   const fetchStudyPlans = useCallback(async () => {
@@ -37,8 +43,10 @@ export function useStudyPlans() {
     try {
       const response = await api.get('/study-plans');
       setStudyPlans(response.data || []);
-    } catch (e) {
+      setError(null);
+    } catch (e: any) {
       console.error('Failed to fetch study plans:', e);
+      setError(e?.response?.data?.message || 'We could not load your study plans.');
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
@@ -65,15 +73,16 @@ export function useStudyPlans() {
     preferredTime?: string;
     focusAreas?: string[];
     calendarSync?: boolean;
-  }): Promise<ClientStudyPlan | null> => {
+  }): Promise<ClientStudyPlan> => {
+    // Throws instead of returning null. Swallowing the error here meant the
+    // page could only ever say "Generation failed. Ensure system is connected."
+    // — the server's actual reason (bad start date, rate limit, AI quota) was
+    // discarded before anyone could show it.
+    setLoading(true);
     try {
-      setLoading(true);
       const response = await api.post('/study-plans/generate', settings);
       setStudyPlans(prev => [response.data, ...prev]);
       return response.data;
-    } catch (e) {
-      console.error('Failed to generate study plan:', e);
-      return null;
     } finally {
       setLoading(false);
     }
@@ -111,6 +120,7 @@ export function useStudyPlans() {
   return {
     studyPlans,
     loading,
+    error,
     fetchStudyPlans,
     getPlanById,
     generatePlan,
