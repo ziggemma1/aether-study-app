@@ -26,6 +26,8 @@ export default function LiveRooms() {
   const {
     participants,
     timer,
+    duration,
+    setDuration,
     messages,
     isConnected,
     isNudged,
@@ -162,6 +164,7 @@ export default function LiveRooms() {
           participants={participants}
           messages={messages}
           timer={timer}
+          durationMinutes={duration}
           isConnected={isConnected}
           typingUsers={typingUsers}
           isNudged={isNudged}
@@ -170,6 +173,7 @@ export default function LiveRooms() {
           onSendNudge={nudgeUser}
           onSendMessage={sendMessage}
           onToggleTimer={toggleTimer}
+          onSetDuration={setDuration}
           onTyping={notifyTyping}
         />
       ) : (

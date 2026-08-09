@@ -24,13 +24,26 @@ export interface RoomMessage {
   timestamp: string;
 }
 
-const POMODORO_MINUTES = 25;
+const DEFAULT_POMODORO_MINUTES = 25;
+const MIN_POMODORO_MINUTES = 5;
+const MAX_POMODORO_MINUTES = 120;
+const DURATION_STORAGE_KEY = 'live_room_pomodoro_minutes';
+
+const readSavedDuration = () => {
+  if (typeof localStorage === 'undefined') return DEFAULT_POMODORO_MINUTES;
+  const saved = Math.floor(Number(localStorage.getItem(DURATION_STORAGE_KEY)));
+  return saved >= MIN_POMODORO_MINUTES && saved <= MAX_POMODORO_MINUTES ? saved : DEFAULT_POMODORO_MINUTES;
+};
 
 export function useLiveRoom(roomId?: string, roomName?: string) {
   const { user, setUser, showToast, fetchAppData } = useAppContext();
   const [socket, setSocket] = useState<any>(null);
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
-  const [timer, setTimer] = useState({ minutes: POMODORO_MINUTES, seconds: 0, isRunning: false });
+  // The chosen round length, in minutes — remembered across rooms and visits
+  // via localStorage, same as the app's other per-device preferences (e.g.
+  // the study voice in StudyTimer).
+  const [duration, setDurationState] = useState(readSavedDuration);
+  const [timer, setTimer] = useState({ minutes: duration, seconds: 0, isRunning: false });
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState<{[key: string]: string}>({});
@@ -46,6 +59,21 @@ export function useLiveRoom(roomId?: string, roomName?: string) {
   roomNameRef.current = roomName;
   const userRef = useRef(user);
   userRef.current = user;
+  const durationRef = useRef(duration);
+  durationRef.current = duration;
+
+  /**
+   * Changing the round length only makes sense while paused — yanking time
+   * out from under an active focus session would just be confusing. The
+   * clock itself is reset to the new length so the picker's selection is
+   * reflected immediately rather than on the next completed round.
+   */
+  const setDuration = useCallback((minutes: number) => {
+    const clamped = Math.min(MAX_POMODORO_MINUTES, Math.max(MIN_POMODORO_MINUTES, Math.floor(minutes)));
+    setDurationState(clamped);
+    localStorage.setItem(DURATION_STORAGE_KEY, String(clamped));
+    setTimer(prev => (prev.isRunning ? prev : { minutes: clamped, seconds: 0, isRunning: false }));
+  }, []);
 
   useEffect(() => {
     const s = getSocket();
@@ -159,8 +187,11 @@ export function useLiveRoom(roomId?: string, roomName?: string) {
       setTimer(prev => {
         const remaining = prev.minutes * 60 + prev.seconds - 1;
         if (remaining <= 0) {
-          // Full pomodoro completed — stop and reset for the next round.
-          return { minutes: POMODORO_MINUTES, seconds: 0, isRunning: false };
+          // Full pomodoro completed — stop and reset for the next round, at
+          // whatever length is currently selected (read from a ref since this
+          // effect doesn't depend on `duration` — the picker is hidden while
+          // running, but the completion branch still needs the live value).
+          return { minutes: durationRef.current, seconds: 0, isRunning: false };
         }
         return { minutes: Math.floor(remaining / 60), seconds: remaining % 60, isRunning: true };
       });
@@ -338,6 +369,8 @@ export function useLiveRoom(roomId?: string, roomName?: string) {
   return {
     participants,
     timer,
+    duration,
+    setDuration,
     messages,
     isConnected,
     isNudged,

@@ -10,6 +10,7 @@ interface LiveRoomViewProps {
   participants: RoomParticipant[];
   messages: RoomMessage[];
   timer: { minutes: number; seconds: number; isRunning: boolean };
+  durationMinutes: number;
   isConnected: boolean;
   typingUsers: { [key: string]: string };
   isNudged: boolean;
@@ -18,6 +19,7 @@ interface LiveRoomViewProps {
   onSendNudge: (userId: string) => void;
   onSendMessage: (text: string) => void;
   onToggleTimer: () => void;
+  onSetDuration: (minutes: number) => void;
   onTyping: () => void;
 }
 
@@ -42,6 +44,7 @@ export function LiveRoomView({
   participants,
   messages,
   timer,
+  durationMinutes,
   isConnected,
   typingUsers,
   isNudged,
@@ -50,6 +53,7 @@ export function LiveRoomView({
   onSendNudge,
   onSendMessage,
   onToggleTimer,
+  onSetDuration,
   onTyping
 }: LiveRoomViewProps) {
   const [chatInput, setChatInput] = useState('');
@@ -116,7 +120,9 @@ export function LiveRoomView({
             minutes={timer.minutes}
             seconds={timer.seconds}
             isRunning={timer.isRunning}
+            durationMinutes={durationMinutes}
             onToggle={onToggleTimer}
+            onSetDuration={onSetDuration}
           />
 
           <div>
