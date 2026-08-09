@@ -16,7 +16,7 @@ export default function QuizInterface() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { materials, setQuizResults, isLoading: isAppLoading, fetchAppData, user, setUser, updateMaterialInContext } = useAppContext();
+  const { materials, setQuizResults, isLoading: isAppLoading, fetchAppData, user, setUser, updateMaterialInContext, showToast } = useAppContext();
   const { burstConfetti, fireConfetti } = useConfetti();
   const { success: hapticSuccess, error: hapticError, light: hapticLight } = useHapticFeedback();
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -155,8 +155,15 @@ export default function QuizInterface() {
         setUser({
           ...user,
           aetherPoints: response.data.aetherPoints,
-          streak: response.data.streak ?? user.streak
+          streak: response.data.streak ?? user.streak,
+          // Missing here meant a freeze auto-spent by this quiz never showed
+          // up as a lower balance on the Shop page until the next full reload.
+          freezeTokens: response.data.freezeTokens ?? user.freezeTokens
         });
+
+        if (response.data.freezeUsed) {
+          showToast(`A streak freeze covered yesterday — ${response.data.freezeTokens} left.`, 'success');
+        }
       }
 
       if (Array.isArray(response.data.newlyUnlockedAchievements)) {

@@ -1,6 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { getSocket } from '../services/socket';
 import { useAppContext } from '../context/AppContext';
+import api from '../services/api';
+import { celebrate } from '../lib/motion';
 
 export interface RoomParticipant {
   id: string;
@@ -22,15 +24,28 @@ export interface RoomMessage {
   timestamp: string;
 }
 
-export function useLiveRoom(roomId?: string) {
-  const { user } = useAppContext();
+const POMODORO_MINUTES = 25;
+
+export function useLiveRoom(roomId?: string, roomName?: string) {
+  const { user, setUser, showToast, fetchAppData } = useAppContext();
   const [socket, setSocket] = useState<any>(null);
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
-  const [timer, setTimer] = useState({ minutes: 25, seconds: 0, isRunning: false });
+  const [timer, setTimer] = useState({ minutes: POMODORO_MINUTES, seconds: 0, isRunning: false });
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState<{[key: string]: string}>({});
   const [isNudged, setIsNudged] = useState(false);
+
+  // Elapsed focus time since the last save, kept in a ref so the 1s tick
+  // doesn't have to depend on (and re-run against) React state. `user` is
+  // also mirrored into a ref so finishSession reads the latest account state
+  // even when called from a cleanup closure captured on an earlier render.
+  const elapsedRef = useRef(0);
+  const startTimeRef = useRef<Date | null>(null);
+  const roomNameRef = useRef(roomName);
+  roomNameRef.current = roomName;
+  const userRef = useRef(user);
+  userRef.current = user;
 
   useEffect(() => {
     const s = getSocket();
@@ -63,13 +78,117 @@ export function useLiveRoom(roomId?: string) {
     }
   }, [socket]);
 
+  /**
+   * Records whatever focus time has accrued since the last save as a real
+   * `POST /sessions` — the same endpoint the Library/Detailed Notes timer
+   * uses, so `touchStreak()` runs and the streak reflects study anywhere in
+   * the app, not just here. Below the 1-minute floor other timers use, it's a
+   * no-op: pressing play then immediately pausing shouldn't log a session.
+   */
+  const finishSession = useCallback(async () => {
+    const elapsedSeconds = elapsedRef.current;
+    elapsedRef.current = 0;
+    if (elapsedSeconds < 60) return;
+
+    const durationMinutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
+    const currentUser = userRef.current;
+
+    try {
+      const { data } = await api.post('/sessions', {
+        title: `Live room: ${roomNameRef.current || 'Focus session'}`,
+        startTime: startTimeRef.current || new Date(),
+        durationMinutes,
+        type: 'study',
+        completed: true
+      });
+
+      if (currentUser) {
+        const extendedStreak =
+          typeof data.streak === 'number' && data.streak > (currentUser.streak || 0);
+        void celebrate(extendedStreak ? 'milestone' : 'win');
+
+        setUser({
+          ...currentUser,
+          aetherPoints: data.aetherPoints ?? currentUser.aetherPoints,
+          streak: data.streak ?? currentUser.streak,
+          totalStudyTime: data.totalStudyTime ?? currentUser.totalStudyTime,
+          freezeTokens: data.freezeTokens ?? currentUser.freezeTokens
+        });
+      }
+
+      if (Array.isArray(data.newlyUnlockedAchievements)) {
+        data.newlyUnlockedAchievements.forEach((badge: any) => {
+          window.dispatchEvent(new CustomEvent('achievement:unlocked', { detail: badge }));
+        });
+      }
+
+      if (fetchAppData) await fetchAppData();
+
+      showToast(
+        data.freezeUsed
+          ? `Focus session saved — a streak freeze covered yesterday, ${data.freezeTokens} left.`
+          : `Focus session saved — ${durationMinutes} min logged.`,
+        'success'
+      );
+    } catch (err) {
+      console.error('[LiveRoom] Failed to save focus session:', err);
+    }
+  }, [setUser, fetchAppData, showToast]);
+
   const toggleTimer = useCallback(() => {
     // Currently socket broadcast isn't fully implemented on backend, but we prepare the method
     if (socket && roomId) {
       socket.emit('toggle-timer', { roomId });
     }
-    setTimer(prev => ({ ...prev, isRunning: !prev.isRunning }));
+    setTimer(prev => {
+      const nextRunning = !prev.isRunning;
+      if (nextRunning) startTimeRef.current = new Date();
+      return { ...prev, isRunning: nextRunning };
+    });
   }, [socket, roomId]);
+
+  // Ticks the countdown every second while running. This was the core bug:
+  // toggleTimer only ever flipped `isRunning` and nothing ever decremented
+  // the clock, so pressing play looked like it worked but the timer was
+  // frozen and no time was ever tracked.
+  useEffect(() => {
+    if (!timer.isRunning) return;
+
+    const interval = setInterval(() => {
+      elapsedRef.current += 1;
+      setTimer(prev => {
+        const remaining = prev.minutes * 60 + prev.seconds - 1;
+        if (remaining <= 0) {
+          // Full pomodoro completed — stop and reset for the next round.
+          return { minutes: POMODORO_MINUTES, seconds: 0, isRunning: false };
+        }
+        return { minutes: Math.floor(remaining / 60), seconds: remaining % 60, isRunning: true };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timer.isRunning]);
+
+  // Fires once whenever the timer stops, whether that's the user pausing or
+  // the countdown reaching zero on its own — both cases mean "save whatever
+  // was accrued".
+  const wasRunningRef = useRef(false);
+  useEffect(() => {
+    if (wasRunningRef.current && !timer.isRunning) {
+      void finishSession();
+    }
+    wasRunningRef.current = timer.isRunning;
+  }, [timer.isRunning, finishSession]);
+
+  // Leaving the room (roomId changes away) or navigating off the page
+  // entirely (unmount) both need the same safety-net flush, in case the user
+  // never paused first.
+  useEffect(() => {
+    return () => {
+      if (elapsedRef.current >= 60) void finishSession();
+      elapsedRef.current = 0;
+    };
+  }, [roomId, finishSession]);
 
   const sendMessage = useCallback((text: string) => {
     if (socket && roomId && text.trim()) {

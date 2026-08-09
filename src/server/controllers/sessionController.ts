@@ -36,9 +36,15 @@ export const createSession = async (req: Request, res: Response) => {
     });
     await session.save();
 
-    // Update user stats
+    // Update user stats. `completed` defaults to false on the schema — a
+    // scheduled/future block (Study Planner, Onboarding's "later" choice)
+    // must not award points or advance the streak before it has actually
+    // happened. `!== false` rather than `=== true` so callers that omit the
+    // field entirely (there are none left, but nothing enforces that) keep
+    // the pre-existing "award immediately" behavior instead of silently
+    // losing credit.
     let streakResult = null;
-    if (durationMinutes > 0 && type === 'study') {
+    if (durationMinutes > 0 && type === 'study' && completed !== false) {
       await User.findByIdAndUpdate(userId, {
         $inc: {
           totalStudyTime: durationMinutes,
@@ -101,27 +107,58 @@ export const updateSession = async (req: Request, res: Response) => {
       { new: true }
     );
 
-    // Update user stats if duration or completion changed
-    if (session && durationMinutes !== undefined && originalSession.type === 'study') {
-      const diff = durationMinutes - (originalSession.durationMinutes || 0);
-      if (diff !== 0) {
-        await User.findByIdAndUpdate(userId, {
-          $inc: {
-            totalStudyTime: diff,
-            aetherPoints: diff * 10
-          }
-        });
+    let streakResult = null;
+
+    if (session && originalSession.type === 'study') {
+      const wasCompleted = originalSession.completed === true;
+      const nowCompleted = completed !== undefined ? completed === true : wasCompleted;
+      const effectiveDuration = durationMinutes !== undefined ? durationMinutes : (originalSession.durationMinutes || 0);
+
+      if (!wasCompleted && nowCompleted) {
+        // A scheduled/incomplete block just got checked off — this is its
+        // first time being credited, same as a session created already-done.
+        if (effectiveDuration > 0) {
+          await User.findByIdAndUpdate(userId, {
+            $inc: { totalStudyTime: effectiveDuration, aetherPoints: effectiveDuration * 10 }
+          });
+          streakResult = await touchStreak(userId);
+        }
+      } else if (wasCompleted && !nowCompleted) {
+        // Un-checked after being credited — claw back what it added. The
+        // streak itself is left alone: nothing anywhere decrements it once
+        // advanced, and unwinding one from a single unchecked box risks
+        // taking a whole chain down with it for a much smaller mistake.
+        if ((originalSession.durationMinutes || 0) > 0) {
+          await User.findByIdAndUpdate(userId, {
+            $inc: {
+              totalStudyTime: -(originalSession.durationMinutes || 0),
+              aetherPoints: -(originalSession.durationMinutes || 0) * 10
+            }
+          });
+        }
+      } else if (wasCompleted && nowCompleted && durationMinutes !== undefined) {
+        // Already credited before this call; only the duration changed —
+        // true up the difference (original behavior).
+        const diff = durationMinutes - (originalSession.durationMinutes || 0);
+        if (diff !== 0) {
+          await User.findByIdAndUpdate(userId, {
+            $inc: { totalStudyTime: diff, aetherPoints: diff * 10 }
+          });
+        }
       }
     }
 
     const newlyUnlockedAchievements = await checkAchievements(userId);
-    const updatedUser = await User.findById(userId).select('aetherPoints streak totalStudyTime');
+    const updatedUser = await User.findById(userId).select('aetherPoints streak totalStudyTime freezeTokens');
 
     res.json({
       ...(session?.toObject() || {}),
       aetherPoints: updatedUser?.aetherPoints,
       streak: updatedUser?.streak,
       totalStudyTime: updatedUser?.totalStudyTime,
+      freezeTokens: updatedUser?.freezeTokens,
+      freezeUsed: streakResult?.freezeUsed || false,
+      streakBroken: streakResult?.streakBroken || false,
       newlyUnlockedAchievements
     });
   } catch (error: any) {
@@ -139,8 +176,10 @@ export const deleteSession = async (req: Request, res: Response) => {
     
     if (!session) return res.status(404).json({ message: 'Session not found' });
 
-    // Revert user stats if it was a study session
-    if (session.type === 'study' && session.durationMinutes > 0) {
+    // Revert user stats — but only if this session was ever credited.
+    // Scheduled/incomplete study blocks (completed: false) never added
+    // anything in the first place now, so deleting one must not subtract.
+    if (session.type === 'study' && session.durationMinutes > 0 && session.completed === true) {
       await User.findByIdAndUpdate(userId, {
         $inc: { 
           totalStudyTime: -session.durationMinutes,

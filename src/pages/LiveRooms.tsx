@@ -18,7 +18,11 @@ export default function LiveRooms() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [newRoom, setNewRoom] = useState({ name: '', subject: 'General', maxParticipants: 10 });
-  
+
+  // Read before the hook call so the active room's real name can be threaded
+  // in as the title of any focus session recorded while inside it.
+  const activeRoomNameForSession = rooms.find(r => r.id === activeRoomId)?.name;
+
   const {
     participants,
     timer,
@@ -32,7 +36,7 @@ export default function LiveRooms() {
     sendMessage,
     nudgeUser,
     notifyTyping
-  } = useLiveRoom(activeRoomId || undefined);
+  } = useLiveRoom(activeRoomId || undefined, activeRoomNameForSession);
 
   const { isOnline } = usePresence();
 

@@ -392,8 +392,15 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ materialId, title, readC
           ...user,
           aetherPoints: response.data.aetherPoints,
           streak: response.data.streak ?? user.streak,
-          totalStudyTime: response.data.totalStudyTime ?? user.totalStudyTime
+          totalStudyTime: response.data.totalStudyTime ?? user.totalStudyTime,
+          // Missing here meant an auto-spent freeze never showed up as a
+          // lower balance on the Shop page until the next full reload.
+          freezeTokens: response.data.freezeTokens ?? user.freezeTokens
         });
+
+        if (response.data.freezeUsed) {
+          showToast(`A streak freeze covered yesterday — ${response.data.freezeTokens} left.`, 'success');
+        }
       }
 
       if (Array.isArray(response.data.newlyUnlockedAchievements)) {

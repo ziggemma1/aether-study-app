@@ -129,7 +129,11 @@ export default function Onboarding() {
         durationMinutes: duration,
         type: 'study',
         priority: 'medium',
-        completed: false
+        // "Now" has actually happened — it's the one that earns the
+        // streak-of-1 promised above. "Later" is a real future/incomplete
+        // block, same as anything from the Study Planner, and must not
+        // award anything until it's actually done.
+        completed: mode === 'now'
       });
       setSessionDone(mode === 'now' ? 'started' : 'scheduled');
       goNext();

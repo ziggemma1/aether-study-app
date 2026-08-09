@@ -14,13 +14,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import api from '../services/api';
 import { StudySession } from '../types';
+import { celebrate } from '../lib/motion';
 
 interface SmartCalendarWidgetProps {
   className?: string;
 }
 
 export default function SmartCalendarWidget({ className }: SmartCalendarWidgetProps) {
-  const { studySessions, setStudySessions, user } = useAppContext();
+  const { studySessions, setStudySessions, user, setUser, showToast } = useAppContext();
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   const toggleEvent = async (id: string) => {
@@ -28,18 +29,45 @@ export default function SmartCalendarWidget({ className }: SmartCalendarWidgetPr
     if (!session) return;
 
     const newCompleted = !session.completed;
-    
+
     // Optimistic update
-    setStudySessions(prev => prev.map(s => 
+    setStudySessions(prev => prev.map(s =>
       s.id === id ? { ...s, completed: newCompleted } : s
     ));
 
     try {
-      await api.put(`/sessions/${id}`, { completed: newCompleted });
+      const { data } = await api.put(`/sessions/${id}`, { completed: newCompleted });
+
+      // Checking off a study block now actually credits it server-side
+      // (points, study time, streak) — apply the result instead of leaving
+      // the balances stale until the next full reload.
+      if (newCompleted && data.aetherPoints !== undefined && user) {
+        const extendedStreak =
+          typeof data.streak === 'number' && data.streak > (user.streak || 0);
+        void celebrate(extendedStreak ? 'milestone' : 'win');
+
+        setUser({
+          ...user,
+          aetherPoints: data.aetherPoints,
+          streak: data.streak ?? user.streak,
+          totalStudyTime: data.totalStudyTime ?? user.totalStudyTime,
+          freezeTokens: data.freezeTokens ?? user.freezeTokens
+        });
+
+        if (data.freezeUsed) {
+          showToast(`A streak freeze covered yesterday — ${data.freezeTokens} left.`, 'success');
+        }
+      }
+
+      if (Array.isArray(data.newlyUnlockedAchievements)) {
+        data.newlyUnlockedAchievements.forEach((badge: any) => {
+          window.dispatchEvent(new CustomEvent('achievement:unlocked', { detail: badge }));
+        });
+      }
     } catch (err) {
       console.error('Error updating session:', err);
       // Revert on error
-      setStudySessions(prev => prev.map(s => 
+      setStudySessions(prev => prev.map(s =>
         s.id === id ? { ...s, completed: !newCompleted } : s
       ));
     }
