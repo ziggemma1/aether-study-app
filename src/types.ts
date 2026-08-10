@@ -49,6 +49,9 @@ export interface User {
     email: boolean;
     aiInsights: boolean;
   };
+  /** True only for the seeded marketing-footage account (scripts/seedDemo.ts).
+   *  Gates demo-only UI, e.g. the populated Live Room in useLiveRoom.ts. */
+  isDemoData?: boolean;
 }
 
 export interface FriendRequest {

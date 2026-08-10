@@ -3,6 +3,7 @@ import { getSocket } from '../services/socket';
 import { useAppContext } from '../context/AppContext';
 import api from '../services/api';
 import { celebrate } from '../lib/motion';
+import { DEMO_ROOM_PARTICIPANTS, DEMO_ROOM_MESSAGES } from '../lib/demoRoomData';
 
 export interface RoomParticipant {
   id: string;
@@ -11,7 +12,10 @@ export interface RoomParticipant {
   status?: 'online' | 'away' | 'offline';
   isMe?: boolean;
   instanceId?: string;
-  focusTime?: number;
+  /** Defaults to 'focusing' in the UI when absent — every real participant
+   *  today. Only demo-seeded participants (see demoRoomData.ts) carry
+   *  'break' explicitly; there's no real backend concept of a break yet. */
+  focusStatus?: 'focusing' | 'break';
 }
 
 export interface RoomMessage {
@@ -61,6 +65,10 @@ export function useLiveRoom(roomId?: string, roomName?: string) {
   userRef.current = user;
   const durationRef = useRef(duration);
   durationRef.current = duration;
+  // The room currently joined, so a reconnect can re-announce it (see the
+  // socket-init effect below). Tracks `roomId`, not `activeRoomId` — this
+  // hook doesn't know the parent's state, only what it was last told to join.
+  const joinedRoomIdRef = useRef<string | null>(null);
 
   /**
    * Changing the round length only makes sense while paused — yanking time
@@ -80,31 +88,115 @@ export function useLiveRoom(roomId?: string, roomName?: string) {
     setSocket(s);
     if (s) {
       setIsConnected(s.connected);
-      s.on('connect', () => setIsConnected(true));
-      s.on('disconnect', () => setIsConnected(false));
+
+      /**
+       * `'connect'` fires on the *first* connection AND on every reconnect —
+       * and a reconnect hands the client a brand-new socket.id. Socket.IO
+       * rooms are membership of a specific socket, so whatever `live_room:`
+       * channel this session was in server-side is gone the instant the
+       * transport drops, with no client-visible error. This was the actual
+       * cause of "I'm always alone in here even with someone else in the
+       * room": nothing ever told the server to rejoin, so a Render
+       * free-tier cold start, a phone screen lock, a laptop sleep, or any
+       * ordinary network blip silently and permanently dropped a session out
+       * of the room's participant list — for both sides, since neither the
+       * dropped client nor the peer it stopped notifying ever found out.
+       * Re-announcing the last-joined room on every connect (first connect
+       * is a no-op here since nothing has been joined yet) fixes that
+       * without needing the caller to detect or handle reconnects itself.
+       */
+      const handleConnect = () => {
+        setIsConnected(true);
+        const roomId = joinedRoomIdRef.current;
+        const currentUser = userRef.current;
+        // Demo rooms are never actually joined over the socket (see
+        // joinRoom below) — nothing to re-announce.
+        if (roomId && currentUser && !currentUser.isDemoData) {
+          s.emit('join_live_room', {
+            roomId,
+            user: {
+              id: currentUser.id || (currentUser as any)._id,
+              name: currentUser.name,
+              avatar: currentUser.avatar
+            }
+          });
+        }
+      };
+      const handleDisconnect = () => setIsConnected(false);
+      s.on('connect', handleConnect);
+      s.on('disconnect', handleDisconnect);
+      return () => {
+        s.off('connect', handleConnect);
+        s.off('disconnect', handleDisconnect);
+      };
     }
   }, []);
 
   const joinRoom = useCallback((id: string) => {
-    if (socket && user) {
-      socket.emit('join_live_room', { 
-        roomId: id, 
+    joinedRoomIdRef.current = id;
+    if (!user) return;
+
+    /**
+     * Demo mode (the seeded marketing-footage account, see
+     * src/lib/demoRoomData.ts): populate the room entirely from local, fake
+     * data instead of the real socket flow, so a room looks like an active
+     * group study session for recording without a second real person and
+     * without depending on the live socket connection at all. Deliberately
+     * skips `join_live_room` — this must never touch real presence, the
+     * database, or any other real user's view of the room.
+     */
+    if (user.isDemoData) {
+      const currentUserId = String(user.id || (user as any)._id);
+      const me: RoomParticipant = {
+        id: currentUserId,
+        name: user.name,
+        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`,
+        isMe: true,
+        status: 'online',
+        focusStatus: 'focusing'
+      };
+      const fakes: RoomParticipant[] = DEMO_ROOM_PARTICIPANTS.map(p => ({
+        id: p.id,
+        name: p.name,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`,
+        status: 'online',
+        focusStatus: p.focusStatus
+      }));
+      setParticipants([me, ...fakes]);
+
+      const now = Date.now();
+      setMessages(DEMO_ROOM_MESSAGES.map((m, i) => ({
+        id: `demo_msg_${i}`,
+        roomId: id,
+        senderId: m.senderId,
+        senderName: m.senderName,
+        senderAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.senderName}`,
+        content: m.content,
+        timestamp: new Date(now - m.minutesAgo * 60000).toISOString()
+      })));
+      return;
+    }
+
+    if (socket) {
+      socket.emit('join_live_room', {
+        roomId: id,
         user: {
           id: user.id || (user as any)._id,
           name: user.name,
           avatar: user.avatar
-        } 
+        }
       });
     }
   }, [socket, user]);
 
   const leaveRoom = useCallback((id: string) => {
-    if (socket) {
+    joinedRoomIdRef.current = null;
+    if (!user?.isDemoData && socket) {
       socket.emit('leave_live_room', id);
-      setParticipants([]);
-      setMessages([]);
     }
-  }, [socket]);
+    setParticipants([]);
+    setMessages([]);
+  }, [socket, user]);
 
   /**
    * Records whatever focus time has accrued since the last save as a real
@@ -222,19 +314,42 @@ export function useLiveRoom(roomId?: string, roomName?: string) {
   }, [roomId, finishSession]);
 
   const sendMessage = useCallback((text: string) => {
-    if (socket && roomId && text.trim()) {
-      socket.emit("send_room_message", {
+    const trimmed = text.trim();
+    if (!trimmed || !roomId) return;
+
+    if (user?.isDemoData) {
+      // Appends locally, same as a real send would render — no socket, no
+      // other viewer to reach, so there's nothing real to emit to.
+      const currentUserId = String(user.id || (user as any)._id);
+      setMessages(prev => [...prev, {
+        id: `demo_msg_you_${Date.now()}`,
         roomId,
-        content: text.trim()
-      });
+        senderId: currentUserId,
+        senderName: user.name,
+        senderAvatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`,
+        content: trimmed,
+        timestamp: new Date().toISOString()
+      }].slice(-50));
+      return;
     }
-  }, [socket, roomId]);
+
+    if (socket) {
+      socket.emit("send_room_message", { roomId, content: trimmed });
+    }
+  }, [socket, roomId, user]);
 
   const nudgeUser = useCallback((userId: string) => {
+    if (user?.isDemoData && userId.startsWith('demo-')) {
+      // A demo participant isn't a real account to notify — confirm the
+      // action locally instead of emitting a real socket nudge.
+      const target = DEMO_ROOM_PARTICIPANTS.find(p => p.id === userId);
+      showToast(`Nudged ${target?.name || 'them'}! 🔔`);
+      return;
+    }
     if (socket) {
       socket.emit('send_nudge', { targetUserId: userId });
     }
-  }, [socket]);
+  }, [socket, user, showToast]);
 
   useEffect(() => {
     if (!socket) return;
@@ -288,8 +403,7 @@ export function useLiveRoom(roomId?: string, roomName?: string) {
           avatar: p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${pName}-${pId}`,
           isMe: pId === currentUserId,
           instanceId: (p as any).instanceId,
-          status: 'online',
-          focusTime: Math.floor(Math.random() * 60) // Mocking focus time for demo
+          status: 'online'
         };
       });
       setParticipants(normalized);
@@ -357,6 +471,7 @@ export function useLiveRoom(roomId?: string, roomName?: string) {
 
   // Provide notifyTyping helper
   const notifyTyping = useCallback(() => {
+    if (user?.isDemoData) return; // no real listener to notify
     if (socket && roomId) {
       socket.emit("typing", { roomId });
       // auto stop typing after 2 seconds
@@ -364,7 +479,7 @@ export function useLiveRoom(roomId?: string, roomName?: string) {
         socket.emit("stop_typing", { roomId });
       }, 2000);
     }
-  }, [socket, roomId]);
+  }, [socket, roomId, user]);
 
   return {
     participants,

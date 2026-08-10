@@ -17,8 +17,18 @@ export const initSocket = (server: any) => {
         callback(new Error(`Origin not allowed by CORS: ${origin}`));
       },
       credentials: true
+    },
+    // Belt-and-suspenders for exactly the kind of drop this app's hosting
+    // (Render free tier) produces: cold-start spin-up, idle-timeout, a phone
+    // screen lock. Within this window Socket.IO restores the *same*
+    // socket.id and its room memberships transparently, so a short blip
+    // never needs the client-side rejoin-on-reconnect in useLiveRoom.ts at
+    // all. Longer gaps still fall through to a fresh connection, which is
+    // exactly what that client-side rejoin exists to handle — the two are
+    // complementary, not redundant.
+    connectionStateRecovery: {
+      maxDisconnectionDuration: 2 * 60 * 1000
     }
-
   });
 
   io.use((socket, next) => {

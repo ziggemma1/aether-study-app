@@ -161,8 +161,16 @@ export function LiveRoomView({
                       <span className="mt-2 text-xs font-semibold truncate max-w-full">
                         {p.isMe ? 'You' : p.name}
                       </span>
+                      {/* Every real participant today is implicitly
+                          'focusing' (there's no backend concept of a break
+                          yet); only demo-seeded participants carry 'break'
+                          explicitly. */}
                       <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-text-muted">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent" /> Focusing
+                        <span className={cn(
+                          'w-1.5 h-1.5 rounded-full',
+                          p.focusStatus === 'break' ? 'bg-brand-orange' : 'bg-accent'
+                        )} />
+                        {p.focusStatus === 'break' ? 'On break' : 'Focusing'}
                       </span>
 
                       {!p.isMe && (

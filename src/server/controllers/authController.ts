@@ -161,7 +161,12 @@ export const register = async (req: Request, res: Response) => {
         location: user.location || '',
         handle: user.handle || '',
         country: user.country || '',
-        language: user.language || 'English (US)'
+        language: user.language || 'English (US)',
+        // The seeder's own marker (see scripts/seedDemo.ts), surfaced to the
+        // client so demo-only UI (populated Live Rooms for recording — see
+        // useLiveRoom.ts) can gate on it. Only ever true for the seeded
+        // account; every real user gets `false` from the schema default.
+        isDemoData: user.isDemoData || false
       }
     });
   } catch (error: any) {
@@ -267,7 +272,12 @@ export const login = async (req: Request, res: Response) => {
         location: user.location || '',
         handle: user.handle || '',
         country: user.country || '',
-        language: user.language || 'English (US)'
+        language: user.language || 'English (US)',
+        // The seeder's own marker (see scripts/seedDemo.ts), surfaced to the
+        // client so demo-only UI (populated Live Rooms for recording — see
+        // useLiveRoom.ts) can gate on it. Only ever true for the seeded
+        // account; every real user gets `false` from the schema default.
+        isDemoData: user.isDemoData || false
       }
     });
   } catch (error: any) {
@@ -366,7 +376,9 @@ export const getMe = async (req: Request, res: Response) => {
         achievements: user.achievements || [],
         bio: user.bio || '',
         location: user.location || '',
-        handle: user.handle || ''
+        handle: user.handle || '',
+        // See the register/login handlers above for what this gates.
+        isDemoData: user.isDemoData || false
       }
     });
   } catch (error: any) {
