@@ -17,6 +17,18 @@ import { StudyingNowRail } from '../components/dashboard/StudyingNowRail';
 import { StreakHero } from '../components/dashboard/StreakHero';
 
 /**
+ * Reward tone for the leaderboard tile. Gold/bronze only for an actual
+ * podium finish; every other rank gets the subtle silver "you're in it"
+ * tint — a medal claim for #8 of 30 would be false, but flat monochrome
+ * undersells a rank that's still worth defending.
+ */
+function rankTone(rank: number): 'rank-gold' | 'rank-silver' | 'rank-bronze' {
+  if (rank === 1) return 'rank-gold';
+  if (rank === 3) return 'rank-bronze';
+  return 'rank-silver';
+}
+
+/**
  * Dashboard.
  *
  * Two full-screen decorative canvases used to render behind this page:
@@ -76,7 +88,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-8 max-w-6xl mx-auto w-full min-w-0 space-y-5 pb-24">
+      <div className="p-4 md:p-8 max-w-7xl mx-auto w-full min-w-0 space-y-5 pb-24">
         <div className="h-24 rounded-[var(--radius-card)] bg-[var(--skeleton)] animate-pulse" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[0, 1, 2, 3].map((i) => <div key={i} className="h-24 rounded-2xl bg-[var(--skeleton)] animate-pulse" />)}
@@ -111,7 +123,7 @@ export default function Dashboard() {
   const streak = user?.streak || 0;
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto w-full min-w-0 pb-24 space-y-5">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full min-w-0 pb-24 space-y-5">
       {/* ---- One header, not two ---- */}
       <section className="rounded-[var(--radius-card)] bg-surface border border-border shadow-[var(--shadow-card)] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
         <UserAvatar name={userName} avatarUrl={user?.image || undefined} streakCount={streak} size="lg" />
@@ -150,7 +162,13 @@ export default function Dashboard() {
         todayMinutes={todayMinutes}
       />
 
-      {/* ---- Supporting metrics ---- */}
+      {/* ---- Supporting metrics ----
+          Study time stays the neutral baseline. The other two are earned
+          stats, so — per the "spend colour on wins" rule — they each get a
+          reward-palette tone MetricCard doesn't apply on its own: quiz score
+          reads as an achievement (gold chip, one-shot shine), leaderboard
+          rank gets the subtle competitive medal tone and a touch more
+          elevation than its neighbours. */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <MetricCard
           label="Study time"
@@ -164,6 +182,8 @@ export default function Dashboard() {
           value={user?.quizCount ? `${Math.round(user.averageQuizScore || 0)}%` : '—'}
           note={user?.quizCount ? `Across ${user.quizCount} ${user.quizCount === 1 ? 'quiz' : 'quizzes'}` : 'No quizzes taken yet'}
           icon={<Sparkles size={16} />}
+          tone={user?.quizCount ? 'rank-gold' : undefined}
+          celebrate={!!user?.quizCount}
           onClick={() => navigate('/reports')}
         />
         {/* `|| 1` and `|| 124` used to show an unranked account a confident
@@ -173,6 +193,8 @@ export default function Dashboard() {
           value={user?.rank ? `#${user.rank}` : 'Unranked'}
           note={user?.rank ? `Of ${(user?.totalLearners ?? 0).toLocaleString()} learners` : 'Join the leaderboard to rank'}
           icon={<Compass size={16} />}
+          tone={user?.rank ? rankTone(user.rank) : undefined}
+          emphasis={!!user?.rank}
           onClick={() => navigate('/leaderboard')}
         />
       </div>

@@ -2,6 +2,39 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, HelpCircle } from 'lucide-react';
 
+type MetricTone = 'rank-gold' | 'rank-silver' | 'rank-bronze' | 'xp';
+
+/**
+ * Reward-palette classes per tone, spelled out as complete static strings
+ * rather than built from a template literal — Tailwind's scanner can't see
+ * `bg-${tone}` (see the pastel-restyle conversion notes: it silently
+ * compiles to nothing).
+ */
+const TONE_CHIP: Record<MetricTone, string> = {
+  'rank-gold': 'bg-rank-gold/15 text-rank-gold-ink',
+  'rank-silver': 'bg-rank-silver/15 text-rank-silver-ink',
+  'rank-bronze': 'bg-rank-bronze/15 text-rank-bronze-ink',
+  xp: 'bg-xp/15 text-xp-ink'
+};
+const TONE_GLOW: Record<MetricTone, string> = {
+  'rank-gold': 'from-rank-gold/10',
+  'rank-silver': 'from-rank-silver/10',
+  'rank-bronze': 'from-rank-bronze/10',
+  xp: 'from-xp/10'
+};
+const TONE_BORDER: Record<MetricTone, string> = {
+  'rank-gold': 'border-rank-gold/25',
+  'rank-silver': 'border-rank-silver/25',
+  'rank-bronze': 'border-rank-bronze/25',
+  xp: 'border-xp/25'
+};
+const TONE_VALUE: Record<MetricTone, string> = {
+  'rank-gold': 'text-rank-gold-ink',
+  'rank-silver': 'text-rank-silver-ink',
+  'rank-bronze': 'text-rank-bronze-ink',
+  xp: 'text-xp-ink'
+};
+
 interface MetricCardProps {
   label: string;
   value: string | number;
@@ -12,21 +45,36 @@ interface MetricCardProps {
    *  ("Top 5% of 240 learners"). Omit it and the card keeps its old shape. */
   note?: string;
   onClick?: () => void;
+  /** Reward-palette accent for the icon chip + glow. Omit for routine
+   *  metrics — colour is spent only on wins/ranks, never decoratively. */
+  tone?: MetricTone;
+  /** One-shot diagonal shine on mount (the shared `.motion-shine` primitive)
+   *  plus a tone-tinted value — for the one stat that should read as an
+   *  earned badge rather than a plain measurement. Reduced motion is
+   *  handled globally in motion.css. */
+  celebrate?: boolean;
+  /** Heavier padding, shadow and a tone-tinted ring — for the card in a row
+   *  that should outrank its neighbours rather than sit flush with them. */
+  emphasis?: boolean;
 }
 
-export function MetricCard({ label, value, trend, icon, tooltip, note, onClick }: MetricCardProps) {
+export function MetricCard({ label, value, trend, icon, tooltip, note, onClick, tone, celebrate, emphasis }: MetricCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const chipClasses = tone ? TONE_CHIP[tone] : 'bg-surface-alt/70 border border-border/5 text-primary';
+  const borderClasses = emphasis && tone ? TONE_BORDER[tone] : 'border-border/10';
 
   return (
     <motion.div
       whileTap={onClick ? { scale: 0.98 } : undefined}
       onClick={onClick}
-      className={`relative overflow-hidden p-4 sm:p-5 bg-surface border border-border/10 rounded-2xl flex flex-col gap-2.5 transition-all duration-200 select-none ${
-        onClick ? 'cursor-pointer active:bg-surface-alt/80 hover:border-border/20' : ''
+      className={`relative overflow-hidden bg-surface border rounded-2xl flex flex-col gap-2.5 transition-all duration-200 select-none ${
+        emphasis ? 'p-5 sm:p-6 shadow-[var(--shadow-card)]' : 'p-4 sm:p-5'
+      } ${borderClasses} ${onClick ? 'cursor-pointer active:bg-surface-alt/80 hover:border-border/20' : ''} ${
+        celebrate ? 'motion-shine' : ''
       }`}
     >
       {/* Decorative dynamic top overlay dot */}
-      <div className="absolute top-0 right-0 w-16 h-16 bg-radial from-primary/10 to-transparent rounded-full pointer-events-none opacity-40" />
+      <div className={`absolute top-0 right-0 w-16 h-16 bg-radial ${tone ? TONE_GLOW[tone] : 'from-primary/10'} to-transparent rounded-full pointer-events-none opacity-40`} />
 
       <div className="flex items-center justify-between">
         <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-1">
@@ -58,14 +106,16 @@ export function MetricCard({ label, value, trend, icon, tooltip, note, onClick }
           )}
         </span>
         {icon && (
-          <div className="w-8 h-8 rounded-xl bg-surface-alt/70 border border-border/5 flex items-center justify-center text-primary">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${chipClasses}`}>
             {icon}
           </div>
         )}
       </div>
 
       <div className="flex items-baseline justify-between mt-0.5">
-        <span className="text-xl sm:text-2xl font-black text-text-main tracking-tight leading-none">
+        <span className={`text-xl sm:text-2xl font-black tracking-tight leading-none ${
+          celebrate && tone ? TONE_VALUE[tone] : 'text-text-main'
+        }`}>
           {value}
         </span>
         {trend && (

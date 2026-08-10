@@ -21,15 +21,28 @@ export function StudyingNowRail() {
   const overflow = Math.max(0, totalActive - faces.length);
   const isLive = totalActive > 0;
 
+  // `.soft-card-interactive` carries a flat border/shadow; a live room is the
+  // other social win the dashboard should visibly reward (this was the only
+  // place still using the generic --accent "success" token for a presence
+  // pulse — --live exists precisely so it never reads as a completed state,
+  // see gamification.css). Set inline so it beats the component-layer
+  // border regardless of Tailwind's utility ordering.
+  const liveCardStyle = isLive
+    ? { borderColor: 'color-mix(in srgb, var(--live) 30%, transparent)', boxShadow: 'var(--shadow-card-hover)' }
+    : undefined;
+
   return (
     <Link
       to="/rooms"
-      className="soft-card-interactive block p-4"
+      className="soft-card-interactive block p-4 sm:p-5"
       aria-label={isLive ? `${totalActive} people studying now in Live Rooms` : 'Start a Live Room'}
+      style={liveCardStyle}
     >
       <div className="flex items-center justify-between gap-3 mb-3">
         <span className="inline-flex items-center gap-2">
-          <span className="w-9 h-9 rounded-xl bg-pastel-sky text-pastel-sky-ink flex items-center justify-center shrink-0">
+          <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+            isLive ? 'bg-live/15 text-live-ink' : 'bg-pastel-sky text-pastel-sky-ink'
+          }`}>
             <Radio size={17} />
           </span>
           <span className="flex flex-col">
@@ -49,9 +62,8 @@ export function StudyingNowRail() {
         </span>
 
         {isLive && (
-          <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent" />
+          <span className="text-live" aria-hidden="true">
+            <span className="motion-live-dot" />
           </span>
         )}
       </div>

@@ -21,15 +21,25 @@ export default function StreakFlame({
   className = "",
   intensity = 1
 }: StreakFlameProps) {
-  // Classification
-  const isCold = !studiedToday;
-  const isBlazing = studiedToday && days >= 3;
-  const isWarm = studiedToday && days < 3;
+  // Classification.
+  // A flame that has never been lit (no streak at all) is the only state
+  // that goes fully cold/grey. An *existing* streak keeps its warm tier
+  // colour all day — losing it to the dead-ember grey the instant today's
+  // session hasn't happened YET read as "streak already broken" at any hour,
+  // which is the muted/greyscale bug this was fixed for. "At risk" is
+  // conveyed by holding the flame steady (no flicker, no blazing halo)
+  // rather than by desaturating it — the pink banner/CTA in StreakHero
+  // already carries the urgency.
+  const isUnlit = days === 0;
+  const isActive = !isUnlit && studiedToday;
+  const isAtRisk = !isUnlit && !studiedToday;
+  const isBlazing = isActive && days >= 3;
+  const isWarm = isActive && days < 3;
 
   // Gradients definition key combinations to prevent conflicts in SVGs
-  const outerGradId = `outer-flame-grad-${isCold ? 'cold' : 'warm'}`;
-  const middleGradId = `middle-flame-grad-${isCold ? 'cold' : 'warm'}`;
-  const innerGradId = `inner-flame-grad-${isCold ? 'cold' : 'warm'}`;
+  const outerGradId = `outer-flame-grad-${isUnlit ? 'cold' : 'warm'}`;
+  const middleGradId = `middle-flame-grad-${isUnlit ? 'cold' : 'warm'}`;
+  const innerGradId = `inner-flame-grad-${isUnlit ? 'cold' : 'warm'}`;
 
   return (
     <div
@@ -40,8 +50,13 @@ export default function StreakFlame({
       {isBlazing && (
         <div className="absolute inset-0 bg-radial from-flame-mid/25 via-flame-edge/5 to-transparent rounded-full filter blur-xl animate-pulse" />
       )}
-      {/* A cold flame is a streak at risk — dimmed, not frozen. */}
-      {isCold && days > 0 && (
+      {/* At risk: still a lit, warm flame — just a static wash instead of
+          the blazing halo, since nothing is actively feeding it right now. */}
+      {isAtRisk && (
+        <div className="absolute inset-0 bg-radial from-flame-mid/12 to-transparent rounded-full filter blur-lg" />
+      )}
+      {/* Never lit — the only state that goes cold/grey. */}
+      {isUnlit && (
         <div className="absolute inset-0 bg-radial from-flame-dead/12 to-transparent rounded-full filter blur-lg opacity-40" />
       )}
 
@@ -49,9 +64,9 @@ export default function StreakFlame({
         viewBox="0 0 100 100"
         className={`w-full h-full transform-gpu ${
           isBlazing ? 'motion-flicker filter drop-shadow-[0_4px_12px_color-mix(in_srgb,var(--flame-mid)_50%,transparent)]' : ''
-        } ${isCold ? 'filter drop-shadow-[0_2px_4px_color-mix(in_srgb,var(--flame-dead)_20%,transparent)] opacity-60' : ''} ${
+        } ${isUnlit ? 'filter drop-shadow-[0_2px_4px_color-mix(in_srgb,var(--flame-dead)_20%,transparent)] opacity-60' : ''} ${
           isWarm ? 'filter drop-shadow-[0_3px_6px_color-mix(in_srgb,var(--flame-mid)_30%,transparent)]' : ''
-        }`}
+        } ${isAtRisk ? 'filter drop-shadow-[0_3px_8px_color-mix(in_srgb,var(--flame-edge)_30%,transparent)]' : ''}`}
       >
         {/*
           Gradient stops are set via inline `style`, not the `stopColor`
